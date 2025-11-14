@@ -1,4 +1,5 @@
 import React from 'react';
+import { Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MainTabParamList } from '../types';
@@ -77,8 +78,8 @@ export default function AppNavigator() {
 // Simple emoji-based icon component
 function TabIcon({ icon, color }: { icon: string; color: string }) {
   return (
-    <text style={{ fontSize: 24, opacity: color === colors.primary ? 1 : 0.5 }}>
+    <Text style={{ fontSize: 24, opacity: color === colors.primary ? 1 : 0.5 }}>
       {icon}
-    </text>
+    </Text>
   );
 }
