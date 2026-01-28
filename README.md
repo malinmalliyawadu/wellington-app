@@ -1,27 +1,28 @@
 # Wellington App
 
-Your all-in-one companion for exploring Wellington, New Zealand's coolest little capital.
+A map-based social platform for discovering what to do in Wellington through friends and creators.
 
 ## Overview
 
-Wellington App is a comprehensive mobile application designed to help both tourists and locals discover the best of Wellington. From top attractions and hidden gems to food, events, and transport - everything you need is in one place.
+Wellington App is a social discovery platform that combines the best of Instagram and Google Maps. Follow friends and local creators to find authentic recommendations for places to visit, eat, and explore in Wellington. Think of it as your personalized, social guide to the city.
+
+## Core Concept
+
+- **Map-First Discovery**: Browse recommendations on an interactive map to find things nearby or explore different neighborhoods
+- **Social Recommendations**: Follow friends and local creators whose taste you trust
+- **Multiple Post Types**: Share places through photos (like IG), short videos (like TikTok), or simple text reviews
+- **Events Hub**: Discover events happening around Wellington - gigs, markets, festivals, and more
 
 ## Features
 
-### Current Features
-- **Discover**: Browse top attractions including Te Papa Museum, Wellington Cable Car, Zealandia, and more
-- **Category Navigation**: Easily find what you're looking for with organized categories
-- **Beautiful UI**: Clean, modern interface with Wellington-themed colors
-
 ### Planned Features
-- **Food & Coffee**: Discover Wellington's renowned cafe culture and dining scene
-- **Events Calendar**: Stay updated on festivals, shows, and happenings
-- **Transport Integration**: Real-time public transport information (Metlink)
-- **Interactive Maps**: GPS-enabled navigation with AR features
-- **Walking Tours**: Self-guided audio tours of Wellington's highlights
-- **Offline Mode**: Download content for offline access
-- **Weather Updates**: Wellington's famous weather at your fingertips
-- **Emergency Information**: Essential contacts and tourist help
+- **Map View**: Interactive map showing recommendations from people you follow
+- **Feed**: Scroll through posts from friends and creators
+- **Post Creation**: Share places with photos, videos, or text
+- **Events Calendar**: Browse upcoming events in Wellington
+- **Profile**: Your posts, saved places, and followers
+- **Search**: Find places, people, or events
+- **Place Pages**: See all posts about a specific location
 
 ## Tech Stack
 
@@ -85,27 +86,6 @@ wellington-app/
 - `npm run ios` - Run on iOS device/simulator
 - `npm run web` - Run in web browser
 
-## Contributing
-
-This is a personal project, but suggestions and feedback are welcome!
-
-## About Wellington
-
-Wellington is New Zealand's capital city, known for:
-- Vibrant creative and cultural scene
-- World-class museums and attractions
-- Outstanding coffee culture (top 8 coffee city globally)
-- Beautiful harbour and green spaces
-- Film industry connections (Weta Workshop, LOTR)
-- Diverse food scene and craft beer
-- Compact, walkable city center
-
 ## License
 
 MIT
-
-## Acknowledgments
-
-- Attractions data inspired by Tourism New Zealand
-- Built with Expo and React Native
-- Icons and emojis for visual elements
