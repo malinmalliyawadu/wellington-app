@@ -1,15 +1,37 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { EventCard } from '../components/EventCard';
+import { getUpcomingEvents } from '../data/mockEvents';
+import { getPlaceById } from '../data/mockPlaces';
 import { colors } from '../theme/colors';
 
 export function EventsScreen() {
   const insets = useSafeAreaInsets();
 
+  const eventsWithPlaces = getUpcomingEvents()
+    .map((event) => {
+      const place = getPlaceById(event.placeId);
+      if (!place) return null;
+      return { event, place };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null);
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Text style={styles.title}>Events</Text>
-      <Text style={styles.subtitle}>Coming soon</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Events</Text>
+        <Text style={styles.subtitle}>What's happening in Wellington</Text>
+      </View>
+      <FlatList
+        data={eventsWithPlaces}
+        keyExtractor={(item) => item.event.id}
+        renderItem={({ item }) => (
+          <EventCard event={item.event} place={item.place} />
+        )}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.list}
+      />
     </View>
   );
 }
@@ -17,18 +39,28 @@ export function EventsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.backgroundSecondary,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
     backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
+    fontSize: 28,
+    fontWeight: '700',
     color: colors.text,
-    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: colors.textMuted,
+    marginTop: 4,
+  },
+  list: {
+    paddingTop: 16,
+    paddingBottom: 20,
   },
 });
