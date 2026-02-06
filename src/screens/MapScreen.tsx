@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { PopularityMarker } from '../components/PopularityMarker';
 import { PlacePostsSheet } from '../components/PlacePostsSheet';
+import { MapSearchBar } from '../components/MapSearchBar';
 import { mockPlaces } from '../data/mockPlaces';
 import { mockPosts, getPostsByPlaceId } from '../data/mockPosts';
 import { useFollow } from '../context/FollowContext';
@@ -13,7 +14,7 @@ import {
   getMarkerSize,
   isFollowedPlace,
 } from '../utils/placePopularity';
-import { Place } from '../types';
+import { Place, PlaceCategory } from '../types';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { MapStackParamList } from '../navigation/types';
@@ -36,10 +37,38 @@ export function MapScreen() {
   const navigation = useNavigation<NavProp>();
   const { followingIds } = useFollow();
 
+  const [selectedCategories, setSelectedCategories] = useState<PlaceCategory[]>([]);
+  const [showFollowingOnly, setShowFollowingOnly] = useState(false);
+
   const popularityMap = useMemo(
     () => computePlacePopularity(mockPosts),
     []
   );
+
+  const filteredPlaces = useMemo(() => {
+    return mockPlaces.filter((place) => {
+      if (selectedCategories.length > 0 && !selectedCategories.includes(place.category)) {
+        return false;
+      }
+      if (showFollowingOnly) {
+        const posterIds = popularityMap.get(place.id)?.posterIds ?? [];
+        if (!isFollowedPlace(posterIds, followingIds)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [selectedCategories, showFollowingOnly, popularityMap, followingIds]);
+
+  const handleSearchSelect = (place: Place) => {
+    mapRef.current?.animateToRegion({
+      latitude: place.latitude,
+      longitude: place.longitude,
+      latitudeDelta: 0.005,
+      longitudeDelta: 0.005,
+    });
+    setSelectedPlace(place);
+  };
 
   useEffect(() => {
     (async () => {
@@ -75,7 +104,7 @@ export function MapScreen() {
         showsMyLocationButton={false}
         onPress={() => setSelectedPlace(null)}
       >
-        {mockPlaces.map((place) => {
+        {filteredPlaces.map((place) => {
           const popularity = popularityMap.get(place.id);
           const score = popularity?.score ?? 1;
           const postCount = popularity?.postCount ?? 0;
@@ -106,6 +135,15 @@ export function MapScreen() {
           );
         })}
       </MapView>
+
+      <MapSearchBar
+        places={mockPlaces}
+        selectedCategories={selectedCategories}
+        showFollowingOnly={showFollowingOnly}
+        onSelectPlace={handleSearchSelect}
+        onCategoriesChange={setSelectedCategories}
+        onFollowingToggle={setShowFollowingOnly}
+      />
 
       <TouchableOpacity style={styles.locationButton} onPress={centerOnUser}>
         <Ionicons
@@ -143,7 +181,7 @@ const styles = StyleSheet.create({
   },
   locationButton: {
     position: 'absolute',
-    top: 60,
+    top: 120,
     right: 16,
     width: 44,
     height: 44,
