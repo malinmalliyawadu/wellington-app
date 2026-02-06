@@ -7,7 +7,7 @@ export const mockPosts: Post[] = [
     placeId: 'p1',
     type: 'photo',
     content: "Best eggs benedict in Wellington. Fidel's never disappoints!",
-    mediaUrl: 'https://images.unsplash.com/photo-1608039829572-f85225e9696d?w=600',
+    mediaUrl: 'https://plus.unsplash.com/premium_photo-1663854478286-4313b556a12e?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     createdAt: '2025-01-28T09:30:00Z',
   },
   {
@@ -16,7 +16,7 @@ export const mockPosts: Post[] = [
     placeId: 'p2',
     type: 'photo',
     content: 'Incredible selection of local craft beers on tap. The Garage Project Hāpi Daze is perfect for summer.',
-    mediaUrl: 'https://images.unsplash.com/photo-1575037614876-c38a4c44d726?w=600',
+    mediaUrl: 'https://images.unsplash.com/photo-1687771454203-97d0b08bbeb2?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
     createdAt: '2025-01-27T18:45:00Z',
   },
   {

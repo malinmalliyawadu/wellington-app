@@ -3,10 +3,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { RootTabParamList } from './types';
 import { MapScreen } from '../screens/MapScreen';
-import { FeedScreen } from '../screens/FeedScreen';
+import { FeedStackNavigator } from './FeedStackNavigator';
 import { EventsScreen } from '../screens/EventsScreen';
 import { CreateScreen } from '../screens/CreateScreen';
-import { ProfileScreen } from '../screens/ProfileScreen';
+import { ProfileStackNavigator } from './ProfileStackNavigator';
 import { colors } from '../theme/colors';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
@@ -31,7 +31,7 @@ export function RootNavigator() {
       />
       <Tab.Screen
         name="Feed"
-        component={FeedScreen}
+        component={FeedStackNavigator}
         options={{
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons name={focused ? 'list' : 'list-outline'} size={size} color={color} />
@@ -58,7 +58,7 @@ export function RootNavigator() {
       />
       <Tab.Screen
         name="Profile"
-        component={ProfileScreen}
+        component={ProfileStackNavigator}
         options={{
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />

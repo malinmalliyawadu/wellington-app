@@ -1,37 +1,37 @@
 import React from 'react';
 import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { currentUser } from '../data/mockUsers';
-import { mockPosts, getPostsByUserId } from '../data/mockPosts';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { getUserById } from '../data/mockUsers';
+import { getPostsByUserId } from '../data/mockPosts';
 import { getPlaceById } from '../data/mockPlaces';
 import { useFollow } from '../context/FollowContext';
+import { FollowButton } from '../components/FollowButton';
 import { colors } from '../theme/colors';
-import type { ProfileStackParamList } from '../navigation/types';
+import type { FeedStackParamList } from '../navigation/types';
 
-type NavProp = NativeStackNavigationProp<ProfileStackParamList, 'ProfileHome'>;
+type Props = NativeStackScreenProps<FeedStackParamList, 'UserProfile'>;
 
-export function ProfileScreen() {
-  const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NavProp>();
+export function UserProfileScreen() {
+  const route = useRoute<Props['route']>();
+  const navigation = useNavigation<Props['navigation']>();
+  const { userId } = route.params;
   const { followingIds } = useFollow();
 
-  const postCount = getPostsByUserId(currentUser.id).length || 12;
-  const followerCount = 248; // mock
+  const user = getUserById(userId);
+  if (!user) return null;
 
-  // For demo, show posts from other users as if they were the current user's
-  const userPosts = mockPosts.slice(0, 6).map((post) => {
-    const place = getPlaceById(post.placeId);
-    return { ...post, place };
-  });
+  const userPosts = getPostsByUserId(userId).map((post) => ({
+    ...post,
+    place: getPlaceById(post.placeId),
+  }));
+
+  // Mock follower count — in reality this would come from the backend
+  const followerCount = userId === 'u1' ? 1240 : userId === 'u3' ? 892 : 350;
+  const followingCount = userId === 'u1' ? 85 : userId === 'u3' ? 210 : 120;
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
-      </View>
-
+    <View style={styles.container}>
       <FlatList
         data={userPosts}
         keyExtractor={(item) => item.id}
@@ -39,26 +39,21 @@ export function ProfileScreen() {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.profileSection}>
-            <Image source={{ uri: currentUser.avatarUrl }} style={styles.avatar} />
-            <Text style={styles.displayName}>{currentUser.displayName}</Text>
-            <Text style={styles.username}>@{currentUser.username}</Text>
-            {currentUser.bio && (
-              <Text style={styles.bio}>{currentUser.bio}</Text>
-            )}
+            <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+            <Text style={styles.displayName}>{user.displayName}</Text>
+            <Text style={styles.username}>@{user.username}</Text>
+            {user.bio && <Text style={styles.bio}>{user.bio}</Text>}
 
             <View style={styles.statsRow}>
               <View style={styles.stat}>
-                <Text style={styles.statNumber}>{postCount}</Text>
+                <Text style={styles.statNumber}>{userPosts.length}</Text>
                 <Text style={styles.statLabel}>Posts</Text>
               </View>
               <View style={styles.statDivider} />
               <TouchableOpacity
                 style={styles.stat}
                 onPress={() =>
-                  navigation.navigate('FollowList', {
-                    userId: currentUser.id,
-                    tab: 'followers',
-                  })
+                  navigation.push('FollowList', { userId, tab: 'followers' })
                 }
               >
                 <Text style={styles.statNumber}>{followerCount}</Text>
@@ -68,30 +63,19 @@ export function ProfileScreen() {
               <TouchableOpacity
                 style={styles.stat}
                 onPress={() =>
-                  navigation.navigate('FollowList', {
-                    userId: currentUser.id,
-                    tab: 'following',
-                  })
+                  navigation.push('FollowList', { userId, tab: 'following' })
                 }
               >
-                <Text style={styles.statNumber}>{followingIds.length}</Text>
+                <Text style={styles.statNumber}>{followingCount}</Text>
                 <Text style={styles.statLabel}>Following</Text>
               </TouchableOpacity>
             </View>
 
-            <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.editButton}>
-                <Text style={styles.editButtonText}>Edit Profile</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.findPeopleButton}
-                onPress={() => navigation.navigate('DiscoverUsers')}
-              >
-                <Text style={styles.findPeopleButtonText}>Find People</Text>
-              </TouchableOpacity>
+            <View style={styles.actionRow}>
+              <FollowButton userId={userId} />
             </View>
 
-            <Text style={styles.sectionTitle}>Your Posts</Text>
+            <Text style={styles.sectionTitle}>Posts</Text>
           </View>
         }
         renderItem={({ item }) => (
@@ -107,11 +91,18 @@ export function ProfileScreen() {
             )}
             {item.place && (
               <View style={styles.postOverlay}>
-                <Text style={styles.postPlace} numberOfLines={1}>{item.place.name}</Text>
+                <Text style={styles.postPlace} numberOfLines={1}>
+                  {item.place.name}
+                </Text>
               </View>
             )}
           </View>
         )}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No posts yet</Text>
+          </View>
+        }
         contentContainerStyle={styles.postsGrid}
       />
     </View>
@@ -122,18 +113,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.text,
-    textAlign: 'center',
   },
   profileSection: {
     alignItems: 'center',
@@ -190,33 +169,8 @@ const styles = StyleSheet.create({
     height: 30,
     backgroundColor: colors.gray200,
   },
-  buttonRow: {
-    flexDirection: 'row',
+  actionRow: {
     marginTop: 20,
-    gap: 10,
-  },
-  editButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.gray300,
-  },
-  editButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  findPeopleButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-  },
-  findPeopleButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
   },
   sectionTitle: {
     fontSize: 17,
@@ -266,5 +220,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#FFFFFF',
     fontWeight: '500',
+  },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 15,
+    color: colors.textMuted,
   },
 });

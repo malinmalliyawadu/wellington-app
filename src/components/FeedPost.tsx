@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { Post, User, Place } from '../types';
 import { colors } from '../theme/colors';
 
@@ -7,6 +7,7 @@ interface FeedPostProps {
   post: Post;
   user: User;
   place: Place;
+  onPressUser?: (userId: string) => void;
 }
 
 function formatTimeAgo(dateString: string): string {
@@ -25,17 +26,23 @@ function formatTimeAgo(dateString: string): string {
   return 'Just now';
 }
 
-export function FeedPost({ post, user, place }: FeedPostProps) {
+export function FeedPost({ post, user, place, onPressUser }: FeedPostProps) {
   const categoryColor = colors.category[place.category];
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
-        <View style={styles.headerText}>
-          <Text style={styles.displayName}>{user.displayName}</Text>
-          <Text style={styles.username}>@{user.username}</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.headerUser}
+          onPress={() => onPressUser?.(user.id)}
+          disabled={!onPressUser}
+        >
+          <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+          <View style={styles.headerText}>
+            <Text style={styles.displayName}>{user.displayName}</Text>
+            <Text style={styles.username}>@{user.username}</Text>
+          </View>
+        </TouchableOpacity>
         <Text style={styles.timeAgo}>{formatTimeAgo(post.createdAt)}</Text>
       </View>
 
@@ -65,6 +72,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
+  },
+  headerUser: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
   avatar: {
     width: 40,
