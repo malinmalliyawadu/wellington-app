@@ -8,6 +8,7 @@ interface FeedPostProps {
   user: User;
   place: Place;
   onPressUser?: (userId: string) => void;
+  onPressPlace?: (placeId: string) => void;
 }
 
 function formatTimeAgo(dateString: string): string {
@@ -26,7 +27,7 @@ function formatTimeAgo(dateString: string): string {
   return 'Just now';
 }
 
-export function FeedPost({ post, user, place, onPressUser }: FeedPostProps) {
+export function FeedPost({ post, user, place, onPressUser, onPressPlace }: FeedPostProps) {
   const categoryColor = colors.category[place.category];
 
   return (
@@ -52,10 +53,14 @@ export function FeedPost({ post, user, place, onPressUser }: FeedPostProps) {
 
       <View style={styles.content}>
         <Text style={styles.caption}>{post.content}</Text>
-        <View style={[styles.placeBadge, { backgroundColor: categoryColor + '15' }]}>
+        <TouchableOpacity
+          style={[styles.placeBadge, { backgroundColor: categoryColor + '15' }]}
+          onPress={() => onPressPlace?.(place.id)}
+          disabled={!onPressPlace}
+        >
           <View style={[styles.placeDot, { backgroundColor: categoryColor }]} />
           <Text style={[styles.placeName, { color: categoryColor }]}>{place.name}</Text>
-        </View>
+        </TouchableOpacity>
       </View>
     </View>
   );

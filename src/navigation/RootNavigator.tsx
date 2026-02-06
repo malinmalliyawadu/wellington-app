@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { RootTabParamList } from './types';
-import { MapScreen } from '../screens/MapScreen';
+import { MapStackNavigator } from './MapStackNavigator';
 import { FeedStackNavigator } from './FeedStackNavigator';
 import { EventsScreen } from '../screens/EventsScreen';
 import { CreateScreen } from '../screens/CreateScreen';
@@ -22,7 +22,7 @@ export function RootNavigator() {
     >
       <Tab.Screen
         name="Map"
-        component={MapScreen}
+        component={MapStackNavigator}
         options={{
           tabBarIcon: ({ focused, color, size }) => (
             <Ionicons name={focused ? 'map' : 'map-outline'} size={size} color={color} />

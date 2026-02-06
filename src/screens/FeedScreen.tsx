@@ -32,6 +32,10 @@ export function FeedScreen() {
     navigation.navigate('UserProfile', { userId });
   };
 
+  const handlePressPlace = (placeId: string) => {
+    navigation.navigate('PlaceDetail', { placeId });
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <FlatList
@@ -43,6 +47,7 @@ export function FeedScreen() {
             user={item.user}
             place={item.place}
             onPressUser={handlePressUser}
+            onPressPlace={handlePressPlace}
           />
         )}
         showsVerticalScrollIndicator={false}

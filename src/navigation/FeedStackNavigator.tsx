@@ -5,6 +5,7 @@ import { FeedScreen } from '../screens/FeedScreen';
 import { UserProfileScreen } from '../screens/UserProfileScreen';
 import { FollowListScreen } from '../screens/FollowListScreen';
 import { DiscoverUsersScreen } from '../screens/DiscoverUsersScreen';
+import { PlaceDetailScreen } from '../screens/PlaceDetailScreen';
 
 const Stack = createNativeStackNavigator<FeedStackParamList>();
 
@@ -26,6 +27,11 @@ export function FeedStackNavigator() {
         name="DiscoverUsers"
         component={DiscoverUsersScreen}
         options={{ headerShown: true, headerTitle: 'Discover People', headerBackTitle: 'Back' }}
+      />
+      <Stack.Screen
+        name="PlaceDetail"
+        component={PlaceDetailScreen}
+        options={{ headerShown: true, headerTitle: '', headerBackTitle: 'Feed' }}
       />
     </Stack.Navigator>
   );

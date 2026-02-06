@@ -7,5 +7,6 @@ export interface Post {
   type: PostType;
   content: string;
   mediaUrl?: string;
+  likes: number;
   createdAt: string;
 }
