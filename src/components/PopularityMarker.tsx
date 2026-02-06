@@ -1,7 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { PlaceCategory } from '../types';
 import { colors } from '../theme/colors';
+
+const CATEGORY_ICONS: Record<PlaceCategory, keyof typeof Ionicons.glyphMap> = {
+  cafe: 'cafe',
+  restaurant: 'restaurant',
+  bar: 'wine',
+  attraction: 'compass',
+  park: 'leaf',
+  venue: 'musical-notes',
+};
 
 interface PopularityMarkerProps {
   size: number;
@@ -17,7 +27,8 @@ export function PopularityMarker({
   isFollowed,
 }: PopularityMarkerProps) {
   const color = colors.category[category];
-  const fontSize = size < 36 ? 11 : 14;
+  const iconSize = size < 36 ? 14 : 18;
+  const iconName = CATEGORY_ICONS[category];
 
   if (isFollowed) {
     return (
@@ -32,7 +43,7 @@ export function PopularityMarker({
           },
         ]}
       >
-        <Text style={[styles.countTextFilled, { fontSize }]}>{postCount}</Text>
+        <Ionicons name={iconName} size={iconSize} color="#FFFFFF" />
       </View>
     );
   }
@@ -52,9 +63,7 @@ export function PopularityMarker({
         },
       ]}
     >
-      <Text style={[styles.countTextOutlined, { fontSize, color }]}>
-        {postCount}
-      </Text>
+      <Ionicons name={iconName} size={iconSize} color={color} />
     </View>
   );
 }
@@ -63,12 +72,5 @@ const styles = StyleSheet.create({
   marker: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  countTextFilled: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-  countTextOutlined: {
-    fontWeight: '700',
   },
 });
