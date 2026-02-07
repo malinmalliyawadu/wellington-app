@@ -1,21 +1,20 @@
 import React from 'react';
 import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useRouter, useLocalSearchParams, usePathname } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getUserById } from '../data/mockUsers';
 import { getPostsByUserId } from '../data/mockPosts';
 import { getPlaceById } from '../data/mockPlaces';
 import { useFollow } from '../context/FollowContext';
 import { FollowButton } from '../components/FollowButton';
 import { colors } from '../theme/colors';
-import type { FeedStackParamList } from '../navigation/types';
-
-type Props = NativeStackScreenProps<FeedStackParamList, 'UserProfile'>;
 
 export function UserProfileScreen() {
-  const route = useRoute<Props['route']>();
-  const navigation = useNavigation<Props['navigation']>();
-  const { userId } = route.params;
+  const router = useRouter();
+  const { userId } = useLocalSearchParams<{ userId: string }>();
+  const pathname = usePathname();
+  const tabBase = '/' + pathname.split('/')[1];
+  const insets = useSafeAreaInsets();
   const { followingIds } = useFollow();
 
   const user = getUserById(userId);
@@ -53,7 +52,10 @@ export function UserProfileScreen() {
               <TouchableOpacity
                 style={styles.stat}
                 onPress={() =>
-                  navigation.push('FollowList', { userId, tab: 'followers' })
+                  router.push({
+                    pathname: `${tabBase}/follow-list`,
+                    params: { userId, tab: 'followers' },
+                  })
                 }
               >
                 <Text style={styles.statNumber}>{followerCount}</Text>
@@ -63,7 +65,10 @@ export function UserProfileScreen() {
               <TouchableOpacity
                 style={styles.stat}
                 onPress={() =>
-                  navigation.push('FollowList', { userId, tab: 'following' })
+                  router.push({
+                    pathname: `${tabBase}/follow-list`,
+                    params: { userId, tab: 'following' },
+                  })
                 }
               >
                 <Text style={styles.statNumber}>{followingCount}</Text>
@@ -103,7 +108,7 @@ export function UserProfileScreen() {
             <Text style={styles.emptyText}>No posts yet</Text>
           </View>
         }
-        contentContainerStyle={styles.postsGrid}
+        contentContainerStyle={[styles.postsGrid, { paddingBottom: 20 + insets.bottom }]}
       />
     </View>
   );

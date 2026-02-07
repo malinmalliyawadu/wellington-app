@@ -1,19 +1,19 @@
 import React from 'react';
 import { View, Text, Image, FlatList, StyleSheet } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useRouter, usePathname } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getOtherUsers } from '../data/mockUsers';
 import { getPostsByUserId } from '../data/mockPosts';
 import { useFollow } from '../context/FollowContext';
 import { FollowButton } from '../components/FollowButton';
 import { colors } from '../theme/colors';
 import { TouchableOpacity } from 'react-native';
-import type { FeedStackParamList } from '../navigation/types';
-
-type NavProp = NativeStackNavigationProp<FeedStackParamList, 'DiscoverUsers'>;
 
 export function DiscoverUsersScreen() {
-  const navigation = useNavigation<NavProp>();
+  const router = useRouter();
+  const pathname = usePathname();
+  const tabBase = '/' + pathname.split('/')[1];
+  const insets = useSafeAreaInsets();
   const { isFollowing } = useFollow();
   const otherUsers = getOtherUsers();
 
@@ -33,7 +33,7 @@ export function DiscoverUsersScreen() {
         renderItem={({ item }) => (
           <TouchableOpacity
             style={styles.userRow}
-            onPress={() => navigation.push('UserProfile', { userId: item.id })}
+            onPress={() => router.push(`${tabBase}/user/${item.id}`)}
           >
             <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
             <View style={styles.userInfo}>
@@ -51,7 +51,7 @@ export function DiscoverUsersScreen() {
             <FollowButton userId={item.id} compact />
           </TouchableOpacity>
         )}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: 8 + insets.bottom }]}
       />
     </View>
   );

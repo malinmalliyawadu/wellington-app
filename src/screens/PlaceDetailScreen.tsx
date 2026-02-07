@@ -1,17 +1,14 @@
 import React from 'react';
 import { View, Text, Image, FlatList, StyleSheet } from 'react-native';
-import { useRoute } from '@react-navigation/native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getPlaceById } from '../data/mockPlaces';
 import { getPostsByPlaceId } from '../data/mockPosts';
 import { getUserById } from '../data/mockUsers';
 import { useFollow } from '../context/FollowContext';
 import { colors } from '../theme/colors';
-import type { MapStackParamList } from '../navigation/types';
 import type { PlaceCategory } from '../types';
-
-type Props = NativeStackScreenProps<MapStackParamList, 'PlaceDetail'>;
 
 const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   cafe: 'Cafe',
@@ -23,8 +20,8 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
 };
 
 export function PlaceDetailScreen() {
-  const route = useRoute<Props['route']>();
-  const { placeId } = route.params;
+  const { placeId } = useLocalSearchParams<{ placeId: string }>();
+  const insets = useSafeAreaInsets();
   const { followingIds } = useFollow();
 
   const place = getPlaceById(placeId);
@@ -53,6 +50,7 @@ export function PlaceDetailScreen() {
         data={postsWithUsers}
         keyExtractor={(item) => item.post.id}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom }}
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={styles.name}>{place.name}</Text>

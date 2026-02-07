@@ -56,7 +56,7 @@ export function CreateScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: insets.bottom }} keyboardShouldPersistTaps="handled">
         <Text style={styles.label}>Post Type</Text>
         <View style={styles.typeRow}>
           {POST_TYPES.map((item) => (

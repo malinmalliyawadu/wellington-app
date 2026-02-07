@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useRouter, useLocalSearchParams, usePathname } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getUserById, getOtherUsers } from '../data/mockUsers';
 import { useFollow } from '../context/FollowContext';
 import { FollowButton } from '../components/FollowButton';
 import { colors } from '../theme/colors';
 import { currentUser } from '../data/mockUsers';
-import type { FeedStackParamList } from '../navigation/types';
-
-type Props = NativeStackScreenProps<FeedStackParamList, 'FollowList'>;
 
 export function FollowListScreen() {
-  const route = useRoute<Props['route']>();
-  const navigation = useNavigation<Props['navigation']>();
-  const { userId, tab: initialTab } = route.params;
+  const router = useRouter();
+  const { userId, tab: initialTab } = useLocalSearchParams<{ userId: string; tab: 'followers' | 'following' }>();
+  const pathname = usePathname();
+  const tabBase = '/' + pathname.split('/')[1];
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'followers' | 'following'>(initialTab);
   const { followingIds } = useFollow();
 
@@ -79,7 +78,7 @@ export function FollowListScreen() {
               style={styles.userRow}
               onPress={() => {
                 if (!isCurrentUser) {
-                  navigation.push('UserProfile', { userId: item.id });
+                  router.push(`${tabBase}/user/${item.id}`);
                 }
               }}
             >
@@ -97,7 +96,7 @@ export function FollowListScreen() {
             <Text style={styles.emptyText}>No users to show</Text>
           </View>
         }
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: 8 + insets.bottom }]}
       />
     </View>
   );

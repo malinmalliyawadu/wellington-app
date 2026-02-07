@@ -15,9 +15,8 @@ import {
   isFollowedPlace,
 } from '../utils/placePopularity';
 import { Place, PlaceCategory } from '../types';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import type { MapStackParamList } from '../navigation/types';
+import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 
 const WELLINGTON_REGION = {
@@ -27,14 +26,13 @@ const WELLINGTON_REGION = {
   longitudeDelta: 0.02,
 };
 
-type NavProp = NativeStackNavigationProp<MapStackParamList, 'MapHome'>;
-
 export function MapScreen() {
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const mapRef = useRef<MapView>(null);
-  const navigation = useNavigation<NavProp>();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { followingIds } = useFollow();
 
   const [selectedCategories, setSelectedCategories] = useState<PlaceCategory[]>([]);
@@ -154,7 +152,7 @@ export function MapScreen() {
       </TouchableOpacity>
 
       {selectedPlace && (
-        <View style={styles.sheetContainer}>
+        <View style={[styles.sheetContainer, { bottom: 60 + insets.bottom }]}>
           <PlacePostsSheet
             place={selectedPlace}
             posts={getPostsByPlaceId(selectedPlace.id)}
@@ -163,7 +161,7 @@ export function MapScreen() {
             onClose={() => setSelectedPlace(null)}
             onPressPlaceName={(placeId) => {
               setSelectedPlace(null);
-              navigation.navigate('PlaceDetail', { placeId });
+              router.push(`/map/place/${placeId}`);
             }}
           />
         </View>
@@ -197,7 +195,6 @@ const styles = StyleSheet.create({
   },
   sheetContainer: {
     position: 'absolute',
-    bottom: 20,
     left: 12,
     right: 12,
   },

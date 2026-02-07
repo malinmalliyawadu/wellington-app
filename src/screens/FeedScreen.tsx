@@ -1,21 +1,17 @@
 import React from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useRouter } from 'expo-router';
 import { FeedPost } from '../components/FeedPost';
 import { mockPosts } from '../data/mockPosts';
 import { getUserById } from '../data/mockUsers';
 import { getPlaceById } from '../data/mockPlaces';
 import { useFollow } from '../context/FollowContext';
 import { colors } from '../theme/colors';
-import type { FeedStackParamList } from '../navigation/types';
-
-type NavProp = NativeStackNavigationProp<FeedStackParamList, 'FeedHome'>;
 
 export function FeedScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NavProp>();
+  const router = useRouter();
   const { followingIds } = useFollow();
 
   const postsWithData = mockPosts
@@ -29,11 +25,11 @@ export function FeedScreen() {
     .filter((item): item is NonNullable<typeof item> => item !== null);
 
   const handlePressUser = (userId: string) => {
-    navigation.navigate('UserProfile', { userId });
+    router.push(`/feed/user/${userId}`);
   };
 
   const handlePressPlace = (placeId: string) => {
-    navigation.navigate('PlaceDetail', { placeId });
+    router.push(`/feed/place/${placeId}`);
   };
 
   return (
@@ -51,6 +47,7 @@ export function FeedScreen() {
           />
         )}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>Your feed is empty</Text>
@@ -59,7 +56,7 @@ export function FeedScreen() {
             </Text>
             <TouchableOpacity
               style={styles.discoverButton}
-              onPress={() => navigation.navigate('DiscoverUsers')}
+              onPress={() => router.push('/feed/discover')}
             >
               <Text style={styles.discoverButtonText}>Discover People</Text>
             </TouchableOpacity>

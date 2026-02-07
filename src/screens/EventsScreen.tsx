@@ -30,7 +30,7 @@ export function EventsScreen() {
           <EventCard event={item.event} place={item.place} />
         )}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.list}
+        contentContainerStyle={[styles.list, { paddingBottom: 40 + insets.bottom }]}
       />
     </View>
   );

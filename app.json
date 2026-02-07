@@ -3,6 +3,7 @@
     "name": "wellington-app",
     "slug": "wellington-app",
     "version": "1.0.0",
+    "scheme": "wellington",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -33,7 +34,8 @@
         {
           "locationWhenInUsePermission": "Wellington App needs your location to show nearby places."
         }
-      ]
+      ],
+      "expo-router"
     ]
   }
 }

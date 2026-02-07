@@ -1,20 +1,16 @@
 import React from 'react';
 import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useRouter } from 'expo-router';
 import { currentUser } from '../data/mockUsers';
 import { mockPosts, getPostsByUserId } from '../data/mockPosts';
 import { getPlaceById } from '../data/mockPlaces';
 import { useFollow } from '../context/FollowContext';
 import { colors } from '../theme/colors';
-import type { ProfileStackParamList } from '../navigation/types';
-
-type NavProp = NativeStackNavigationProp<ProfileStackParamList, 'ProfileHome'>;
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<NavProp>();
+  const router = useRouter();
   const { followingIds } = useFollow();
 
   const postCount = getPostsByUserId(currentUser.id).length || 12;
@@ -55,9 +51,9 @@ export function ProfileScreen() {
               <TouchableOpacity
                 style={styles.stat}
                 onPress={() =>
-                  navigation.navigate('FollowList', {
-                    userId: currentUser.id,
-                    tab: 'followers',
+                  router.push({
+                    pathname: '/profile/follow-list',
+                    params: { userId: currentUser.id, tab: 'followers' },
                   })
                 }
               >
@@ -68,9 +64,9 @@ export function ProfileScreen() {
               <TouchableOpacity
                 style={styles.stat}
                 onPress={() =>
-                  navigation.navigate('FollowList', {
-                    userId: currentUser.id,
-                    tab: 'following',
+                  router.push({
+                    pathname: '/profile/follow-list',
+                    params: { userId: currentUser.id, tab: 'following' },
                   })
                 }
               >
@@ -85,7 +81,7 @@ export function ProfileScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.findPeopleButton}
-                onPress={() => navigation.navigate('DiscoverUsers')}
+                onPress={() => router.push('/profile/discover')}
               >
                 <Text style={styles.findPeopleButtonText}>Find People</Text>
               </TouchableOpacity>
@@ -112,7 +108,7 @@ export function ProfileScreen() {
             )}
           </View>
         )}
-        contentContainerStyle={styles.postsGrid}
+        contentContainerStyle={[styles.postsGrid, { paddingBottom: 60 + insets.bottom }]}
       />
     </View>
   );
