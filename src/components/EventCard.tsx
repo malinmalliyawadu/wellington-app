@@ -1,11 +1,14 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { Event, Place } from '../types';
+import { useFollow } from '../context/FollowContext';
+import { getUserById } from '../data/mockUsers';
 import { colors } from '../theme/colors';
 
 interface EventCardProps {
   event: Event;
   place: Place;
+  onPress?: () => void;
 }
 
 const CATEGORY_COLORS: Record<Event['category'], string> = {
@@ -51,11 +54,44 @@ function formatTime(time: string, endTime?: string): string {
   return formatSingleTime(time);
 }
 
-export function EventCard({ event, place }: EventCardProps) {
+const AVATAR_SIZE = 24;
+const AVATAR_OVERLAP = 8;
+
+export function EventCard({ event, place, onPress }: EventCardProps) {
   const categoryColor = CATEGORY_COLORS[event.category];
+  const { followingIds } = useFollow();
+
+  const sortedAttendeeIds = [...event.attendeeIds].sort((a, b) => {
+    const aFollowed = followingIds.includes(a);
+    const bFollowed = followingIds.includes(b);
+    if (aFollowed !== bFollowed) return aFollowed ? -1 : 1;
+    return 0;
+  });
+
+  const displayAttendees = sortedAttendeeIds.slice(0, 3).map(getUserById).filter(Boolean);
+  const totalCount = event.attendeeIds.length;
+
+  const firstFollowedUser = sortedAttendeeIds.find((id) => followingIds.includes(id));
+  const firstFollowedName = firstFollowedUser ? getUserById(firstFollowedUser)?.displayName : null;
+
+  let attendeeText = '';
+  if (totalCount > 0) {
+    if (firstFollowedName) {
+      const othersCount = totalCount - 1;
+      attendeeText = othersCount > 0
+        ? `${firstFollowedName} and ${othersCount} ${othersCount === 1 ? 'other' : 'others'} going`
+        : `${firstFollowedName} going`;
+    } else {
+      attendeeText = `${totalCount} going`;
+    }
+  }
 
   return (
-    <View style={styles.container}>
+    <TouchableOpacity
+      style={styles.container}
+      activeOpacity={0.7}
+      onPress={onPress}
+    >
       {event.imageUrl && (
         <Image source={{ uri: event.imageUrl }} style={styles.image} />
       )}
@@ -74,8 +110,26 @@ export function EventCard({ event, place }: EventCardProps) {
           <Text style={styles.place}>{place.name}</Text>
           <Text style={styles.time}>{formatTime(event.startTime, event.endTime)}</Text>
         </View>
+        {totalCount > 0 && (
+          <View style={styles.attendeeRow}>
+            <View style={styles.avatarStack}>
+              {displayAttendees.map((user, index) => (
+                <Image
+                  key={user!.id}
+                  source={{ uri: user!.avatarUrl }}
+                  style={[
+                    styles.attendeeAvatar,
+                    { marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP },
+                    { zIndex: displayAttendees.length - index },
+                  ]}
+                />
+              ))}
+            </View>
+            <Text style={styles.attendeeText}>{attendeeText}</Text>
+          </View>
+        )}
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
@@ -149,5 +203,30 @@ const styles = StyleSheet.create({
   time: {
     fontSize: 13,
     color: colors.textMuted,
+  },
+  attendeeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: colors.gray200,
+  },
+  avatarStack: {
+    flexDirection: 'row',
+    marginRight: 8,
+  },
+  attendeeAvatar: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
+    borderWidth: 2,
+    borderColor: colors.cardBackground,
+    backgroundColor: colors.gray200,
+  },
+  attendeeText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    flex: 1,
   },
 });

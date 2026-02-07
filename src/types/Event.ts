@@ -8,4 +8,5 @@ export interface Event {
   endTime?: string;
   imageUrl?: string;
   category: 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community';
+  attendeeIds: string[];
 }

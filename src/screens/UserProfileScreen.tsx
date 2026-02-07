@@ -108,7 +108,7 @@ export function UserProfileScreen() {
             <Text style={styles.emptyText}>No posts yet</Text>
           </View>
         }
-        contentContainerStyle={[styles.postsGrid, { paddingBottom: 20 + insets.bottom }]}
+        contentContainerStyle={[styles.postsGrid, { paddingBottom: 60 + insets.bottom }]}
       />
     </View>
   );

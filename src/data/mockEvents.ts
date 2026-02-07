@@ -11,6 +11,7 @@ export const mockEvents: Event[] = [
     endTime: '23:00',
     imageUrl: 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=600',
     category: 'music',
+    attendeeIds: ['u1', 'u3', 'u4', 'u2'],
   },
   {
     id: 'e2',
@@ -22,6 +23,7 @@ export const mockEvents: Event[] = [
     endTime: '22:00',
     imageUrl: 'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=600',
     category: 'comedy',
+    attendeeIds: ['u4', 'u5'],
   },
   {
     id: 'e3',
@@ -33,6 +35,7 @@ export const mockEvents: Event[] = [
     endTime: '19:00',
     imageUrl: 'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=600',
     category: 'food',
+    attendeeIds: ['u1', 'u2', 'u3', 'u5', 'u4'],
   },
   {
     id: 'e4',
@@ -44,6 +47,7 @@ export const mockEvents: Event[] = [
     endTime: '22:00',
     imageUrl: 'https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=600',
     category: 'art',
+    attendeeIds: ['u3', 'u1', 'u5'],
   },
   {
     id: 'e5',
@@ -55,6 +59,7 @@ export const mockEvents: Event[] = [
     endTime: '13:00',
     imageUrl: 'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=600',
     category: 'market',
+    attendeeIds: ['u1', 'u3', 'u2', 'u4', 'u5'],
   },
   {
     id: 'e6',
@@ -66,6 +71,7 @@ export const mockEvents: Event[] = [
     endTime: '17:00',
     imageUrl: 'https://images.unsplash.com/photo-1534778101976-62847782c213?w=600',
     category: 'food',
+    attendeeIds: ['u5', 'u1'],
   },
   {
     id: 'e7',
@@ -77,6 +83,7 @@ export const mockEvents: Event[] = [
     endTime: '21:30',
     imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600',
     category: 'music',
+    attendeeIds: ['u3', 'u4'],
   },
   {
     id: 'e8',
@@ -87,8 +94,13 @@ export const mockEvents: Event[] = [
     startTime: '19:00',
     endTime: '21:30',
     category: 'community',
+    attendeeIds: ['u2', 'u4', 'u1', 'u3'],
   },
 ];
+
+export function getEventById(id: string): Event | undefined {
+  return mockEvents.find((event) => event.id === id);
+}
 
 export function getEventsByPlaceId(placeId: string): Event[] {
   return mockEvents.filter((event) => event.placeId === placeId);

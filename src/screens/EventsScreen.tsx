@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { EventCard } from '../components/EventCard';
 import { getUpcomingEvents } from '../data/mockEvents';
@@ -8,6 +9,7 @@ import { colors } from '../theme/colors';
 
 export function EventsScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   const eventsWithPlaces = getUpcomingEvents()
     .map((event) => {
@@ -27,7 +29,11 @@ export function EventsScreen() {
         data={eventsWithPlaces}
         keyExtractor={(item) => item.event.id}
         renderItem={({ item }) => (
-          <EventCard event={item.event} place={item.place} />
+          <EventCard
+            event={item.event}
+            place={item.place}
+            onPress={() => router.push(`/events/${item.event.id}`)}
+          />
         )}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.list, { paddingBottom: 40 + insets.bottom }]}
