@@ -157,13 +157,11 @@ export function EventsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.backgroundSecondary,
   },
   header: {
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 12,
-    backgroundColor: colors.background,
   },
   title: {
     fontSize: 28,
@@ -177,14 +175,11 @@ const styles = StyleSheet.create({
   },
   chipsRow: {
     flexGrow: 0,
-    backgroundColor: colors.background,
     paddingTop: 4,
+    paddingLeft: 16,
     paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   chipsContent: {
-    paddingHorizontal: 16,
     gap: 8,
   },
   chip: {
@@ -194,9 +189,13 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     gap: 5,
+    display: 'flex',
+    justifyContent: 'center',
+    height: 32,
   },
   chipActive: {
     backgroundColor: colors.primary,
+    borderWidth: 1,
   },
   chipInactive: {
     backgroundColor: colors.cardBackground,
