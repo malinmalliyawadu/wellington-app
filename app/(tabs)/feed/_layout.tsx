@@ -20,6 +20,10 @@ export default function FeedLayout() {
         name="place/[placeId]"
         options={{ headerShown: true, headerTitle: '', headerBackTitle: 'Feed' }}
       />
+      <Stack.Screen
+        name="post/[postId]"
+        options={{ headerShown: true, headerTitle: '', headerBackTitle: 'Feed' }}
+      />
     </Stack>
   );
 }

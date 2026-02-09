@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, FlatList, StyleSheet } from 'react-native';
+import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Share } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -91,8 +91,21 @@ export function EventDetailScreen() {
               <Image source={{ uri: event.imageUrl }} style={styles.heroImage} />
             )}
             <View style={styles.infoSection}>
-              <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
-                <Text style={styles.categoryText}>{CATEGORY_LABELS[event.category]}</Text>
+              <View style={styles.categoryRow}>
+                <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
+                  <Text style={styles.categoryText}>{CATEGORY_LABELS[event.category]}</Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => {
+                    const placeName = place?.name ?? 'Wellington';
+                    Share.share({
+                      message: `${event.title} — ${formatDate(event.date)} at ${placeName}\n${event.description}`,
+                    });
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="share-outline" size={22} color={colors.textSecondary} />
+                </TouchableOpacity>
               </View>
               <Text style={styles.title}>{event.title}</Text>
               <View style={styles.detailRow}>
@@ -165,12 +178,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.gray200,
   },
+  categoryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   categoryBadge: {
     alignSelf: 'flex-start',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
-    marginBottom: 12,
   },
   categoryText: {
     color: '#FFFFFF',

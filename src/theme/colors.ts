@@ -31,6 +31,9 @@ export const colors = {
     venue: '#D62828',
   },
 
+  // Interactive
+  liked: '#E0245E',
+
   // Semantic
   error: '#DC2626',
   success: '#16A34A',

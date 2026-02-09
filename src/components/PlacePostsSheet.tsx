@@ -12,6 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Place, Post, PlaceCategory } from '../types';
 import { PlacePopularity } from '../utils/placePopularity';
 import { getUserById } from '../data/mockUsers';
+import { useLike } from '../context/LikeContext';
+import { VideoThumbnail } from './VideoThumbnail';
 import { colors } from '../theme/colors';
 
 interface PlacePostsSheetProps {
@@ -21,6 +23,7 @@ interface PlacePostsSheetProps {
   followingIds: string[];
   onClose: () => void;
   onPressPlaceName?: (placeId: string) => void;
+  onPressPost?: (postId: string) => void;
 }
 
 const CATEGORY_LABELS: Record<PlaceCategory, string> = {
@@ -42,6 +45,7 @@ export function PlacePostsSheet({
   followingIds,
   onClose,
   onPressPlaceName,
+  onPressPost,
 }: PlacePostsSheetProps) {
   const categoryColor = colors.category[place.category];
 
@@ -100,11 +104,17 @@ export function PlacePostsSheet({
 
       <ScrollView style={styles.postList} showsVerticalScrollIndicator={false}>
         {sortedPosts.map((post) => (
-          <PostRow
+          <TouchableOpacity
             key={post.id}
-            post={post}
-            isFollowed={followingIds.includes(post.userId)}
-          />
+            activeOpacity={0.7}
+            onPress={() => onPressPost?.(post.id)}
+            disabled={!onPressPost}
+          >
+            <PostRow
+              post={post}
+              isFollowed={followingIds.includes(post.userId)}
+            />
+          </TouchableOpacity>
         ))}
       </ScrollView>
     </View>
@@ -119,6 +129,8 @@ function PostRow({
   isFollowed: boolean;
 }) {
   const user = getUserById(post.userId);
+  const { isLiked, toggleLike, getLikeCount } = useLike();
+  const liked = isLiked(post.id);
 
   return (
     <View style={styles.postRow}>
@@ -140,13 +152,30 @@ function PostRow({
         <Text style={styles.postText} numberOfLines={2}>
           {post.content}
         </Text>
-        <View style={styles.postMeta}>
-          <Ionicons name="heart" size={12} color={colors.textMuted} />
-          <Text style={styles.likesText}>{post.likes}</Text>
-        </View>
+        <TouchableOpacity
+          style={styles.postMeta}
+          onPress={(e) => {
+            e.stopPropagation();
+            toggleLike(post.id);
+          }}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons
+            name={liked ? 'heart' : 'heart-outline'}
+            size={14}
+            color={liked ? colors.liked : colors.textMuted}
+          />
+          <Text style={[styles.likesText, liked && { color: colors.liked }]}>
+            {getLikeCount(post.id)}
+          </Text>
+        </TouchableOpacity>
       </View>
       {post.mediaUrl && (
-        <Image source={{ uri: post.mediaUrl }} style={styles.thumbnail} />
+        post.type === 'video' ? (
+          <VideoThumbnail thumbnailUrl={post.thumbnailUrl} style={styles.thumbnail} />
+        ) : (
+          <Image source={{ uri: post.mediaUrl }} style={styles.thumbnail} />
+        )
       )}
     </View>
   );

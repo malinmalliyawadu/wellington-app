@@ -8,6 +8,14 @@ export default function MapLayout() {
         name="place/[placeId]"
         options={{ headerShown: true, headerTitle: '', headerBackTitle: 'Map' }}
       />
+      <Stack.Screen
+        name="post/[postId]"
+        options={{ headerShown: true, headerTitle: '', headerBackTitle: 'Map' }}
+      />
+      <Stack.Screen
+        name="user/[userId]"
+        options={{ headerShown: true, headerTitle: '', headerBackTitle: 'Back' }}
+      />
     </Stack>
   );
 }

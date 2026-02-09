@@ -1,7 +1,20 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
-import { Post, User, Place } from '../types';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Share } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { Post, User, Place, PlaceCategory } from '../types';
+import { useLike } from '../context/LikeContext';
+import { getCommentsByPostId } from '../data/mockComments';
+import { VideoPlayer } from './VideoPlayer';
 import { colors } from '../theme/colors';
+
+const CATEGORY_ICONS: Record<PlaceCategory, keyof typeof Ionicons.glyphMap> = {
+  cafe: 'cafe',
+  restaurant: 'restaurant',
+  bar: 'wine',
+  attraction: 'compass',
+  park: 'leaf',
+  venue: 'musical-notes',
+};
 
 interface FeedPostProps {
   post: Post;
@@ -9,6 +22,7 @@ interface FeedPostProps {
   place: Place;
   onPressUser?: (userId: string) => void;
   onPressPlace?: (placeId: string) => void;
+  onPressPost?: (postId: string) => void;
 }
 
 function formatTimeAgo(dateString: string): string {
@@ -27,8 +41,10 @@ function formatTimeAgo(dateString: string): string {
   return 'Just now';
 }
 
-export function FeedPost({ post, user, place, onPressUser, onPressPlace }: FeedPostProps) {
+export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPressPost }: FeedPostProps) {
   const categoryColor = colors.category[place.category];
+  const { isLiked, toggleLike, getLikeCount } = useLike();
+  const liked = isLiked(post.id);
 
   return (
     <View style={styles.container}>
@@ -47,9 +63,25 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace }: FeedP
         <Text style={styles.timeAgo}>{formatTimeAgo(post.createdAt)}</Text>
       </View>
 
-      {post.mediaUrl && (
-        <Image source={{ uri: post.mediaUrl }} style={styles.media} />
-      )}
+      <TouchableOpacity
+        activeOpacity={0.9}
+        onPress={() => onPressPost?.(post.id)}
+        disabled={!onPressPost}
+      >
+        {post.mediaUrl && (
+          post.type === 'video' ? (
+            <VideoPlayer
+              uri={post.mediaUrl}
+              style={styles.media}
+              shouldPlay
+              isMuted
+              isLooping
+            />
+          ) : (
+            <Image source={{ uri: post.mediaUrl }} style={styles.media} />
+          )
+        )}
+      </TouchableOpacity>
 
       <View style={styles.content}>
         <Text style={styles.caption}>{post.content}</Text>
@@ -58,8 +90,43 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace }: FeedP
           onPress={() => onPressPlace?.(place.id)}
           disabled={!onPressPlace}
         >
-          <View style={[styles.placeDot, { backgroundColor: categoryColor }]} />
+          <Ionicons name={CATEGORY_ICONS[place.category]} size={13} color={categoryColor} style={styles.placeIcon} />
           <Text style={[styles.placeName, { color: categoryColor }]}>{place.name}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => toggleLike(post.id)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons
+            name={liked ? 'heart' : 'heart-outline'}
+            size={22}
+            color={liked ? colors.liked : colors.textMuted}
+          />
+          <Text style={[styles.actionCount, liked && { color: colors.liked }]}>
+            {getLikeCount(post.id)}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => onPressPost?.(post.id)}
+          disabled={!onPressPost}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="chatbubble-outline" size={20} color={colors.textMuted} />
+          <Text style={styles.actionCount}>
+            {getCommentsByPostId(post.id).length}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => Share.share({ message: `Check out ${place.name}: ${post.content}` })}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="share-outline" size={20} color={colors.textMuted} />
         </TouchableOpacity>
       </View>
     </View>
@@ -128,14 +195,27 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
   },
-  placeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
+  placeIcon: {
+    marginRight: 5,
   },
   placeName: {
     fontSize: 13,
+    fontWeight: '500',
+  },
+  actions: {
+    flexDirection: 'row',
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+    gap: 16,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  actionCount: {
+    fontSize: 14,
+    color: colors.textMuted,
     fontWeight: '500',
   },
 });

@@ -32,6 +32,10 @@ export function FeedScreen() {
     router.push(`/feed/place/${placeId}`);
   };
 
+  const handlePressPost = (postId: string) => {
+    router.push(`/feed/post/${postId}`);
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <FlatList
@@ -44,6 +48,7 @@ export function FeedScreen() {
             place={item.place}
             onPressUser={handlePressUser}
             onPressPlace={handlePressPlace}
+            onPressPost={handlePressPost}
           />
         )}
         showsVerticalScrollIndicator={false}

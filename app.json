@@ -35,7 +35,8 @@
           "locationWhenInUsePermission": "Wellington App needs your location to show nearby places."
         }
       ],
-      "expo-router"
+      "expo-router",
+      "expo-video"
     ]
   }
 }

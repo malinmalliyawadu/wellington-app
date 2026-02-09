@@ -11,20 +11,132 @@ Wellington App is a map-based social platform for discovering things to do in We
 3. **Multiple ways to share** - Photo posts, short videos, text reviews
 4. **Discover events** - Find what's happening around the city
 
-## Key Screens
+## Tech Stack
 
-- **Map View** - Primary discovery interface showing pins for recommended places
-- **Feed** - Scrollable feed of posts from followed accounts
-- **Events** - Calendar/list of upcoming events in Wellington
-- **Create Post** - Share a place with photo/video/text
-- **Profile** - User's posts, saved places, followers/following
-- **Place Detail** - All posts and info about a specific location
+- **React Native 0.81 + Expo SDK 54** - Cross-platform mobile development
+- **TypeScript 5.9** - Type safety throughout
+- **Expo Router v6** with `NativeTabs` (`expo-router/unstable-native-tabs`) - File-based routing
+- **react-native-maps** - Map view
+- **expo-location** - User geolocation
+- **React 19** - UI framework
 
-## Technical Decisions
+## App Structure
 
-- **React Native + Expo** - Cross-platform mobile development
-- **TypeScript** - Type safety throughout
-- **React Navigation** - Tab-based navigation with stack navigators
+### Routing (`app/`)
+
+File-based routing with 5 tabs, each containing an independent stack navigator:
+
+```
+app/
+  _layout.tsx              # Root: SafeAreaProvider → FollowProvider → LikeProvider → Slot
+  (tabs)/
+    _layout.tsx            # NativeTabs: Map, Feed, Events, Create, Profile
+    map/
+      _layout.tsx          # Stack: index, place/[placeId], post/[postId], user/[userId]
+      index.tsx
+      place/[placeId].tsx
+      post/[postId].tsx
+      user/[userId].tsx
+    feed/
+      _layout.tsx          # Stack: index, user/[userId], follow-list, discover, place/[placeId], post/[postId]
+      index.tsx
+      user/[userId].tsx
+      follow-list.tsx
+      discover.tsx
+      place/[placeId].tsx
+      post/[postId].tsx
+    events/
+      _layout.tsx          # Stack: index, [eventId]
+      index.tsx
+      [eventId].tsx
+    profile/
+      _layout.tsx          # Stack: index, user/[userId], follow-list, discover, place/[placeId], post/[postId]
+      index.tsx
+      user/[userId].tsx
+      follow-list.tsx
+      discover.tsx
+      place/[placeId].tsx
+      post/[postId].tsx
+    create.tsx
+```
+
+Route files are thin re-exports: `export { ScreenName as default } from '../../src/screens/ScreenName'`
+
+### Screens (`src/screens/`)
+
+| Screen | Description |
+|---|---|
+| `MapScreen` | Primary map view with popularity markers, search bar, category/following filters, place posts sheet |
+| `FeedScreen` | Scrollable feed of posts from followed users with like/comment actions |
+| `CreateScreen` | Post creation form with type selector, place picker, content input |
+| `ProfileScreen` | Current user profile with stats, post grid |
+| `UserProfileScreen` | Other users' profiles with follow button, post grid |
+| `PlaceDetailScreen` | All posts for a place, sorted by followed-first then likes |
+| `PostDetailScreen` | Instagram-style single post view with likes, comments, place tag |
+| `EventsScreen` | List of upcoming Wellington events |
+| `EventDetailScreen` | Full event details with attendee list |
+| `FollowListScreen` | Followers/following list with tab switcher |
+| `DiscoverUsersScreen` | Browse and follow new users |
+
+### Components (`src/components/`)
+
+| Component | Description |
+|---|---|
+| `FeedPost` | Post card in feed: user header, media, caption, place badge, like/comment actions |
+| `PlacePostsSheet` | Bottom sheet on map showing posts for a selected place |
+| `PopularityMarker` | Map marker sized by popularity, styled by category and follow status |
+| `MapSearchBar` | Search input + category/following filter chips for map |
+| `EventCard` | Event card with image, date, title, attendee avatars |
+| `FollowButton` | Follow/Following toggle button using FollowContext |
+| `PlaceCard` | Compact place info card |
+
+### Context (`src/context/`)
+
+| Context | State | Methods |
+|---|---|---|
+| `FollowContext` | `followingIds: string[]` | `isFollowing(userId)`, `toggleFollow(userId)` |
+| `LikeContext` | `likedPostIds: string[]`, `likeCounts: Record<string, number>` | `isLiked(postId)`, `toggleLike(postId)`, `getLikeCount(postId)` |
+
+### Data (`src/data/`)
+
+All mock data, no backend. Helpers follow the pattern `getXById(id)`, `getXsByYId(yId)`.
+
+| File | Contents |
+|---|---|
+| `mockUsers.ts` | 10 users (1 current + 9 creators). `getUserById()`, `getOtherUsers()` |
+| `mockPlaces.ts` | 22 Wellington places (cafes, bars, restaurants, parks, attractions, venues). `getPlaceById()` |
+| `mockPosts.ts` | 48 posts with Unsplash images. `getPostById()`, `getPostsByPlaceId()`, `getPostsByUserId()` |
+| `mockEvents.ts` | 25 events (heavy on gigs/music). `getEventById()`, `getUpcomingEvents()` |
+| `mockComments.ts` | 40 comments. `getCommentsByPostId()` |
+| `mockFollows.ts` | `initialFollowingIds: ['u1', 'u3']` |
+
+### Types (`src/types/`)
+
+- **User** - `id, username, displayName, avatarUrl, bio?`
+- **Post** - `id, userId, placeId, type (photo|video|text), content, mediaUrl?, likes, createdAt`
+- **Place** - `id, name, category (cafe|restaurant|bar|attraction|park|venue), address, latitude, longitude`
+- **Event** - `id, title, description, placeId, date, startTime, endTime?, imageUrl?, category (music|comedy|art|food|market|community), attendeeIds`
+
+### Utils (`src/utils/placePopularity.ts`)
+
+- `computePlacePopularity(posts)` - Aggregates posts into `PlacePopularity` map (postCount, totalLikes, score, posterIds)
+- `getMarkerSize(score, allPopularities)` - Linear interpolation for marker size (28-52px)
+- `isFollowedPlace(posterIds, followingIds)` - Checks if any poster is followed
+
+### Theme (`src/theme/colors.ts`)
+
+- Brand: `primary` (#00A5E0), `primaryDark` (#0086B8)
+- Category colors: cafe (brown), restaurant (orange), bar (purple), attraction (blue), park (green), venue (red)
+- Interactive: `liked` (#E0245E) for heart icons
+- Grays: `gray100` through `gray600`
+- Text: `text`, `textSecondary`, `textMuted`
+
+## Key Patterns
+
+- **Shared screens across tabs**: `UserProfileScreen`, `FollowListScreen`, `DiscoverUsersScreen` use `usePathname()` to determine the current tab and build tab-relative paths (e.g. `/feed/user/123` vs `/map/user/123`)
+- **Post sorting**: Followed users' posts appear first, then sorted by likes
+- **Popularity markers**: Map markers scale with engagement (posts + likes), filled for followed places, outlined for unfollowed
+- **Like state shared globally**: Liking a post in the map sheet persists when viewing the same post in feed or detail view
 
 ## Design Principles
 
@@ -32,10 +144,3 @@ Wellington App is a map-based social platform for discovering things to do in We
 - Social trust drives discovery (recommendations from people you follow)
 - Low friction posting - make it easy to share a quick recommendation
 - Wellington-focused - this is specifically for Wellington, not a generic platform
-
-## Data Model Concepts
-
-- **User** - Profile, followers, following
-- **Post** - Photo/video/text content linked to a Place
-- **Place** - A location (cafe, bar, park, venue, etc.)
-- **Event** - Time-bound happening at a Place

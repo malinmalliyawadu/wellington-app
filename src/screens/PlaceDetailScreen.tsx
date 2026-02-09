@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Image, FlatList, StyleSheet } from 'react-native';
+import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,8 @@ import { getPlaceById } from '../data/mockPlaces';
 import { getPostsByPlaceId } from '../data/mockPosts';
 import { getUserById } from '../data/mockUsers';
 import { useFollow } from '../context/FollowContext';
+import { useLike } from '../context/LikeContext';
+import { VideoThumbnail } from '../components/VideoThumbnail';
 import { colors } from '../theme/colors';
 import type { PlaceCategory } from '../types';
 
@@ -95,12 +97,13 @@ export function PlaceDetailScreen() {
               </View>
               <Text style={styles.postText}>{item.post.content}</Text>
               {item.post.mediaUrl && (
-                <Image source={{ uri: item.post.mediaUrl }} style={styles.postMedia} />
+                item.post.type === 'video' ? (
+                  <VideoThumbnail thumbnailUrl={item.post.thumbnailUrl} style={styles.postMedia} />
+                ) : (
+                  <Image source={{ uri: item.post.mediaUrl }} style={styles.postMedia} />
+                )
               )}
-              <View style={styles.postMeta}>
-                <Ionicons name="heart" size={13} color={colors.textMuted} />
-                <Text style={styles.likesText}>{item.post.likes}</Text>
-              </View>
+              <PostLikeButton postId={item.post.id} />
             </View>
           </View>
         )}
@@ -111,6 +114,28 @@ export function PlaceDetailScreen() {
         }
       />
     </View>
+  );
+}
+
+function PostLikeButton({ postId }: { postId: string }) {
+  const { isLiked, toggleLike, getLikeCount } = useLike();
+  const liked = isLiked(postId);
+
+  return (
+    <TouchableOpacity
+      style={styles.postMeta}
+      onPress={() => toggleLike(postId)}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <Ionicons
+        name={liked ? 'heart' : 'heart-outline'}
+        size={15}
+        color={liked ? colors.liked : colors.textMuted}
+      />
+      <Text style={[styles.likesText, liked && { color: colors.liked }]}>
+        {getLikeCount(postId)}
+      </Text>
+    </TouchableOpacity>
   );
 }
 

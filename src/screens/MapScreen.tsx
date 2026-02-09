@@ -163,6 +163,10 @@ export function MapScreen() {
               setSelectedPlace(null);
               router.push(`/map/place/${placeId}`);
             }}
+            onPressPost={(postId) => {
+              setSelectedPlace(null);
+              router.push(`/map/post/${postId}`);
+            }}
           />
         </View>
       )}

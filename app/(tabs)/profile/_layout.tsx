@@ -20,6 +20,10 @@ export default function ProfileLayout() {
         name="place/[placeId]"
         options={{ headerShown: true, headerTitle: '', headerBackTitle: 'Profile' }}
       />
+      <Stack.Screen
+        name="post/[postId]"
+        options={{ headerShown: true, headerTitle: '', headerBackTitle: 'Profile' }}
+      />
     </Stack>
   );
 }

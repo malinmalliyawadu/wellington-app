@@ -7,6 +7,7 @@ import { getPostsByUserId } from '../data/mockPosts';
 import { getPlaceById } from '../data/mockPlaces';
 import { useFollow } from '../context/FollowContext';
 import { FollowButton } from '../components/FollowButton';
+import { VideoThumbnail } from '../components/VideoThumbnail';
 import { colors } from '../theme/colors';
 
 export function UserProfileScreen() {
@@ -86,7 +87,11 @@ export function UserProfileScreen() {
         renderItem={({ item }) => (
           <View style={styles.postTile}>
             {item.mediaUrl ? (
-              <Image source={{ uri: item.mediaUrl }} style={styles.postImage} />
+              item.type === 'video' ? (
+                <VideoThumbnail thumbnailUrl={item.thumbnailUrl} style={styles.postImage} />
+              ) : (
+                <Image source={{ uri: item.mediaUrl }} style={styles.postImage} />
+              )
             ) : (
               <View style={styles.textPostTile}>
                 <Text style={styles.textPostContent} numberOfLines={4}>

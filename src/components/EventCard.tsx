@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Share } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Event, Place } from '../types';
 import { useFollow } from '../context/FollowContext';
 import { getUserById } from '../data/mockUsers';
@@ -11,7 +12,7 @@ interface EventCardProps {
   onPress?: () => void;
 }
 
-const CATEGORY_COLORS: Record<Event['category'], string> = {
+export const CATEGORY_COLORS: Record<Event['category'], string> = {
   music: '#7209B7',
   comedy: '#F72585',
   art: '#4361EE',
@@ -100,7 +101,18 @@ export function EventCard({ event, place, onPress }: EventCardProps) {
           <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
             <Text style={styles.categoryText}>{CATEGORY_LABELS[event.category]}</Text>
           </View>
-          <Text style={styles.date}>{formatDate(event.date)}</Text>
+          <View style={styles.dateRow}>
+            <Text style={styles.date}>{formatDate(event.date)}</Text>
+            <TouchableOpacity
+              onPress={(e) => {
+                e.stopPropagation?.();
+                Share.share({ message: `${event.title} — ${formatDate(event.date)} at ${place.name}` });
+              }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons name="share-outline" size={16} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
         </View>
         <Text style={styles.title}>{event.title}</Text>
         <Text style={styles.description} numberOfLines={2}>
@@ -169,6 +181,11 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 11,
     fontWeight: '600',
+  },
+  dateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   date: {
     fontSize: 13,
