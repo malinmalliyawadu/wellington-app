@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,29 +6,28 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Modal,
-  Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useNavigation } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { EventCard, CATEGORY_COLORS } from '../components/EventCard';
+import { EventCard } from '../components/EventCard';
 import { getUpcomingEvents } from '../services/events';
 import { getPlaces } from '../services/places';
 import { useQuery } from '../hooks/useQuery';
 import { useFollow } from '../context/FollowContext';
-import { Event } from '../types';
+import { useEventFilters } from '../context/EventFilterContext';
 import { colors } from '../theme/colors';
 
-type EventCategory = Event['category'];
 type DateRange = 'today' | 'tomorrow' | 'weekend' | 'month';
 
-const DATE_RANGES: { key: DateRange; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'today', label: 'Today', icon: 'today' },
-  { key: 'tomorrow', label: 'Tomorrow', icon: 'arrow-forward' },
-  { key: 'weekend', label: 'This Weekend', icon: 'sunny' },
-  { key: 'month', label: 'This Month', icon: 'calendar' },
-];
+const DATE_RANGE_LABELS: Record<DateRange, string> = {
+  today: 'Today',
+  tomorrow: 'Tomorrow',
+  weekend: 'This Weekend',
+  month: 'This Month',
+};
 
 function getDateRange(range: DateRange): { start: string; end: string } {
   const now = new Date();
@@ -43,7 +42,7 @@ function getDateRange(range: DateRange): { start: string; end: string } {
       return { start: fmt(tomorrow), end: fmt(tomorrow) };
     }
     case 'weekend': {
-      const day = now.getDay(); // 0=Sun, 6=Sat
+      const day = now.getDay();
       const daysUntilSat = day === 0 ? 6 : 6 - day;
       const sat = new Date(now);
       sat.setDate(now.getDate() + daysUntilSat);
@@ -59,50 +58,16 @@ function getDateRange(range: DateRange): { start: string; end: string } {
   }
 }
 
-const ALL_CATEGORIES: EventCategory[] = [
-  'music',
-  'comedy',
-  'art',
-  'food',
-  'market',
-  'community',
-];
-
-const CATEGORY_LABELS: Record<EventCategory, string> = {
-  music: 'Music',
-  comedy: 'Comedy',
-  art: 'Art',
-  food: 'Food & Drink',
-  market: 'Market',
-  community: 'Community',
-};
-
-const CATEGORY_ICONS: Record<EventCategory, keyof typeof Ionicons.glyphMap> = {
-  music: 'musical-notes',
-  comedy: 'happy',
-  art: 'color-palette',
-  food: 'restaurant',
-  market: 'cart',
-  community: 'people',
-};
-
-const DATE_RANGE_LABELS: Record<DateRange, string> = {
-  today: 'Today',
-  tomorrow: 'Tomorrow',
-  weekend: 'This Weekend',
-  month: 'This Month',
-};
-
 export function EventsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const navigation = useNavigation();
   const { isFollowing } = useFollow();
-
-  const [selectedCategories, setSelectedCategories] = useState<EventCategory[]>([]);
-  const [selectedDateRange, setSelectedDateRange] = useState<DateRange | null>(null);
-  const [showFollowingOnly, setShowFollowingOnly] = useState(false);
-  const [showDateSheet, setShowDateSheet] = useState(false);
-  const [showCategorySheet, setShowCategorySheet] = useState(false);
+  const {
+    selectedDateRange,
+    selectedCategories,
+    showFollowingOnly,
+  } = useEventFilters();
 
   const fetchEvents = useCallback(() => getUpcomingEvents(), []);
   const { data: events, loading: loadingEvents } = useQuery(fetchEvents);
@@ -143,19 +108,24 @@ export function EventsScreen() {
     });
   }, [eventsWithPlaces, selectedDateRange, selectedCategories, showFollowingOnly, isFollowing]);
 
-  const toggleCategory = (category: EventCategory) => {
-    setSelectedCategories((prev) =>
-      prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category],
-    );
-  };
+  const activeFilterCount =
+    (selectedDateRange ? 1 : 0) + (selectedCategories.length > 0 ? 1 : 0) + (showFollowingOnly ? 1 : 0);
 
-  const dateLabel = selectedDateRange ? DATE_RANGE_LABELS[selectedDateRange] : 'When';
-  const categoryLabel =
-    selectedCategories.length === 0
-      ? 'Category'
-      : selectedCategories.length === 1
-        ? CATEGORY_LABELS[selectedCategories[0]]
-        : `${selectedCategories.length} categories`;
+  const filterSummary = [
+    selectedDateRange ? DATE_RANGE_LABELS[selectedDateRange] : null,
+    selectedCategories.length === 1
+      ? selectedCategories[0]
+      : selectedCategories.length > 1
+        ? `${selectedCategories.length} categories`
+        : null,
+    showFollowingOnly ? 'Following' : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  const openFilters = () => {
+    navigation.dispatch(DrawerActions.openDrawer());
+  };
 
   if (loadingEvents) {
     return (
@@ -168,76 +138,30 @@ export function EventsScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>Events</Text>
-        <Text style={styles.subtitle}>What's happening in Wellington</Text>
-      </View>
-
-      <View style={styles.filtersRow}>
-        <TouchableOpacity
-          style={[styles.dropdown, selectedDateRange != null && styles.dropdownActive]}
-          onPress={() => setShowDateSheet(true)}
-        >
-          <Ionicons
-            name="calendar-outline"
-            size={16}
-            color={selectedDateRange ? '#FFFFFF' : colors.text}
-          />
-          <Text
-            style={[styles.dropdownLabel, selectedDateRange != null && styles.dropdownLabelActive]}
-            numberOfLines={1}
+        <View style={styles.titleRow}>
+          <View>
+            <Text style={styles.title}>Events</Text>
+            <Text style={styles.subtitle}>What's happening in Wellington</Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.filterButton, activeFilterCount > 0 && styles.filterButtonActive]}
+            onPress={openFilters}
           >
-            {dateLabel}
-          </Text>
-          <Ionicons
-            name="chevron-down"
-            size={14}
-            color={selectedDateRange ? '#FFFFFF' : colors.textMuted}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.dropdown, selectedCategories.length > 0 && styles.dropdownActive]}
-          onPress={() => setShowCategorySheet(true)}
-        >
-          <Ionicons
-            name="grid-outline"
-            size={16}
-            color={selectedCategories.length > 0 ? '#FFFFFF' : colors.text}
-          />
-          <Text
-            style={[
-              styles.dropdownLabel,
-              selectedCategories.length > 0 && styles.dropdownLabelActive,
-            ]}
-            numberOfLines={1}
-          >
-            {categoryLabel}
-          </Text>
-          <Ionicons
-            name="chevron-down"
-            size={14}
-            color={selectedCategories.length > 0 ? '#FFFFFF' : colors.textMuted}
-          />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.chip, showFollowingOnly ? styles.chipActive : styles.chipInactive]}
-          onPress={() => setShowFollowingOnly((v) => !v)}
-        >
-          <Ionicons
-            name="people"
-            size={14}
-            color={showFollowingOnly ? '#FFFFFF' : colors.text}
-          />
-          <Text
-            style={[
-              styles.chipLabel,
-              showFollowingOnly ? styles.chipLabelActive : styles.chipLabelInactive,
-            ]}
-          >
-            Following
-          </Text>
-        </TouchableOpacity>
+            <Ionicons
+              name="options"
+              size={20}
+              color={activeFilterCount > 0 ? '#FFFFFF' : colors.text}
+            />
+            {activeFilterCount > 0 && (
+              <View style={styles.filterBadge}>
+                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+        {activeFilterCount > 0 && (
+          <Text style={styles.filterSummary}>{filterSummary}</Text>
+        )}
       </View>
 
       <FlatList
@@ -252,100 +176,16 @@ export function EventsScreen() {
         )}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.list, { paddingBottom: 40 + insets.bottom }]}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Ionicons name="calendar-outline" size={48} color={colors.gray300} />
+            <Text style={styles.emptyText}>No events match your filters</Text>
+            <TouchableOpacity onPress={openFilters}>
+              <Text style={styles.emptyAction}>Adjust filters</Text>
+            </TouchableOpacity>
+          </View>
+        }
       />
-
-      {/* Date Range Sheet */}
-      <Modal
-        visible={showDateSheet}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowDateSheet(false)}
-      >
-        <Pressable style={styles.sheetBackdrop} onPress={() => setShowDateSheet(false)}>
-          <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>When</Text>
-
-            <TouchableOpacity
-              style={styles.sheetOption}
-              onPress={() => {
-                setSelectedDateRange(null);
-                setShowDateSheet(false);
-              }}
-            >
-              <Ionicons name="infinite" size={20} color={colors.text} />
-              <Text style={styles.sheetOptionLabel}>Any time</Text>
-              {selectedDateRange === null && (
-                <Ionicons name="checkmark" size={20} color={colors.primary} style={styles.sheetCheck} />
-              )}
-            </TouchableOpacity>
-
-            {DATE_RANGES.map(({ key, label, icon }) => (
-              <TouchableOpacity
-                key={key}
-                style={styles.sheetOption}
-                onPress={() => {
-                  setSelectedDateRange(key);
-                  setShowDateSheet(false);
-                }}
-              >
-                <Ionicons name={icon} size={20} color={colors.text} />
-                <Text style={styles.sheetOptionLabel}>{label}</Text>
-                {selectedDateRange === key && (
-                  <Ionicons name="checkmark" size={20} color={colors.primary} style={styles.sheetCheck} />
-                )}
-              </TouchableOpacity>
-            ))}
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      {/* Category Sheet */}
-      <Modal
-        visible={showCategorySheet}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowCategorySheet(false)}
-      >
-        <Pressable style={styles.sheetBackdrop} onPress={() => setShowCategorySheet(false)}>
-          <Pressable style={[styles.sheet, { paddingBottom: insets.bottom + 16 }]}>
-            <View style={styles.sheetHandle} />
-            <View style={styles.sheetHeader}>
-              <Text style={styles.sheetTitle}>Category</Text>
-              {selectedCategories.length > 0 && (
-                <TouchableOpacity onPress={() => setSelectedCategories([])}>
-                  <Text style={styles.sheetClearText}>Clear</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {ALL_CATEGORIES.map((cat) => {
-              const active = selectedCategories.includes(cat);
-              const catColor = CATEGORY_COLORS[cat];
-              return (
-                <TouchableOpacity
-                  key={cat}
-                  style={styles.sheetOption}
-                  onPress={() => toggleCategory(cat)}
-                >
-                  <Ionicons name={CATEGORY_ICONS[cat]} size={20} color={catColor} />
-                  <Text style={styles.sheetOptionLabel}>{CATEGORY_LABELS[cat]}</Text>
-                  {active && (
-                    <Ionicons name="checkmark" size={20} color={colors.primary} style={styles.sheetCheck} />
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-
-            <TouchableOpacity
-              style={styles.sheetDoneButton}
-              onPress={() => setShowCategorySheet(false)}
-            >
-              <Text style={styles.sheetDoneText}>Done</Text>
-            </TouchableOpacity>
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
@@ -359,6 +199,11 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 12,
   },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
   title: {
     fontSize: 28,
     fontWeight: '700',
@@ -369,132 +214,61 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginTop: 4,
   },
-  filtersRow: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    gap: 8,
-  },
-  dropdown: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    height: 36,
-    borderRadius: 18,
+  filterButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.cardBackground,
     borderWidth: 1,
     borderColor: colors.gray300,
-    gap: 6,
-  },
-  dropdownActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-  dropdownLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.text,
-    maxWidth: 100,
-  },
-  dropdownLabelActive: {
-    color: '#FFFFFF',
-  },
-  chip: {
-    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    borderRadius: 18,
-    gap: 5,
-    height: 36,
+    justifyContent: 'center',
   },
-  chipActive: {
+  filterButtonActive: {
     backgroundColor: colors.primary,
-    borderWidth: 1,
     borderColor: colors.primary,
   },
-  chipInactive: {
-    backgroundColor: colors.cardBackground,
-    borderWidth: 1,
-    borderColor: colors.gray300,
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#FFFFFF',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary,
   },
-  chipLabel: {
+  filterBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  filterSummary: {
     fontSize: 13,
-    fontWeight: '600',
-  },
-  chipLabelActive: {
-    color: '#FFFFFF',
-  },
-  chipLabelInactive: {
-    color: colors.text,
+    color: colors.primary,
+    fontWeight: '500',
+    marginTop: 8,
   },
   list: {
     paddingTop: 8,
     paddingBottom: 20,
   },
-  // Sheet styles
-  sheetBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: colors.cardBackground,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingTop: 12,
-    paddingHorizontal: 20,
-  },
-  sheetHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.gray300,
-    alignSelf: 'center',
-    marginBottom: 16,
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  empty: {
     alignItems: 'center',
-  },
-  sheetTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.text,
-    marginBottom: 12,
-  },
-  sheetClearText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
-    marginBottom: 12,
-  },
-  sheetOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.gray200,
+    justifyContent: 'center',
+    paddingTop: 80,
     gap: 12,
   },
-  sheetOptionLabel: {
-    fontSize: 16,
-    color: colors.text,
-    flex: 1,
+  emptyText: {
+    fontSize: 15,
+    color: colors.textMuted,
   },
-  sheetCheck: {
-    marginLeft: 'auto',
-  },
-  sheetDoneButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  sheetDoneText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+  emptyAction: {
+    fontSize: 15,
     fontWeight: '600',
+    color: colors.primary,
   },
 });
