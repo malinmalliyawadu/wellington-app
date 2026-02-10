@@ -1,13 +1,15 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
-import MapView, { Marker } from 'react-native-maps';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, LayoutChangeEvent } from 'react-native';
+import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { PopularityMarker } from '../components/PopularityMarker';
 import { PlacePostsSheet } from '../components/PlacePostsSheet';
 import { MapSearchBar } from '../components/MapSearchBar';
+import { PeekingMarkersOverlay } from '../components/PeekingMarkersOverlay';
 import { useFollow } from '../context/FollowContext';
 import { useQuery } from '../hooks/useQuery';
+import { usePeekingMarkers, PeekingMarker } from '../hooks/usePeekingMarkers';
 import { getPlaces } from '../services/places';
 import { getPosts, getPostsByPlaceId as getPostsByPlaceIdAsync } from '../services/posts';
 import {
@@ -39,6 +41,8 @@ export function MapScreen() {
 
   const [selectedCategories, setSelectedCategories] = useState<PlaceCategory[]>([]);
   const [showFollowingOnly, setShowFollowingOnly] = useState(false);
+  const [visibleRegion, setVisibleRegion] = useState<Region>(WELLINGTON_REGION);
+  const [mapLayout, setMapLayout] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
 
   const { data: places } = useQuery(getPlaces);
   const allPlaces = places ?? [];
@@ -63,6 +67,55 @@ export function MapScreen() {
       return true;
     });
   }, [selectedCategories, showFollowingOnly, popularityMap, followingIds]);
+
+  const peekingMarkers = usePeekingMarkers(
+    filteredPlaces,
+    popularityMap,
+    followingIds,
+    visibleRegion,
+    mapLayout,
+  );
+
+  const annotatedPlaceIds = useMemo(() => {
+    const { latitude, longitude, latitudeDelta, longitudeDelta } = visibleRegion;
+    const north = latitude + latitudeDelta / 2;
+    const south = latitude - latitudeDelta / 2;
+    const east = longitude + longitudeDelta / 2;
+    const west = longitude - longitudeDelta / 2;
+
+    const visible = filteredPlaces.filter(
+      (p) => p.latitude >= south && p.latitude <= north && p.longitude >= west && p.longitude <= east,
+    );
+
+    const count = Math.max(3, Math.round(visible.length * 0.35));
+
+    const sorted = [...visible].sort((a, b) => {
+      const sa = popularityMap.get(a.id)?.score ?? 0;
+      const sb = popularityMap.get(b.id)?.score ?? 0;
+      return sb - sa;
+    });
+
+    return new Set(sorted.slice(0, count).map((p) => p.id));
+  }, [filteredPlaces, visibleRegion, popularityMap]);
+
+  const handleRegionChangeComplete = useCallback((region: Region) => {
+    setVisibleRegion(region);
+  }, []);
+
+  const handleMapLayout = useCallback((e: LayoutChangeEvent) => {
+    const { width, height } = e.nativeEvent.layout;
+    setMapLayout({ width, height });
+  }, []);
+
+  const handlePeekingMarkerPress = useCallback((marker: PeekingMarker) => {
+    mapRef.current?.animateToRegion({
+      latitude: marker.place.latitude,
+      longitude: marker.place.longitude,
+      latitudeDelta: visibleRegion.latitudeDelta,
+      longitudeDelta: visibleRegion.longitudeDelta,
+    }, 400);
+    setSelectedPlace(marker.place);
+  }, [visibleRegion]);
 
   const handleSearchSelect = (place: Place) => {
     mapRef.current?.animateToRegion({
@@ -99,7 +152,11 @@ export function MapScreen() {
         longitude: currentLocation.coords.longitude,
         latitudeDelta: 0.005,
         longitudeDelta: 0.005,
-      }, 500);
+      });
+      mapRef.current?.animateCamera({
+        pitch: 40,
+        heading: 90
+      })
     })();
   }, []);
 
@@ -115,7 +172,7 @@ export function MapScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} onLayout={handleMapLayout}>
       <MapView
         ref={mapRef}
         style={styles.map}
@@ -123,6 +180,7 @@ export function MapScreen() {
         showsUserLocation
         showsMyLocationButton={false}
         onPress={() => setSelectedPlace(null)}
+        onRegionChangeComplete={handleRegionChangeComplete}
       >
         {filteredPlaces.map((place) => {
           const popularity = popularityMap.get(place.id);
@@ -131,6 +189,7 @@ export function MapScreen() {
           const posterIds = popularity?.posterIds ?? [];
           const size = getMarkerSize(score, popularityMap);
           const followed = isFollowedPlace(posterIds, followingIds);
+          const showLabel = annotatedPlaceIds.has(place.id);
 
           return (
             <Marker
@@ -139,22 +198,43 @@ export function MapScreen() {
                 latitude: place.latitude,
                 longitude: place.longitude,
               }}
-              anchor={{ x: 0.5, y: 0.5 }}
+              anchor={{ x: 0.5, y: showLabel ? 0.35 : 0.5 }}
               onPress={(e) => {
                 e.stopPropagation();
                 setSelectedPlace(place);
               }}
             >
-              <PopularityMarker
-                size={size}
-                category={place.category}
-                postCount={postCount}
-                isFollowed={followed}
-              />
+              <View style={styles.markerContainer}>
+                <PopularityMarker
+                  size={size}
+                  category={place.category}
+                  postCount={postCount}
+                  isFollowed={followed}
+                />
+                {showLabel && (
+                  <View style={styles.labelContainer}>
+                    <Text style={styles.labelName} numberOfLines={1}>
+                      {place.name}
+                    </Text>
+                    {posterIds.length > 1 && (
+                      <Text style={styles.labelSubtitle}>
+                        {posterIds.length} people were here
+                      </Text>
+                    )}
+                  </View>
+                )}
+              </View>
             </Marker>
           );
         })}
       </MapView>
+
+      <PeekingMarkersOverlay
+        markers={peekingMarkers}
+        mapWidth={mapLayout.width}
+        mapHeight={mapLayout.height}
+        onPress={handlePeekingMarkerPress}
+      />
 
       <MapSearchBar
         places={allPlaces}
@@ -223,5 +303,27 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 12,
     right: 12,
+  },
+  markerContainer: {
+    alignItems: 'center',
+  },
+  labelContainer: {
+    marginTop: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 4,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    maxWidth: 120,
+  },
+  labelName: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  labelSubtitle: {
+    fontSize: 9,
+    color: colors.textMuted,
+    textAlign: 'center',
   },
 });
