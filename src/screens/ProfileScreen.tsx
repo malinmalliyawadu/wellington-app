@@ -11,6 +11,7 @@ import { getPostsByUserId } from '../services/posts';
 import { getPlaces } from '../services/places';
 import { VideoThumbnail } from '../components/VideoThumbnail';
 import { colors } from '../theme/colors';
+import { getOtherProfiles } from 'src/services/users';
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -23,9 +24,13 @@ export function ProfileScreen() {
   const fetchPosts = useCallback(() => getPostsByUserId(currentUser.id), [currentUser.id]);
   const { data: posts } = useQuery(fetchPosts);
   const { data: allPlaces } = useQuery(getPlaces);
+  const fetchFollowers = useCallback(
+    () => getOtherProfiles(profile?.id ?? ''),
+    [profile?.id]
+  );
+  const { data: followerList, loading: loadingFollowers } = useQuery(fetchFollowers);
 
   const postCount = posts?.length ?? 0;
-  const followerCount = 248; // mock
 
   const userPosts = useMemo(() => {
     if (!posts || !allPlaces) return [];
@@ -84,7 +89,7 @@ export function ProfileScreen() {
                   })
                 }
               >
-                <Text style={styles.statNumber}>{followerCount}</Text>
+                <Text style={styles.statNumber}>{followerList?.length}</Text>
                 <Text style={styles.statLabel}>Followers</Text>
               </TouchableOpacity>
               <View style={styles.statDivider} />
