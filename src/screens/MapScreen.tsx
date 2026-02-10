@@ -23,8 +23,8 @@ import { colors } from '../theme/colors';
 const WELLINGTON_REGION = {
   latitude: -41.2865,
   longitude: 174.7762,
-  latitudeDelta: 0.02,
-  longitudeDelta: 0.02,
+  latitudeDelta: 0.006,
+  longitudeDelta: 0.006,
 };
 
 export function MapScreen() {
@@ -94,6 +94,12 @@ export function MapScreen() {
 
       const currentLocation = await Location.getCurrentPositionAsync({});
       setLocation(currentLocation);
+      mapRef.current?.animateToRegion({
+        latitude: currentLocation.coords.latitude,
+        longitude: currentLocation.coords.longitude,
+        latitudeDelta: 0.005,
+        longitudeDelta: 0.005,
+      }, 500);
     })();
   }, []);
 
