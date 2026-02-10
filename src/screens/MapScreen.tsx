@@ -181,6 +181,7 @@ export function MapScreen() {
         showsMyLocationButton={false}
         onPress={() => setSelectedPlace(null)}
         onRegionChangeComplete={handleRegionChangeComplete}
+        showsPointsOfInterest={false}
       >
         {filteredPlaces.map((place) => {
           const popularity = popularityMap.get(place.id);
@@ -309,7 +310,7 @@ const styles = StyleSheet.create({
   },
   labelContainer: {
     marginTop: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: 'rgba(255, 255, 255, 0.7)',
     borderRadius: 4,
     paddingHorizontal: 5,
     paddingVertical: 2,

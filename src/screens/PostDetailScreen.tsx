@@ -107,7 +107,7 @@ export function PostDetailScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+      contentContainerStyle={{ paddingBottom: insets.bottom + 60 }}
     >
       {/* Author header */}
       <TouchableOpacity style={styles.header} onPress={() => handlePressUser(post.userId)}>

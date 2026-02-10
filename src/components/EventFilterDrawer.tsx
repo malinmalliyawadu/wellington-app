@@ -58,7 +58,7 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
+    <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 60 }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Filters</Text>
         {hasAnyFilter && (
