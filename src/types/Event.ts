@@ -9,4 +9,5 @@ export interface Event {
   imageUrl?: string;
   category: 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community';
   attendeeIds?: string[];
+  ticketUrl?: string;
 }

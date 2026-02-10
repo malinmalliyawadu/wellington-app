@@ -75,6 +75,7 @@ create table events (
   end_time time,
   image_url text,
   category event_category not null,
+  ticket_url text,
   created_at timestamptz not null default now()
 );
 

@@ -99,6 +99,7 @@ function mapEvent(row: {
   end_time: string | null;
   image_url: string | null;
   category: string;
+  ticket_url: string | null;
   created_at: string;
 }): Event {
   return {
@@ -111,5 +112,6 @@ function mapEvent(row: {
     endTime: row.end_time ?? undefined,
     imageUrl: row.image_url ?? undefined,
     category: row.category as Event['category'],
+    ticketUrl: row.ticket_url ?? undefined,
   };
 }

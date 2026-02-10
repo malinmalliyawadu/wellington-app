@@ -39,6 +39,12 @@
       "expo-video",
       "expo-secure-store",
       "expo-web-browser",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Wellington App needs access to your calendar to add events."
+        }
+      ],
       "expo-apple-authentication",
       [
         "expo-image-picker",

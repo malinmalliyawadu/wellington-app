@@ -180,37 +180,42 @@ INSERT INTO follows (follower_id, following_id) VALUES
 -- ============================================================
 -- EVENTS (10 upcoming events — set dates in the future)
 -- ============================================================
-INSERT INTO events (id, title, description, place_id, date, start_time, end_time, image_url, category) VALUES
+INSERT INTO events (id, title, description, place_id, date, start_time, end_time, image_url, category, ticket_url) VALUES
   ('40000000-0000-0000-0000-000000000001', 'Friday Night Jazz', 'Live jazz trio performing standards and originals. Perfect way to kick off the weekend.',
    '10000000-0000-0000-0000-000000000019', CURRENT_DATE + INTERVAL '3 days', '20:00', '23:00',
-   'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=600', 'music'),
+   'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=600', 'music',
+   'https://www.eventfinda.co.nz/friday-night-jazz-wellington'),
   ('40000000-0000-0000-0000-000000000002', 'Wellington Comedy Night', 'Five of Wellington''s best comedians battle it out. Hosted by Kate Nguyen.',
    '10000000-0000-0000-0000-000000000019', CURRENT_DATE + INTERVAL '5 days', '19:30', '22:00',
-   'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=600', 'comedy'),
+   'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=600', 'comedy',
+   'https://www.eventfinda.co.nz/wellington-comedy-night'),
   ('40000000-0000-0000-0000-000000000003', 'Harbourside Market', 'Fresh produce, artisan goods, street food. Every Sunday morning.',
    '10000000-0000-0000-0000-000000000018', CURRENT_DATE + INTERVAL '7 days', '07:30', '14:00',
-   'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=600', 'market'),
+   'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=600', 'market', null),
   ('40000000-0000-0000-0000-000000000004', 'Garage Project Tap Takeover', 'Garage Project takes over all 24 taps at Hashigo Zake. Special releases and one-offs.',
    '10000000-0000-0000-0000-000000000009', CURRENT_DATE + INTERVAL '10 days', '17:00', '23:00',
-   'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=600', 'food'),
+   'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=600', 'food', null),
   ('40000000-0000-0000-0000-000000000005', 'Mt Vic Moonlight Walk', 'Guided night walk up Mt Victoria. Bring a torch and warm layers.',
    '10000000-0000-0000-0000-000000000017', CURRENT_DATE + INTERVAL '12 days', '20:00', '22:00',
-   'https://images.unsplash.com/photo-1507400492013-162706c8c05e?w=600', 'community'),
+   'https://images.unsplash.com/photo-1507400492013-162706c8c05e?w=600', 'community', null),
   ('40000000-0000-0000-0000-000000000006', 'Punk Showcase', 'Four local punk bands. $10 door. All ages.',
    '10000000-0000-0000-0000-000000000021', CURRENT_DATE + INTERVAL '4 days', '19:00', '23:30',
-   'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600', 'music'),
+   'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600', 'music',
+   'https://www.eventfinda.co.nz/punk-showcase-valhalla'),
   ('40000000-0000-0000-0000-000000000007', 'New Zealand Art Exhibition', 'Contemporary NZ artists explore identity and place. Free entry.',
    '10000000-0000-0000-0000-000000000013', CURRENT_DATE + INTERVAL '14 days', '10:00', '17:00',
-   'https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=600', 'art'),
+   'https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=600', 'art', null),
   ('40000000-0000-0000-0000-000000000008', 'Electronic Night at Meow', 'DJs spinning house, techno, and drum & bass until late.',
    '10000000-0000-0000-0000-000000000020', CURRENT_DATE + INTERVAL '6 days', '22:00', null,
-   'https://images.unsplash.com/photo-1571266028243-d220d067bacc?w=600', 'music'),
+   'https://images.unsplash.com/photo-1571266028243-d220d067bacc?w=600', 'music',
+   'https://www.eventfinda.co.nz/electronic-night-meow'),
   ('40000000-0000-0000-0000-000000000009', 'BATS Theatre: One-Act Festival', 'Short plays from emerging Wellington playwrights. Three nights only.',
    '10000000-0000-0000-0000-000000000022', CURRENT_DATE + INTERVAL '8 days', '19:00', '21:30',
-   'https://images.unsplash.com/photo-1503095396549-807759245b35?w=600', 'art'),
+   'https://images.unsplash.com/photo-1503095396549-807759245b35?w=600', 'art',
+   'https://bfringe.co.nz/one-act-festival'),
   ('40000000-0000-0000-0000-000000000010', 'Botanic Garden Guided Tour', 'Expert-led tour of the heritage rose garden and native bush.',
    '10000000-0000-0000-0000-000000000016', CURRENT_DATE + INTERVAL '9 days', '10:00', '12:00',
-   'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=600', 'community');
+   'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=600', 'community', null);
 
 -- ============================================================
 -- EVENT ATTENDEES

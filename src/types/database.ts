@@ -115,6 +115,7 @@ export type Database = {
           end_time: string | null;
           image_url: string | null;
           category: EventCategory;
+          ticket_url: string | null;
           created_at: string;
         };
         Insert: {
@@ -127,6 +128,7 @@ export type Database = {
           end_time?: string | null;
           image_url?: string | null;
           category: EventCategory;
+          ticket_url?: string | null;
           created_at?: string;
         };
         Update: {
@@ -138,6 +140,7 @@ export type Database = {
           end_time?: string | null;
           image_url?: string | null;
           category?: EventCategory;
+          ticket_url?: string | null;
         };
         Relationships: [
           {

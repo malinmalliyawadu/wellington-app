@@ -1,14 +1,16 @@
-import React, { useCallback, useMemo } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Share, ActivityIndicator } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Share, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { getEventById } from '../services/events';
-import { getEventAttendees } from '../services/events';
+import * as WebBrowser from 'expo-web-browser';
+import { getEventById, getEventAttendees, toggleAttendance } from '../services/events';
 import { getPlaceById } from '../services/places';
 import { getProfilesByIds } from '../services/users';
 import { useQuery } from '../hooks/useQuery';
+import { useAuth } from '../context/AuthContext';
 import { useFollow } from '../context/FollowContext';
+import { addToCalendar } from '../utils/addToCalendar';
 import { colors } from '../theme/colors';
 import type { Event } from '../types';
 
@@ -59,7 +61,9 @@ function formatTime(time: string, endTime?: string): string {
 export function EventDetailScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const insets = useSafeAreaInsets();
+  const { session } = useAuth();
   const { followingIds } = useFollow();
+  const [togglingAttendance, setTogglingAttendance] = useState(false);
 
   const fetchEvent = useCallback(() => getEventById(eventId), [eventId]);
   const { data: event, loading } = useQuery(fetchEvent);
@@ -74,7 +78,7 @@ export function EventDetailScreen() {
     () => (event ? getEventAttendees(event.id) : Promise.resolve([])),
     [event?.id],
   );
-  const { data: attendeeIds } = useQuery(fetchAttendeeIds, event?.id);
+  const { data: attendeeIds, refetch: refetchAttendees } = useQuery(fetchAttendeeIds, event?.id);
 
   const allAttendeeIds = attendeeIds ?? [];
 
@@ -99,6 +103,8 @@ export function EventDetailScreen() {
 
   if (!event) return null;
 
+  const currentUserId = session?.user?.id;
+  const isGoing = currentUserId ? allAttendeeIds.includes(currentUserId) : false;
   const categoryColor = CATEGORY_COLORS[event.category];
 
   const sortedAttendees = [...allAttendeeIds]
@@ -120,7 +126,7 @@ export function EventDetailScreen() {
         data={sortedAttendees}
         keyExtractor={(item) => item.user!.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 60 }}
         ListHeaderComponent={
           <>
             {event.imageUrl && (
@@ -165,6 +171,68 @@ export function EventDetailScreen() {
 
             <View style={styles.descriptionSection}>
               <Text style={styles.descriptionText}>{event.description}</Text>
+            </View>
+
+            {currentUserId && (
+              <View style={styles.goingButtonContainer}>
+                <TouchableOpacity
+                  style={[styles.goingButton, isGoing && styles.goingButtonActive]}
+                  disabled={togglingAttendance}
+                  onPress={async () => {
+                    setTogglingAttendance(true);
+                    try {
+                      await toggleAttendance(event.id, currentUserId);
+                      refetchAttendees();
+                    } catch {
+                      Alert.alert('Error', 'Could not update attendance. Please try again.');
+                    } finally {
+                      setTogglingAttendance(false);
+                    }
+                  }}
+                >
+                  <Ionicons
+                    name={isGoing ? 'checkmark-circle' : 'checkmark-circle-outline'}
+                    size={20}
+                    color={isGoing ? '#FFFFFF' : colors.text}
+                  />
+                  <Text style={[styles.goingButtonText, isGoing && styles.goingButtonTextActive]}>
+                    {isGoing ? "I'm going" : "I'm going"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <View style={styles.actionButtons}>
+              <TouchableOpacity
+                style={styles.calendarButton}
+                onPress={async () => {
+                  const success = await addToCalendar({
+                    title: event.title,
+                    date: event.date,
+                    startTime: event.startTime,
+                    endTime: event.endTime,
+                    location: place?.name,
+                    notes: event.description,
+                  });
+                  if (success) {
+                    Alert.alert('Added to Calendar', `"${event.title}" has been added to your calendar.`);
+                  }
+                }}
+              >
+                <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+                <Text style={styles.calendarButtonText}>Add to Calendar</Text>
+              </TouchableOpacity>
+              {event.ticketUrl && (
+                <TouchableOpacity
+                  style={styles.ticketButton}
+                  onPress={() => {
+                    WebBrowser.openBrowserAsync(event.ticketUrl!);
+                  }}
+                >
+                  <Ionicons name="ticket-outline" size={18} color="#FFFFFF" />
+                  <Text style={styles.ticketButtonText}>Get Tickets</Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={styles.attendeesHeader}>
@@ -254,13 +322,77 @@ const styles = StyleSheet.create({
   },
   descriptionSection: {
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray200,
   },
   descriptionText: {
     fontSize: 15,
     color: colors.textSecondary,
     lineHeight: 22,
+  },
+  goingButtonContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+  },
+  goingButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: colors.gray300,
+    backgroundColor: colors.background,
+  },
+  goingButtonActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  goingButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  goingButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.gray200,
+  },
+  calendarButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: colors.primary,
+  },
+  calendarButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: colors.primary,
+  },
+  ticketButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: colors.primary,
+  },
+  ticketButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   attendeesHeader: {
     flexDirection: 'row',
