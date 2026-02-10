@@ -76,7 +76,7 @@ export function PlaceDetailScreen() {
         data={postsWithUsers}
         keyExtractor={(item) => item.post.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 60 }}
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={styles.name}>{place.name}</Text>
