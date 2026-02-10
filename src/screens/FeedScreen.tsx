@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { FeedPost } from '../components/FeedPost';
@@ -16,12 +16,19 @@ export function FeedScreen() {
   const { followingIds } = useFollow();
 
   const fetchFeedPosts = useCallback(() => getFeedPosts(followingIds), [followingIds]);
-  const { data: feedPosts, loading: loadingPosts } = useQuery(fetchFeedPosts);
+  const { data: feedPosts, loading: loadingPosts, refetch: refetchPosts } = useQuery(fetchFeedPosts, followingIds);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetchPosts();
+    setTimeout(() => setRefreshing(false), 600);
+  }, [refetchPosts]);
 
   // Fetch all users and places for the feed
   const userIds = useMemo(() => [...new Set((feedPosts ?? []).map((p) => p.userId))], [feedPosts]);
   const fetchUsers = useCallback(() => getProfilesByIds(userIds), [userIds]);
-  const { data: users } = useQuery(fetchUsers);
+  const { data: users } = useQuery(fetchUsers, userIds);
   const { data: places } = useQuery(getPlaces);
 
   const postsWithData = useMemo(() => {
@@ -65,8 +72,11 @@ export function FeedScreen() {
             onPressPost={handlePressPost}
           />
         )}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+        }
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 40, flexGrow: 1 }}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>Your feed is empty</Text>

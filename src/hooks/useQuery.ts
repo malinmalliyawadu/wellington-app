@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface QueryResult<T> {
   data: T | null;
@@ -7,22 +7,26 @@ interface QueryResult<T> {
   refetch: () => void;
 }
 
-export function useQuery<T>(queryFn: () => Promise<T>): QueryResult<T> {
+export function useQuery<T>(queryFn: () => Promise<T>, key?: unknown): QueryResult<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [trigger, setTrigger] = useState(0);
+  const queryFnRef = useRef(queryFn);
+  queryFnRef.current = queryFn;
 
   const refetch = useCallback(() => {
     setTrigger((t) => t + 1);
   }, []);
+
+  const stableKey = key !== undefined ? JSON.stringify(key) : undefined;
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    queryFn()
+    queryFnRef.current()
       .then((result) => {
         if (!cancelled) {
           setData(result);
@@ -39,7 +43,7 @@ export function useQuery<T>(queryFn: () => Promise<T>): QueryResult<T> {
     return () => {
       cancelled = true;
     };
-  }, [trigger]);
+  }, [stableKey, trigger]);
 
   return { data, loading, error, refetch };
 }

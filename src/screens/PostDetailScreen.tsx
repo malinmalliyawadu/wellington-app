@@ -47,19 +47,19 @@ export function PostDetailScreen() {
     () => (post ? getProfileById(post.userId) : Promise.resolve(null)),
     [post?.userId]
   );
-  const { data: user } = useQuery(fetchUser);
+  const { data: user } = useQuery(fetchUser, post?.userId);
 
   const fetchPlace = useCallback(
     () => (post ? getPlaceByIdAsync(post.placeId) : Promise.resolve(null)),
     [post?.placeId]
   );
-  const { data: place } = useQuery(fetchPlace);
+  const { data: place } = useQuery(fetchPlace, post?.placeId);
 
   const fetchComments = useCallback(
     () => (post ? getCommentsAsync(post.id) : Promise.resolve([])),
     [post?.id]
   );
-  const { data: comments } = useQuery(fetchComments);
+  const { data: comments } = useQuery(fetchComments, post?.id);
 
   const commentUserIds = useMemo(
     () => [...new Set((comments ?? []).map((c) => c.userId))],
@@ -69,7 +69,7 @@ export function PostDetailScreen() {
     () => getProfilesByIds(commentUserIds),
     [commentUserIds]
   );
-  const { data: commentUsers } = useQuery(fetchCommentUsers);
+  const { data: commentUsers } = useQuery(fetchCommentUsers, commentUserIds);
   const commentUserMap = useMemo(
     () => new Map((commentUsers ?? []).map((u) => [u.id, u])),
     [commentUsers]

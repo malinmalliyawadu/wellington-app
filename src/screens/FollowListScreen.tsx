@@ -24,7 +24,7 @@ export function FollowListScreen() {
 
   // Fetch following list (profiles the user follows)
   const fetchFollowing = useCallback(() => getProfilesByIds(followingIds), [followingIds]);
-  const { data: followingList, loading: loadingFollowing } = useQuery(fetchFollowing);
+  const { data: followingList, loading: loadingFollowing } = useQuery(fetchFollowing, followingIds);
 
   // Fetch other profiles as mock followers for now
   const fetchFollowers = useCallback(

@@ -38,7 +38,7 @@ export function PlaceDetailScreen() {
     [posts]
   );
   const fetchUsers = useCallback(() => getProfilesByIds(userIds), [userIds]);
-  const { data: users } = useQuery(fetchUsers);
+  const { data: users } = useQuery(fetchUsers, userIds);
 
   const loading = loadingPlace || loadingPosts;
 

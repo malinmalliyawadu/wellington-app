@@ -68,13 +68,13 @@ export function EventDetailScreen() {
     () => (event ? getPlaceById(event.placeId) : Promise.resolve(null)),
     [event?.placeId],
   );
-  const { data: place } = useQuery(fetchPlace);
+  const { data: place } = useQuery(fetchPlace, event?.placeId);
 
   const fetchAttendeeIds = useCallback(
     () => (event ? getEventAttendees(event.id) : Promise.resolve([])),
     [event?.id],
   );
-  const { data: attendeeIds } = useQuery(fetchAttendeeIds);
+  const { data: attendeeIds } = useQuery(fetchAttendeeIds, event?.id);
 
   const allAttendeeIds = attendeeIds ?? [];
 
@@ -82,7 +82,7 @@ export function EventDetailScreen() {
     () => getProfilesByIds(allAttendeeIds),
     [allAttendeeIds],
   );
-  const { data: attendeeProfiles } = useQuery(fetchAttendeeProfiles);
+  const { data: attendeeProfiles } = useQuery(fetchAttendeeProfiles, allAttendeeIds);
 
   const profileMap = useMemo(
     () => new Map((attendeeProfiles ?? []).map((u) => [u.id, u])),

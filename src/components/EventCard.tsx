@@ -80,7 +80,7 @@ export function EventCard({ event, place, onPress }: EventCardProps) {
     () => getProfilesByIds(displayIds),
     [displayIds],
   );
-  const { data: displayUsers } = useQuery(fetchDisplayUsers);
+  const { data: displayUsers } = useQuery(fetchDisplayUsers, displayIds);
   const displayAttendees = displayUsers ?? [];
 
   const totalCount = attendeeIds.length;
