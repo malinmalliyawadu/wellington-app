@@ -3,16 +3,23 @@ import {
   View,
   Text,
   TextInput,
+  Image,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { mockPlaces } from '../data/mockPlaces';
+import * as ImagePicker from 'expo-image-picker';
 import { Place, PostType } from '../types';
 import { colors } from '../theme/colors';
+import { useQuery } from '../hooks/useQuery';
+import { useAuth } from '../context/AuthContext';
+import { getPlaces } from '../services/places';
+import { createPost } from '../services/posts';
+import { uploadMedia } from '../services/storage';
 
 const POST_TYPES: { type: PostType; icon: string; label: string }[] = [
   { type: 'photo', icon: 'image', label: 'Photo' },
@@ -22,12 +29,38 @@ const POST_TYPES: { type: PostType; icon: string; label: string }[] = [
 
 export function CreateScreen() {
   const insets = useSafeAreaInsets();
+  const { profile } = useAuth();
   const [postType, setPostType] = useState<PostType>('photo');
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [content, setContent] = useState('');
   const [showPlacePicker, setShowPlacePicker] = useState(false);
+  const [mediaUri, setMediaUri] = useState<string | null>(null);
+  const [posting, setPosting] = useState(false);
+  const { data: places } = useQuery(getPlaces);
+  const allPlaces = places ?? [];
 
-  const handlePost = () => {
+  const pickMedia = async () => {
+    const mediaType =
+      postType === 'video'
+        ? ImagePicker.MediaTypeOptions.Videos
+        : ImagePicker.MediaTypeOptions.Images;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: mediaType,
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setMediaUri(result.assets[0].uri);
+    }
+  };
+
+  const handlePost = async () => {
+    if (!profile) {
+      Alert.alert('Not signed in', 'Please sign in to create a post');
+      return;
+    }
     if (!selectedPlace) {
       Alert.alert('Select a place', 'Please select a place for your post');
       return;
@@ -36,12 +69,41 @@ export function CreateScreen() {
       Alert.alert('Add content', 'Please write something about this place');
       return;
     }
-    Alert.alert('Posted!', `Your ${postType} post about ${selectedPlace.name} has been shared.`, [
-      { text: 'OK', onPress: () => {
-        setContent('');
-        setSelectedPlace(null);
-      }}
-    ]);
+
+    setPosting(true);
+    try {
+      let mediaUrl: string | undefined;
+
+      if (mediaUri && postType !== 'text') {
+        const extension = postType === 'video' ? 'mp4' : 'jpg';
+        const mimeType = postType === 'video' ? 'video/mp4' : 'image/jpeg';
+        const fileName = `${profile.id}-${Date.now()}.${extension}`;
+        mediaUrl = await uploadMedia(mediaUri, fileName, mimeType);
+      }
+
+      await createPost({
+        userId: profile.id,
+        placeId: selectedPlace.id,
+        type: postType,
+        content: content.trim(),
+        mediaUrl,
+      });
+
+      Alert.alert('Posted!', `Your ${postType} post about ${selectedPlace.name} has been shared.`, [
+        {
+          text: 'OK',
+          onPress: () => {
+            setContent('');
+            setSelectedPlace(null);
+            setMediaUri(null);
+          },
+        },
+      ]);
+    } catch (error: any) {
+      Alert.alert('Error', error.message ?? 'Failed to create post');
+    } finally {
+      setPosting(false);
+    }
   };
 
   return (
@@ -49,10 +111,15 @@ export function CreateScreen() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Create Post</Text>
         <TouchableOpacity
-          style={[styles.postButton, (!selectedPlace || !content.trim()) && styles.postButtonDisabled]}
+          style={[styles.postButton, (!selectedPlace || !content.trim() || posting) && styles.postButtonDisabled]}
           onPress={handlePost}
+          disabled={posting}
         >
-          <Text style={styles.postButtonText}>Post</Text>
+          {posting ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Text style={styles.postButtonText}>Post</Text>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -63,7 +130,10 @@ export function CreateScreen() {
             <TouchableOpacity
               key={item.type}
               style={[styles.typeButton, postType === item.type && styles.typeButtonActive]}
-              onPress={() => setPostType(item.type)}
+              onPress={() => {
+                setPostType(item.type);
+                setMediaUri(null);
+              }}
             >
               <Ionicons
                 name={item.icon as any}
@@ -78,11 +148,17 @@ export function CreateScreen() {
         </View>
 
         {postType !== 'text' && (
-          <TouchableOpacity style={styles.mediaButton}>
-            <Ionicons name={postType === 'photo' ? 'camera' : 'videocam'} size={32} color={colors.gray400} />
-            <Text style={styles.mediaButtonText}>
-              Tap to add {postType}
-            </Text>
+          <TouchableOpacity style={styles.mediaButton} onPress={pickMedia}>
+            {mediaUri ? (
+              <Image source={{ uri: mediaUri }} style={styles.mediaPreview} />
+            ) : (
+              <>
+                <Ionicons name={postType === 'photo' ? 'camera' : 'videocam'} size={32} color={colors.gray400} />
+                <Text style={styles.mediaButtonText}>
+                  Tap to add {postType}
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         )}
 
@@ -111,7 +187,7 @@ export function CreateScreen() {
 
         {showPlacePicker && (
           <View style={styles.placeList}>
-            {mockPlaces.map((place) => (
+            {allPlaces.map((place) => (
               <TouchableOpacity
                 key={place.id}
                 style={[
@@ -175,6 +251,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderRadius: 20,
+    minWidth: 60,
+    alignItems: 'center',
   },
   postButtonDisabled: {
     backgroundColor: colors.gray300,
@@ -231,6 +309,11 @@ const styles = StyleSheet.create({
     borderColor: colors.gray200,
     borderStyle: 'dashed',
     backgroundColor: colors.gray100,
+    overflow: 'hidden',
+  },
+  mediaPreview: {
+    width: '100%',
+    height: '100%',
   },
   mediaButtonText: {
     marginTop: 8,

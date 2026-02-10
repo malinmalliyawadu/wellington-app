@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getUserById, getOtherUsers } from '../data/mockUsers';
 import { useFollow } from '../context/FollowContext';
+import { useAuth } from '../context/AuthContext';
 import { FollowButton } from '../components/FollowButton';
 import { colors } from '../theme/colors';
-import { currentUser } from '../data/mockUsers';
+import { useQuery } from '../hooks/useQuery';
+import { getProfileById, getProfilesByIds, getOtherProfiles } from '../services/users';
 
 export function FollowListScreen() {
   const router = useRouter();
@@ -16,36 +17,30 @@ export function FollowListScreen() {
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'followers' | 'following'>(initialTab);
   const { followingIds } = useFollow();
+  const { profile } = useAuth();
 
-  const user = getUserById(userId);
-  const otherUsers = getOtherUsers();
+  const fetchUser = useCallback(() => getProfileById(userId), [userId]);
+  const { data: user } = useQuery(fetchUser);
 
-  // Mock followers/following lists
-  // For the current user, "following" is the real followingIds
-  // For other users, show a mock subset
-  const getFollowingList = () => {
-    if (userId === currentUser.id) {
-      return followingIds.map(getUserById).filter(Boolean);
-    }
-    // Mock: other users follow a subset of users
-    return otherUsers.slice(0, 3).map((u) => getUserById(u.id)).filter(Boolean);
-  };
+  // Fetch following list (profiles the user follows)
+  const fetchFollowing = useCallback(() => getProfilesByIds(followingIds), [followingIds]);
+  const { data: followingList, loading: loadingFollowing } = useQuery(fetchFollowing);
 
-  const getFollowersList = () => {
-    if (userId === currentUser.id) {
-      // Mock: some users follow the current user
-      return otherUsers.slice(0, 2).map((u) => getUserById(u.id)).filter(Boolean);
-    }
-    // Mock: show some users as followers
-    return otherUsers.slice(1, 4).map((u) => getUserById(u.id)).filter(Boolean);
-  };
+  // Fetch other profiles as mock followers for now
+  const fetchFollowers = useCallback(
+    () => getOtherProfiles(profile?.id ?? ''),
+    [profile?.id]
+  );
+  const { data: followerList, loading: loadingFollowers } = useQuery(fetchFollowers);
 
-  const listData = activeTab === 'following' ? getFollowingList() : getFollowersList();
+  const listData = activeTab === 'following'
+    ? (followingList ?? [])
+    : (followerList ?? []).slice(0, 4);
 
   return (
     <View style={styles.container}>
       <Text style={styles.headerName}>
-        {userId === currentUser.id ? 'You' : user?.displayName}
+        {userId === profile?.id ? 'You' : user?.displayName}
       </Text>
 
       <View style={styles.tabBar}>
@@ -72,7 +67,7 @@ export function FollowListScreen() {
         keyExtractor={(item) => item!.id}
         renderItem={({ item }) => {
           if (!item) return null;
-          const isCurrentUser = item.id === currentUser.id;
+          const isCurrentUser = item.id === profile?.id;
           return (
             <TouchableOpacity
               style={styles.userRow}

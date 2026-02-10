@@ -36,7 +36,17 @@
         }
       ],
       "expo-router",
-      "expo-video"
+      "expo-video",
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-apple-authentication",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Wellington App needs access to your photos to share recommendations.",
+          "cameraPermission": "Wellington App needs access to your camera to take photos."
+        }
+      ]
     ]
   }
 }

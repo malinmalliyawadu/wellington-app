@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,8 +11,9 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Place, Post, PlaceCategory } from '../types';
 import { PlacePopularity } from '../utils/placePopularity';
-import { getUserById } from '../data/mockUsers';
 import { useLike } from '../context/LikeContext';
+import { useQuery } from '../hooks/useQuery';
+import { getProfileById } from '../services/users';
 import { VideoThumbnail } from './VideoThumbnail';
 import { colors } from '../theme/colors';
 
@@ -128,7 +129,8 @@ function PostRow({
   post: Post;
   isFollowed: boolean;
 }) {
-  const user = getUserById(post.userId);
+  const fetchUser = useCallback(() => getProfileById(post.userId), [post.userId]);
+  const { data: user } = useQuery(fetchUser);
   const { isLiked, toggleLike, getLikeCount } = useLike();
   const liked = isLiked(post.id);
 

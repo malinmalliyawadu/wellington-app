@@ -1,11 +1,12 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, FlatList, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState, useMemo, useCallback } from 'react';
+import { View, Text, FlatList, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { EventCard, CATEGORY_COLORS } from '../components/EventCard';
-import { getUpcomingEvents } from '../data/mockEvents';
-import { getPlaceById } from '../data/mockPlaces';
+import { getUpcomingEvents } from '../services/events';
+import { getPlaces } from '../services/places';
+import { useQuery } from '../hooks/useQuery';
 import { useFollow } from '../context/FollowContext';
 import { Event } from '../types';
 import { colors } from '../theme/colors';
@@ -47,16 +48,27 @@ export function EventsScreen() {
   const [selectedCategories, setSelectedCategories] = useState<EventCategory[]>([]);
   const [showFollowingOnly, setShowFollowingOnly] = useState(false);
 
+  const fetchEvents = useCallback(() => getUpcomingEvents(), []);
+  const { data: events, loading: loadingEvents } = useQuery(fetchEvents);
+
+  const fetchPlaces = useCallback(() => getPlaces(), []);
+  const { data: places } = useQuery(fetchPlaces);
+
+  const placeMap = useMemo(
+    () => new Map((places ?? []).map((p) => [p.id, p])),
+    [places],
+  );
+
   const eventsWithPlaces = useMemo(
     () =>
-      getUpcomingEvents()
+      (events ?? [])
         .map((event) => {
-          const place = getPlaceById(event.placeId);
+          const place = placeMap.get(event.placeId);
           if (!place) return null;
           return { event, place };
         })
         .filter((item): item is NonNullable<typeof item> => item !== null),
-    [],
+    [events, placeMap],
   );
 
   const filteredEvents = useMemo(() => {
@@ -64,7 +76,7 @@ export function EventsScreen() {
       if (selectedCategories.length > 0 && !selectedCategories.includes(event.category)) {
         return false;
       }
-      if (showFollowingOnly && !event.attendeeIds.some((id) => isFollowing(id))) {
+      if (showFollowingOnly && !(event.attendeeIds ?? []).some((id) => isFollowing(id))) {
         return false;
       }
       return true;
@@ -76,6 +88,14 @@ export function EventsScreen() {
       prev.includes(category) ? prev.filter((c) => c !== category) : [...prev, category],
     );
   };
+
+  if (loadingEvents) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>

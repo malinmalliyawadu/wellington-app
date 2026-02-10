@@ -1,11 +1,13 @@
-import React from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Share } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Share, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { getEventById } from '../data/mockEvents';
-import { getPlaceById } from '../data/mockPlaces';
-import { getUserById } from '../data/mockUsers';
+import { getEventById } from '../services/events';
+import { getEventAttendees } from '../services/events';
+import { getPlaceById } from '../services/places';
+import { getProfilesByIds } from '../services/users';
+import { useQuery } from '../hooks/useQuery';
 import { useFollow } from '../context/FollowContext';
 import { colors } from '../theme/colors';
 import type { Event } from '../types';
@@ -59,13 +61,47 @@ export function EventDetailScreen() {
   const insets = useSafeAreaInsets();
   const { followingIds } = useFollow();
 
-  const event = getEventById(eventId);
+  const fetchEvent = useCallback(() => getEventById(eventId), [eventId]);
+  const { data: event, loading } = useQuery(fetchEvent);
+
+  const fetchPlace = useCallback(
+    () => (event ? getPlaceById(event.placeId) : Promise.resolve(null)),
+    [event?.placeId],
+  );
+  const { data: place } = useQuery(fetchPlace);
+
+  const fetchAttendeeIds = useCallback(
+    () => (event ? getEventAttendees(event.id) : Promise.resolve([])),
+    [event?.id],
+  );
+  const { data: attendeeIds } = useQuery(fetchAttendeeIds);
+
+  const allAttendeeIds = attendeeIds ?? [];
+
+  const fetchAttendeeProfiles = useCallback(
+    () => getProfilesByIds(allAttendeeIds),
+    [allAttendeeIds],
+  );
+  const { data: attendeeProfiles } = useQuery(fetchAttendeeProfiles);
+
+  const profileMap = useMemo(
+    () => new Map((attendeeProfiles ?? []).map((u) => [u.id, u])),
+    [attendeeProfiles],
+  );
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   if (!event) return null;
 
-  const place = getPlaceById(event.placeId);
   const categoryColor = CATEGORY_COLORS[event.category];
 
-  const sortedAttendees = [...event.attendeeIds]
+  const sortedAttendees = [...allAttendeeIds]
     .sort((a, b) => {
       const aFollowed = followingIds.includes(a);
       const bFollowed = followingIds.includes(b);
@@ -73,7 +109,7 @@ export function EventDetailScreen() {
       return 0;
     })
     .map((id) => ({
-      user: getUserById(id),
+      user: profileMap.get(id),
       isFollowed: followingIds.includes(id),
     }))
     .filter((item) => item.user != null);
@@ -133,7 +169,7 @@ export function EventDetailScreen() {
 
             <View style={styles.attendeesHeader}>
               <Text style={styles.sectionTitle}>Who's going</Text>
-              <Text style={styles.attendeeCount}>{event.attendeeIds.length}</Text>
+              <Text style={styles.attendeeCount}>{allAttendeeIds.length}</Text>
             </View>
           </>
         }

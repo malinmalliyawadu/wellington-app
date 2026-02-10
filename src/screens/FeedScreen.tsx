@@ -1,28 +1,42 @@
-import React from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { FeedPost } from '../components/FeedPost';
-import { mockPosts } from '../data/mockPosts';
-import { getUserById } from '../data/mockUsers';
-import { getPlaceById } from '../data/mockPlaces';
 import { useFollow } from '../context/FollowContext';
 import { colors } from '../theme/colors';
+import { useQuery } from '../hooks/useQuery';
+import { getFeedPosts } from '../services/posts';
+import { getProfilesByIds } from '../services/users';
+import { getPlaces } from '../services/places';
 
 export function FeedScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { followingIds } = useFollow();
 
-  const postsWithData = mockPosts
-    .filter((post) => followingIds.includes(post.userId))
-    .map((post) => {
-      const user = getUserById(post.userId);
-      const place = getPlaceById(post.placeId);
-      if (!user || !place) return null;
-      return { post, user, place };
-    })
-    .filter((item): item is NonNullable<typeof item> => item !== null);
+  const fetchFeedPosts = useCallback(() => getFeedPosts(followingIds), [followingIds]);
+  const { data: feedPosts, loading: loadingPosts } = useQuery(fetchFeedPosts);
+
+  // Fetch all users and places for the feed
+  const userIds = useMemo(() => [...new Set((feedPosts ?? []).map((p) => p.userId))], [feedPosts]);
+  const fetchUsers = useCallback(() => getProfilesByIds(userIds), [userIds]);
+  const { data: users } = useQuery(fetchUsers);
+  const { data: places } = useQuery(getPlaces);
+
+  const postsWithData = useMemo(() => {
+    if (!feedPosts || !users || !places) return [];
+    const userMap = new Map(users.map((u) => [u.id, u]));
+    const placeMap = new Map(places.map((p) => [p.id, p]));
+    return feedPosts
+      .map((post) => {
+        const user = userMap.get(post.userId);
+        const place = placeMap.get(post.placeId);
+        if (!user || !place) return null;
+        return { post, user, place };
+      })
+      .filter((item): item is NonNullable<typeof item> => item !== null);
+  }, [feedPosts, users, places]);
 
   const handlePressUser = (userId: string) => {
     router.push(`/feed/user/${userId}`);

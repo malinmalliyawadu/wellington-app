@@ -6,15 +6,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { PopularityMarker } from '../components/PopularityMarker';
 import { PlacePostsSheet } from '../components/PlacePostsSheet';
 import { MapSearchBar } from '../components/MapSearchBar';
-import { mockPlaces } from '../data/mockPlaces';
-import { mockPosts, getPostsByPlaceId } from '../data/mockPosts';
 import { useFollow } from '../context/FollowContext';
+import { useQuery } from '../hooks/useQuery';
+import { getPlaces } from '../services/places';
+import { getPosts, getPostsByPlaceId as getPostsByPlaceIdAsync } from '../services/posts';
 import {
   computePlacePopularity,
   getMarkerSize,
   isFollowedPlace,
 } from '../utils/placePopularity';
-import { Place, PlaceCategory } from '../types';
+import { Place, PlaceCategory, Post } from '../types';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
@@ -28,6 +29,7 @@ const WELLINGTON_REGION = {
 
 export function MapScreen() {
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  const [selectedPlacePosts, setSelectedPlacePosts] = useState<Post[]>([]);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const mapRef = useRef<MapView>(null);
@@ -38,13 +40,17 @@ export function MapScreen() {
   const [selectedCategories, setSelectedCategories] = useState<PlaceCategory[]>([]);
   const [showFollowingOnly, setShowFollowingOnly] = useState(false);
 
+  const { data: places } = useQuery(getPlaces);
+  const allPlaces = places ?? [];
+  const { data: allPosts } = useQuery(getPosts);
+
   const popularityMap = useMemo(
-    () => computePlacePopularity(mockPosts),
-    []
+    () => computePlacePopularity(allPosts ?? []),
+    [allPosts]
   );
 
   const filteredPlaces = useMemo(() => {
-    return mockPlaces.filter((place) => {
+    return allPlaces.filter((place) => {
       if (selectedCategories.length > 0 && !selectedCategories.includes(place.category)) {
         return false;
       }
@@ -67,6 +73,16 @@ export function MapScreen() {
     });
     setSelectedPlace(place);
   };
+
+  useEffect(() => {
+    if (selectedPlace) {
+      getPostsByPlaceIdAsync(selectedPlace.id)
+        .then(setSelectedPlacePosts)
+        .catch(() => setSelectedPlacePosts([]));
+    } else {
+      setSelectedPlacePosts([]);
+    }
+  }, [selectedPlace]);
 
   useEffect(() => {
     (async () => {
@@ -135,7 +151,7 @@ export function MapScreen() {
       </MapView>
 
       <MapSearchBar
-        places={mockPlaces}
+        places={allPlaces}
         selectedCategories={selectedCategories}
         showFollowingOnly={showFollowingOnly}
         onSelectPlace={handleSearchSelect}
@@ -155,7 +171,7 @@ export function MapScreen() {
         <View style={[styles.sheetContainer, { bottom: 60 + insets.bottom }]}>
           <PlacePostsSheet
             place={selectedPlace}
-            posts={getPostsByPlaceId(selectedPlace.id)}
+            posts={selectedPlacePosts}
             popularity={popularityMap.get(selectedPlace.id)}
             followingIds={followingIds}
             onClose={() => setSelectedPlace(null)}

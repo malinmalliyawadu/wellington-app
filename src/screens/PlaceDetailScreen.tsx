@@ -1,11 +1,12 @@
-import React from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { getPlaceById } from '../data/mockPlaces';
-import { getPostsByPlaceId } from '../data/mockPosts';
-import { getUserById } from '../data/mockUsers';
+import { useQuery } from '../hooks/useQuery';
+import { getPlaceById } from '../services/places';
+import { getPostsByPlaceId as getPostsByPlaceIdAsync } from '../services/posts';
+import { getProfilesByIds } from '../services/users';
 import { useFollow } from '../context/FollowContext';
 import { useLike } from '../context/LikeContext';
 import { VideoThumbnail } from '../components/VideoThumbnail';
@@ -26,14 +27,37 @@ export function PlaceDetailScreen() {
   const insets = useSafeAreaInsets();
   const { followingIds } = useFollow();
 
-  const place = getPlaceById(placeId);
+  const fetchPlace = useCallback(() => getPlaceById(placeId), [placeId]);
+  const { data: place, loading: loadingPlace } = useQuery(fetchPlace);
+
+  const fetchPosts = useCallback(() => getPostsByPlaceIdAsync(placeId), [placeId]);
+  const { data: posts, loading: loadingPosts } = useQuery(fetchPosts);
+
+  const userIds = useMemo(
+    () => [...new Set((posts ?? []).map((p) => p.userId))],
+    [posts]
+  );
+  const fetchUsers = useCallback(() => getProfilesByIds(userIds), [userIds]);
+  const { data: users } = useQuery(fetchUsers);
+
+  const loading = loadingPlace || loadingPosts;
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   if (!place) return null;
 
-  const posts = getPostsByPlaceId(placeId);
-  const totalLikes = posts.reduce((sum, p) => sum + p.likes, 0);
+  const allPosts = posts ?? [];
+  const userMap = new Map((users ?? []).map((u) => [u.id, u]));
+  const totalLikes = allPosts.reduce((sum, p) => sum + p.likes, 0);
   const categoryColor = colors.category[place.category];
 
-  const sortedPosts = [...posts].sort((a, b) => {
+  const sortedPosts = [...allPosts].sort((a, b) => {
     const aFollowed = followingIds.includes(a.userId);
     const bFollowed = followingIds.includes(b.userId);
     if (aFollowed !== bFollowed) return aFollowed ? -1 : 1;
@@ -42,7 +66,7 @@ export function PlaceDetailScreen() {
 
   const postsWithUsers = sortedPosts.map((post) => ({
     post,
-    user: getUserById(post.userId),
+    user: userMap.get(post.userId),
     isFollowed: followingIds.includes(post.userId),
   }));
 
@@ -69,7 +93,7 @@ export function PlaceDetailScreen() {
             <View style={styles.statsRow}>
               <View style={styles.stat}>
                 <Ionicons name="chatbubble-outline" size={16} color={colors.textSecondary} />
-                <Text style={styles.statText}>{posts.length} posts</Text>
+                <Text style={styles.statText}>{allPosts.length} posts</Text>
               </View>
               <View style={styles.stat}>
                 <Ionicons name="heart-outline" size={16} color={colors.textSecondary} />

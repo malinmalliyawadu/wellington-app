@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,14 +7,16 @@ import {
   StyleSheet,
   TouchableOpacity,
   Share,
+  ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { getPostById } from '../data/mockPosts';
-import { getUserById } from '../data/mockUsers';
-import { getPlaceById } from '../data/mockPlaces';
-import { getCommentsByPostId } from '../data/mockComments';
+import { getPostById as getPostByIdAsync } from '../services/posts';
+import { getProfileById, getProfilesByIds } from '../services/users';
+import { getPlaceById as getPlaceByIdAsync } from '../services/places';
+import { getCommentsByPostId as getCommentsAsync } from '../services/comments';
+import { useQuery } from '../hooks/useQuery';
 import { useLike } from '../context/LikeContext';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { colors } from '../theme/colors';
@@ -38,12 +40,52 @@ export function PostDetailScreen() {
   const pathname = usePathname();
   const { isLiked, toggleLike, getLikeCount } = useLike();
 
-  const post = getPostById(postId);
+  const fetchPost = useCallback(() => getPostByIdAsync(postId), [postId]);
+  const { data: post, loading } = useQuery(fetchPost);
+
+  const fetchUser = useCallback(
+    () => (post ? getProfileById(post.userId) : Promise.resolve(null)),
+    [post?.userId]
+  );
+  const { data: user } = useQuery(fetchUser);
+
+  const fetchPlace = useCallback(
+    () => (post ? getPlaceByIdAsync(post.placeId) : Promise.resolve(null)),
+    [post?.placeId]
+  );
+  const { data: place } = useQuery(fetchPlace);
+
+  const fetchComments = useCallback(
+    () => (post ? getCommentsAsync(post.id) : Promise.resolve([])),
+    [post?.id]
+  );
+  const { data: comments } = useQuery(fetchComments);
+
+  const commentUserIds = useMemo(
+    () => [...new Set((comments ?? []).map((c) => c.userId))],
+    [comments]
+  );
+  const fetchCommentUsers = useCallback(
+    () => getProfilesByIds(commentUserIds),
+    [commentUserIds]
+  );
+  const { data: commentUsers } = useQuery(fetchCommentUsers);
+  const commentUserMap = useMemo(
+    () => new Map((commentUsers ?? []).map((u) => [u.id, u])),
+    [commentUsers]
+  );
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   if (!post) return null;
 
-  const user = getUserById(post.userId);
-  const place = getPlaceById(post.placeId);
-  const comments = getCommentsByPostId(post.id);
+  const allComments = comments ?? [];
   const liked = isLiked(post.id);
   const likeCount = getLikeCount(post.id);
   const categoryColor = place ? colors.category[place.category] : colors.gray400;
@@ -142,10 +184,10 @@ export function PostDetailScreen() {
       )}
 
       {/* Comments */}
-      {comments.length > 0 && (
+      {allComments.length > 0 && (
         <View style={styles.commentsSection}>
-          {comments.map((comment) => {
-            const commentUser = getUserById(comment.userId);
+          {allComments.map((comment) => {
+            const commentUser = commentUserMap.get(comment.userId);
             return (
               <View key={comment.id} style={styles.commentRow}>
                 <Image

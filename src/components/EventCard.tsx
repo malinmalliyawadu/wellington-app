@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Event, Place } from '../types';
 import { useFollow } from '../context/FollowContext';
-import { getUserById } from '../data/mockUsers';
+import { getProfilesByIds } from '../services/users';
+import { useQuery } from '../hooks/useQuery';
 import { colors } from '../theme/colors';
 
 interface EventCardProps {
@@ -61,19 +62,32 @@ const AVATAR_OVERLAP = 8;
 export function EventCard({ event, place, onPress }: EventCardProps) {
   const categoryColor = CATEGORY_COLORS[event.category];
   const { followingIds } = useFollow();
+  const attendeeIds = event.attendeeIds ?? [];
 
-  const sortedAttendeeIds = [...event.attendeeIds].sort((a, b) => {
-    const aFollowed = followingIds.includes(a);
-    const bFollowed = followingIds.includes(b);
-    if (aFollowed !== bFollowed) return aFollowed ? -1 : 1;
-    return 0;
-  });
+  const sortedAttendeeIds = useMemo(
+    () =>
+      [...attendeeIds].sort((a, b) => {
+        const aFollowed = followingIds.includes(a);
+        const bFollowed = followingIds.includes(b);
+        if (aFollowed !== bFollowed) return aFollowed ? -1 : 1;
+        return 0;
+      }),
+    [attendeeIds, followingIds],
+  );
 
-  const displayAttendees = sortedAttendeeIds.slice(0, 3).map(getUserById).filter(Boolean);
-  const totalCount = event.attendeeIds.length;
+  const displayIds = sortedAttendeeIds.slice(0, 3);
+  const fetchDisplayUsers = useCallback(
+    () => getProfilesByIds(displayIds),
+    [displayIds],
+  );
+  const { data: displayUsers } = useQuery(fetchDisplayUsers);
+  const displayAttendees = displayUsers ?? [];
 
-  const firstFollowedUser = sortedAttendeeIds.find((id) => followingIds.includes(id));
-  const firstFollowedName = firstFollowedUser ? getUserById(firstFollowedUser)?.displayName : null;
+  const totalCount = attendeeIds.length;
+
+  const firstFollowedId = sortedAttendeeIds.find((id) => followingIds.includes(id));
+  const firstFollowedUser = displayAttendees.find((u) => u.id === firstFollowedId);
+  const firstFollowedName = firstFollowedUser?.displayName ?? null;
 
   let attendeeText = '';
   if (totalCount > 0) {
@@ -127,8 +141,8 @@ export function EventCard({ event, place, onPress }: EventCardProps) {
             <View style={styles.avatarStack}>
               {displayAttendees.map((user, index) => (
                 <Image
-                  key={user!.id}
-                  source={{ uri: user!.avatarUrl }}
+                  key={user.id}
+                  source={{ uri: user.avatarUrl }}
                   style={[
                     styles.attendeeAvatar,
                     { marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP },

@@ -1,11 +1,14 @@
-import React from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import { currentUser } from '../data/mockUsers';
-import { mockPosts, getPostsByUserId } from '../data/mockPosts';
-import { getPlaceById } from '../data/mockPlaces';
+import { Ionicons } from '@expo/vector-icons';
 import { useFollow } from '../context/FollowContext';
+import { useAuth } from '../context/AuthContext';
+import { signOut } from '../services/auth';
+import { useQuery } from '../hooks/useQuery';
+import { getPostsByUserId } from '../services/posts';
+import { getPlaces } from '../services/places';
 import { VideoThumbnail } from '../components/VideoThumbnail';
 import { colors } from '../theme/colors';
 
@@ -13,20 +16,43 @@ export function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { followingIds } = useFollow();
+  const { profile } = useAuth();
 
-  const postCount = getPostsByUserId(currentUser.id).length || 12;
+  const currentUser = profile ?? { id: '', username: 'you', displayName: 'You', avatarUrl: '', bio: '' };
+
+  const fetchPosts = useCallback(() => getPostsByUserId(currentUser.id), [currentUser.id]);
+  const { data: posts } = useQuery(fetchPosts);
+  const { data: allPlaces } = useQuery(getPlaces);
+
+  const postCount = posts?.length ?? 0;
   const followerCount = 248; // mock
 
-  // For demo, show posts from other users as if they were the current user's
-  const userPosts = mockPosts.slice(0, 6).map((post) => {
-    const place = getPlaceById(post.placeId);
-    return { ...post, place };
-  });
+  const userPosts = useMemo(() => {
+    if (!posts || !allPlaces) return [];
+    const placeMap = new Map(allPlaces.map((p) => [p.id, p]));
+    return posts.map((post) => ({
+      ...post,
+      place: placeMap.get(post.placeId),
+    }));
+  }, [posts, allPlaces]);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
+        <View style={styles.headerSpacer} />
         <Text style={styles.headerTitle}>Profile</Text>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={() =>
+            Alert.alert('Sign Out', 'Are you sure?', [
+              { text: 'Cancel', style: 'cancel' },
+              { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
+            ])
+          }
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <Ionicons name="log-out-outline" size={22} color={colors.textMuted} />
+        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -125,16 +151,24 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
+  headerSpacer: {
+    width: 22,
+  },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: colors.text,
-    textAlign: 'center',
+  },
+  logoutButton: {
+    padding: 2,
   },
   profileSection: {
     alignItems: 'center',

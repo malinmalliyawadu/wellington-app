@@ -1,11 +1,13 @@
-import React from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getUserById } from '../data/mockUsers';
-import { getPostsByUserId } from '../data/mockPosts';
-import { getPlaceById } from '../data/mockPlaces';
 import { useFollow } from '../context/FollowContext';
+import { useQuery } from '../hooks/useQuery';
+import { getProfileById } from '../services/users';
+import { getPostsByUserId as getPostsByUserIdAsync } from '../services/posts';
+import { getPlaces } from '../services/places';
+import { getFollowCounts } from '../services/follows';
 import { FollowButton } from '../components/FollowButton';
 import { VideoThumbnail } from '../components/VideoThumbnail';
 import { colors } from '../theme/colors';
@@ -18,17 +20,37 @@ export function UserProfileScreen() {
   const insets = useSafeAreaInsets();
   const { followingIds } = useFollow();
 
-  const user = getUserById(userId);
+  const fetchUser = useCallback(() => getProfileById(userId), [userId]);
+  const { data: user, loading: loadingUser } = useQuery(fetchUser);
+
+  const fetchPosts = useCallback(() => getPostsByUserIdAsync(userId), [userId]);
+  const { data: posts } = useQuery(fetchPosts);
+  const { data: allPlaces } = useQuery(getPlaces);
+
+  const fetchCounts = useCallback(() => getFollowCounts(userId), [userId]);
+  const { data: counts } = useQuery(fetchCounts);
+
+  const userPosts = useMemo(() => {
+    if (!posts || !allPlaces) return [];
+    const placeMap = new Map(allPlaces.map((p) => [p.id, p]));
+    return posts.map((post) => ({
+      ...post,
+      place: placeMap.get(post.placeId),
+    }));
+  }, [posts, allPlaces]);
+
+  if (loadingUser) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
   if (!user) return null;
 
-  const userPosts = getPostsByUserId(userId).map((post) => ({
-    ...post,
-    place: getPlaceById(post.placeId),
-  }));
-
-  // Mock follower count — in reality this would come from the backend
-  const followerCount = userId === 'u1' ? 1240 : userId === 'u3' ? 892 : 350;
-  const followingCount = userId === 'u1' ? 85 : userId === 'u3' ? 210 : 120;
+  const followerCount = counts?.followers ?? 0;
+  const followingCount = counts?.following ?? 0;
 
   return (
     <View style={styles.container}>

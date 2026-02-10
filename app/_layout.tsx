@@ -1,18 +1,44 @@
-import { Slot } from 'expo-router';
+import { useEffect } from 'react';
+import { Slot, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { FollowProvider } from '../src/context/FollowContext';
 import { LikeProvider } from '../src/context/LikeContext';
 import { StatusBar } from 'expo-status-bar';
 
+function AuthGate({ children }: { children: React.ReactNode }) {
+  const { session, loading } = useAuth();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+
+    const onLoginPage = segments[0] === 'login';
+
+    if (!session && !onLoginPage) {
+      router.replace('/login');
+    } else if (session && onLoginPage) {
+      router.replace('/(tabs)/map');
+    }
+  }, [session, loading, segments]);
+
+  return <>{children}</>;
+}
+
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <FollowProvider>
-        <LikeProvider>
-          <Slot />
-          <StatusBar style="auto" />
-        </LikeProvider>
-      </FollowProvider>
+      <AuthProvider>
+        <FollowProvider>
+          <LikeProvider>
+            <AuthGate>
+              <Slot />
+            </AuthGate>
+            <StatusBar style="auto" />
+          </LikeProvider>
+        </FollowProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

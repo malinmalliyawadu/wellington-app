@@ -1,13 +1,14 @@
-import React from 'react';
-import { View, Text, Image, FlatList, StyleSheet } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import { View, Text, Image, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getOtherUsers } from '../data/mockUsers';
-import { getPostsByUserId } from '../data/mockPosts';
 import { useFollow } from '../context/FollowContext';
+import { useAuth } from '../context/AuthContext';
 import { FollowButton } from '../components/FollowButton';
 import { colors } from '../theme/colors';
 import { TouchableOpacity } from 'react-native';
+import { useQuery } from '../hooks/useQuery';
+import { getOtherProfiles } from '../services/users';
 
 export function DiscoverUsersScreen() {
   const router = useRouter();
@@ -15,14 +16,18 @@ export function DiscoverUsersScreen() {
   const tabBase = '/' + pathname.split('/')[1];
   const insets = useSafeAreaInsets();
   const { isFollowing } = useFollow();
-  const otherUsers = getOtherUsers();
+  const { profile } = useAuth();
+
+  const fetchUsers = useCallback(() => getOtherProfiles(profile?.id ?? ''), [profile?.id]);
+  const { data: otherUsers, loading } = useQuery(fetchUsers);
+  const allUsers = otherUsers ?? [];
 
   // Show unfollowed users first, then followed users
-  const sorted = [...otherUsers].sort((a, b) => {
+  const sorted = useMemo(() => [...allUsers].sort((a, b) => {
     const aFollowed = isFollowing(a.id) ? 1 : 0;
     const bFollowed = isFollowing(b.id) ? 1 : 0;
     return aFollowed - bFollowed;
-  });
+  }), [allUsers, isFollowing]);
 
   return (
     <View style={styles.container}>
@@ -44,9 +49,6 @@ export function DiscoverUsersScreen() {
                   {item.bio}
                 </Text>
               )}
-              <Text style={styles.postCount}>
-                {getPostsByUserId(item.id).length} posts
-              </Text>
             </View>
             <FollowButton userId={item.id} compact />
           </TouchableOpacity>

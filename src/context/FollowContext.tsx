@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import { initialFollowingIds } from '../data/mockFollows';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { getFollowingIds, followUser, unfollowUser } from '../services/follows';
 
 interface FollowContextType {
   followingIds: string[];
@@ -10,7 +11,20 @@ interface FollowContextType {
 const FollowContext = createContext<FollowContextType | undefined>(undefined);
 
 export function FollowProvider({ children }: { children: React.ReactNode }) {
-  const [followingIds, setFollowingIds] = useState<string[]>(initialFollowingIds);
+  const { session } = useAuth();
+  const currentUserId = session?.user?.id;
+  const [followingIds, setFollowingIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      setFollowingIds([]);
+      return;
+    }
+
+    getFollowingIds(currentUserId)
+      .then(setFollowingIds)
+      .catch(() => {});
+  }, [currentUserId]);
 
   const isFollowing = useCallback(
     (userId: string) => followingIds.includes(userId),
@@ -18,12 +32,32 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
   );
 
   const toggleFollow = useCallback((userId: string) => {
-    setFollowingIds((prev) =>
-      prev.includes(userId)
+    if (!currentUserId) return;
+
+    setFollowingIds((prev) => {
+      const alreadyFollowing = prev.includes(userId);
+      // Optimistic update
+      const next = alreadyFollowing
         ? prev.filter((id) => id !== userId)
-        : [...prev, userId]
-    );
-  }, []);
+        : [...prev, userId];
+
+      // Fire and forget the API call, revert on error
+      const apiCall = alreadyFollowing
+        ? unfollowUser(currentUserId, userId)
+        : followUser(currentUserId, userId);
+
+      apiCall.catch(() => {
+        // Revert on error
+        setFollowingIds((current) =>
+          alreadyFollowing
+            ? [...current, userId]
+            : current.filter((id) => id !== userId)
+        );
+      });
+
+      return next;
+    });
+  }, [currentUserId]);
 
   return (
     <FollowContext.Provider value={{ followingIds, isFollowing, toggleFollow }}>

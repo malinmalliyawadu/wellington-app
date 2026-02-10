@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Post, User, Place, PlaceCategory } from '../types';
 import { useLike } from '../context/LikeContext';
-import { getCommentsByPostId } from '../data/mockComments';
+import { useQuery } from '../hooks/useQuery';
+import { getCommentsByPostId } from '../services/comments';
 import { VideoPlayer } from './VideoPlayer';
 import { colors } from '../theme/colors';
 
@@ -45,6 +46,9 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPress
   const categoryColor = colors.category[place.category];
   const { isLiked, toggleLike, getLikeCount } = useLike();
   const liked = isLiked(post.id);
+  const fetchComments = useCallback(() => getCommentsByPostId(post.id), [post.id]);
+  const { data: comments } = useQuery(fetchComments);
+  const commentCount = comments?.length ?? 0;
 
   return (
     <View style={styles.container}>
@@ -118,7 +122,7 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPress
         >
           <Ionicons name="chatbubble-outline" size={20} color={colors.textMuted} />
           <Text style={styles.actionCount}>
-            {getCommentsByPostId(post.id).length}
+            {commentCount}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
