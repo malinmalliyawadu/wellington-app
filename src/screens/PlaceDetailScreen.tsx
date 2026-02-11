@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '../hooks/useQuery';
@@ -24,6 +24,9 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
 
 export function PlaceDetailScreen() {
   const { placeId } = useLocalSearchParams<{ placeId: string }>();
+  const router = useRouter();
+  const pathname = usePathname();
+  const tabBase = '/' + pathname.split('/')[1];
   const insets = useSafeAreaInsets();
   const { followingIds } = useFollow();
 
@@ -100,16 +103,32 @@ export function PlaceDetailScreen() {
                 <Text style={styles.statText}>{totalLikes} likes</Text>
               </View>
             </View>
+            <TouchableOpacity
+              style={styles.writePostButton}
+              onPress={() => router.navigate({ pathname: '/(tabs)/create', params: { placeId: place.id } })}
+            >
+              <Ionicons name="create-outline" size={18} color={colors.primary} />
+              <Text style={styles.writePostText}>Write a post</Text>
+            </TouchableOpacity>
           </View>
         }
         renderItem={({ item }) => (
-          <View style={styles.postRow}>
-            <Image
-              source={{ uri: item.user?.avatarUrl }}
-              style={styles.avatar}
-            />
+          <TouchableOpacity
+            style={styles.postRow}
+            onPress={() => router.push(`${tabBase}/post/${item.post.id}`)}
+            activeOpacity={0.7}
+          >
+            <TouchableOpacity onPress={() => router.push(`${tabBase}/user/${item.post.userId}`)}>
+              <Image
+                source={{ uri: item.user?.avatarUrl }}
+                style={styles.avatar}
+              />
+            </TouchableOpacity>
             <View style={styles.postContent}>
-              <View style={styles.postHeader}>
+              <TouchableOpacity
+                style={styles.postHeader}
+                onPress={() => router.push(`${tabBase}/user/${item.post.userId}`)}
+              >
                 <Text style={styles.displayName} numberOfLines={1}>
                   {item.user?.displayName ?? 'Unknown'}
                 </Text>
@@ -118,7 +137,7 @@ export function PlaceDetailScreen() {
                     <Text style={styles.followBadgeText}>Following</Text>
                   </View>
                 )}
-              </View>
+              </TouchableOpacity>
               <Text style={styles.postText}>{item.post.content}</Text>
               {item.post.mediaUrl && (
                 item.post.type === 'video' ? (
@@ -129,7 +148,7 @@ export function PlaceDetailScreen() {
               )}
               <PostLikeButton postId={item.post.id} />
             </View>
-          </View>
+          </TouchableOpacity>
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -203,6 +222,22 @@ const styles = StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     gap: 20,
+  },
+  writePostButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  writePostText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
   stat: {
     flexDirection: 'row',

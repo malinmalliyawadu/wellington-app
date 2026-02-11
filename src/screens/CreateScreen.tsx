@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Place, PostType } from '../types';
 import { colors } from '../theme/colors';
 import { useQuery } from '../hooks/useQuery';
@@ -30,6 +31,8 @@ const POST_TYPES: { type: PostType; icon: string; label: string }[] = [
 export function CreateScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
+  const { placeId: placeIdParam } = useLocalSearchParams<{ placeId?: string }>();
+  const router = useRouter();
   const [postType, setPostType] = useState<PostType>('photo');
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [content, setContent] = useState('');
@@ -38,6 +41,16 @@ export function CreateScreen() {
   const [posting, setPosting] = useState(false);
   const { data: places } = useQuery(getPlaces);
   const allPlaces = places ?? [];
+
+  useEffect(() => {
+    if (placeIdParam && allPlaces.length > 0) {
+      const place = allPlaces.find((p) => p.id === placeIdParam);
+      if (place) {
+        setSelectedPlace(place);
+      }
+      router.setParams({ placeId: undefined as any });
+    }
+  }, [placeIdParam, allPlaces]);
 
   const pickMedia = async () => {
     const mediaType =
