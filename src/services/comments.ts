@@ -26,6 +26,24 @@ export async function getCommentsByPostId(postId: string): Promise<Comment[]> {
   }));
 }
 
+export async function updateComment(id: string, text: string): Promise<void> {
+  const { error } = await supabase
+    .from('comments')
+    .update({ text })
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+export async function deleteComment(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('comments')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
 export async function createComment(comment: {
   postId: string;
   userId: string;

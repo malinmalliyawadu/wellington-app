@@ -123,7 +123,11 @@ export function ProfileScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <View style={styles.postTile}>
+          <TouchableOpacity
+            style={styles.postTile}
+            activeOpacity={0.8}
+            onPress={() => router.push(`/profile/post/${item.id}`)}
+          >
             {item.mediaUrl ? (
               item.type === 'video' ? (
                 <VideoThumbnail thumbnailUrl={item.thumbnailUrl} style={styles.postImage} />
@@ -142,7 +146,7 @@ export function ProfileScreen() {
                 <Text style={styles.postPlace} numberOfLines={1}>{item.place.name}</Text>
               </View>
             )}
-          </View>
+          </TouchableOpacity>
         )}
         contentContainerStyle={[styles.postsGrid, { paddingBottom: 60 + insets.bottom }]}
       />

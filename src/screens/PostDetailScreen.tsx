@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,11 @@ import {
   TouchableOpacity,
   Share,
   ActivityIndicator,
+  TextInput,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,9 +20,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { getPostById as getPostByIdAsync } from '../services/posts';
 import { getProfileById, getProfilesByIds } from '../services/users';
 import { getPlaceById as getPlaceByIdAsync } from '../services/places';
-import { getCommentsByPostId as getCommentsAsync } from '../services/comments';
+import { getCommentsByPostId as getCommentsAsync, createComment, updateComment, deleteComment } from '../services/comments';
 import { useQuery } from '../hooks/useQuery';
 import { useLike } from '../context/LikeContext';
+import { useAuth } from '../context/AuthContext';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { colors } from '../theme/colors';
 
@@ -39,6 +45,11 @@ export function PostDetailScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const { isLiked, toggleLike, getLikeCount } = useLike();
+  const { profile } = useAuth();
+  const inputRef = useRef<TextInput>(null);
+  const [commentText, setCommentText] = useState('');
+  const [inputFocused, setInputFocused] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
 
   const fetchPost = useCallback(() => getPostByIdAsync(postId), [postId]);
   const { data: post, loading } = useQuery(fetchPost);
@@ -59,7 +70,7 @@ export function PostDetailScreen() {
     () => (post ? getCommentsAsync(post.id) : Promise.resolve([])),
     [post?.id]
   );
-  const { data: comments } = useQuery(fetchComments, post?.id);
+  const { data: comments, refetch: refetchComments } = useQuery(fetchComments, post?.id);
 
   const commentUserIds = useMemo(
     () => [...new Set((comments ?? []).map((c) => c.userId))],
@@ -104,111 +115,207 @@ export function PostDetailScreen() {
     router.push(`${currentTab}/place/${placeId}` as any);
   };
 
+  const handleSubmitComment = async () => {
+    const trimmed = commentText.trim();
+    if (!trimmed || !profile) return;
+    try {
+      if (editingCommentId) {
+        await updateComment(editingCommentId, trimmed);
+      } else {
+        await createComment({ postId: post.id, userId: profile.id, text: trimmed });
+      }
+      setEditingCommentId(null);
+      setCommentText('');
+      Keyboard.dismiss();
+      // Delay refetch to avoid the cleanup function cancelling the in-flight request
+      setTimeout(() => refetchComments(), 0);
+    } catch (err: any) {
+      Alert.alert('Error', err?.message ?? 'Failed to save comment');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setCommentText('');
+    Keyboard.dismiss();
+  };
+
+
   return (
-    <ScrollView
+    <KeyboardAvoidingView
       style={styles.container}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 60 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
-      {/* Author header */}
-      <TouchableOpacity style={styles.header} onPress={() => handlePressUser(post.userId)}>
-        <Image source={{ uri: user?.avatarUrl }} style={styles.avatar} />
-        <View style={styles.headerText}>
-          <Text style={styles.displayName}>{user?.displayName ?? 'Unknown'}</Text>
-          <Text style={styles.username}>@{user?.username ?? 'unknown'}</Text>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={{ paddingBottom: 16 }}
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* Author header */}
+        <TouchableOpacity style={styles.header} onPress={() => handlePressUser(post.userId)}>
+          <Image source={{ uri: user?.avatarUrl }} style={styles.avatar} />
+          <View style={styles.headerText}>
+            <Text style={styles.displayName}>{user?.displayName ?? 'Unknown'}</Text>
+            <Text style={styles.username}>@{user?.username ?? 'unknown'}</Text>
+          </View>
+          <Text style={styles.timeAgo}>{formatTimeAgo(post.createdAt)}</Text>
+        </TouchableOpacity>
+
+        {/* Media */}
+        {post.mediaUrl && (
+          post.type === 'video' ? (
+            <VideoPlayer
+              uri={post.mediaUrl}
+              style={styles.media}
+              shouldPlay
+              useNativeControls
+            />
+          ) : (
+            <Image source={{ uri: post.mediaUrl }} style={styles.media} />
+          )
+        )}
+
+        {/* Actions row */}
+        <View style={styles.actions}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => toggleLike(post.id)}
+          >
+            <Ionicons
+              name={liked ? 'heart' : 'heart-outline'}
+              size={26}
+              color={liked ? colors.liked : colors.text}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={() => inputRef.current?.focus()}>
+            <Ionicons name="chatbubble-outline" size={24} color={colors.text} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => {
+              const placeName = place?.name ?? 'a place';
+              Share.share({ message: `Check out ${placeName}: ${post.content}` });
+            }}
+          >
+            <Ionicons name="share-outline" size={24} color={colors.text} />
+          </TouchableOpacity>
         </View>
-        <Text style={styles.timeAgo}>{formatTimeAgo(post.createdAt)}</Text>
-      </TouchableOpacity>
 
-      {/* Media */}
-      {post.mediaUrl && (
-        post.type === 'video' ? (
-          <VideoPlayer
-            uri={post.mediaUrl}
-            style={styles.media}
-            shouldPlay
-            useNativeControls
-          />
-        ) : (
-          <Image source={{ uri: post.mediaUrl }} style={styles.media} />
-        )
-      )}
+        {/* Like count */}
+        <Text style={styles.likeCount}>
+          {likeCount} {likeCount === 1 ? 'like' : 'likes'}
+        </Text>
 
-      {/* Actions row */}
-      <View style={styles.actions}>
+        {/* Caption */}
+        <View style={styles.captionRow}>
+          <Text style={styles.captionText}>
+            <Text style={styles.captionAuthor}>{user?.displayName} </Text>
+            {post.content}
+          </Text>
+        </View>
+
+        {/* Place tag */}
+        {place && (
+          <TouchableOpacity
+            style={[styles.placeBadge, { backgroundColor: categoryColor + '15' }]}
+            onPress={() => handlePressPlace(place.id)}
+          >
+            <View style={[styles.placeDot, { backgroundColor: categoryColor }]} />
+            <Text style={[styles.placeName, { color: categoryColor }]}>{place.name}</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Comments */}
+        {allComments.length > 0 && (
+          <View style={styles.commentsSection}>
+            {allComments.map((comment) => {
+              const commentUser = commentUserMap.get(comment.userId);
+              const isOwn = comment.userId === profile?.id;
+              return (
+                <View key={comment.id} style={styles.commentRow}>
+                  <TouchableOpacity onPress={() => handlePressUser(comment.userId)}>
+                    <Image
+                      source={{ uri: commentUser?.avatarUrl }}
+                      style={styles.commentAvatar}
+                    />
+                  </TouchableOpacity>
+                  <View style={styles.commentContent}>
+                    <Text style={styles.commentText}>
+                      <Text style={styles.commentAuthor}>
+                        {commentUser?.displayName ?? 'Unknown'}
+                      </Text>
+                      <Text style={styles.commentTime}> {formatTimeAgo(comment.createdAt)}</Text>
+                    </Text>
+                    <Text style={styles.commentBody}>{comment.text}</Text>
+                    {isOwn && (
+                      <View style={styles.commentActions}>
+                        <TouchableOpacity onPress={() => {
+                          setEditingCommentId(comment.id);
+                          setCommentText(comment.text);
+                          inputRef.current?.focus();
+                        }}>
+                          <Text style={styles.commentActionText}>Edit</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => {
+                          Alert.alert('Delete comment?', 'This cannot be undone.', [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Delete',
+                              style: 'destructive',
+                              onPress: async () => {
+                                try {
+                                  await deleteComment(comment.id);
+                                  refetchComments();
+                                } catch {}
+                              },
+                            },
+                          ]);
+                        }}>
+                          <Text style={[styles.commentActionText, { color: colors.liked }]}>Delete</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
+      </ScrollView>
+
+      {/* Comment input bar */}
+      <View style={[styles.inputBar, { paddingBottom: insets.bottom + (inputFocused ? 0 : 60) || 8 }]}>
+        {editingCommentId && (
+          <TouchableOpacity onPress={handleCancelEdit} style={styles.cancelButton}>
+            <Ionicons name="close-circle" size={22} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
+        <TextInput
+          ref={inputRef}
+          style={styles.commentInput}
+          placeholder={editingCommentId ? 'Edit comment...' : 'Add a comment...'}
+          placeholderTextColor={colors.textMuted}
+          value={commentText}
+          onChangeText={setCommentText}
+          onFocus={() => setInputFocused(true)}
+          onBlur={() => setInputFocused(false)}
+          onSubmitEditing={handleSubmitComment}
+          returnKeyType="send"
+        />
         <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => toggleLike(post.id)}
+          onPress={handleSubmitComment}
+          disabled={!commentText.trim()}
+          style={styles.sendButton}
         >
           <Ionicons
-            name={liked ? 'heart' : 'heart-outline'}
-            size={26}
-            color={liked ? colors.liked : colors.text}
+            name={editingCommentId ? 'checkmark-circle' : 'send'}
+            size={22}
+            color={commentText.trim() ? colors.primary : colors.gray300}
           />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="chatbubble-outline" size={24} color={colors.text} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => {
-            const placeName = place?.name ?? 'a place';
-            Share.share({ message: `Check out ${placeName}: ${post.content}` });
-          }}
-        >
-          <Ionicons name="share-outline" size={24} color={colors.text} />
-        </TouchableOpacity>
       </View>
-
-      {/* Like count */}
-      <Text style={styles.likeCount}>
-        {likeCount} {likeCount === 1 ? 'like' : 'likes'}
-      </Text>
-
-      {/* Caption */}
-      <View style={styles.captionRow}>
-        <Text style={styles.captionText}>
-          <Text style={styles.captionAuthor}>{user?.displayName} </Text>
-          {post.content}
-        </Text>
-      </View>
-
-      {/* Place tag */}
-      {place && (
-        <TouchableOpacity
-          style={[styles.placeBadge, { backgroundColor: categoryColor + '15' }]}
-          onPress={() => handlePressPlace(place.id)}
-        >
-          <View style={[styles.placeDot, { backgroundColor: categoryColor }]} />
-          <Text style={[styles.placeName, { color: categoryColor }]}>{place.name}</Text>
-        </TouchableOpacity>
-      )}
-
-      {/* Comments */}
-      {allComments.length > 0 && (
-        <View style={styles.commentsSection}>
-          {allComments.map((comment) => {
-            const commentUser = commentUserMap.get(comment.userId);
-            return (
-              <View key={comment.id} style={styles.commentRow}>
-                <Image
-                  source={{ uri: commentUser?.avatarUrl }}
-                  style={styles.commentAvatar}
-                />
-                <View style={styles.commentContent}>
-                  <Text style={styles.commentText}>
-                    <Text style={styles.commentAuthor}>
-                      {commentUser?.displayName ?? 'Unknown'}{' '}
-                    </Text>
-                    {comment.text}
-                  </Text>
-                  <Text style={styles.commentTime}>{formatTimeAgo(comment.createdAt)}</Text>
-                </View>
-              </View>
-            );
-          })}
-        </View>
-      )}
-    </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -216,6 +323,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
@@ -318,16 +428,57 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   commentText: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 19,
+    fontSize: 13,
+    lineHeight: 18,
   },
   commentAuthor: {
     fontWeight: '600',
+    color: colors.text,
   },
   commentTime: {
     fontSize: 12,
     color: colors.textMuted,
+  },
+  commentBody: {
+    fontSize: 14,
+    color: colors.text,
+    lineHeight: 19,
     marginTop: 2,
+  },
+  commentActions: {
+    flexDirection: 'row',
+    gap: 16,
+    marginTop: 4,
+  },
+  commentActionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  inputBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.gray200,
+    backgroundColor: colors.background,
+  },
+  commentInput: {
+    flex: 1,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.gray100,
+    paddingHorizontal: 16,
+    fontSize: 14,
+    color: colors.text,
+  },
+  cancelButton: {
+    marginRight: 8,
+    padding: 4,
+  },
+  sendButton: {
+    marginLeft: 8,
+    padding: 4,
   },
 });

@@ -88,6 +88,9 @@ export function MapScreen() {
 
   const annotatedPlaceIds = useMemo(() => {
     const { latitude, longitude, latitudeDelta, longitudeDelta } = visibleRegion;
+    const { width: mw, height: mh } = mapLayout;
+    if (mw === 0 || mh === 0) return new Set<string>();
+
     const north = latitude + latitudeDelta / 2;
     const south = latitude - latitudeDelta / 2;
     const east = longitude + longitudeDelta / 2;
@@ -97,16 +100,44 @@ export function MapScreen() {
       (p) => p.latitude >= south && p.latitude <= north && p.longitude >= west && p.longitude <= east,
     );
 
-    const count = Math.max(3, Math.round(visible.length * 0.35));
+    const targetCount = Math.max(3, Math.round(visible.length * 0.35));
 
+    // Sort by popularity (highest first)
     const sorted = [...visible].sort((a, b) => {
       const sa = popularityMap.get(a.id)?.score ?? 0;
       const sb = popularityMap.get(b.id)?.score ?? 0;
       return sb - sa;
     });
 
-    return new Set(sorted.slice(0, count).map((p) => p.id));
-  }, [filteredPlaces, visibleRegion, popularityMap]);
+    // Convert to screen positions and greedily pick non-overlapping labels
+    const toScreen = (p: Place) => ({
+      x: ((p.longitude - west) / longitudeDelta) * mw,
+      y: ((north - p.latitude) / latitudeDelta) * mh,
+    });
+
+    // Approximate label footprint in pixels (marker + label below)
+    const LABEL_W = 120;
+    const LABEL_H = 60;
+
+    const selected: { id: string; x: number; y: number }[] = [];
+
+    for (const place of sorted) {
+      if (selected.length >= targetCount) break;
+
+      const { x, y } = toScreen(place);
+
+      // Check overlap with already-selected labels
+      const overlaps = selected.some(
+        (s) => Math.abs(s.x - x) < LABEL_W && Math.abs(s.y - y) < LABEL_H,
+      );
+
+      if (!overlaps) {
+        selected.push({ id: place.id, x, y });
+      }
+    }
+
+    return new Set(selected.map((s) => s.id));
+  }, [filteredPlaces, visibleRegion, popularityMap, mapLayout]);
 
   const handleRegionChangeComplete = useCallback((region: Region) => {
     setVisibleRegion(region);
