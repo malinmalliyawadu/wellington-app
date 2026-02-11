@@ -1,26 +1,24 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, Image, StyleSheet, Pressable, LayoutChangeEvent } from 'react-native';
+import { View, Text, Image, StyleSheet, LayoutChangeEvent } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { PopularityMarker } from '../components/PopularityMarker';
-import { PlacePostsSheet } from '../components/PlacePostsSheet';
 import { MapSearchBar } from '../components/MapSearchBar';
 import { PeekingMarkersOverlay } from '../components/PeekingMarkersOverlay';
 import { useFollow } from '../context/FollowContext';
 import { useQuery } from '../hooks/useQuery';
 import { usePeekingMarkers, PeekingMarker } from '../hooks/usePeekingMarkers';
 import { getPlaces } from '../services/places';
-import { getPosts, getPostsByPlaceId as getPostsByPlaceIdAsync } from '../services/posts';
+import { getPosts } from '../services/posts';
 import { getProfiles } from '../services/users';
 import {
   computePlacePopularity,
   getMarkerSize,
   isFollowedPlace,
 } from '../utils/placePopularity';
-import { Place, PlaceCategory, Post, User } from '../types';
+import { Place, PlaceCategory, User } from '../types';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { HapticPressable } from 'src/components/HapticPressable';
 import * as Haptics from 'expo-haptics';
@@ -33,14 +31,20 @@ const WELLINGTON_REGION = {
 };
 
 export function MapScreen() {
-  const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
-  const [selectedPlacePosts, setSelectedPlacePosts] = useState<Post[]>([]);
   const [location, setLocation] = useState<Location.LocationObject | null>(null);
   const [locationError, setLocationError] = useState<string | null>(null);
   const mapRef = useRef<MapView>(null);
   const router = useRouter();
-  const insets = useSafeAreaInsets();
   const { followingIds } = useFollow();
+
+  const openPlaceSheet = useCallback((placeId: string) => {
+    const path = `/map/place-posts/${placeId}` as const;
+    if (router.canDismiss()) {
+      router.replace(path);
+    } else {
+      router.push(path);
+    }
+  }, [router]);
 
   const [selectedCategories, setSelectedCategories] = useState<PlaceCategory[]>([]);
   const [showFollowingOnly, setShowFollowingOnly] = useState(false);
@@ -157,8 +161,8 @@ export function MapScreen() {
       latitudeDelta: visibleRegion.latitudeDelta,
       longitudeDelta: visibleRegion.longitudeDelta,
     }, 400);
-    setSelectedPlace(marker.place);
-  }, [visibleRegion]);
+    openPlaceSheet(marker.place.id);
+  }, [visibleRegion, openPlaceSheet]);
 
   const handleSearchSelect = (place: Place) => {
     mapRef.current?.animateToRegion({
@@ -167,18 +171,8 @@ export function MapScreen() {
       latitudeDelta: 0.005,
       longitudeDelta: 0.005,
     });
-    setSelectedPlace(place);
+    openPlaceSheet(place.id);
   };
-
-  useEffect(() => {
-    if (selectedPlace) {
-      getPostsByPlaceIdAsync(selectedPlace.id)
-        .then(setSelectedPlacePosts)
-        .catch(() => setSelectedPlacePosts([]));
-    } else {
-      setSelectedPlacePosts([]);
-    }
-  }, [selectedPlace]);
 
   useEffect(() => {
     (async () => {
@@ -222,7 +216,6 @@ export function MapScreen() {
         initialRegion={WELLINGTON_REGION}
         showsUserLocation
         showsMyLocationButton={false}
-        onPress={() => setSelectedPlace(null)}
         onRegionChangeComplete={handleRegionChangeComplete}
         showsPointsOfInterest={false}
       >
@@ -246,7 +239,7 @@ export function MapScreen() {
               onPress={(e) => {
                 e.stopPropagation();
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
-                setSelectedPlace(place);
+                openPlaceSheet(place.id);
               }}
             >
               <View style={styles.markerContainer}>
@@ -310,25 +303,6 @@ export function MapScreen() {
         />
       </HapticPressable>
 
-      {selectedPlace && (
-        <View style={[styles.sheetContainer, { bottom: 60 + insets.bottom }]}>
-          <PlacePostsSheet
-            place={selectedPlace}
-            posts={selectedPlacePosts}
-            popularity={popularityMap.get(selectedPlace.id)}
-            followingIds={followingIds}
-            onClose={() => setSelectedPlace(null)}
-            onPressPlaceName={(placeId) => {
-              setSelectedPlace(null);
-              router.push(`/map/place/${placeId}`);
-            }}
-            onPressPost={(postId) => {
-              setSelectedPlace(null);
-              router.push(`/map/post/${postId}`);
-            }}
-          />
-        </View>
-      )}
     </View>
   );
 }
@@ -355,11 +329,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 4,
-  },
-  sheetContainer: {
-    position: 'absolute',
-    left: 12,
-    right: 12,
   },
   markerContainer: {
     alignItems: 'center',

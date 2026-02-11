@@ -16,6 +16,20 @@ export default function MapLayout() {
         name="user/[userId]"
         options={{ headerShown: true, headerTitle: '', headerBackTitle: 'Back' }}
       />
+      <Stack.Screen
+        name="place-posts/[placeId]"
+        options={{
+          presentation: 'formSheet',
+          headerShown: false,
+          contentStyle: { backgroundColor: '#FFFFFF' },
+          sheetAllowedDetents: [0.5, 0.85],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 32,
+          sheetInitialDetentIndex: 0,
+          sheetLargestUndimmedDetentIndex: 0,
+          sheetExpandsWhenScrolledToEdge: false,
+        }}
+      />
     </Stack>
   );
 }
