@@ -44,7 +44,17 @@ ON CONFLICT (id) DO UPDATE SET
   bio = EXCLUDED.bio;
 
 -- ============================================================
--- PLACES (22 Wellington places)
+-- Clear existing data (in dependency order) before re-seeding
+-- ============================================================
+DELETE FROM comments;
+DELETE FROM post_likes;
+DELETE FROM posts;
+DELETE FROM event_attendees;
+DELETE FROM events;
+DELETE FROM places;
+
+-- ============================================================
+-- PLACES (50 Wellington places)
 -- ============================================================
 INSERT INTO places (id, name, category, address, latitude, longitude) VALUES
   -- Cafes
@@ -53,93 +63,341 @@ INSERT INTO places (id, name, category, address, latitude, longitude) VALUES
   ('10000000-0000-0000-0000-000000000003', 'Loretta', 'cafe', '181 Cuba Street, Te Aro', -41.2952, 174.7739),
   ('10000000-0000-0000-0000-000000000004', 'Hillside Kitchen & Cellar', 'cafe', '241 Tinakori Road, Thorndon', -41.2730, 174.7710),
   ('10000000-0000-0000-0000-000000000005', 'Prefab Eatery', 'cafe', '14 Jessie Street, Te Aro', -41.2935, 174.7758),
+  ('10000000-0000-0000-0000-000000000023', 'Peoples Coffee', 'cafe', '5 Constable Street, Newtown', -41.3045, 174.7790),
+  ('10000000-0000-0000-0000-000000000024', 'Lamason Brew Bar', 'cafe', '7 College Street, Te Aro', -41.2898, 174.7748),
+  ('10000000-0000-0000-0000-000000000025', 'Raglan Roast', 'cafe', '32 Dixon Street, Te Aro', -41.2912, 174.7742),
+  ('10000000-0000-0000-0000-000000000026', 'Mojo Coffee', 'cafe', '37 Customhouse Quay, Wellington', -41.2860, 174.7780),
+  ('10000000-0000-0000-0000-000000000027', 'Memphis Belle', 'cafe', '13 Courtenay Place, Te Aro', -41.2930, 174.7790),
+  ('10000000-0000-0000-0000-000000000028', 'Fidels', 'cafe', '234 Cuba Street, Te Aro', -41.2960, 174.7735),
   -- Restaurants
   ('10000000-0000-0000-0000-000000000006', 'Hiakai', 'restaurant', '90 Tory Street, Te Aro', -41.2942, 174.7785),
   ('10000000-0000-0000-0000-000000000007', 'Egmont Street Deli', 'restaurant', '12 Egmont Street, Te Aro', -41.2905, 174.7752),
   ('10000000-0000-0000-0000-000000000008', 'Aunty Mena''s', 'restaurant', '167 Cuba Street, Te Aro', -41.2947, 174.7740),
+  ('10000000-0000-0000-0000-000000000029', 'Logan Brown', 'restaurant', '192 Cuba Street, Te Aro', -41.2955, 174.7738),
+  ('10000000-0000-0000-0000-000000000030', 'Ortega Fish Shack', 'restaurant', '16 Majoribanks Street, Mt Victoria', -41.2945, 174.7830),
+  ('10000000-0000-0000-0000-000000000031', 'Capitol', 'restaurant', '10 Kent Terrace, Mt Victoria', -41.2938, 174.7828),
+  ('10000000-0000-0000-0000-000000000032', 'Dragonfly', 'restaurant', '9 Courtenay Place, Te Aro', -41.2928, 174.7792),
+  ('10000000-0000-0000-0000-000000000033', 'Mr Go''s', 'restaurant', '2 Taranaki Street, Te Aro', -41.2908, 174.7762),
+  ('10000000-0000-0000-0000-000000000034', 'KK Malaysian', 'restaurant', '11 Frederick Street, Te Aro', -41.2925, 174.7725),
   -- Bars
   ('10000000-0000-0000-0000-000000000009', 'Hashigo Zake', 'bar', '25 Taranaki Street, Te Aro', -41.2912, 174.7758),
   ('10000000-0000-0000-0000-000000000010', 'Golding''s Free Dive', 'bar', '14 Leeds Street, Te Aro', -41.2920, 174.7748),
   ('10000000-0000-0000-0000-000000000011', 'The Library', 'bar', '53 Courtenay Place, Te Aro', -41.2935, 174.7795),
   ('10000000-0000-0000-0000-000000000012', 'Rogue & Vagabond', 'bar', '18 Garrett Street, Te Aro', -41.2932, 174.7788),
+  ('10000000-0000-0000-0000-000000000035', 'Hawthorn Lounge', 'bar', '82 Tory Street, Te Aro', -41.2940, 174.7782),
+  ('10000000-0000-0000-0000-000000000036', 'Fork & Brewer', 'bar', '14 Bond Street, Wellington', -41.2870, 174.7755),
+  ('10000000-0000-0000-0000-000000000037', 'Little Beer Quarter', 'bar', '6 Edward Street, Te Aro', -41.2918, 174.7762),
+  ('10000000-0000-0000-0000-000000000038', 'Laundry', 'bar', '240 Cuba Street, Te Aro', -41.2962, 174.7734),
+  ('10000000-0000-0000-0000-000000000039', 'Garage Project Taproom', 'bar', '68 Aro Street, Aro Valley', -41.2945, 174.7700),
   -- Attractions
   ('10000000-0000-0000-0000-000000000013', 'Te Papa Museum', 'attraction', '55 Cable Street, Wellington', -41.2907, 174.7822),
   ('10000000-0000-0000-0000-000000000014', 'Wellington Cable Car', 'attraction', '280 Lambton Quay, Wellington', -41.2843, 174.7706),
   ('10000000-0000-0000-0000-000000000015', 'Zealandia', 'attraction', '53 Waiapu Road, Karori', -41.2900, 174.7530),
+  ('10000000-0000-0000-0000-000000000040', 'Wellington Museum', 'attraction', '3 Jervois Quay, Wellington', -41.2855, 174.7810),
+  ('10000000-0000-0000-0000-000000000041', 'Space Place', 'attraction', 'Botanic Garden, Kelburn', -41.2805, 174.7685),
+  ('10000000-0000-0000-0000-000000000042', 'City Gallery Wellington', 'attraction', '101 Wakefield Street, Te Aro', -41.2888, 174.7778),
   -- Parks
   ('10000000-0000-0000-0000-000000000016', 'Wellington Botanic Garden', 'park', '101 Glenmore Street, Kelburn', -41.2810, 174.7690),
   ('10000000-0000-0000-0000-000000000017', 'Mt Victoria Lookout', 'park', 'Lookout Road, Mt Victoria', -41.2960, 174.7900),
   ('10000000-0000-0000-0000-000000000018', 'Oriental Bay', 'park', 'Oriental Parade, Wellington', -41.2880, 174.7880),
+  ('10000000-0000-0000-0000-000000000043', 'Waitangi Park', 'park', 'Cable Street, Te Aro', -41.2915, 174.7838),
+  ('10000000-0000-0000-0000-000000000044', 'Frank Kitts Park', 'park', 'Jervois Quay, Wellington', -41.2848, 174.7790),
+  ('10000000-0000-0000-0000-000000000045', 'Town Belt', 'park', 'Ellice Street, Mt Victoria', -41.2985, 174.7870),
   -- Venues
   ('10000000-0000-0000-0000-000000000019', 'San Fran', 'venue', '171 Cuba Street, Te Aro', -41.2949, 174.7739),
   ('10000000-0000-0000-0000-000000000020', 'Meow', 'venue', '9 Edward Street, Te Aro', -41.2920, 174.7760),
   ('10000000-0000-0000-0000-000000000021', 'Valhalla', 'venue', '134 Vivian Street, Te Aro', -41.2955, 174.7752),
-  ('10000000-0000-0000-0000-000000000022', 'BATS Theatre', 'venue', '1 Kent Terrace, Mt Victoria', -41.2940, 174.7830);
+  ('10000000-0000-0000-0000-000000000022', 'BATS Theatre', 'venue', '1 Kent Terrace, Mt Victoria', -41.2940, 174.7830),
+  ('10000000-0000-0000-0000-000000000046', 'Circa Theatre', 'venue', '1 Taranaki Street, Te Aro', -41.2900, 174.7810),
+  ('10000000-0000-0000-0000-000000000047', 'The Opera House', 'venue', '111-113 Manners Street, Te Aro', -41.2918, 174.7738),
+  ('10000000-0000-0000-0000-000000000048', 'TSB Arena', 'venue', '4 Queens Wharf, Wellington', -41.2838, 174.7800),
+  ('10000000-0000-0000-0000-000000000049', 'Wharewaka', 'venue', '2 Taranaki Street Wharf, Te Aro', -41.2895, 174.7815),
+  ('10000000-0000-0000-0000-000000000050', 'Caroline', 'venue', '15 Tory Street, Te Aro', -41.2918, 174.7778);
 
 -- ============================================================
--- POSTS (selected subset — 20 posts for seed data)
+-- POSTS (65 posts for seed data — many places with multiple visitors)
 -- ============================================================
 INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, created_at) VALUES
+  -- Flight Coffee (3 posters: u2, u5, u1)
   ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'photo',
    'Flight Coffee never misses. Their single origin pour-over is consistently the best in town.',
    'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600', 12, '2025-01-28T09:00:00Z'),
+  ('20000000-0000-0000-0000-000000000021', '00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000001', 'photo',
+   'Finally tried Flight Coffee. The hype is real — best espresso I''ve had in weeks.',
+   'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600', 8, '2025-01-29T08:30:00Z'),
+  ('20000000-0000-0000-0000-000000000022', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'text',
+   'Morning ritual at Flight. The baristas here genuinely care about the craft.',
+   null, 5, '2025-01-30T07:45:00Z'),
+
+  -- Hashigo Zake (3 posters: u7, u9, u4)
   ('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000009', 'photo',
    'Hashigo Zake has the best craft beer selection in Wellington. 24 taps of pure happiness.',
    'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=600', 8, '2025-01-28T18:00:00Z'),
+  ('20000000-0000-0000-0000-000000000023', '00000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000009', 'photo',
+   'Late night at Hashigo. They had a rare Belgian sour on tap. Heaven.',
+   'https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?w=600', 6, '2025-01-29T22:00:00Z'),
+  ('20000000-0000-0000-0000-000000000024', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000009', 'text',
+   'Pre-gig beers at Hashigo. The staff always have great recommendations.',
+   null, 4, '2025-01-30T17:30:00Z'),
+
+  -- Te Papa (4 posters: u3, u6, u8, u1)
   ('20000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000013', 'photo',
    'The new exhibition at Te Papa is absolutely stunning. Free entry and world-class art.',
    'https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=600', 15, '2025-01-27T14:00:00Z'),
+  ('20000000-0000-0000-0000-000000000025', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000013', 'photo',
+   'Rainy day at Te Papa. The earthquake exhibit never gets old.',
+   'https://images.unsplash.com/photo-1518998053901-5348d3961a04?w=600', 11, '2025-01-28T11:00:00Z'),
+  ('20000000-0000-0000-0000-000000000026', '00000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000013', 'text',
+   'Took the kids to Te Papa today. They loved the colossal squid. Free and world-class — Wellington is lucky.',
+   null, 9, '2025-01-29T15:00:00Z'),
+  ('20000000-0000-0000-0000-000000000027', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000013', 'photo',
+   'Te Papa at sunset from the waterfront. What a building.',
+   'https://images.unsplash.com/photo-1580537659466-0a9bfa916a54?w=600', 13, '2025-01-30T18:30:00Z'),
+
+  -- Mt Victoria Lookout (5 posters: u6, u3, u1, u8, u10)
   ('20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000017', 'photo',
    'Sunrise from Mt Vic this morning. Wellington at its best. Worth the early alarm!',
    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600', 22, '2025-01-26T06:30:00Z'),
-  ('20000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000002', 'photo',
-   'Customs doing what Customs does best. This flat white is perfection.',
-   'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=600', 9, '2025-01-28T08:00:00Z'),
-  ('20000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000019', 'photo',
-   'San Fran last night was absolutely electric. What a lineup!',
-   'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600', 18, '2025-01-29T00:00:00Z'),
-  ('20000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000003', 'photo',
-   'Loretta brunch is always a vibe. The lamb shoulder is insane.',
-   'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600', 14, '2025-01-28T11:00:00Z'),
-  ('20000000-0000-0000-0000-000000000008', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000016', 'photo',
-   'The roses in the Botanic Garden are incredible this time of year.',
-   'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=600', 11, '2025-01-25T15:00:00Z'),
-  ('20000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000021', 'photo',
-   'Valhalla doom night. Walls were shaking. Ears still ringing.',
-   'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600', 7, '2025-01-28T23:00:00Z'),
-  ('20000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000010', 'photo',
-   'Golding''s Free Dive is such a hidden gem. Pizza and craft beer in a laneway.',
-   'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600', 10, '2025-01-27T19:00:00Z'),
   ('20000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000017', 'photo',
    'Golden hour from Mt Vic never gets old. This city is beautiful.',
    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600', 20, '2025-01-27T19:00:00Z'),
+  ('20000000-0000-0000-0000-000000000028', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000017', 'photo',
+   'Night view from Mt Vic. City lights reflecting on the harbour.',
+   'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=600', 18, '2025-01-28T21:00:00Z'),
+  ('20000000-0000-0000-0000-000000000029', '00000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000017', 'text',
+   'Ran up Mt Vic at lunch. 15 minutes from the office to this view. Wellington is unbeatable.',
+   null, 10, '2025-01-29T12:30:00Z'),
+  ('20000000-0000-0000-0000-000000000030', '00000000-0000-0000-0000-000000000010', '10000000-0000-0000-0000-000000000017', 'photo',
+   'Took visiting friends to Mt Vic. Their minds were blown.',
+   'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600', 7, '2025-01-30T16:00:00Z'),
+
+  -- Customs (2 posters: u5, u2)
+  ('20000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000002', 'photo',
+   'Customs doing what Customs does best. This flat white is perfection.',
+   'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=600', 9, '2025-01-28T08:00:00Z'),
+  ('20000000-0000-0000-0000-000000000031', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002', 'photo',
+   'Customs by Coffee Supreme. The name says it all. Supreme.',
+   'https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=600', 7, '2025-01-30T09:00:00Z'),
+
+  -- San Fran (4 posters: u4, u9, u10, u3)
+  ('20000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000019', 'photo',
+   'San Fran last night was absolutely electric. What a lineup!',
+   'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600', 18, '2025-01-29T00:00:00Z'),
+  ('20000000-0000-0000-0000-000000000032', '00000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000019', 'photo',
+   'San Fran always delivers. Best sound system on Cuba Street.',
+   'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=600', 14, '2025-01-27T23:00:00Z'),
+  ('20000000-0000-0000-0000-000000000033', '00000000-0000-0000-0000-000000000010', '10000000-0000-0000-0000-000000000019', 'text',
+   'Comedy night at San Fran was hilarious. This venue does everything well.',
+   null, 9, '2025-01-28T22:30:00Z'),
+  ('20000000-0000-0000-0000-000000000034', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000019', 'photo',
+   'Shot some bands at San Fran tonight. The lighting is always perfect for photography.',
+   'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600', 11, '2025-01-30T23:30:00Z'),
+
+  -- Loretta (3 posters: u2, u5, u8)
+  ('20000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000003', 'photo',
+   'Loretta brunch is always a vibe. The lamb shoulder is insane.',
+   'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600', 14, '2025-01-28T11:00:00Z'),
+  ('20000000-0000-0000-0000-000000000035', '00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000003', 'photo',
+   'Loretta cold brew on a hot day. Perfect.',
+   'https://images.unsplash.com/photo-1461023058943-07fcbe16d735?w=600', 6, '2025-01-30T14:00:00Z'),
+  ('20000000-0000-0000-0000-000000000036', '00000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000003', 'text',
+   'Loretta for brunch with the crew. Always busy but always worth the wait.',
+   null, 8, '2025-01-29T10:30:00Z'),
+
+  -- Botanic Garden (3 posters: u6, u3, u8)
+  ('20000000-0000-0000-0000-000000000008', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000016', 'photo',
+   'The roses in the Botanic Garden are incredible this time of year.',
+   'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=600', 11, '2025-01-25T15:00:00Z'),
+  ('20000000-0000-0000-0000-000000000037', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000016', 'photo',
+   'Shooting the fern house in the Botanic Garden. So lush.',
+   'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600', 9, '2025-01-27T10:00:00Z'),
+  ('20000000-0000-0000-0000-000000000038', '00000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000016', 'text',
+   'Sunday stroll through the Botanic Garden. The kids loved the playground.',
+   null, 5, '2025-01-26T11:00:00Z'),
+
+  -- Valhalla (2 posters: u9, u4)
+  ('20000000-0000-0000-0000-000000000009', '00000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000021', 'photo',
+   'Valhalla doom night. Walls were shaking. Ears still ringing.',
+   'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600', 7, '2025-01-28T23:00:00Z'),
+  ('20000000-0000-0000-0000-000000000039', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000021', 'photo',
+   'Valhalla is the heart and soul of Wellington heavy music. Long may it reign.',
+   'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600', 10, '2025-01-29T23:30:00Z'),
+
+  -- Golding''s Free Dive (3 posters: u8, u7, u2)
+  ('20000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000010', 'photo',
+   'Golding''s Free Dive is such a hidden gem. Pizza and craft beer in a laneway.',
+   'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600', 10, '2025-01-27T19:00:00Z'),
+  ('20000000-0000-0000-0000-000000000040', '00000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000010', 'photo',
+   'Leeds Street laneway is such a vibe. Golding''s pizza + Fortune Favours beer = perfect combo.',
+   'https://images.unsplash.com/photo-1513104890138-7c749659a591?w=600', 8, '2025-01-28T19:30:00Z'),
+  ('20000000-0000-0000-0000-000000000041', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000010', 'text',
+   'Golding''s on a Friday. Laneway buzzing, pizzas flying. This is why Wellington rules.',
+   null, 6, '2025-01-31T18:00:00Z'),
+
+  -- Prefab (2 posters: u5, u2)
   ('20000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000005', 'photo',
    'Prefab on a sunny morning. This courtyard is perfection.',
    'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=600', 6, '2025-01-26T10:00:00Z'),
+  ('20000000-0000-0000-0000-000000000042', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000005', 'photo',
+   'Prefab cabinet food is always on point. Grabbed a scone and a latte.',
+   'https://images.unsplash.com/photo-1509365390695-33aee754301f?w=600', 5, '2025-01-29T09:00:00Z'),
+
+  -- Meow (3 posters: u4, u9, u3)
   ('20000000-0000-0000-0000-000000000013', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000020', 'photo',
    'Meow is the GOAT venue. Intimate but the sound is always dialled in.',
    'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600', 13, '2025-01-28T22:00:00Z'),
+  ('20000000-0000-0000-0000-000000000043', '00000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000020', 'photo',
+   'Meow on a Tuesday. Still packed. Wellington music scene is alive.',
+   'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?w=600', 7, '2025-01-29T21:00:00Z'),
+  ('20000000-0000-0000-0000-000000000044', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000020', 'photo',
+   'Shot some incredible live shots at Meow tonight. The intimacy of this venue is perfect for photography.',
+   'https://images.unsplash.com/photo-1508854710579-5cecc3a9ff17?w=600', 11, '2025-01-30T22:00:00Z'),
+
+  -- Hiakai (2 posters: u2, u1)
   ('20000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000006', 'photo',
    'Hiakai is doing incredible things with indigenous NZ ingredients. A must-try.',
    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600', 16, '2025-01-25T20:00:00Z'),
+  ('20000000-0000-0000-0000-000000000045', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000006', 'text',
+   'Hiakai blew my mind. The kawakawa dessert is unlike anything else. Book ahead.',
+   null, 12, '2025-01-30T21:00:00Z'),
+
+  -- The Library (2 posters: u9, u7)
   ('20000000-0000-0000-0000-000000000015', '00000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000011', 'photo',
    'The Library cocktails are next level. Try the Old Fashioned.',
    'https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=600', 9, '2025-01-26T21:00:00Z'),
+  ('20000000-0000-0000-0000-000000000046', '00000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000011', 'photo',
+   'The Library is hidden behind a bookshelf door. Best speakeasy vibes in Wellington.',
+   'https://images.unsplash.com/photo-1551024709-8f23befc6f87?w=600', 11, '2025-01-29T20:30:00Z'),
+
+  -- Oriental Bay (4 posters: u6, u3, u1, u5)
   ('20000000-0000-0000-0000-000000000016', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000018', 'photo',
    'Evening swim at Oriental Bay. Summer in Wellington is perfection.',
    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600', 17, '2025-01-24T18:00:00Z'),
+  ('20000000-0000-0000-0000-000000000047', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000018', 'photo',
+   'Oriental Bay golden hour. The colour of the water today was unreal.',
+   'https://images.unsplash.com/photo-1476673160081-cf065607f449?w=600', 14, '2025-01-28T18:30:00Z'),
+  ('20000000-0000-0000-0000-000000000048', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000018', 'text',
+   'Morning coffee on the Oriental Bay promenade. Best commute ever.',
+   null, 6, '2025-01-29T07:30:00Z'),
+  ('20000000-0000-0000-0000-000000000049', '00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000018', 'photo',
+   'Wellington on a calm day. Oriental Bay looks like the Mediterranean.',
+   'https://images.unsplash.com/photo-1468413253725-0d5181091126?w=600', 9, '2025-01-30T12:00:00Z'),
+
+  -- BATS Theatre (1 poster: u10)
   ('20000000-0000-0000-0000-000000000017', '00000000-0000-0000-0000-000000000010', '10000000-0000-0000-0000-000000000022', 'photo',
    'BATS Theatre is such a treasure. Tiny but mighty.',
    'https://images.unsplash.com/photo-1503095396549-807759245b35?w=600', 8, '2025-01-20T22:00:00Z'),
+
+  -- Rogue & Vagabond (3 posters: u7, u4, u9)
   ('20000000-0000-0000-0000-000000000018', '00000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000012', 'photo',
    'Rogue & Vagabond garden sessions are so good in summer.',
    'https://images.unsplash.com/photo-1575037614876-c38a4b44571d?w=600', 11, '2025-01-26T16:00:00Z'),
+  ('20000000-0000-0000-0000-000000000050', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000012', 'photo',
+   'Rogue & Vagabond before a show. Great vibes, great people.',
+   'https://images.unsplash.com/photo-1572116469696-31de0f17cc34?w=600', 7, '2025-01-28T17:00:00Z'),
+  ('20000000-0000-0000-0000-000000000051', '00000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000012', 'text',
+   'Rogue & Vagabond on a sunny arvo. Best beer garden in the city.',
+   null, 5, '2025-01-30T15:00:00Z'),
+
+  -- Zealandia (2 posters: u3, u6)
   ('20000000-0000-0000-0000-000000000019', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000015', 'photo',
    'Zealandia at dawn. Heard a kiwi call for the first time!',
    'https://images.unsplash.com/photo-1518709766631-a6a7f45921c3?w=600', 19, '2025-01-23T06:00:00Z'),
+  ('20000000-0000-0000-0000-000000000052', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000015', 'photo',
+   'Night tour at Zealandia. Saw tuatara and glow worms. Magical.',
+   'https://images.unsplash.com/photo-1470058869958-2a77571e9182?w=600', 15, '2025-01-28T20:00:00Z'),
+
+  -- Aunty Mena''s (2 posters: u8, u2)
   ('20000000-0000-0000-0000-000000000020', '00000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000008', 'text',
    'Aunty Mena''s is the best vegetarian food in Wellington. The hot sauce is seriously next level. Go hungry.',
-   null, 7, '2025-01-24T13:00:00Z');
+   null, 7, '2025-01-24T13:00:00Z'),
+  ('20000000-0000-0000-0000-000000000053', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000008', 'photo',
+   'Aunty Mena''s laksa on a cold day. Pure comfort.',
+   'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=600', 9, '2025-01-29T12:00:00Z'),
+
+  -- Peoples Coffee (3 posters: u5, u1, u8)
+  ('20000000-0000-0000-0000-000000000054', '00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000023', 'photo',
+   'Peoples Coffee in Newtown. Fair trade and delicious. Love what they stand for.',
+   'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=600', 8, '2025-01-27T09:00:00Z'),
+  ('20000000-0000-0000-0000-000000000055', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000023', 'text',
+   'Peoples Coffee is my go-to in Newtown. Ethical and excellent.',
+   null, 4, '2025-01-29T08:00:00Z'),
+  ('20000000-0000-0000-0000-000000000056', '00000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000023', 'photo',
+   'Saturday morning at Peoples. The courtyard is perfect for people watching.',
+   'https://images.unsplash.com/photo-1445116572660-236099ec97a0?w=600', 6, '2025-01-25T10:00:00Z'),
+
+  -- Lamason Brew Bar (2 posters: u5, u2)
+  ('20000000-0000-0000-0000-000000000057', '00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000024', 'photo',
+   'Lamason doing a gorgeous filter coffee today. The space is beautiful too.',
+   'https://images.unsplash.com/photo-1497515114889-2e3e4a17d621?w=600', 10, '2025-01-28T09:30:00Z'),
+  ('20000000-0000-0000-0000-000000000058', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000024', 'photo',
+   'Lamason Brew Bar is underrated. The interior alone is worth the visit.',
+   'https://images.unsplash.com/photo-1453614512568-c4024d13c247?w=600', 7, '2025-01-30T10:00:00Z'),
+
+  -- Garage Project Taproom (4 posters: u7, u9, u4, u1)
+  ('20000000-0000-0000-0000-000000000059', '00000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000039', 'photo',
+   'Garage Project Taproom is beer paradise. 18 taps of their freshest brews.',
+   'https://images.unsplash.com/photo-1532634993-15f421e42ec0?w=600', 14, '2025-01-26T17:00:00Z'),
+  ('20000000-0000-0000-0000-000000000060', '00000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000039', 'photo',
+   'Friday night at Garage Project. The Aro Street spot is always buzzing.',
+   'https://images.unsplash.com/photo-1575367439058-6096bb9cf5e1?w=600', 10, '2025-01-31T18:00:00Z'),
+  ('20000000-0000-0000-0000-000000000061', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000039', 'text',
+   'Pre-gig pints at Garage Project. Their hazy IPA is elite.',
+   null, 6, '2025-01-28T16:30:00Z'),
+  ('20000000-0000-0000-0000-000000000062', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000039', 'photo',
+   'Garage Project taproom never disappoints. Tried the new sour — incredible.',
+   'https://images.unsplash.com/photo-1436076863939-06870fe779c2?w=600', 8, '2025-01-30T17:00:00Z'),
+
+  -- Waitangi Park (2 posters: u6, u1)
+  ('20000000-0000-0000-0000-000000000063', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000043', 'photo',
+   'Waitangi Park skatepark session. Wellington kids are so talented.',
+   'https://images.unsplash.com/photo-1564429238961-bf8e86aee0f9?w=600', 7, '2025-01-27T16:00:00Z'),
+  ('20000000-0000-0000-0000-000000000064', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000043', 'text',
+   'Lunch at Waitangi Park. The waterfront is so good in summer.',
+   null, 3, '2025-01-29T12:30:00Z'),
+
+  -- Logan Brown (2 posters: u2, u1)
+  ('20000000-0000-0000-0000-000000000065', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000029', 'photo',
+   'Logan Brown for a special occasion. The paua ravioli is iconic for a reason.',
+   'https://images.unsplash.com/photo-1550966871-3ed3cdb51f73?w=600', 13, '2025-01-25T19:30:00Z'),
+  ('20000000-0000-0000-0000-000000000066', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000029', 'text',
+   'Logan Brown never disappoints. Fine dining that feels relaxed. So Wellington.',
+   null, 8, '2025-01-30T20:00:00Z'),
+
+  -- Fidels (2 posters: u5, u4)
+  ('20000000-0000-0000-0000-000000000067', '00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000028', 'photo',
+   'Fidels is a Cuba Street institution. The vibe is unmatched.',
+   'https://images.unsplash.com/photo-1521017432531-fbd92d768814?w=600', 7, '2025-01-28T10:00:00Z'),
+  ('20000000-0000-0000-0000-000000000068', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000028', 'text',
+   'Post-gig breakfast at Fidels. Some things never change.',
+   null, 5, '2025-01-29T11:00:00Z'),
+
+  -- City Gallery (2 posters: u3, u10)
+  ('20000000-0000-0000-0000-000000000069', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000042', 'photo',
+   'City Gallery has a phenomenal new show on. Free entry. No excuses.',
+   'https://images.unsplash.com/photo-1531243269054-5ebf6f34081e?w=600', 12, '2025-01-26T14:00:00Z'),
+  ('20000000-0000-0000-0000-000000000070', '00000000-0000-0000-0000-000000000010', '10000000-0000-0000-0000-000000000042', 'text',
+   'City Gallery is so underrated. Brilliant contemporary art in a beautiful space.',
+   null, 6, '2025-01-29T15:00:00Z'),
+
+  -- Hawthorn Lounge (2 posters: u9, u2)
+  ('20000000-0000-0000-0000-000000000071', '00000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000035', 'photo',
+   'Hawthorn Lounge cocktails are art. The smoky old fashioned is insane.',
+   'https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=600', 10, '2025-01-27T21:00:00Z'),
+  ('20000000-0000-0000-0000-000000000072', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000035', 'photo',
+   'Date night at Hawthorn Lounge. Speakeasy perfection.',
+   'https://images.unsplash.com/photo-1536935338788-846bb9981813?w=600', 8, '2025-01-30T20:00:00Z'),
+
+  -- Wellington Cable Car (3 posters: u3, u8, u6)
+  ('20000000-0000-0000-0000-000000000073', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000014', 'photo',
+   'The Cable Car is tourist-y but I love it every time. The view from the top is stunning.',
+   'https://images.unsplash.com/photo-1567596275753-92607c3ce1ae?w=600', 13, '2025-01-24T14:00:00Z'),
+  ('20000000-0000-0000-0000-000000000074', '00000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000014', 'photo',
+   'Kids absolutely loved the Cable Car. Their little faces at the top!',
+   'https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=600', 9, '2025-01-27T11:00:00Z'),
+  ('20000000-0000-0000-0000-000000000075', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000014', 'text',
+   'Walked up the Cable Car track instead of riding. Great little workout with an amazing reward at the top.',
+   null, 6, '2025-01-29T09:00:00Z');
 
 -- ============================================================
 -- COMMENTS (selected subset)

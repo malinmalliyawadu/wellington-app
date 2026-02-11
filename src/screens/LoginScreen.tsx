@@ -106,28 +106,28 @@ export function LoginScreen() {
         )}
       </View>
 
-      {__DEV__ && (
-        <View style={styles.devSection}>
-          <Text style={styles.devTitle}>Dev Login</Text>
-          <View style={styles.seedGrid}>
-            {SEED_USERS.map((user) => (
-              <TouchableOpacity
-                key={user.email}
-                style={styles.seedUser}
-                onPress={() => handleSeedLogin(user.email)}
-                disabled={loading !== null}
-              >
-                <Image source={{ uri: user.avatar }} style={styles.seedAvatar} />
-                {loading === user.email ? (
-                  <ActivityIndicator size="small" color={colors.primary} style={styles.seedSpinner} />
-                ) : (
-                  <Text style={styles.seedName} numberOfLines={1}>{user.name}</Text>
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
+
+      <View style={styles.devSection}>
+        <Text style={styles.devTitle}>Dev Login</Text>
+        <View style={styles.seedGrid}>
+          {SEED_USERS.map((user) => (
+            <TouchableOpacity
+              key={user.email}
+              style={styles.seedUser}
+              onPress={() => handleSeedLogin(user.email)}
+              disabled={loading !== null}
+            >
+              <Image source={{ uri: user.avatar }} style={styles.seedAvatar} />
+              {loading === user.email ? (
+                <ActivityIndicator size="small" color={colors.primary} style={styles.seedSpinner} />
+              ) : (
+                <Text style={styles.seedName} numberOfLines={1}>{user.name}</Text>
+              )}
+            </TouchableOpacity>
+          ))}
         </View>
-      )}
+      </View>
+
     </ScrollView>
   );
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, LayoutChangeEvent } from 'react-native';
+import { View, Text, Image, StyleSheet, TouchableOpacity, LayoutChangeEvent } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,12 +12,13 @@ import { useQuery } from '../hooks/useQuery';
 import { usePeekingMarkers, PeekingMarker } from '../hooks/usePeekingMarkers';
 import { getPlaces } from '../services/places';
 import { getPosts, getPostsByPlaceId as getPostsByPlaceIdAsync } from '../services/posts';
+import { getProfiles } from '../services/users';
 import {
   computePlacePopularity,
   getMarkerSize,
   isFollowedPlace,
 } from '../utils/placePopularity';
-import { Place, PlaceCategory, Post } from '../types';
+import { Place, PlaceCategory, Post, User } from '../types';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
@@ -47,6 +48,15 @@ export function MapScreen() {
   const { data: places } = useQuery(getPlaces);
   const allPlaces = places ?? [];
   const { data: allPosts } = useQuery(getPosts);
+  const { data: allUsers } = useQuery(getProfiles);
+
+  const userMap = useMemo(() => {
+    const map = new Map<string, User>();
+    for (const user of allUsers ?? []) {
+      map.set(user.id, user);
+    }
+    return map;
+  }, [allUsers]);
 
   const popularityMap = useMemo(
     () => computePlacePopularity(allPosts ?? []),
@@ -218,9 +228,24 @@ export function MapScreen() {
                       {place.name}
                     </Text>
                     {posterIds.length > 1 && (
-                      <Text style={styles.labelSubtitle}>
-                        {posterIds.length} people were here
-                      </Text>
+                      <View style={styles.avatarRow}>
+                        <View style={styles.avatarStack}>
+                          {posterIds.slice(0, 3).map((uid, i) => {
+                            const user = userMap.get(uid);
+                            if (!user?.avatarUrl) return null;
+                            return (
+                              <Image
+                                key={uid}
+                                source={{ uri: user.avatarUrl }}
+                                style={[styles.avatar, { left: i * 10 }]}
+                              />
+                            );
+                          })}
+                        </View>
+                        <Text style={styles.labelSubtitle}>
+                          {posterIds.length} were here
+                        </Text>
+                      </View>
                     )}
                   </View>
                 )}
@@ -322,9 +347,28 @@ const styles = StyleSheet.create({
     color: colors.text,
     textAlign: 'center',
   },
+  avatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+    gap: 4,
+  },
+  avatarStack: {
+    flexDirection: 'row',
+    height: 14,
+    width: 34, // 14 + 2*10 overlap
+  },
+  avatar: {
+    position: 'absolute',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+  },
   labelSubtitle: {
     fontSize: 9,
     color: colors.textMuted,
-    textAlign: 'center',
   },
 });
