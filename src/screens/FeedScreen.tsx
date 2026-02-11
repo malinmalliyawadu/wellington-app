@@ -1,7 +1,9 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Pressable, RefreshControl } from 'react-native';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
+import { View, Text, FlatList, StyleSheet, RefreshControl, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { FeedPost } from '../components/FeedPost';
 import { useFollow } from '../context/FollowContext';
 import { colors } from '../theme/colors';
@@ -11,10 +13,13 @@ import { getProfilesByIds } from '../services/users';
 import { getPlaces } from '../services/places';
 import { HapticPressable } from 'src/components/HapticPressable';
 
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
+
 export function FeedScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { followingIds } = useFollow();
+  const scrollY = useRef(new Animated.Value(0)).current;
 
   const fetchFeedPosts = useCallback(() => getFeedPosts(followingIds), [followingIds]);
   const { data: feedPosts, loading: loadingPosts, refetch: refetchPosts } = useQuery(fetchFeedPosts, followingIds);
@@ -58,9 +63,18 @@ export function FeedScreen() {
     router.push(`/feed/post/${postId}`);
   };
 
+  const headerHeight = insets.top + 84; // insets.top + header padding + title height
+
+  // Animate header opacity based on scroll position
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [0, 0.95],
+    extrapolate: 'clamp',
+  });
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <FlatList
+    <View style={styles.container}>
+      <Animated.FlatList
         data={postsWithData}
         keyExtractor={(item) => item.post.id}
         renderItem={({ item }) => (
@@ -77,7 +91,16 @@ export function FeedScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 40, flexGrow: 1 }}
+        contentContainerStyle={{
+          paddingTop: headerHeight - 60,
+          paddingBottom: insets.bottom + 40,
+          flexGrow: 1
+        }}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>Your feed is empty</Text>
@@ -93,6 +116,46 @@ export function FeedScreen() {
           </View>
         }
       />
+
+      <Animated.View
+        style={[
+          styles.headerContainer,
+          {
+            paddingTop: insets.top,
+            height: headerHeight,
+          }
+        ]}
+      >
+        <BlurView
+          intensity={90}
+          tint="light"
+          style={StyleSheet.absoluteFill}
+        >
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                opacity: headerOpacity,
+              }
+            ]}
+          />
+        </BlurView>
+        <View style={styles.header}>
+          <View style={styles.titleRow}>
+            <View>
+              <Text style={styles.title}>Feed</Text>
+              <Text style={styles.subtitle}>From people you follow</Text>
+            </View>
+            <HapticPressable
+              style={styles.headerButton}
+              onPress={() => router.push('/feed/discover')}
+            >
+              <Ionicons name="people-outline" size={20} color={colors.text} />
+            </HapticPressable>
+          </View>
+        </View>
+      </Animated.View>
     </View>
   );
 }
@@ -100,7 +163,44 @@ export function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+  },
+  headerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    overflow: 'hidden',
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 12,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  subtitle: {
+    fontSize: 15,
+    color: colors.textMuted,
+    marginTop: 4,
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.cardBackground,
+    borderWidth: 1,
+    borderColor: colors.gray300,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emptyState: {
     alignItems: 'center',

@@ -140,9 +140,11 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPress
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.cardBackground,
-    marginBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    overflow: 'hidden',
+    boxShadow: "rgba(0, 0, 0, 0.16) 0px 1px 4px",
   },
   header: {
     flexDirection: 'row',

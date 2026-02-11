@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,14 @@ import {
   Pressable,
   StyleSheet,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useNavigation } from 'expo-router';
 import { DrawerActions } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { EventCard } from '../components/EventCard';
 import { getUpcomingEvents } from '../services/events';
 import { getPlaces } from '../services/places';
@@ -20,6 +22,8 @@ import { useFollow } from '../context/FollowContext';
 import { useEventFilters } from '../context/EventFilterContext';
 import { colors } from '../theme/colors';
 import { HapticPressable } from 'src/components/HapticPressable';
+
+const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 type DateRange = 'today' | 'tomorrow' | 'weekend' | 'month';
 
@@ -64,6 +68,7 @@ export function EventsScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { isFollowing } = useFollow();
+  const scrollY = useRef(new Animated.Value(0)).current;
   const {
     selectedDateRange,
     selectedCategories,
@@ -128,6 +133,15 @@ export function EventsScreen() {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
+  const headerHeight = insets.top + (activeFilterCount > 0 ? 104 : 84); // Adjust for filter summary
+
+  // Animate header opacity based on scroll position
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, 50],
+    outputRange: [0, 0.95],
+    extrapolate: 'clamp',
+  });
+
   if (loadingEvents) {
     return (
       <View style={[styles.container, { paddingTop: insets.top, justifyContent: 'center', alignItems: 'center' }]}>
@@ -137,35 +151,8 @@ export function EventsScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <View>
-            <Text style={styles.title}>Events</Text>
-            <Text style={styles.subtitle}>What's happening in Wellington</Text>
-          </View>
-          <HapticPressable
-            style={[styles.filterButton, activeFilterCount > 0 && styles.filterButtonActive]}
-            onPress={openFilters}
-          >
-            <Ionicons
-              name="options"
-              size={20}
-              color={activeFilterCount > 0 ? '#FFFFFF' : colors.text}
-            />
-            {activeFilterCount > 0 && (
-              <View style={styles.filterBadge}>
-                <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-              </View>
-            )}
-          </HapticPressable>
-        </View>
-        {activeFilterCount > 0 && (
-          <Text style={styles.filterSummary}>{filterSummary}</Text>
-        )}
-      </View>
-
-      <FlatList
+    <View style={styles.container}>
+      <Animated.FlatList
         data={filteredEvents}
         keyExtractor={(item) => item.event.id}
         renderItem={({ item }) => (
@@ -176,7 +163,18 @@ export function EventsScreen() {
           />
         )}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.list, { paddingBottom: 40 + insets.bottom }]}
+        contentContainerStyle={[
+          styles.list,
+          {
+            paddingTop: headerHeight,
+            paddingBottom: 40 + insets.bottom
+          }
+        ]}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false }
+        )}
+        scrollEventThrottle={16}
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons name="calendar-outline" size={48} color={colors.gray300} />
@@ -187,6 +185,58 @@ export function EventsScreen() {
           </View>
         }
       />
+
+      <Animated.View
+        style={[
+          styles.headerContainer,
+          {
+            paddingTop: insets.top,
+            height: headerHeight,
+          }
+        ]}
+      >
+        <BlurView
+          intensity={90}
+          tint="light"
+          style={StyleSheet.absoluteFill}
+        >
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                opacity: headerOpacity,
+              }
+            ]}
+          />
+        </BlurView>
+        <View style={styles.header}>
+          <View style={styles.titleRow}>
+            <View>
+              <Text style={styles.title}>Events</Text>
+              <Text style={styles.subtitle}>What's happening in Wellington</Text>
+            </View>
+            <HapticPressable
+              style={[styles.filterButton, activeFilterCount > 0 && styles.filterButtonActive]}
+              onPress={openFilters}
+            >
+              <Ionicons
+                name="options"
+                size={20}
+                color={activeFilterCount > 0 ? '#FFFFFF' : colors.text}
+              />
+              {activeFilterCount > 0 && (
+                <View style={styles.filterBadge}>
+                  <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+                </View>
+              )}
+            </HapticPressable>
+          </View>
+          {activeFilterCount > 0 && (
+            <Text style={styles.filterSummary}>{filterSummary}</Text>
+          )}
+        </View>
+      </Animated.View>
     </View>
   );
 }
@@ -194,6 +244,14 @@ export function EventsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  headerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    overflow: 'hidden',
   },
   header: {
     paddingHorizontal: 16,

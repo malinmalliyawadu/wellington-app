@@ -15,13 +15,14 @@ export default function TabLayout() {
         <Icon sf={{ default: 'calendar', selected: 'calendar' }} />
         <Label>Events</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="create">
-        <Icon sf={{ default: 'plus.circle', selected: 'plus.circle.fill' }} />
-        <Label>Create</Label>
-      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: 'person', selected: 'person.fill' }} />
         <Label>Profile</Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="create" role="search">
+        <Icon sf={{ default: 'plus.circle', selected: 'plus.circle.fill' }} />
+        <Label>Create</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
