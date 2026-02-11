@@ -5,7 +5,7 @@ import {
   Image,
   ScrollView,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   Share,
   ActivityIndicator,
   TextInput,
@@ -26,6 +26,7 @@ import { useLike } from '../context/LikeContext';
 import { useAuth } from '../context/AuthContext';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { colors } from '../theme/colors';
+import { HapticPressable } from 'src/components/HapticPressable';
 
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -153,14 +154,14 @@ export function PostDetailScreen() {
         keyboardShouldPersistTaps="handled"
       >
         {/* Author header */}
-        <TouchableOpacity style={styles.header} onPress={() => handlePressUser(post.userId)}>
+        <HapticPressable style={styles.header} onPress={() => handlePressUser(post.userId)}>
           <Image source={{ uri: user?.avatarUrl }} style={styles.avatar} />
           <View style={styles.headerText}>
             <Text style={styles.displayName}>{user?.displayName ?? 'Unknown'}</Text>
             <Text style={styles.username}>@{user?.username ?? 'unknown'}</Text>
           </View>
           <Text style={styles.timeAgo}>{formatTimeAgo(post.createdAt)}</Text>
-        </TouchableOpacity>
+        </HapticPressable>
 
         {/* Media */}
         {post.mediaUrl && (
@@ -178,7 +179,7 @@ export function PostDetailScreen() {
 
         {/* Actions row */}
         <View style={styles.actions}>
-          <TouchableOpacity
+          <HapticPressable
             style={styles.actionButton}
             onPress={() => toggleLike(post.id)}
           >
@@ -187,11 +188,11 @@ export function PostDetailScreen() {
               size={26}
               color={liked ? colors.liked : colors.text}
             />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={() => inputRef.current?.focus()}>
+          </HapticPressable>
+          <HapticPressable style={styles.actionButton} onPress={() => inputRef.current?.focus()}>
             <Ionicons name="chatbubble-outline" size={24} color={colors.text} />
-          </TouchableOpacity>
-          <TouchableOpacity
+          </HapticPressable>
+          <HapticPressable
             style={styles.actionButton}
             onPress={() => {
               const placeName = place?.name ?? 'a place';
@@ -199,7 +200,7 @@ export function PostDetailScreen() {
             }}
           >
             <Ionicons name="share-outline" size={24} color={colors.text} />
-          </TouchableOpacity>
+          </HapticPressable>
         </View>
 
         {/* Like count */}
@@ -217,13 +218,13 @@ export function PostDetailScreen() {
 
         {/* Place tag */}
         {place && (
-          <TouchableOpacity
+          <HapticPressable
             style={[styles.placeBadge, { backgroundColor: categoryColor + '15' }]}
             onPress={() => handlePressPlace(place.id)}
           >
             <View style={[styles.placeDot, { backgroundColor: categoryColor }]} />
             <Text style={[styles.placeName, { color: categoryColor }]}>{place.name}</Text>
-          </TouchableOpacity>
+          </HapticPressable>
         )}
 
         {/* Comments */}
@@ -234,12 +235,12 @@ export function PostDetailScreen() {
               const isOwn = comment.userId === profile?.id;
               return (
                 <View key={comment.id} style={styles.commentRow}>
-                  <TouchableOpacity onPress={() => handlePressUser(comment.userId)}>
+                  <HapticPressable onPress={() => handlePressUser(comment.userId)}>
                     <Image
                       source={{ uri: commentUser?.avatarUrl }}
                       style={styles.commentAvatar}
                     />
-                  </TouchableOpacity>
+                  </HapticPressable>
                   <View style={styles.commentContent}>
                     <Text style={styles.commentText}>
                       <Text style={styles.commentAuthor}>
@@ -250,14 +251,14 @@ export function PostDetailScreen() {
                     <Text style={styles.commentBody}>{comment.text}</Text>
                     {isOwn && (
                       <View style={styles.commentActions}>
-                        <TouchableOpacity onPress={() => {
+                        <HapticPressable onPress={() => {
                           setEditingCommentId(comment.id);
                           setCommentText(comment.text);
                           inputRef.current?.focus();
                         }}>
                           <Text style={styles.commentActionText}>Edit</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => {
+                        </HapticPressable>
+                        <HapticPressable onPress={() => {
                           Alert.alert('Delete comment?', 'This cannot be undone.', [
                             { text: 'Cancel', style: 'cancel' },
                             {
@@ -267,13 +268,13 @@ export function PostDetailScreen() {
                                 try {
                                   await deleteComment(comment.id);
                                   refetchComments();
-                                } catch {}
+                                } catch { }
                               },
                             },
                           ]);
                         }}>
                           <Text style={[styles.commentActionText, { color: colors.liked }]}>Delete</Text>
-                        </TouchableOpacity>
+                        </HapticPressable>
                       </View>
                     )}
                   </View>
@@ -287,9 +288,9 @@ export function PostDetailScreen() {
       {/* Comment input bar */}
       <View style={[styles.inputBar, { paddingBottom: insets.bottom + (inputFocused ? 0 : 60) || 8 }]}>
         {editingCommentId && (
-          <TouchableOpacity onPress={handleCancelEdit} style={styles.cancelButton}>
+          <HapticPressable onPress={handleCancelEdit} style={styles.cancelButton}>
             <Ionicons name="close-circle" size={22} color={colors.textMuted} />
-          </TouchableOpacity>
+          </HapticPressable>
         )}
         <TextInput
           ref={inputRef}
@@ -303,7 +304,7 @@ export function PostDetailScreen() {
           onSubmitEditing={handleSubmitComment}
           returnKeyType="send"
         />
-        <TouchableOpacity
+        <HapticPressable
           onPress={handleSubmitComment}
           disabled={!commentText.trim()}
           style={styles.sendButton}
@@ -313,7 +314,7 @@ export function PostDetailScreen() {
             size={22}
             color={commentText.trim() ? colors.primary : colors.gray300}
           />
-        </TouchableOpacity>
+        </HapticPressable>
       </View>
     </KeyboardAvoidingView>
   );

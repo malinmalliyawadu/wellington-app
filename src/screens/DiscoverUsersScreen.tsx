@@ -6,9 +6,10 @@ import { useFollow } from '../context/FollowContext';
 import { useAuth } from '../context/AuthContext';
 import { FollowButton } from '../components/FollowButton';
 import { colors } from '../theme/colors';
-import { TouchableOpacity } from 'react-native';
+import { Pressable } from 'react-native';
 import { useQuery } from '../hooks/useQuery';
 import { getOtherProfiles } from '../services/users';
+import { HapticPressable } from 'src/components/HapticPressable';
 
 export function DiscoverUsersScreen() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export function DiscoverUsersScreen() {
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         renderItem={({ item }) => (
-          <TouchableOpacity
+          <HapticPressable
             style={styles.userRow}
             onPress={() => router.push(`${tabBase}/user/${item.id}`)}
           >
@@ -51,7 +52,7 @@ export function DiscoverUsersScreen() {
               )}
             </View>
             <FollowButton userId={item.id} compact />
-          </TouchableOpacity>
+          </HapticPressable>
         )}
         contentContainerStyle={[styles.list, { paddingBottom: 8 + insets.bottom }]}
       />

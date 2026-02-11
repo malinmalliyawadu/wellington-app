@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Share } from 'react-native';
+import { View, Text, Image, StyleSheet, Pressable, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Post, User, Place, PlaceCategory } from '../types';
 import { useLike } from '../context/LikeContext';
@@ -7,6 +7,7 @@ import { useQuery } from '../hooks/useQuery';
 import { getCommentsByPostId } from '../services/comments';
 import { VideoPlayer } from './VideoPlayer';
 import { colors } from '../theme/colors';
+import { HapticPressable } from './HapticPressable';
 
 const CATEGORY_ICONS: Record<PlaceCategory, keyof typeof Ionicons.glyphMap> = {
   cafe: 'cafe',
@@ -53,7 +54,7 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPress
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
+        <HapticPressable
           style={styles.headerUser}
           onPress={() => onPressUser?.(user.id)}
           disabled={!onPressUser}
@@ -63,12 +64,11 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPress
             <Text style={styles.displayName}>{user.displayName}</Text>
             <Text style={styles.username}>@{user.username}</Text>
           </View>
-        </TouchableOpacity>
+        </HapticPressable>
         <Text style={styles.timeAgo}>{formatTimeAgo(post.createdAt)}</Text>
       </View>
 
-      <TouchableOpacity
-        activeOpacity={0.9}
+      <HapticPressable
         onPress={() => onPressPost?.(post.id)}
         disabled={!onPressPost}
       >
@@ -85,22 +85,22 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPress
             <Image source={{ uri: post.mediaUrl }} style={styles.media} />
           )
         )}
-      </TouchableOpacity>
+      </HapticPressable>
 
       <View style={styles.content}>
         <Text style={styles.caption}>{post.content}</Text>
-        <TouchableOpacity
+        <HapticPressable
           style={[styles.placeBadge, { backgroundColor: categoryColor + '15' }]}
           onPress={() => onPressPlace?.(place.id)}
           disabled={!onPressPlace}
         >
           <Ionicons name={CATEGORY_ICONS[place.category]} size={13} color={categoryColor} style={styles.placeIcon} />
           <Text style={[styles.placeName, { color: categoryColor }]}>{place.name}</Text>
-        </TouchableOpacity>
+        </HapticPressable>
       </View>
 
       <View style={styles.actions}>
-        <TouchableOpacity
+        <HapticPressable
           style={styles.actionButton}
           onPress={() => toggleLike(post.id)}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -113,8 +113,8 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPress
           <Text style={[styles.actionCount, liked && { color: colors.liked }]}>
             {getLikeCount(post.id)}
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </HapticPressable>
+        <HapticPressable
           style={styles.actionButton}
           onPress={() => onPressPost?.(post.id)}
           disabled={!onPressPost}
@@ -124,14 +124,14 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPress
           <Text style={styles.actionCount}>
             {commentCount}
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </HapticPressable>
+        <HapticPressable
           style={styles.actionButton}
           onPress={() => Share.share({ message: `Check out ${place.name}: ${post.content}` })}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Ionicons name="share-outline" size={20} color={colors.textMuted} />
-        </TouchableOpacity>
+        </HapticPressable>
       </View>
     </View>
   );

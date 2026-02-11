@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Share, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Image, FlatList, StyleSheet, Pressable, Share, ActivityIndicator, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import { useFollow } from '../context/FollowContext';
 import { addToCalendar } from '../utils/addToCalendar';
 import { colors } from '../theme/colors';
 import type { Event } from '../types';
+import { HapticPressable } from 'src/components/HapticPressable';
 
 const CATEGORY_COLORS: Record<Event['category'], string> = {
   music: '#7209B7',
@@ -137,7 +138,7 @@ export function EventDetailScreen() {
                 <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
                   <Text style={styles.categoryText}>{CATEGORY_LABELS[event.category]}</Text>
                 </View>
-                <TouchableOpacity
+                <HapticPressable
                   onPress={() => {
                     const placeName = place?.name ?? 'Wellington';
                     Share.share({
@@ -147,7 +148,7 @@ export function EventDetailScreen() {
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <Ionicons name="share-outline" size={22} color={colors.textSecondary} />
-                </TouchableOpacity>
+                </HapticPressable>
               </View>
               <Text style={styles.title}>{event.title}</Text>
               <View style={styles.detailRow}>
@@ -175,7 +176,7 @@ export function EventDetailScreen() {
 
             {currentUserId && (
               <View style={styles.goingButtonContainer}>
-                <TouchableOpacity
+                <HapticPressable
                   style={[styles.goingButton, isGoing && styles.goingButtonActive]}
                   disabled={togglingAttendance}
                   onPress={async () => {
@@ -198,12 +199,12 @@ export function EventDetailScreen() {
                   <Text style={[styles.goingButtonText, isGoing && styles.goingButtonTextActive]}>
                     {isGoing ? "I'm going" : "I'm going"}
                   </Text>
-                </TouchableOpacity>
+                </HapticPressable>
               </View>
             )}
 
             <View style={styles.actionButtons}>
-              <TouchableOpacity
+              <HapticPressable
                 style={styles.calendarButton}
                 onPress={async () => {
                   const success = await addToCalendar({
@@ -221,9 +222,9 @@ export function EventDetailScreen() {
               >
                 <Ionicons name="calendar-outline" size={18} color={colors.primary} />
                 <Text style={styles.calendarButtonText}>Add to Calendar</Text>
-              </TouchableOpacity>
+              </HapticPressable>
               {event.ticketUrl && (
-                <TouchableOpacity
+                <HapticPressable
                   style={styles.ticketButton}
                   onPress={() => {
                     WebBrowser.openBrowserAsync(event.ticketUrl!);
@@ -231,7 +232,7 @@ export function EventDetailScreen() {
                 >
                   <Ionicons name="ticket-outline" size={18} color="#FFFFFF" />
                   <Text style={styles.ticketButtonText}>Get Tickets</Text>
-                </TouchableOpacity>
+                </HapticPressable>
               )}
             </View>
 

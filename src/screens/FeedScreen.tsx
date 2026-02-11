@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Pressable, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { FeedPost } from '../components/FeedPost';
@@ -9,6 +9,7 @@ import { useQuery } from '../hooks/useQuery';
 import { getFeedPosts } from '../services/posts';
 import { getProfilesByIds } from '../services/users';
 import { getPlaces } from '../services/places';
+import { HapticPressable } from 'src/components/HapticPressable';
 
 export function FeedScreen() {
   const insets = useSafeAreaInsets();
@@ -83,12 +84,12 @@ export function FeedScreen() {
             <Text style={styles.emptySubtitle}>
               Follow people to see their recommendations here
             </Text>
-            <TouchableOpacity
+            <HapticPressable
               style={styles.discoverButton}
               onPress={() => router.push('/feed/discover')}
             >
               <Text style={styles.discoverButtonText}>Discover People</Text>
-            </TouchableOpacity>
+            </HapticPressable>
           </View>
         }
       />

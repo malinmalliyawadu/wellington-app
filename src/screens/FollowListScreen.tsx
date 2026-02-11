@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, Image, FlatList, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFollow } from '../context/FollowContext';
@@ -8,6 +8,7 @@ import { FollowButton } from '../components/FollowButton';
 import { colors } from '../theme/colors';
 import { useQuery } from '../hooks/useQuery';
 import { getProfileById, getProfilesByIds, getOtherProfiles } from '../services/users';
+import { HapticPressable } from 'src/components/HapticPressable';
 
 export function FollowListScreen() {
   const router = useRouter();
@@ -44,22 +45,22 @@ export function FollowListScreen() {
       </Text>
 
       <View style={styles.tabBar}>
-        <TouchableOpacity
+        <HapticPressable
           style={[styles.tab, activeTab === 'followers' && styles.activeTab]}
           onPress={() => setActiveTab('followers')}
         >
           <Text style={[styles.tabText, activeTab === 'followers' && styles.activeTabText]}>
             Followers
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
+        </HapticPressable>
+        <HapticPressable
           style={[styles.tab, activeTab === 'following' && styles.activeTab]}
           onPress={() => setActiveTab('following')}
         >
           <Text style={[styles.tabText, activeTab === 'following' && styles.activeTabText]}>
             Following
           </Text>
-        </TouchableOpacity>
+        </HapticPressable>
       </View>
 
       <FlatList
@@ -69,7 +70,7 @@ export function FollowListScreen() {
           if (!item) return null;
           const isCurrentUser = item.id === profile?.id;
           return (
-            <TouchableOpacity
+            <HapticPressable
               style={styles.userRow}
               onPress={() => {
                 if (!isCurrentUser) {
@@ -83,7 +84,7 @@ export function FollowListScreen() {
                 <Text style={styles.username}>@{item.username}</Text>
               </View>
               {!isCurrentUser && <FollowButton userId={item.id} compact />}
-            </TouchableOpacity>
+            </HapticPressable>
           );
         }}
         ListEmptyComponent={

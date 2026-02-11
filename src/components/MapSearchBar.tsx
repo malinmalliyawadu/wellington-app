@@ -4,7 +4,7 @@ import {
   TextInput,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   FlatList,
   ScrollView,
 } from 'react-native';
@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Place, PlaceCategory } from '../types';
 import { colors } from '../theme/colors';
+import { HapticPressable } from './HapticPressable';
 
 const CATEGORY_ICONS: Record<PlaceCategory, keyof typeof Ionicons.glyphMap> = {
   cafe: 'cafe',
@@ -64,8 +65,8 @@ export function MapSearchBar({
   const results =
     query.length > 0
       ? places.filter((p) =>
-          p.name.toLowerCase().includes(query.toLowerCase())
-        )
+        p.name.toLowerCase().includes(query.toLowerCase())
+      )
       : [];
 
   const handleSelectPlace = (place: Place) => {
@@ -102,9 +103,9 @@ export function MapSearchBar({
           returnKeyType="search"
         />
         {query.length > 0 && (
-          <TouchableOpacity onPress={() => setQuery('')} style={styles.clearButton}>
+          <HapticPressable onPress={() => setQuery('')} style={styles.clearButton}>
             <Ionicons name="close-circle" size={18} color={colors.gray400} />
-          </TouchableOpacity>
+          </HapticPressable>
         )}
       </View>
 
@@ -117,7 +118,7 @@ export function MapSearchBar({
             keyboardShouldPersistTaps="handled"
             style={styles.resultsList}
             renderItem={({ item }) => (
-              <TouchableOpacity
+              <HapticPressable
                 style={styles.resultRow}
                 onPress={() => handleSelectPlace(item)}
               >
@@ -141,7 +142,7 @@ export function MapSearchBar({
                     {item.address}
                   </Text>
                 </View>
-              </TouchableOpacity>
+              </HapticPressable>
             )}
           />
         </View>
@@ -155,7 +156,7 @@ export function MapSearchBar({
         contentContainerStyle={styles.chipsContent}
       >
         {/* Following chip */}
-        <TouchableOpacity
+        <HapticPressable
           style={[
             styles.chip,
             showFollowingOnly ? styles.chipActive : styles.chipInactive,
@@ -177,14 +178,14 @@ export function MapSearchBar({
           >
             Following
           </Text>
-        </TouchableOpacity>
+        </HapticPressable>
 
         {/* Category chips */}
         {ALL_CATEGORIES.map((cat) => {
           const active = selectedCategories.includes(cat);
           const catColor = colors.category[cat];
           return (
-            <TouchableOpacity
+            <HapticPressable
               key={cat}
               style={[
                 styles.chip,
@@ -207,7 +208,7 @@ export function MapSearchBar({
               >
                 {CATEGORY_LABELS[cat]}
               </Text>
-            </TouchableOpacity>
+            </HapticPressable>
           );
         })}
       </ScrollView>

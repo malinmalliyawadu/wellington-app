@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, LayoutChangeEvent } from 'react-native';
+import { View, Text, Image, StyleSheet, Pressable, LayoutChangeEvent } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +22,8 @@ import { Place, PlaceCategory, Post, User } from '../types';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
+import { HapticPressable } from 'src/components/HapticPressable';
+import * as Haptics from 'expo-haptics';
 
 const WELLINGTON_REGION = {
   latitude: -41.2865,
@@ -234,7 +236,7 @@ export function MapScreen() {
           const showLabel = annotatedPlaceIds.has(place.id);
 
           return (
-            <Marker
+            <Marker.Animated
               key={place.id}
               coordinate={{
                 latitude: place.latitude,
@@ -243,6 +245,7 @@ export function MapScreen() {
               anchor={{ x: 0.5, y: showLabel ? 0.35 : 0.5 }}
               onPress={(e) => {
                 e.stopPropagation();
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
                 setSelectedPlace(place);
               }}
             >
@@ -261,7 +264,7 @@ export function MapScreen() {
                     {posterIds.length > 1 && (
                       <View style={styles.avatarRow}>
                         <View style={styles.avatarStack}>
-                          {posterIds.slice(0, 3).map((uid, i) => {
+                          {posterIds.slice(0, 8).map((uid, i) => {
                             const user = userMap.get(uid);
                             if (!user?.avatarUrl) return null;
                             return (
@@ -273,15 +276,12 @@ export function MapScreen() {
                             );
                           })}
                         </View>
-                        <Text style={styles.labelSubtitle}>
-                          {posterIds.length} were here
-                        </Text>
                       </View>
                     )}
                   </View>
                 )}
               </View>
-            </Marker>
+            </Marker.Animated>
           );
         })}
       </MapView>
@@ -302,13 +302,13 @@ export function MapScreen() {
         onFollowingToggle={setShowFollowingOnly}
       />
 
-      <TouchableOpacity style={styles.locationButton} onPress={centerOnUser}>
+      <HapticPressable style={styles.locationButton} onPress={centerOnUser}>
         <Ionicons
           name={location ? 'navigate' : 'navigate-outline'}
           size={22}
           color={location ? colors.primary : colors.gray400}
         />
-      </TouchableOpacity>
+      </HapticPressable>
 
       {selectedPlace && (
         <View style={[styles.sheetContainer, { bottom: 60 + insets.bottom }]}>
@@ -366,11 +366,13 @@ const styles = StyleSheet.create({
   },
   labelContainer: {
     marginTop: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.7)',
-    borderRadius: 4,
-    paddingHorizontal: 5,
-    paddingVertical: 2,
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     maxWidth: 120,
+    boxShadow: "rgba(0, 0, 0, 0.16) 0px 1px 4px",
+    zIndex: 99999
   },
   labelName: {
     fontSize: 11,

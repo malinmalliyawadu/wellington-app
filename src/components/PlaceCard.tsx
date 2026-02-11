@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Place, PlaceCategory } from '../types';
 import { colors } from '../theme/colors';
+import { HapticPressable } from './HapticPressable';
 
 interface PlaceCardProps {
   place: Place;
@@ -26,9 +27,9 @@ export function PlaceCard({ place, onClose }: PlaceCardProps) {
         <View style={styles.titleRow}>
           <Text style={styles.name}>{place.name}</Text>
           {onClose && (
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <HapticPressable onPress={onClose} style={styles.closeButton}>
               <Text style={styles.closeText}>✕</Text>
-            </TouchableOpacity>
+            </HapticPressable>
           )}
         </View>
         <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>

@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, Image, FlatList, StyleSheet, Pressable, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ import { getPlaces } from '../services/places';
 import { VideoThumbnail } from '../components/VideoThumbnail';
 import { colors } from '../theme/colors';
 import { getOtherProfiles } from 'src/services/users';
+import { HapticPressable } from 'src/components/HapticPressable';
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -46,7 +47,7 @@ export function ProfileScreen() {
       <View style={styles.header}>
         <View style={styles.headerSpacer} />
         <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity
+        <HapticPressable
           style={styles.logoutButton}
           onPress={() =>
             Alert.alert('Sign Out', 'Are you sure?', [
@@ -57,7 +58,7 @@ export function ProfileScreen() {
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Ionicons name="log-out-outline" size={22} color={colors.textMuted} />
-        </TouchableOpacity>
+        </HapticPressable>
       </View>
 
       <FlatList
@@ -80,7 +81,7 @@ export function ProfileScreen() {
                 <Text style={styles.statLabel}>Posts</Text>
               </View>
               <View style={styles.statDivider} />
-              <TouchableOpacity
+              <HapticPressable
                 style={styles.stat}
                 onPress={() =>
                   router.push({
@@ -91,9 +92,9 @@ export function ProfileScreen() {
               >
                 <Text style={styles.statNumber}>{followerList?.length}</Text>
                 <Text style={styles.statLabel}>Followers</Text>
-              </TouchableOpacity>
+              </HapticPressable>
               <View style={styles.statDivider} />
-              <TouchableOpacity
+              <HapticPressable
                 style={styles.stat}
                 onPress={() =>
                   router.push({
@@ -104,28 +105,27 @@ export function ProfileScreen() {
               >
                 <Text style={styles.statNumber}>{followingIds.length}</Text>
                 <Text style={styles.statLabel}>Following</Text>
-              </TouchableOpacity>
+              </HapticPressable>
             </View>
 
             <View style={styles.buttonRow}>
-              <TouchableOpacity style={styles.editButton}>
+              <HapticPressable style={styles.editButton}>
                 <Text style={styles.editButtonText}>Edit Profile</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
+              </HapticPressable>
+              <HapticPressable
                 style={styles.findPeopleButton}
                 onPress={() => router.push('/profile/discover')}
               >
                 <Text style={styles.findPeopleButtonText}>Find People</Text>
-              </TouchableOpacity>
+              </HapticPressable>
             </View>
 
             <Text style={styles.sectionTitle}>Your Posts</Text>
           </View>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity
+          <HapticPressable
             style={styles.postTile}
-            activeOpacity={0.8}
             onPress={() => router.push(`/profile/post/${item.id}`)}
           >
             {item.mediaUrl ? (
@@ -146,7 +146,7 @@ export function ProfileScreen() {
                 <Text style={styles.postPlace} numberOfLines={1}>{item.place.name}</Text>
               </View>
             )}
-          </TouchableOpacity>
+          </HapticPressable>
         )}
         contentContainerStyle={[styles.postsGrid, { paddingBottom: 60 + insets.bottom }]}
       />

@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, Image, FlatList, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFollow } from '../context/FollowContext';
@@ -11,6 +11,7 @@ import { getFollowCounts } from '../services/follows';
 import { FollowButton } from '../components/FollowButton';
 import { VideoThumbnail } from '../components/VideoThumbnail';
 import { colors } from '../theme/colors';
+import { HapticPressable } from 'src/components/HapticPressable';
 
 export function UserProfileScreen() {
   const router = useRouter();
@@ -72,7 +73,7 @@ export function UserProfileScreen() {
                 <Text style={styles.statLabel}>Posts</Text>
               </View>
               <View style={styles.statDivider} />
-              <TouchableOpacity
+              <HapticPressable
                 style={styles.stat}
                 onPress={() =>
                   router.push({
@@ -83,9 +84,9 @@ export function UserProfileScreen() {
               >
                 <Text style={styles.statNumber}>{followerCount}</Text>
                 <Text style={styles.statLabel}>Followers</Text>
-              </TouchableOpacity>
+              </HapticPressable>
               <View style={styles.statDivider} />
-              <TouchableOpacity
+              <HapticPressable
                 style={styles.stat}
                 onPress={() =>
                   router.push({
@@ -96,7 +97,7 @@ export function UserProfileScreen() {
               >
                 <Text style={styles.statNumber}>{followingCount}</Text>
                 <Text style={styles.statLabel}>Following</Text>
-              </TouchableOpacity>
+              </HapticPressable>
             </View>
 
             <View style={styles.actionRow}>
@@ -107,9 +108,8 @@ export function UserProfileScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity
+          <HapticPressable
             style={styles.postTile}
-            activeOpacity={0.8}
             onPress={() => router.push(`${tabBase}/post/${item.id}`)}
           >
             {item.mediaUrl ? (
@@ -132,7 +132,7 @@ export function UserProfileScreen() {
                 </Text>
               </View>
             )}
-          </TouchableOpacity>
+          </HapticPressable>
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>

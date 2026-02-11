@@ -5,7 +5,7 @@ import {
   TextInput,
   Image,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
   Alert,
   ActivityIndicator,
@@ -21,6 +21,7 @@ import { useAuth } from '../context/AuthContext';
 import { getPlaces } from '../services/places';
 import { createPost } from '../services/posts';
 import { uploadMedia } from '../services/storage';
+import { HapticPressable } from 'src/components/HapticPressable';
 
 const POST_TYPES: { type: PostType; icon: string; label: string }[] = [
   { type: 'photo', icon: 'image', label: 'Photo' },
@@ -123,7 +124,7 @@ export function CreateScreen() {
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Create Post</Text>
-        <TouchableOpacity
+        <HapticPressable
           style={[styles.postButton, (!selectedPlace || !content.trim() || posting) && styles.postButtonDisabled]}
           onPress={handlePost}
           disabled={posting}
@@ -133,14 +134,14 @@ export function CreateScreen() {
           ) : (
             <Text style={styles.postButtonText}>Post</Text>
           )}
-        </TouchableOpacity>
+        </HapticPressable>
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={{ paddingBottom: insets.bottom }} keyboardShouldPersistTaps="handled">
         <Text style={styles.label}>Post Type</Text>
         <View style={styles.typeRow}>
           {POST_TYPES.map((item) => (
-            <TouchableOpacity
+            <HapticPressable
               key={item.type}
               style={[styles.typeButton, postType === item.type && styles.typeButtonActive]}
               onPress={() => {
@@ -156,12 +157,12 @@ export function CreateScreen() {
               <Text style={[styles.typeLabel, postType === item.type && styles.typeLabelActive]}>
                 {item.label}
               </Text>
-            </TouchableOpacity>
+            </HapticPressable>
           ))}
         </View>
 
         {postType !== 'text' && (
-          <TouchableOpacity style={styles.mediaButton} onPress={pickMedia}>
+          <HapticPressable style={styles.mediaButton} onPress={pickMedia}>
             {mediaUri ? (
               <Image source={{ uri: mediaUri }} style={styles.mediaPreview} />
             ) : (
@@ -172,11 +173,11 @@ export function CreateScreen() {
                 </Text>
               </>
             )}
-          </TouchableOpacity>
+          </HapticPressable>
         )}
 
         <Text style={styles.label}>Place</Text>
-        <TouchableOpacity
+        <HapticPressable
           style={styles.placeSelector}
           onPress={() => setShowPlacePicker(!showPlacePicker)}
         >
@@ -196,12 +197,12 @@ export function CreateScreen() {
             size={20}
             color={colors.gray400}
           />
-        </TouchableOpacity>
+        </HapticPressable>
 
         {showPlacePicker && (
           <View style={styles.placeList}>
             {allPlaces.map((place) => (
-              <TouchableOpacity
+              <HapticPressable
                 key={place.id}
                 style={[
                   styles.placeItem,
@@ -220,7 +221,7 @@ export function CreateScreen() {
                 {selectedPlace?.id === place.id && (
                   <Ionicons name="checkmark" size={20} color={colors.primary} />
                 )}
-              </TouchableOpacity>
+              </HapticPressable>
             ))}
           </View>
         )}

@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { CATEGORY_COLORS } from './EventCard';
 import { useEventFilters } from '../context/EventFilterContext';
 import { colors } from '../theme/colors';
+import { HapticPressable } from './HapticPressable';
 
 type DateRange = 'today' | 'tomorrow' | 'weekend' | 'month';
 type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community';
@@ -62,16 +63,16 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
       <View style={styles.header}>
         <Text style={styles.title}>Filters</Text>
         {hasAnyFilter && (
-          <TouchableOpacity onPress={clearAll}>
+          <HapticPressable onPress={clearAll}>
             <Text style={styles.clearAll}>Clear all</Text>
-          </TouchableOpacity>
+          </HapticPressable>
         )}
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
         {/* Date Range Section */}
         <Text style={styles.sectionTitle}>When</Text>
-        <TouchableOpacity
+        <HapticPressable
           style={[styles.option, selectedDateRange === null && styles.optionActive]}
           onPress={() => setSelectedDateRange(null)}
         >
@@ -82,12 +83,12 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
           {selectedDateRange === null && (
             <Ionicons name="checkmark" size={18} color={colors.primary} style={styles.check} />
           )}
-        </TouchableOpacity>
+        </HapticPressable>
 
         {DATE_RANGES.map(({ key, label, icon }) => {
           const active = selectedDateRange === key;
           return (
-            <TouchableOpacity
+            <HapticPressable
               key={key}
               style={[styles.option, active && styles.optionActive]}
               onPress={() => setSelectedDateRange(key)}
@@ -95,7 +96,7 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
               <Ionicons name={icon} size={20} color={active ? colors.primary : colors.text} />
               <Text style={[styles.optionLabel, active && styles.optionLabelActive]}>{label}</Text>
               {active && <Ionicons name="checkmark" size={18} color={colors.primary} style={styles.check} />}
-            </TouchableOpacity>
+            </HapticPressable>
           );
         })}
 
@@ -103,9 +104,9 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Category</Text>
           {selectedCategories.length > 0 && (
-            <TouchableOpacity onPress={clearCategories}>
+            <HapticPressable onPress={clearCategories}>
               <Text style={styles.clearText}>Clear</Text>
-            </TouchableOpacity>
+            </HapticPressable>
           )}
         </View>
 
@@ -113,7 +114,7 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
           const active = selectedCategories.includes(cat);
           const catColor = CATEGORY_COLORS[cat];
           return (
-            <TouchableOpacity
+            <HapticPressable
               key={cat}
               style={[styles.option, active && styles.optionActive]}
               onPress={() => toggleCategory(cat)}
@@ -123,13 +124,13 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
                 {CATEGORY_LABELS[cat]}
               </Text>
               {active && <Ionicons name="checkmark" size={18} color={colors.primary} style={styles.check} />}
-            </TouchableOpacity>
+            </HapticPressable>
           );
         })}
 
         {/* Following Section */}
         <Text style={styles.sectionTitle}>People</Text>
-        <TouchableOpacity
+        <HapticPressable
           style={[styles.option, showFollowingOnly && styles.optionActive]}
           onPress={() => setShowFollowingOnly(!showFollowingOnly)}
         >
@@ -140,15 +141,15 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
           {showFollowingOnly && (
             <Ionicons name="checkmark" size={18} color={colors.primary} style={styles.check} />
           )}
-        </TouchableOpacity>
+        </HapticPressable>
       </ScrollView>
 
-      <TouchableOpacity
+      <HapticPressable
         style={styles.doneButton}
         onPress={() => navigation.closeDrawer()}
       >
         <Text style={styles.doneText}>Show results</Text>
-      </TouchableOpacity>
+      </HapticPressable>
     </View>
   );
 }

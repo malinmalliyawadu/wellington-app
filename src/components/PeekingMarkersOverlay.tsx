@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Pressable, StyleSheet } from 'react-native';
 import { PopularityMarker } from './PopularityMarker';
 import { PeekingMarker, Edge } from '../hooks/usePeekingMarkers';
+import { HapticPressable } from './HapticPressable';
 
 const MARKER_SIZE = 28;
 const PEEK_RATIO = 0.55;
@@ -97,11 +98,10 @@ export function PeekingMarkersOverlay({
               const pos = getMarkerPosition(edge, marker.edgePosition, mapWidth, mapHeight);
 
               return (
-                <TouchableOpacity
+                <HapticPressable
                   key={marker.place.id}
                   style={[styles.marker, pos]}
                   onPress={() => onPress(marker)}
-                  activeOpacity={0.7}
                 >
                   <PopularityMarker
                     size={MARKER_SIZE}
@@ -109,7 +109,7 @@ export function PeekingMarkersOverlay({
                     postCount={marker.postCount}
                     isFollowed={marker.isFollowed}
                   />
-                </TouchableOpacity>
+                </HapticPressable>
               );
             })}
           </View>

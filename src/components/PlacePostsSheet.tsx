@@ -3,7 +3,7 @@ import {
   View,
   Text,
   StyleSheet,
-  TouchableOpacity,
+  Pressable,
   ScrollView,
   Image,
   Dimensions,
@@ -16,6 +16,7 @@ import { useQuery } from '../hooks/useQuery';
 import { getProfileById } from '../services/users';
 import { VideoThumbnail } from './VideoThumbnail';
 import { colors } from '../theme/colors';
+import { HapticPressable } from './HapticPressable';
 
 interface PlacePostsSheetProps {
   place: Place;
@@ -63,7 +64,7 @@ export function PlacePostsSheet({
     <View style={[styles.container, { maxHeight: MAX_HEIGHT }]}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <TouchableOpacity
+          <HapticPressable
             onPress={() => onPressPlaceName?.(place.id)}
             disabled={!onPressPlaceName}
             style={styles.nameButton}
@@ -74,10 +75,10 @@ export function PlacePostsSheet({
             {onPressPlaceName && (
               <Ionicons name="chevron-forward" size={18} color={colors.text} />
             )}
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          </HapticPressable>
+          <HapticPressable onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={20} color={colors.gray400} />
-          </TouchableOpacity>
+          </HapticPressable>
         </View>
         <View style={styles.metaRow}>
           <View
@@ -105,9 +106,8 @@ export function PlacePostsSheet({
 
       <ScrollView style={styles.postList} showsVerticalScrollIndicator={false}>
         {sortedPosts.map((post) => (
-          <TouchableOpacity
+          <HapticPressable
             key={post.id}
-            activeOpacity={0.7}
             onPress={() => onPressPost?.(post.id)}
             disabled={!onPressPost}
           >
@@ -115,7 +115,7 @@ export function PlacePostsSheet({
               post={post}
               isFollowed={followingIds.includes(post.userId)}
             />
-          </TouchableOpacity>
+          </HapticPressable>
         ))}
       </ScrollView>
     </View>
@@ -154,7 +154,7 @@ function PostRow({
         <Text style={styles.postText} numberOfLines={2}>
           {post.content}
         </Text>
-        <TouchableOpacity
+        <HapticPressable
           style={styles.postMeta}
           onPress={(e) => {
             e.stopPropagation();
@@ -170,7 +170,7 @@ function PostRow({
           <Text style={[styles.likesText, liked && { color: colors.liked }]}>
             {getLikeCount(post.id)}
           </Text>
-        </TouchableOpacity>
+        </HapticPressable>
       </View>
       {post.mediaUrl && (
         post.type === 'video' ? (

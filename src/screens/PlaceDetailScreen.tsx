@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, Image, FlatList, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ import { useLike } from '../context/LikeContext';
 import { VideoThumbnail } from '../components/VideoThumbnail';
 import { colors } from '../theme/colors';
 import type { PlaceCategory } from '../types';
+import { HapticPressable } from 'src/components/HapticPressable';
 
 const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   cafe: 'Cafe',
@@ -103,29 +104,28 @@ export function PlaceDetailScreen() {
                 <Text style={styles.statText}>{totalLikes} likes</Text>
               </View>
             </View>
-            <TouchableOpacity
+            <HapticPressable
               style={styles.writePostButton}
               onPress={() => router.navigate({ pathname: '/(tabs)/create', params: { placeId: place.id } })}
             >
               <Ionicons name="create-outline" size={18} color={colors.primary} />
               <Text style={styles.writePostText}>Write a post</Text>
-            </TouchableOpacity>
+            </HapticPressable>
           </View>
         }
         renderItem={({ item }) => (
-          <TouchableOpacity
+          <HapticPressable
             style={styles.postRow}
             onPress={() => router.push(`${tabBase}/post/${item.post.id}`)}
-            activeOpacity={0.7}
           >
-            <TouchableOpacity onPress={() => router.push(`${tabBase}/user/${item.post.userId}`)}>
+            <HapticPressable onPress={() => router.push(`${tabBase}/user/${item.post.userId}`)}>
               <Image
                 source={{ uri: item.user?.avatarUrl }}
                 style={styles.avatar}
               />
-            </TouchableOpacity>
+            </HapticPressable>
             <View style={styles.postContent}>
-              <TouchableOpacity
+              <HapticPressable
                 style={styles.postHeader}
                 onPress={() => router.push(`${tabBase}/user/${item.post.userId}`)}
               >
@@ -137,7 +137,7 @@ export function PlaceDetailScreen() {
                     <Text style={styles.followBadgeText}>Following</Text>
                   </View>
                 )}
-              </TouchableOpacity>
+              </HapticPressable>
               <Text style={styles.postText}>{item.post.content}</Text>
               {item.post.mediaUrl && (
                 item.post.type === 'video' ? (
@@ -148,7 +148,7 @@ export function PlaceDetailScreen() {
               )}
               <PostLikeButton postId={item.post.id} />
             </View>
-          </TouchableOpacity>
+          </HapticPressable>
         )}
         ListEmptyComponent={
           <View style={styles.emptyState}>
@@ -165,7 +165,7 @@ function PostLikeButton({ postId }: { postId: string }) {
   const liked = isLiked(postId);
 
   return (
-    <TouchableOpacity
+    <HapticPressable
       style={styles.postMeta}
       onPress={() => toggleLike(postId)}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -178,7 +178,7 @@ function PostLikeButton({ postId }: { postId: string }) {
       <Text style={[styles.likesText, liked && { color: colors.liked }]}>
         {getLikeCount(postId)}
       </Text>
-    </TouchableOpacity>
+    </HapticPressable>
   );
 }
 

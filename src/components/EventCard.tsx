@@ -1,11 +1,12 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, Image, StyleSheet, TouchableOpacity, Share } from 'react-native';
+import { View, Text, Image, StyleSheet, Pressable, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Event, Place } from '../types';
 import { useFollow } from '../context/FollowContext';
 import { getProfilesByIds } from '../services/users';
 import { useQuery } from '../hooks/useQuery';
 import { colors } from '../theme/colors';
+import { HapticPressable } from './HapticPressable';
 
 interface EventCardProps {
   event: Event;
@@ -102,9 +103,8 @@ export function EventCard({ event, place, onPress }: EventCardProps) {
   }
 
   return (
-    <TouchableOpacity
+    <HapticPressable
       style={styles.container}
-      activeOpacity={0.7}
       onPress={onPress}
     >
       {event.imageUrl && (
@@ -117,7 +117,7 @@ export function EventCard({ event, place, onPress }: EventCardProps) {
           </View>
           <View style={styles.dateRow}>
             <Text style={styles.date}>{formatDate(event.date)}</Text>
-            <TouchableOpacity
+            <HapticPressable
               onPress={(e) => {
                 e.stopPropagation?.();
                 Share.share({ message: `${event.title} — ${formatDate(event.date)} at ${place.name}` });
@@ -125,7 +125,7 @@ export function EventCard({ event, place, onPress }: EventCardProps) {
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons name="share-outline" size={16} color={colors.textSecondary} />
-            </TouchableOpacity>
+            </HapticPressable>
           </View>
         </View>
         <Text style={styles.title}>{event.title}</Text>
@@ -155,7 +155,7 @@ export function EventCard({ event, place, onPress }: EventCardProps) {
           </View>
         )}
       </View>
-    </TouchableOpacity>
+    </HapticPressable>
   );
 }
 
@@ -166,11 +166,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 16,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    boxShadow: "rgba(0, 0, 0, 0.16) 0px 1px 4px"
   },
   image: {
     width: '100%',

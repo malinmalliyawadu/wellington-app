@@ -3,7 +3,7 @@ import {
   View,
   Text,
   FlatList,
-  TouchableOpacity,
+  Pressable,
   StyleSheet,
   ActivityIndicator,
 } from 'react-native';
@@ -19,6 +19,7 @@ import { useQuery } from '../hooks/useQuery';
 import { useFollow } from '../context/FollowContext';
 import { useEventFilters } from '../context/EventFilterContext';
 import { colors } from '../theme/colors';
+import { HapticPressable } from 'src/components/HapticPressable';
 
 type DateRange = 'today' | 'tomorrow' | 'weekend' | 'month';
 
@@ -143,7 +144,7 @@ export function EventsScreen() {
             <Text style={styles.title}>Events</Text>
             <Text style={styles.subtitle}>What's happening in Wellington</Text>
           </View>
-          <TouchableOpacity
+          <HapticPressable
             style={[styles.filterButton, activeFilterCount > 0 && styles.filterButtonActive]}
             onPress={openFilters}
           >
@@ -157,7 +158,7 @@ export function EventsScreen() {
                 <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
               </View>
             )}
-          </TouchableOpacity>
+          </HapticPressable>
         </View>
         {activeFilterCount > 0 && (
           <Text style={styles.filterSummary}>{filterSummary}</Text>
@@ -180,9 +181,9 @@ export function EventsScreen() {
           <View style={styles.empty}>
             <Ionicons name="calendar-outline" size={48} color={colors.gray300} />
             <Text style={styles.emptyText}>No events match your filters</Text>
-            <TouchableOpacity onPress={openFilters}>
+            <HapticPressable onPress={openFilters}>
               <Text style={styles.emptyAction}>Adjust filters</Text>
-            </TouchableOpacity>
+            </HapticPressable>
           </View>
         }
       />

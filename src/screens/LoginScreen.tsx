@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, Platform, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Pressable, ScrollView, Image, StyleSheet, Platform, ActivityIndicator, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { signInWithGoogle, signInWithApple } from '../services/auth';
 import { supabase } from '../lib/supabase';
 import { colors } from '../theme/colors';
+import { HapticPressable } from 'src/components/HapticPressable';
 
 const SEED_USERS = [
   { email: 'you@test.com', name: 'You', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200' },
@@ -73,7 +74,7 @@ export function LoginScreen() {
       </View>
 
       <View style={styles.buttons}>
-        <TouchableOpacity
+        <HapticPressable
           style={[styles.button, styles.googleButton]}
           onPress={handleGoogleSignIn}
           disabled={loading !== null}
@@ -86,10 +87,10 @@ export function LoginScreen() {
               <Text style={styles.buttonText}>Continue with Google</Text>
             </>
           )}
-        </TouchableOpacity>
+        </HapticPressable>
 
         {Platform.OS === 'ios' && (
-          <TouchableOpacity
+          <HapticPressable
             style={[styles.button, styles.appleButton]}
             onPress={handleAppleSignIn}
             disabled={loading !== null}
@@ -102,7 +103,7 @@ export function LoginScreen() {
                 <Text style={styles.buttonText}>Continue with Apple</Text>
               </>
             )}
-          </TouchableOpacity>
+          </HapticPressable>
         )}
       </View>
 
@@ -111,7 +112,7 @@ export function LoginScreen() {
         <Text style={styles.devTitle}>Dev Login</Text>
         <View style={styles.seedGrid}>
           {SEED_USERS.map((user) => (
-            <TouchableOpacity
+            <HapticPressable
               key={user.email}
               style={styles.seedUser}
               onPress={() => handleSeedLogin(user.email)}
@@ -123,7 +124,7 @@ export function LoginScreen() {
               ) : (
                 <Text style={styles.seedName} numberOfLines={1}>{user.name}</Text>
               )}
-            </TouchableOpacity>
+            </HapticPressable>
           ))}
         </View>
       </View>

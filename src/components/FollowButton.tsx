@@ -1,7 +1,8 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { Pressable, Text, StyleSheet } from 'react-native';
 import { useFollow } from '../context/FollowContext';
 import { colors } from '../theme/colors';
+import { HapticPressable } from './HapticPressable';
 
 interface FollowButtonProps {
   userId: string;
@@ -13,7 +14,7 @@ export function FollowButton({ userId, compact }: FollowButtonProps) {
   const following = isFollowing(userId);
 
   return (
-    <TouchableOpacity
+    <HapticPressable
       style={[
         styles.button,
         following ? styles.followingButton : styles.followButton,
@@ -30,7 +31,7 @@ export function FollowButton({ userId, compact }: FollowButtonProps) {
       >
         {following ? 'Following' : 'Follow'}
       </Text>
-    </TouchableOpacity>
+    </HapticPressable>
   );
 }
 
