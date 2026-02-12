@@ -107,8 +107,12 @@ export function PlacePostsSheetScreen() {
 
   if (placeLoading || postsLoading || !place) {
     return (
-      <View style={styles.loading}>
-        <ActivityIndicator size="large" color={colors.primary} />
+      <View style={styles.container}>
+        <View style={styles.blurContainer}>
+          <View style={styles.loading}>
+            <ActivityIndicator size="large" color={colors.primary} />
+          </View>
+        </View>
       </View>
     );
   }
@@ -116,133 +120,152 @@ export function PlacePostsSheetScreen() {
   const categoryColor = colors.category[place.category];
 
   return (
-    <ScrollView
-      style={styles.container}
-      stickyHeaderIndices={[0]}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.header}>
-        <HapticPressable
-          onPress={() => {
-            router.dismiss();
-            router.push(`/map/place/${place.id}`);
-          }}
-          style={styles.nameButton}
+    <View style={styles.container}>
+      <View intensity={80} tint="extraLight" style={styles.blurContainer}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          stickyHeaderIndices={[0]}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          nestedScrollEnabled={true}
+          bounces={false}
         >
-          <Text style={styles.name} numberOfLines={1}>
-            {place.name}
-          </Text>
-          <Ionicons name="chevron-forward" size={18} color={colors.text} />
-        </HapticPressable>
-        <View style={styles.metaRow}>
-          <View
-            style={[styles.categoryBadge, { backgroundColor: categoryColor }]}
-          >
-            <Text style={styles.categoryText}>
-              {CATEGORY_LABELS[place.category]}
-            </Text>
-          </View>
-          {placeDetails.rating && (
-            <View style={styles.ratingContainer}>
-              <Ionicons name="star" size={14} color="#FFA500" />
-              <Text style={styles.ratingText}>
-                {placeDetails.rating.toFixed(1)}
-              </Text>
-              {placeDetails.userRatingsTotal && (
-                <Text style={styles.reviewCountText}>
-                  ({formatNumber(placeDetails.userRatingsTotal)})
+          <View style={styles.header}>
+            <View style={styles.headerContent}>
+              <HapticPressable
+                onPress={() => {
+                  router.dismiss();
+                  router.push(`/map/place/${place.id}`);
+                }}
+                style={styles.nameButton}
+              >
+                <Text style={styles.name} numberOfLines={1}>
+                  {place.name}
                 </Text>
-              )}
+                <Ionicons
+                  name="chevron-forward"
+                  size={18}
+                  color={colors.text}
+                />
+              </HapticPressable>
+              <View style={styles.metaRow}>
+                <View
+                  style={[
+                    styles.categoryBadge,
+                    { backgroundColor: categoryColor },
+                  ]}
+                >
+                  <Text style={styles.categoryText}>
+                    {CATEGORY_LABELS[place.category]}
+                  </Text>
+                </View>
+                {placeDetails.rating && (
+                  <View style={styles.ratingContainer}>
+                    <Ionicons name="star" size={14} color="#FFA500" />
+                    <Text style={styles.ratingText}>
+                      {placeDetails.rating.toFixed(1)}
+                    </Text>
+                    {placeDetails.userRatingsTotal && (
+                      <Text style={styles.reviewCountText}>
+                        ({formatNumber(placeDetails.userRatingsTotal)})
+                      </Text>
+                    )}
+                  </View>
+                )}
+                <Text style={styles.address} numberOfLines={1}>
+                  {place.address}
+                </Text>
+              </View>
+              <View style={styles.statsRow}>
+                <View style={styles.stat}>
+                  <Ionicons
+                    name="chatbubble-outline"
+                    size={14}
+                    color={colors.textSecondary}
+                  />
+                  <Text style={styles.statText}>
+                    {sortedPosts.length} posts
+                  </Text>
+                </View>
+                <View style={styles.stat}>
+                  <Ionicons
+                    name="heart-outline"
+                    size={14}
+                    color={colors.textSecondary}
+                  />
+                  <Text style={styles.statText}>{totalLikes} likes</Text>
+                </View>
+                <HapticPressable
+                  style={styles.directionsButton}
+                  onPress={handleOpenDirections}
+                >
+                  <Ionicons name="navigate" size={14} color={colors.primary} />
+                  <Text style={styles.directionsText}>Directions</Text>
+                </HapticPressable>
+              </View>
+            </View>
+          </View>
+
+          {sortedPosts.length > 0 ? (
+            <View style={styles.postList}>
+              {sortedPosts.map((post) => (
+                <HapticPressable
+                  key={post.id}
+                  onPress={() => {
+                    router.dismiss();
+                    router.push(`/map/post/${post.id}`);
+                  }}
+                >
+                  <PostRow
+                    post={post}
+                    isFollowed={followingIds.includes(post.userId)}
+                  />
+                </HapticPressable>
+              ))}
+              <HapticPressable
+                style={styles.listCreateButton}
+                onPress={() => {
+                  router.dismiss();
+                  router.push({
+                    pathname: "/map/create-post",
+                    params: { placeId: place.id },
+                  });
+                }}
+              >
+                <Ionicons name="add-circle" size={20} color="#FFFFFF" />
+                <Text style={styles.listCreateButtonText}>Create Post</Text>
+              </HapticPressable>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Ionicons
+                name="chatbubble-outline"
+                size={48}
+                color={colors.gray300}
+              />
+              <Text style={styles.emptyStateText}>No posts yet</Text>
+              <Text style={styles.emptyStateSubtext}>
+                Be the first to share your experience!
+              </Text>
+              <HapticPressable
+                style={styles.createButton}
+                onPress={() => {
+                  router.dismiss();
+                  router.push({
+                    pathname: "/map/create-post",
+                    params: { placeId: place.id },
+                  });
+                }}
+              >
+                <Ionicons name="add-circle" size={20} color="#FFFFFF" />
+                <Text style={styles.createButtonText}>Create Post</Text>
+              </HapticPressable>
             </View>
           )}
-          <Text style={styles.address} numberOfLines={1}>
-            {place.address}
-          </Text>
-        </View>
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Ionicons
-              name="chatbubble-outline"
-              size={14}
-              color={colors.textSecondary}
-            />
-            <Text style={styles.statText}>{sortedPosts.length} posts</Text>
-          </View>
-          <View style={styles.stat}>
-            <Ionicons
-              name="heart-outline"
-              size={14}
-              color={colors.textSecondary}
-            />
-            <Text style={styles.statText}>{totalLikes} likes</Text>
-          </View>
-          <HapticPressable
-            style={styles.directionsButton}
-            onPress={handleOpenDirections}
-          >
-            <Ionicons name="navigate" size={14} color={colors.primary} />
-            <Text style={styles.directionsText}>Directions</Text>
-          </HapticPressable>
-        </View>
+        </ScrollView>
       </View>
-
-      {sortedPosts.length > 0 ? (
-        <View style={styles.postList}>
-          {sortedPosts.map((post) => (
-            <HapticPressable
-              key={post.id}
-              onPress={() => {
-                router.dismiss();
-                router.push(`/map/post/${post.id}`);
-              }}
-            >
-              <PostRow
-                post={post}
-                isFollowed={followingIds.includes(post.userId)}
-              />
-            </HapticPressable>
-          ))}
-          <HapticPressable
-            style={styles.listCreateButton}
-            onPress={() => {
-              router.dismiss();
-              router.push({
-                pathname: "/map/create-post",
-                params: { placeId: place.id },
-              });
-            }}
-          >
-            <Ionicons name="add-circle" size={20} color="#FFFFFF" />
-            <Text style={styles.listCreateButtonText}>Create Post</Text>
-          </HapticPressable>
-        </View>
-      ) : (
-        <View style={styles.emptyState}>
-          <Ionicons
-            name="chatbubble-outline"
-            size={48}
-            color={colors.gray300}
-          />
-          <Text style={styles.emptyStateText}>No posts yet</Text>
-          <Text style={styles.emptyStateSubtext}>
-            Be the first to share your experience!
-          </Text>
-          <HapticPressable
-            style={styles.createButton}
-            onPress={() => {
-              router.dismiss();
-              router.push({
-                pathname: "/map/create-post",
-                params: { placeId: place.id },
-              });
-            }}
-          >
-            <Ionicons name="add-circle" size={20} color="#FFFFFF" />
-            <Text style={styles.createButtonText}>Create Post</Text>
-          </HapticPressable>
-        </View>
-      )}
-    </ScrollView>
+    </View>
   );
 }
 
@@ -306,22 +329,38 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: "transparent",
+  },
+  blurContainer: {
+    flex: 1,
+    overflow: "hidden",
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flex: 1,
   },
   loading: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: colors.cardBackground,
+    backgroundColor: "transparent",
     paddingTop: 100,
   },
   header: {
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  headerContent: {
     paddingTop: 24,
     paddingHorizontal: 16,
     paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray200,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: "transparent",
   },
   nameButton: {
     flexDirection: "row",
@@ -344,6 +383,13 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 12,
     marginRight: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.4)",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 2,
   },
   categoryText: {
     color: "#FFFFFF",
@@ -396,14 +442,21 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   postList: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingHorizontal: 8,
+    paddingBottom: 8,
   },
   postRow: {
     flexDirection: "row",
     paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.gray200,
+    paddingHorizontal: 0,
+    marginVertical: 4,
+    marginHorizontal: 8,
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 2,
   },
   avatar: {
     width: 36,
@@ -411,6 +464,8 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: colors.gray200,
     marginRight: 10,
+    borderWidth: 2,
+    borderColor: "rgba(255, 255, 255, 0.6)",
   },
   postContent: {
     flex: 1,
@@ -432,6 +487,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.primary + "40",
   },
   followBadgeText: {
     fontSize: 10,
@@ -456,13 +513,20 @@ const styles = StyleSheet.create({
   thumbnail: {
     width: 48,
     height: 48,
-    borderRadius: 6,
+    borderRadius: 8,
     backgroundColor: colors.gray200,
+    borderWidth: 1.5,
+    borderColor: "rgba(255, 255, 255, 0.6)",
   },
   emptyState: {
     alignItems: "center",
     paddingVertical: 32,
     paddingHorizontal: 16,
+    backgroundColor: "transparent",
+    margin: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.5)",
   },
   emptyStateText: {
     fontSize: 16,
@@ -485,6 +549,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 24,
     gap: 8,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   createButtonText: {
     fontSize: 15,
@@ -502,6 +573,13 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 12,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   listCreateButtonText: {
     fontSize: 15,

@@ -25,13 +25,13 @@ export default function MapLayout() {
         options={{
           presentation: "formSheet",
           headerShown: false,
-          contentStyle: { backgroundColor: "#FFFFFF" },
+          contentStyle: { backgroundColor: "transparent" },
           sheetAllowedDetents: [0.4, 0.85],
           sheetGrabberVisible: true,
           sheetCornerRadius: 32,
           sheetInitialDetentIndex: 0,
           sheetLargestUndimmedDetentIndex: 0,
-          sheetExpandsWhenScrolledToEdge: false,
+          sheetExpandsWhenScrolledToEdge: true,
         }}
       />
       <Stack.Screen
