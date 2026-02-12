@@ -5,7 +5,8 @@ import { createURL } from 'expo-linking';
 import { Platform } from 'react-native';
 
 export async function signInWithGoogle() {
-  const redirectTo = createURL('/auth/callback');
+  // Create the deep link URL that will handle the OAuth callback
+  const redirectTo = createURL('/');
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
@@ -18,11 +19,23 @@ export async function signInWithGoogle() {
   if (error) throw error;
   if (!data.url) throw new Error('No OAuth URL returned');
 
-  const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+  // Open the OAuth URL in the browser and wait for redirect
+  const result = await WebBrowser.openAuthSessionAsync(
+    data.url,
+    redirectTo,
+    { preferEphemeralSession: true }
+  );
 
   if (result.type === 'success') {
+    // Extract tokens from the redirect URL
     const url = new URL(result.url);
-    const params = new URLSearchParams(url.hash.substring(1));
+
+    // Try both hash and query params (Supabase can use either)
+    let params = new URLSearchParams(url.hash.substring(1));
+    if (!params.get('access_token')) {
+      params = new URLSearchParams(url.search);
+    }
+
     const accessToken = params.get('access_token');
     const refreshToken = params.get('refresh_token');
 
@@ -31,7 +44,11 @@ export async function signInWithGoogle() {
         access_token: accessToken,
         refresh_token: refreshToken,
       });
+    } else {
+      throw new Error('No tokens returned from OAuth provider');
     }
+  } else if (result.type === 'cancel') {
+    throw new Error('Sign in was cancelled');
   }
 }
 
