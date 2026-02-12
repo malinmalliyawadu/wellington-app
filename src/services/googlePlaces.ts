@@ -203,8 +203,11 @@ export async function searchNearbyPlaces(
       }))
     );
 
-    // Remove extra properties before returning
-    return mappedResults.map(({ distance, rating, ratingsTotal, popularityScore, ...place }) => place);
+    // Remove extra properties before returning (keep rating and ratingsTotal)
+    return mappedResults.map(({ distance, popularityScore, ...place }) => ({
+      ...place,
+      userRatingsTotal: place.ratingsTotal,
+    }));
   } catch (error) {
     console.error("Nearby search error:", error);
     return [];
@@ -269,7 +272,7 @@ export async function searchGooglePlaces(
     const predictions = autocompleteData.predictions.slice(0, 10);
     const detailsPromises = predictions.map(
       async (prediction: AutocompletePrediction) => {
-        const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=name,formatted_address,geometry,types&key=${GOOGLE_PLACES_API_KEY}`;
+        const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=name,formatted_address,geometry,types,rating,user_ratings_total&key=${GOOGLE_PLACES_API_KEY}`;
 
         const detailsResponse = await fetch(detailsUrl);
         const detailsData = await detailsResponse.json();
@@ -288,6 +291,8 @@ export async function searchGooglePlaces(
             latitude: result.geometry.location.lat,
             longitude: result.geometry.location.lng,
             category: mapGoogleCategory(result.types || []),
+            rating: result.rating,
+            userRatingsTotal: result.user_ratings_total,
           };
         }
         return null;

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   ScrollView,
   Image,
   ActivityIndicator,
+  Linking,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -15,6 +17,8 @@ import { useQuery } from '../hooks/useQuery';
 import { getPlaceById } from '../services/places';
 import { getPostsByPlaceId } from '../services/posts';
 import { getProfileById } from '../services/users';
+import { fetchPlaceDetails } from '../services/googlePlaceDetails';
+import { formatNumber } from '../utils/formatNumber';
 import { VideoThumbnail } from '../components/VideoThumbnail';
 import { HapticPressable } from '../components/HapticPressable';
 import { colors } from '../theme/colors';
@@ -40,6 +44,21 @@ export function PlacePostsSheetScreen() {
   const { data: place, loading: placeLoading } = useQuery(fetchPlace, placeId);
   const { data: posts, loading: postsLoading } = useQuery(fetchPosts, placeId);
 
+  const [placeDetails, setPlaceDetails] = useState<{ rating?: number; userRatingsTotal?: number }>({});
+
+  // Fetch place details from Google Places API
+  useEffect(() => {
+    if (place && !place.rating) {
+      fetchPlaceDetails(place.latitude, place.longitude, place.name).then(details => {
+        if (details.rating) {
+          setPlaceDetails(details);
+        }
+      });
+    } else if (place?.rating) {
+      setPlaceDetails({ rating: place.rating, userRatingsTotal: place.userRatingsTotal });
+    }
+  }, [place]);
+
   const sortedPosts = useMemo(() => {
     if (!posts) return [];
     return [...posts].sort((a, b) => {
@@ -54,6 +73,27 @@ export function PlacePostsSheetScreen() {
     () => (posts ?? []).reduce((sum, p) => sum + p.likes, 0),
     [posts],
   );
+
+  const handleOpenDirections = useCallback(() => {
+    if (!place) return;
+
+    const { latitude, longitude, name } = place;
+    const label = encodeURIComponent(name);
+
+    const url = Platform.select({
+      ios: `maps://app?daddr=${latitude},${longitude}&q=${label}`,
+      android: `google.navigation:q=${latitude},${longitude}`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`,
+    });
+
+    if (url) {
+      Linking.openURL(url).catch((err) => {
+        console.error('Failed to open maps:', err);
+        // Fallback to Google Maps web
+        Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`);
+      });
+    }
+  }, [place]);
 
   if (placeLoading || postsLoading || !place) {
     return (
@@ -90,6 +130,19 @@ export function PlacePostsSheetScreen() {
               {CATEGORY_LABELS[place.category]}
             </Text>
           </View>
+          {placeDetails.rating && (
+            <View style={styles.ratingContainer}>
+              <Ionicons name="star" size={14} color="#FFA500" />
+              <Text style={styles.ratingText}>
+                {placeDetails.rating.toFixed(1)}
+              </Text>
+              {placeDetails.userRatingsTotal && (
+                <Text style={styles.reviewCountText}>
+                  ({formatNumber(placeDetails.userRatingsTotal)})
+                </Text>
+              )}
+            </View>
+          )}
           <Text style={styles.address} numberOfLines={1}>
             {place.address}
           </Text>
@@ -103,6 +156,10 @@ export function PlacePostsSheetScreen() {
             <Ionicons name="heart-outline" size={14} color={colors.textSecondary} />
             <Text style={styles.statText}>{totalLikes} likes</Text>
           </View>
+          <HapticPressable style={styles.directionsButton} onPress={handleOpenDirections}>
+            <Ionicons name="navigate" size={14} color={colors.primary} />
+            <Text style={styles.directionsText}>Directions</Text>
+          </HapticPressable>
         </View>
       </View>
 
@@ -230,6 +287,21 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
   },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginRight: 8,
+  },
+  ratingText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  reviewCountText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
   address: {
     fontSize: 13,
     color: colors.textSecondary,
@@ -237,6 +309,7 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 16,
   },
   stat: {
@@ -247,6 +320,17 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: 13,
     color: colors.textSecondary,
+  },
+  directionsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginLeft: 'auto',
+  },
+  directionsText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: colors.primary,
   },
   postList: {
     paddingHorizontal: 16,

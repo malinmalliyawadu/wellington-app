@@ -163,7 +163,7 @@ export function CreatePostSheetScreen() {
 
     setPosting(true);
     try {
-      // If the place doesn't have an ID (came from MapKit), create it first
+      // If the place doesn't have an ID (came from Google Places), create it first
       let placeId = selectedPlace.id;
       if (!placeId) {
         const newPlace = await createPlace({

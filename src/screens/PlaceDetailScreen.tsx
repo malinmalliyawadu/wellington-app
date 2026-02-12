@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import { View, Text, Image, FlatList, StyleSheet, Pressable, ActivityIndicator, Linking, Platform } from 'react-native';
 import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +7,8 @@ import { useQuery } from '../hooks/useQuery';
 import { getPlaceById } from '../services/places';
 import { getPostsByPlaceId as getPostsByPlaceIdAsync } from '../services/posts';
 import { getProfilesByIds } from '../services/users';
+import { fetchPlaceDetails } from '../services/googlePlaceDetails';
+import { formatNumber } from '../utils/formatNumber';
 import { useFollow } from '../context/FollowContext';
 import { useLike } from '../context/LikeContext';
 import { VideoThumbnail } from '../components/VideoThumbnail';
@@ -45,6 +47,42 @@ export function PlaceDetailScreen() {
   const { data: users } = useQuery(fetchUsers, userIds);
 
   const loading = loadingPlace || loadingPosts;
+
+  const [placeDetails, setPlaceDetails] = useState<{ rating?: number; userRatingsTotal?: number }>({});
+
+  // Fetch place details from Google Places API
+  useEffect(() => {
+    if (place && !place.rating) {
+      fetchPlaceDetails(place.latitude, place.longitude, place.name).then(details => {
+        if (details.rating) {
+          setPlaceDetails(details);
+        }
+      });
+    } else if (place?.rating) {
+      setPlaceDetails({ rating: place.rating, userRatingsTotal: place.userRatingsTotal });
+    }
+  }, [place]);
+
+  const handleOpenDirections = useCallback(() => {
+    if (!place) return;
+
+    const { latitude, longitude, name } = place;
+    const label = encodeURIComponent(name);
+
+    const url = Platform.select({
+      ios: `maps://app?daddr=${latitude},${longitude}&q=${label}`,
+      android: `google.navigation:q=${latitude},${longitude}`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`,
+    });
+
+    if (url) {
+      Linking.openURL(url).catch((err) => {
+        console.error('Failed to open maps:', err);
+        // Fallback to Google Maps web
+        Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`);
+      });
+    }
+  }, [place]);
 
   if (loading) {
     return (
@@ -90,6 +128,19 @@ export function PlaceDetailScreen() {
                   {CATEGORY_LABELS[place.category]}
                 </Text>
               </View>
+              {placeDetails.rating && (
+                <View style={styles.ratingContainer}>
+                  <Ionicons name="star" size={14} color="#FFA500" />
+                  <Text style={styles.ratingText}>
+                    {placeDetails.rating.toFixed(1)}
+                  </Text>
+                  {placeDetails.userRatingsTotal && (
+                    <Text style={styles.reviewCountText}>
+                      ({formatNumber(placeDetails.userRatingsTotal)})
+                    </Text>
+                  )}
+                </View>
+              )}
               <Text style={styles.address} numberOfLines={1}>
                 {place.address}
               </Text>
@@ -103,6 +154,10 @@ export function PlaceDetailScreen() {
                 <Ionicons name="heart-outline" size={16} color={colors.textSecondary} />
                 <Text style={styles.statText}>{totalLikes} likes</Text>
               </View>
+              <HapticPressable style={styles.directionsButton} onPress={handleOpenDirections}>
+                <Ionicons name="navigate" size={16} color={colors.primary} />
+                <Text style={styles.directionsText}>Directions</Text>
+              </HapticPressable>
             </View>
             <HapticPressable
               style={styles.writePostButton}
@@ -214,6 +269,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginRight: 10,
+  },
+  ratingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
+  },
+  reviewCountText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
   address: {
     fontSize: 14,
     color: colors.textSecondary,
@@ -221,6 +291,7 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 20,
   },
   writePostButton: {
@@ -247,6 +318,17 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: 14,
     color: colors.textSecondary,
+  },
+  directionsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginLeft: 'auto',
+  },
+  directionsText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.primary,
   },
   postRow: {
     flexDirection: 'row',
