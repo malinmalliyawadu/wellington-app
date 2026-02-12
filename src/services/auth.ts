@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import * as WebBrowser from 'expo-web-browser';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as Crypto from 'expo-crypto';
 import { createURL } from 'expo-linking';
 import { Platform } from 'react-native';
 
@@ -57,11 +58,21 @@ export async function signInWithApple() {
     throw new Error('Apple Sign In is only available on iOS');
   }
 
+  // Generate a random nonce for security
+  const nonce = Math.random().toString(36).substring(2, 10);
+
+  // Hash the nonce using SHA-256
+  const hashedNonce = await Crypto.digestStringAsync(
+    Crypto.CryptoDigestAlgorithm.SHA256,
+    nonce
+  );
+
   const credential = await AppleAuthentication.signInAsync({
     requestedScopes: [
       AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
       AppleAuthentication.AppleAuthenticationScope.EMAIL,
     ],
+    nonce: hashedNonce,
   });
 
   if (!credential.identityToken) {
@@ -71,6 +82,7 @@ export async function signInWithApple() {
   const { error } = await supabase.auth.signInWithIdToken({
     provider: 'apple',
     token: credential.identityToken,
+    nonce,
   });
 
   if (error) throw error;
