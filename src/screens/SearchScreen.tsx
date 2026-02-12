@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,40 +6,40 @@ import {
   ScrollView,
   SectionList,
   Image,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
-import { useQuery } from '../hooks/useQuery';
-import { getPlaces } from '../services/places';
-import { getPosts } from '../services/posts';
-import { getProfiles } from '../services/users';
-import { getUpcomingEvents } from '../services/events';
-import { EventCard } from '../components/EventCard';
-import { HapticPressable } from '../components/HapticPressable';
-import type { Place, Post, User, Event, PlaceCategory } from '../types';
+} from "react-native";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { colors } from "../theme/colors";
+import { useQuery } from "../hooks/useQuery";
+import { getPlaces } from "../services/places";
+import { getPosts } from "../services/posts";
+import { getProfiles } from "../services/users";
+import { getUpcomingEvents } from "../services/events";
+import { EventCard } from "../components/EventCard";
+import { HapticPressable } from "../components/HapticPressable";
+import type { Place, Post, User, Event, PlaceCategory } from "../types";
 
 const TRENDING_SEARCHES = [
-  'Coffee',
-  'Brunch',
-  'Craft beer',
-  'Live music',
-  'Waterfront',
-  'Cuban Street',
+  "Coffee",
+  "Brunch",
+  "Craft beer",
+  "Live music",
+  "Waterfront",
+  "Cuban Street",
 ];
 
 const CATEGORY_ICONS: Record<PlaceCategory, keyof typeof Ionicons.glyphMap> = {
-  cafe: 'cafe',
-  restaurant: 'restaurant',
-  bar: 'wine',
-  attraction: 'compass',
-  park: 'leaf',
-  venue: 'musical-notes',
+  cafe: "cafe",
+  restaurant: "restaurant",
+  bar: "wine",
+  attraction: "compass",
+  park: "leaf",
+  venue: "musical-notes",
 };
 
 interface SearchResult {
   id: string;
-  type: 'place' | 'post' | 'user' | 'event';
+  type: "place" | "post" | "user" | "event";
   data: Place | Post | User | Event;
 }
 
@@ -51,7 +51,7 @@ interface SearchScreenProps {
   query?: string;
 }
 
-export function SearchScreen({ query = '' }: SearchScreenProps) {
+export function SearchScreen({ query = "" }: SearchScreenProps) {
   const router = useRouter();
 
   // Fetch all data
@@ -87,10 +87,12 @@ export function SearchScreen({ query = '' }: SearchScreenProps) {
     const now = new Date();
     const twoDaysFromNow = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
 
-    return events.filter((event) => {
-      const eventDate = new Date(event.date);
-      return eventDate >= now && eventDate <= twoDaysFromNow;
-    }).slice(0, 3);
+    return events
+      .filter((event) => {
+        const eventDate = new Date(event.date);
+        return eventDate >= now && eventDate <= twoDaysFromNow;
+      })
+      .slice(0, 3);
   }, [events]);
 
   // Get places for events
@@ -114,14 +116,14 @@ export function SearchScreen({ query = '' }: SearchScreenProps) {
         place.address.toLowerCase().includes(q) ||
         place.category.toLowerCase().includes(q)
       ) {
-        results.push({ id: `place-${place.id}`, type: 'place', data: place });
+        results.push({ id: `place-${place.id}`, type: "place", data: place });
       }
     });
 
     // Search posts (by content)
     posts.forEach((post) => {
       if (post.content.toLowerCase().includes(q)) {
-        results.push({ id: `post-${post.id}`, type: 'post', data: post });
+        results.push({ id: `post-${post.id}`, type: "post", data: post });
       }
     });
 
@@ -132,7 +134,7 @@ export function SearchScreen({ query = '' }: SearchScreenProps) {
         user.username.toLowerCase().includes(q) ||
         user.bio?.toLowerCase().includes(q)
       ) {
-        results.push({ id: `user-${user.id}`, type: 'user', data: user });
+        results.push({ id: `user-${user.id}`, type: "user", data: user });
       }
     });
 
@@ -143,7 +145,7 @@ export function SearchScreen({ query = '' }: SearchScreenProps) {
         event.description.toLowerCase().includes(q) ||
         event.category.toLowerCase().includes(q)
       ) {
-        results.push({ id: `event-${event.id}`, type: 'event', data: event });
+        results.push({ id: `event-${event.id}`, type: "event", data: event });
       }
     });
 
@@ -154,22 +156,22 @@ export function SearchScreen({ query = '' }: SearchScreenProps) {
   const groupedResults = useMemo(() => {
     const sections = [];
 
-    const placeResults = searchResults.filter((r) => r.type === 'place');
-    const userResults = searchResults.filter((r) => r.type === 'user');
-    const postResults = searchResults.filter((r) => r.type === 'post');
-    const eventResults = searchResults.filter((r) => r.type === 'event');
+    const placeResults = searchResults.filter((r) => r.type === "place");
+    const userResults = searchResults.filter((r) => r.type === "user");
+    const postResults = searchResults.filter((r) => r.type === "post");
+    const eventResults = searchResults.filter((r) => r.type === "event");
 
     if (placeResults.length > 0) {
-      sections.push({ title: 'Places', data: placeResults });
+      sections.push({ title: "Places", data: placeResults });
     }
     if (userResults.length > 0) {
-      sections.push({ title: 'People', data: userResults });
+      sections.push({ title: "People", data: userResults });
     }
     if (postResults.length > 0) {
-      sections.push({ title: 'Posts', data: postResults.slice(0, 5) });
+      sections.push({ title: "Posts", data: postResults.slice(0, 5) });
     }
     if (eventResults.length > 0) {
-      sections.push({ title: 'Events', data: eventResults });
+      sections.push({ title: "Events", data: eventResults });
     }
 
     return sections;
@@ -193,7 +195,7 @@ export function SearchScreen({ query = '' }: SearchScreenProps) {
 
   const renderSearchResult = ({ item }: { item: SearchResult }) => {
     switch (item.type) {
-      case 'place': {
+      case "place": {
         const place = item.data as Place;
         return (
           <HapticPressable
@@ -221,7 +223,7 @@ export function SearchScreen({ query = '' }: SearchScreenProps) {
         );
       }
 
-      case 'user': {
+      case "user": {
         const user = item.data as User;
         return (
           <HapticPressable
@@ -238,7 +240,7 @@ export function SearchScreen({ query = '' }: SearchScreenProps) {
         );
       }
 
-      case 'post': {
+      case "post": {
         const post = item.data as Post;
         const place = places?.find((p) => p.id === post.placeId);
         return (
@@ -247,22 +249,23 @@ export function SearchScreen({ query = '' }: SearchScreenProps) {
             onPress={() => handlePostPress(post.id)}
           >
             {post.mediaUrl && (
-              <Image source={{ uri: post.mediaUrl }} style={styles.postThumbnail} />
+              <Image
+                source={{ uri: post.mediaUrl }}
+                style={styles.postThumbnail}
+              />
             )}
             <View style={styles.resultText}>
               <Text style={styles.resultTitle} numberOfLines={2}>
                 {post.content}
               </Text>
-              {place && (
-                <Text style={styles.resultSubtitle}>{place.name}</Text>
-              )}
+              {place && <Text style={styles.resultSubtitle}>{place.name}</Text>}
             </View>
             <Ionicons name="chevron-forward" size={20} color={colors.gray400} />
           </HapticPressable>
         );
       }
 
-      case 'event': {
+      case "event": {
         const event = item.data as Event;
         const place = eventPlaces.get(event.placeId);
         if (!place) return null;
@@ -320,10 +323,7 @@ export function SearchScreen({ query = '' }: SearchScreenProps) {
         <Text style={styles.sectionTitle}>Trending Searches</Text>
         <View style={styles.chipGrid}>
           {TRENDING_SEARCHES.map((search) => (
-            <HapticPressable
-              key={search}
-              style={styles.trendingChip}
-            >
+            <HapticPressable key={search} style={styles.trendingChip}>
               <Ionicons name="trending-up" size={14} color={colors.primary} />
               <Text style={styles.trendingText}>{search}</Text>
             </HapticPressable>
@@ -405,20 +405,20 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text,
     marginBottom: 12,
     paddingHorizontal: 16,
   },
   chipGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     paddingHorizontal: 16,
     gap: 8,
   },
   trendingChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: colors.gray100,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -427,22 +427,22 @@ const styles = StyleSheet.create({
   },
   trendingText: {
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: "500",
     color: colors.text,
   },
   placeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: "row",
+    flexWrap: "wrap",
     paddingHorizontal: 12,
     gap: 12,
   },
   placeCard: {
-    width: '31%',
+    width: "31%",
     backgroundColor: colors.cardBackground,
     borderRadius: 12,
     padding: 12,
-    alignItems: 'center',
-    shadowColor: '#000',
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
@@ -452,20 +452,20 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: 8,
   },
   placeName: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
-    textAlign: 'center',
+    textAlign: "center",
     marginBottom: 4,
   },
   placeStats: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   placeCount: {
@@ -476,8 +476,8 @@ const styles = StyleSheet.create({
     paddingBottom: 100,
   },
   resultItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
     backgroundColor: colors.cardBackground,
@@ -488,8 +488,8 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   userAvatar: {
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
   },
   resultTitle: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
     marginBottom: 2,
   },
@@ -523,13 +523,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 60,
   },
   emptyText: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
     marginTop: 16,
   },
@@ -537,6 +537,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     marginTop: 4,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });

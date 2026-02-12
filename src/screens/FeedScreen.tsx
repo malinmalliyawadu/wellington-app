@@ -1,19 +1,27 @@
-import React, { useCallback, useMemo, useState, useRef } from 'react';
-import { View, Text, FlatList, StyleSheet, RefreshControl, Animated } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import { FeedPost } from '../components/FeedPost';
-import { useFollow } from '../context/FollowContext';
-import { colors } from '../theme/colors';
-import { useQuery } from '../hooks/useQuery';
-import { getFeedPosts } from '../services/posts';
-import { getProfilesByIds } from '../services/users';
-import { getPlaces } from '../services/places';
-import { HapticPressable } from 'src/components/HapticPressable';
+import React, { useCallback, useMemo, useState, useRef } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  RefreshControl,
+  Animated,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { BlurView } from "expo-blur";
+import { FeedPost } from "../components/FeedPost";
+import { useFollow } from "../context/FollowContext";
+import { colors } from "../theme/colors";
+import { useQuery } from "../hooks/useQuery";
+import { getFeedPosts } from "../services/posts";
+import { getProfilesByIds } from "../services/users";
+import { getPlaces } from "../services/places";
+import { HapticPressable } from "src/components/HapticPressable";
 
-const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
+const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
 export function FeedScreen() {
   const insets = useSafeAreaInsets();
@@ -21,8 +29,15 @@ export function FeedScreen() {
   const { followingIds } = useFollow();
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  const fetchFeedPosts = useCallback(() => getFeedPosts(followingIds), [followingIds]);
-  const { data: feedPosts, loading: loadingPosts, refetch: refetchPosts } = useQuery(fetchFeedPosts, followingIds);
+  const fetchFeedPosts = useCallback(
+    () => getFeedPosts(followingIds),
+    [followingIds]
+  );
+  const {
+    data: feedPosts,
+    loading: loadingPosts,
+    refetch: refetchPosts,
+  } = useQuery(fetchFeedPosts, followingIds);
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(() => {
@@ -32,7 +47,10 @@ export function FeedScreen() {
   }, [refetchPosts]);
 
   // Fetch all users and places for the feed
-  const userIds = useMemo(() => [...new Set((feedPosts ?? []).map((p) => p.userId))], [feedPosts]);
+  const userIds = useMemo(
+    () => [...new Set((feedPosts ?? []).map((p) => p.userId))],
+    [feedPosts]
+  );
   const fetchUsers = useCallback(() => getProfilesByIds(userIds), [userIds]);
   const { data: users } = useQuery(fetchUsers, userIds);
   const { data: places } = useQuery(getPlaces);
@@ -68,8 +86,8 @@ export function FeedScreen() {
   // Animate header opacity based on scroll position
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, 50],
-    outputRange: [0, 0.95],
-    extrapolate: 'clamp',
+    outputRange: [0.95, 0.95],
+    extrapolate: "clamp",
   });
 
   return (
@@ -88,13 +106,17 @@ export function FeedScreen() {
           />
         )}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingTop: headerHeight - 60,
           paddingBottom: insets.bottom + 40,
-          flexGrow: 1
+          flexGrow: 1,
         }}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -109,7 +131,7 @@ export function FeedScreen() {
             </Text>
             <HapticPressable
               style={styles.discoverButton}
-              onPress={() => router.push('/feed/discover')}
+              onPress={() => router.push("/feed/discover")}
             >
               <Text style={styles.discoverButtonText}>Discover People</Text>
             </HapticPressable>
@@ -123,22 +145,21 @@ export function FeedScreen() {
           {
             paddingTop: insets.top,
             height: headerHeight,
-          }
+            opacity: headerOpacity,
+          },
         ]}
       >
         <BlurView
-          intensity={90}
-          tint="light"
-          style={StyleSheet.absoluteFill}
+          intensity={80}
+          tint="regular"
+          style={{
+            ...StyleSheet.absoluteFillObject,
+            backgroundColor: "transparent",
+          }}
         >
-          <Animated.View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                backgroundColor: "rgba(255, 255, 255, 0.7)",
-                opacity: headerOpacity,
-              }
-            ]}
+          <LinearGradient
+            colors={["rgba(255,255,255,0.3)", "rgba(255,255,255,0)"]}
+            style={StyleSheet.absoluteFill}
           />
         </BlurView>
         <View style={styles.header}>
@@ -149,7 +170,7 @@ export function FeedScreen() {
             </View>
             <HapticPressable
               style={styles.headerButton}
-              onPress={() => router.push('/feed/discover')}
+              onPress={() => router.push("/feed/discover")}
             >
               <Ionicons name="people-outline" size={20} color={colors.text} />
             </HapticPressable>
@@ -165,12 +186,12 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   headerContainer: {
-    position: 'absolute',
+    position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     zIndex: 1000,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   header: {
     paddingHorizontal: 16,
@@ -178,13 +199,13 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text,
   },
   subtitle: {
@@ -199,24 +220,24 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBackground,
     borderWidth: 1,
     borderColor: colors.gray300,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingTop: 80,
     paddingHorizontal: 32,
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 15,
     color: colors.textMuted,
-    textAlign: 'center',
+    textAlign: "center",
     lineHeight: 22,
     marginBottom: 24,
   },
@@ -227,8 +248,8 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   discoverButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 });

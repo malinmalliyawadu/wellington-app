@@ -13,6 +13,7 @@ import { useNavigation } from 'expo-router';
 import { DrawerActions } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { EventCard } from '../components/EventCard';
 import { getUpcomingEvents } from '../services/events';
@@ -22,8 +23,6 @@ import { useFollow } from '../context/FollowContext';
 import { useEventFilters } from '../context/EventFilterContext';
 import { colors } from '../theme/colors';
 import { HapticPressable } from 'src/components/HapticPressable';
-
-const AnimatedBlurView = Animated.createAnimatedComponent(BlurView);
 
 type DateRange = 'today' | 'tomorrow' | 'weekend' | 'month';
 
@@ -138,7 +137,7 @@ export function EventsScreen() {
   // Animate header opacity based on scroll position
   const headerOpacity = scrollY.interpolate({
     inputRange: [0, 50],
-    outputRange: [0, 0.95],
+    outputRange: [0.95, 0.95],
     extrapolate: 'clamp',
   });
 
@@ -195,19 +194,10 @@ export function EventsScreen() {
           }
         ]}
       >
-        <BlurView
-          intensity={90}
-          tint="light"
-          style={StyleSheet.absoluteFill}
-        >
-          <Animated.View
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                backgroundColor: "rgba(255, 255, 255, 0.7)",
-                opacity: headerOpacity,
-              }
-            ]}
+        <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFill}>
+          <LinearGradient
+            colors={['rgba(255,255,255,0.3)', 'rgba(255,255,255,0)']}
+            style={StyleSheet.absoluteFill}
           />
         </BlurView>
         <View style={styles.header}>
