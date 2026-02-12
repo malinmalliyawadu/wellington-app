@@ -245,27 +245,33 @@ export function MapScreen() {
                   isFollowed={followed}
                 />
                 {showLabel && (
-                  <View style={styles.labelContainer}>
-                    <Text style={styles.labelName} numberOfLines={1}>
-                      {place.name}
-                    </Text>
-                    {posterIds.length > 1 && (
-                      <View style={styles.avatarRow}>
-                        <View style={styles.avatarStack}>
-                          {posterIds.slice(0, 8).map((uid, i) => {
-                            const user = userMap.get(uid);
-                            if (!user?.avatarUrl) return null;
-                            return (
-                              <Image
-                                key={uid}
-                                source={{ uri: user.avatarUrl }}
-                                style={[styles.avatar, { left: i * 10 }]}
-                              />
-                            );
-                          })}
+                  <View style={styles.labelWrapper}>
+                    <BlurView
+                      intensity={15}
+                      tint="light"
+                      style={styles.labelContainer}
+                    >
+                      <Text style={styles.labelName} numberOfLines={1}>
+                        {place.name}
+                      </Text>
+                      {posterIds.length > 1 && (
+                        <View style={styles.avatarRow}>
+                          <View style={styles.avatarStack}>
+                            {posterIds.slice(0, 8).map((uid, i) => {
+                              const user = userMap.get(uid);
+                              if (!user?.avatarUrl) return null;
+                              return (
+                                <Image
+                                  key={uid}
+                                  source={{ uri: user.avatarUrl }}
+                                  style={[styles.avatar, { left: i * 10 }]}
+                                />
+                              );
+                            })}
+                          </View>
                         </View>
-                      </View>
-                    )}
+                      )}
+                    </BlurView>
                   </View>
                 )}
               </View>
@@ -392,15 +398,24 @@ const styles = StyleSheet.create({
   markerContainer: {
     alignItems: 'center',
   },
-  labelContainer: {
+  labelWrapper: {
     marginTop: 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.85)',
+    borderRadius: 8,
+    overflow: 'hidden',
+    maxWidth: 120,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.16,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  labelContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
     borderRadius: 8,
     paddingHorizontal: 7,
     paddingVertical: 3,
-    maxWidth: 120,
-    boxShadow: "rgba(0, 0, 0, 0.16) 0px 1px 4px",
-    zIndex: 99999
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
   },
   labelName: {
     fontSize: 11,

@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { PlaceCategory } from '../types';
 import { colors } from '../theme/colors';
 
@@ -51,19 +52,30 @@ export function PopularityMarker({
   return (
     <View
       style={[
-        styles.marker,
+        styles.markerContainer,
         {
           width: size,
           height: size,
           borderRadius: size / 2,
-          backgroundColor: 'transparent',
-          borderWidth: 2.5,
-          borderColor: color,
-          opacity: 0.6,
         },
       ]}
     >
-      <Ionicons name={iconName} size={iconSize} color={color} />
+      <BlurView
+        intensity={20}
+        tint="light"
+        style={[
+          styles.blurMarker,
+          {
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+            borderWidth: 2.5,
+            borderColor: color,
+          },
+        ]}
+      >
+        <Ionicons name={iconName} size={iconSize} color={color} />
+      </BlurView>
     </View>
   );
 }
@@ -72,5 +84,14 @@ const styles = StyleSheet.create({
   marker: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  markerContainer: {
+    overflow: 'hidden',
+  },
+  blurMarker: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    overflow: 'hidden',
   },
 });
