@@ -1,12 +1,19 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { updateProfile as updateProfileService } from '../services/users';
 import type { User } from '../types';
 
 interface AuthContextType {
   session: Session | null;
   profile: User | null;
   loading: boolean;
+  updateProfile: (updates: {
+    username?: string;
+    displayName?: string;
+    avatarUrl?: string;
+    bio?: string;
+  }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,8 +65,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }
 
+  async function updateProfile(updates: {
+    username?: string;
+    displayName?: string;
+    avatarUrl?: string;
+    bio?: string;
+  }) {
+    if (!profile) {
+      throw new Error('No profile to update');
+    }
+
+    await updateProfileService(profile.id, updates);
+
+    // Refetch profile to get updated data
+    await fetchProfile(profile.id);
+  }
+
   return (
-    <AuthContext.Provider value={{ session, profile, loading }}>
+    <AuthContext.Provider value={{ session, profile, loading, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );

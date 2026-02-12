@@ -109,7 +109,10 @@ export function ProfileScreen() {
             </View>
 
             <View style={styles.buttonRow}>
-              <HapticPressable style={styles.editButton}>
+              <HapticPressable
+                style={styles.editButton}
+                onPress={() => router.push('/profile/edit-profile')}
+              >
                 <Text style={styles.editButtonText}>Edit Profile</Text>
               </HapticPressable>
               <HapticPressable
