@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -12,12 +12,11 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Place, PostType, EventCategory } from "../types";
 import { colors } from "../theme/colors";
-import { useQuery } from "../hooks/useQuery";
 import { useAuth } from "../context/AuthContext";
-import { getPlaces } from "../services/places";
+import { createPlace, getPlaceById } from "../services/places";
 import { createPost } from "../services/posts";
 import { uploadMedia } from "../services/storage";
 import { HapticPressable } from "src/components/HapticPressable";
@@ -42,9 +41,10 @@ type CreateType = "post" | "event";
 export function CreatePostSheetScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
-  const { placeId: placeIdParam, defaultType } = useLocalSearchParams<{
+  const { placeId: placeIdParam, defaultType, selectedPlaceData } = useLocalSearchParams<{
     placeId?: string;
     defaultType?: CreateType;
+    selectedPlaceData?: string;
   }>();
   const router = useRouter();
 
@@ -68,20 +68,42 @@ export function CreatePostSheetScreen() {
 
   // Shared state
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
-  const [showPlacePicker, setShowPlacePicker] = useState(false);
   const [posting, setPosting] = useState(false);
-  const { data: places } = useQuery(getPlaces);
-  const allPlaces = places ?? [];
+
+  // Handle place selection from search sheet
+  useFocusEffect(
+    useCallback(() => {
+      // Check for global selected place when screen comes into focus
+      if ((global as any).__selectedPlace) {
+        setSelectedPlace((global as any).__selectedPlace);
+        delete (global as any).__selectedPlace;
+      }
+    }, [])
+  );
 
   useEffect(() => {
-    if (placeIdParam && allPlaces.length > 0) {
-      const place = allPlaces.find((p) => p.id === placeIdParam);
-      if (place) {
+    // Also handle place from params (alternative method)
+    if (selectedPlaceData) {
+      try {
+        const place = JSON.parse(selectedPlaceData);
         setSelectedPlace(place);
+        router.setParams({ selectedPlaceData: undefined as any });
+      } catch (error) {
+        console.error("Error parsing selected place:", error);
       }
-      router.setParams({ placeId: undefined as any });
     }
-  }, [placeIdParam, allPlaces]);
+  }, [selectedPlaceData]);
+
+  useEffect(() => {
+    if (placeIdParam) {
+      getPlaceById(placeIdParam).then((place) => {
+        if (place) {
+          setSelectedPlace(place);
+        }
+        router.setParams({ placeId: undefined as any });
+      });
+    }
+  }, [placeIdParam]);
 
   const pickMedia = async () => {
     const mediaType =
@@ -140,6 +162,19 @@ export function CreatePostSheetScreen() {
 
     setPosting(true);
     try {
+      // If the place doesn't have an ID (came from MapKit), create it first
+      let placeId = selectedPlace.id;
+      if (!placeId) {
+        const newPlace = await createPlace({
+          name: selectedPlace.name,
+          category: selectedPlace.category,
+          address: selectedPlace.address,
+          latitude: selectedPlace.latitude,
+          longitude: selectedPlace.longitude,
+        });
+        placeId = newPlace.id;
+      }
+
       if (createType === "post") {
         let mediaUrl: string | undefined;
 
@@ -152,7 +187,7 @@ export function CreatePostSheetScreen() {
 
         await createPost({
           userId: profile.id,
-          placeId: selectedPlace.id,
+          placeId: placeId,
           type: postType,
           content: content.trim(),
           mediaUrl,
@@ -432,67 +467,51 @@ export function CreatePostSheetScreen() {
         <Text style={styles.label}>Place</Text>
         <HapticPressable
           style={styles.placeSelector}
-          onPress={() => setShowPlacePicker(!showPlacePicker)}
+          onPress={() => router.push('./place-search')}
         >
           {selectedPlace ? (
-            <View style={styles.selectedPlace}>
-              <Ionicons name="location" size={20} color={colors.primary} />
-              <Text style={styles.selectedPlaceText}>{selectedPlace.name}</Text>
-            </View>
+            <>
+              <View style={styles.selectedPlace}>
+                <Ionicons name="location" size={20} color={colors.primary} />
+                <View style={styles.placeInfo}>
+                  <Text style={styles.selectedPlaceText}>
+                    {selectedPlace.name}
+                  </Text>
+                  <Text style={styles.selectedPlaceAddress}>
+                    {selectedPlace.address}
+                  </Text>
+                </View>
+              </View>
+              <HapticPressable
+                onPress={(e) => {
+                  e.stopPropagation();
+                  setSelectedPlace(null);
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="close-circle" size={20} color={colors.gray400} />
+              </HapticPressable>
+            </>
           ) : (
-            <View style={styles.selectedPlace}>
+            <>
+              <View style={styles.selectedPlace}>
+                <Ionicons
+                  name="search"
+                  size={20}
+                  color={colors.gray400}
+                />
+                <Text style={styles.placeholderText}>
+                  Search for a place...
+                </Text>
+              </View>
               <Ionicons
-                name="location-outline"
+                name="chevron-forward"
                 size={20}
                 color={colors.gray400}
               />
-              <Text style={styles.placeholderText}>Select a place</Text>
-            </View>
+            </>
           )}
-          <Ionicons
-            name={showPlacePicker ? "chevron-up" : "chevron-down"}
-            size={20}
-            color={colors.gray400}
-          />
         </HapticPressable>
-
-        {showPlacePicker && (
-          <View style={styles.placeList}>
-            <ScrollView style={styles.placeScrollView} nestedScrollEnabled>
-              {allPlaces.map((place) => (
-                <HapticPressable
-                  key={place.id}
-                  style={[
-                    styles.placeItem,
-                    selectedPlace?.id === place.id && styles.placeItemSelected,
-                  ]}
-                  onPress={() => {
-                    setSelectedPlace(place);
-                    setShowPlacePicker(false);
-                  }}
-                >
-                  <View
-                    style={[
-                      styles.categoryDot,
-                      { backgroundColor: colors.category[place.category] },
-                    ]}
-                  />
-                  <View style={styles.placeInfo}>
-                    <Text style={styles.placeName}>{place.name}</Text>
-                    <Text style={styles.placeAddress}>{place.address}</Text>
-                  </View>
-                  {selectedPlace?.id === place.id && (
-                    <Ionicons
-                      name="checkmark"
-                      size={20}
-                      color={colors.primary}
-                    />
-                  )}
-                </HapticPressable>
-              ))}
-            </ScrollView>
-          </View>
-        )}
 
         <Text style={styles.label}>
           {createType === "post" ? "What do you want to share?" : "Description"}
@@ -652,7 +671,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 14,
+    padding: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.gray200,
@@ -661,57 +680,25 @@ const styles = StyleSheet.create({
   selectedPlace: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
+    flex: 1,
+  },
+  placeInfo: {
+    flex: 1,
   },
   selectedPlaceText: {
     fontSize: 15,
     fontWeight: "500",
     color: colors.text,
   },
+  selectedPlaceAddress: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
   placeholderText: {
     fontSize: 15,
     color: colors.gray400,
-  },
-  placeList: {
-    marginTop: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.gray200,
-    backgroundColor: colors.background,
-    maxHeight: 250,
-    overflow: "hidden",
-  },
-  placeScrollView: {
-    maxHeight: 250,
-  },
-  placeItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray100,
-  },
-  placeItemSelected: {
-    backgroundColor: colors.primary + "10",
-  },
-  categoryDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 12,
-  },
-  placeInfo: {
-    flex: 1,
-  },
-  placeName: {
-    fontSize: 14,
-    fontWeight: "500",
-    color: colors.text,
-  },
-  placeAddress: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
   },
   textInput: {
     padding: 14,

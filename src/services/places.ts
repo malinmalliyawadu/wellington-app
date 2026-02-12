@@ -27,6 +27,24 @@ export async function getPlaceById(id: string): Promise<Place | null> {
   return mapPlace(data);
 }
 
+export async function createPlace(place: Omit<Place, 'id'>): Promise<Place> {
+  const { data, error } = await supabase
+    .from('places')
+    .insert({
+      name: place.name,
+      category: place.category,
+      address: place.address,
+      latitude: place.latitude,
+      longitude: place.longitude,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  return mapPlace(data);
+}
+
 function mapPlace(row: {
   id: string;
   name: string;

@@ -1,1 +1,8 @@
-export { CreatePostSheetScreen as default } from '../../../src/screens/CreatePostSheetScreen';
+import { CreatePostSheetScreen } from '../../../src/screens/CreatePostSheetScreen';
+
+export const unstable_settings = {
+  initialRouteName: 'create-post',
+  presentation: 'fullScreenModal',
+};
+
+export default CreatePostSheetScreen;
