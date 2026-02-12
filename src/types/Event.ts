@@ -1,3 +1,5 @@
+export type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community';
+
 export interface Event {
   id: string;
   title: string;
@@ -7,7 +9,7 @@ export interface Event {
   startTime: string;
   endTime?: string;
   imageUrl?: string;
-  category: 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community';
+  category: EventCategory;
   attendeeIds?: string[];
   ticketUrl?: string;
 }

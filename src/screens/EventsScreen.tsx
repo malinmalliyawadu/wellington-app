@@ -23,6 +23,7 @@ import { useFollow } from '../context/FollowContext';
 import { useEventFilters } from '../context/EventFilterContext';
 import { colors } from '../theme/colors';
 import { HapticPressable } from 'src/components/HapticPressable';
+import { FloatingCreateButton } from 'src/components/FloatingCreateButton';
 
 type DateRange = 'today' | 'tomorrow' | 'weekend' | 'month';
 
@@ -227,6 +228,8 @@ export function EventsScreen() {
           )}
         </View>
       </Animated.View>
+
+      <FloatingCreateButton />
     </View>
   );
 }

@@ -24,6 +24,20 @@ export default function FeedLayout() {
         name="post/[postId]"
         options={{ headerShown: true, headerTitle: '', headerBackTitle: 'Feed' }}
       />
+      <Stack.Screen
+        name="create-post"
+        options={{
+          presentation: 'formSheet',
+          headerShown: false,
+          contentStyle: { backgroundColor: '#FFFFFF' },
+          sheetAllowedDetents: [0.85, 1.0],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 32,
+          sheetInitialDetentIndex: 0,
+          sheetLargestUndimmedDetentIndex: 0,
+          sheetExpandsWhenScrolledToEdge: false,
+        }}
+      />
     </Stack>
   );
 }

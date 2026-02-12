@@ -23,6 +23,7 @@ import { Place, User } from '../types';
 import { useRouter } from 'expo-router';
 import { colors } from '../theme/colors';
 import { HapticPressable } from 'src/components/HapticPressable';
+import { FloatingCreateButton } from 'src/components/FloatingCreateButton';
 import * as Haptics from 'expo-haptics';
 
 const WELLINGTON_REGION = {
@@ -54,10 +55,12 @@ export function MapScreen() {
   const [visibleRegion, setVisibleRegion] = useState<Region>(WELLINGTON_REGION);
   const [mapLayout, setMapLayout] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
 
-  const { data: places } = useQuery(getPlaces);
+  const { data: places, loading: placesLoading } = useQuery(getPlaces);
   const allPlaces = places ?? [];
-  const { data: allPosts } = useQuery(getPosts);
-  const { data: allUsers } = useQuery(getProfiles);
+  const { data: allPosts, loading: postsLoading } = useQuery(getPosts);
+  const { data: allUsers, loading: usersLoading } = useQuery(getProfiles);
+
+  const isDataLoaded = !placesLoading && !postsLoading && !usersLoading;
 
   const userMap = useMemo(() => {
     const map = new Map<string, User>();
@@ -172,6 +175,15 @@ export function MapScreen() {
     })();
   }, []);
 
+  // Ensure visible region is initialized once data and layout are ready
+  useEffect(() => {
+    if (isDataLoaded && mapLayout.width > 0 && mapLayout.height > 0) {
+      // Force a state update to trigger annotatedPlaceIds recalculation
+      // This ensures markers render properly on initial load
+      setVisibleRegion(prev => ({ ...prev }));
+    }
+  }, [isDataLoaded, mapLayout.width, mapLayout.height]);
+
   const centerOnUser = () => {
     if (location && mapRef.current) {
       mapRef.current.animateToRegion({
@@ -202,7 +214,7 @@ export function MapScreen() {
         onRegionChangeComplete={handleRegionChangeComplete}
         showsPointsOfInterest={false}
       >
-        {filteredPlaces.map((place) => {
+        {isDataLoaded && filteredPlaces.map((place) => {
           const popularity = popularityMap.get(place.id);
           const score = popularity?.score ?? 1;
           const postCount = popularity?.postCount ?? 0;
@@ -305,6 +317,7 @@ export function MapScreen() {
         )}
       </View>
 
+      <FloatingCreateButton />
     </View>
   );
 }

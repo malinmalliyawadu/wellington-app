@@ -20,6 +20,7 @@ import { getFeedPosts } from "../services/posts";
 import { getProfilesByIds } from "../services/users";
 import { getPlaces } from "../services/places";
 import { HapticPressable } from "src/components/HapticPressable";
+import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
@@ -177,6 +178,8 @@ export function FeedScreen() {
           </View>
         </View>
       </Animated.View>
+
+      <FloatingCreateButton />
     </View>
   );
 }
