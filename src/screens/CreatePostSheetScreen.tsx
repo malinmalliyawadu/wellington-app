@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import MapView, { Marker } from "react-native-maps";
 import { Place, PostType, EventCategory } from "../types";
 import { colors } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
@@ -513,6 +514,32 @@ export function CreatePostSheetScreen() {
           )}
         </HapticPressable>
 
+        {selectedPlace && (
+          <View style={styles.mapPreview}>
+            <MapView
+              style={styles.map}
+              initialRegion={{
+                latitude: selectedPlace.latitude,
+                longitude: selectedPlace.longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
+              }}
+              scrollEnabled={false}
+              zoomEnabled={false}
+              pitchEnabled={false}
+              rotateEnabled={false}
+            >
+              <Marker
+                coordinate={{
+                  latitude: selectedPlace.latitude,
+                  longitude: selectedPlace.longitude,
+                }}
+                title={selectedPlace.name}
+              />
+            </MapView>
+          </View>
+        )}
+
         <Text style={styles.label}>
           {createType === "post" ? "What do you want to share?" : "Description"}
         </Text>
@@ -699,6 +726,17 @@ const styles = StyleSheet.create({
   placeholderText: {
     fontSize: 15,
     color: colors.gray400,
+  },
+  mapPreview: {
+    marginTop: 12,
+    height: 180,
+    borderRadius: 12,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.gray200,
+  },
+  map: {
+    flex: 1,
   },
   textInput: {
     padding: 14,

@@ -11,11 +11,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, useLocalSearchParams } from "expo-router";
+import * as Location from "expo-location";
 import { Place } from "../types";
 import { colors } from "../theme/colors";
-import { useQuery } from "../hooks/useQuery";
-import { getPlaces } from "../services/places";
-import { searchGooglePlaces } from "../services/googlePlaces";
+import {
+  searchGooglePlaces,
+  searchNearbyPlaces,
+} from "../services/googlePlaces";
 import { HapticPressable } from "../components/HapticPressable";
 
 export function PlaceSearchSheet() {
@@ -26,29 +28,97 @@ export function PlaceSearchSheet() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
-  const { data: places } = useQuery(getPlaces);
-  const allPlaces = places ?? [];
+  const [nearbyPlaces, setNearbyPlaces] = useState<any[]>([]);
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
-  const handleSearch = useCallback(async (query: string) => {
-    setSearchQuery(query);
-    if (query.trim().length < 2) {
-      setSearchResults([]);
-      return;
-    }
+  // Get user location and fetch nearby places on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== "granted") {
+          console.warn("Location permission denied");
+          return;
+        }
 
-    setSearching(true);
-    try {
-      const results = await searchGooglePlaces(query);
-      setSearchResults(results);
-    } catch (error) {
-      console.error("Search error:", error);
-    } finally {
-      setSearching(false);
-    }
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+        const coords = {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+        };
+        setUserLocation(coords);
+
+        console.log("User location:", coords);
+        console.log("Location accuracy:", location.coords.accuracy);
+
+        // Fetch nearby places with smaller radius (1km)
+        setSearching(true);
+        const nearby = await searchNearbyPlaces(
+          coords.latitude,
+          coords.longitude,
+          100
+        );
+        console.log("Nearby places found:", nearby.length);
+        setNearbyPlaces(nearby);
+        setSearching(false);
+      } catch (error) {
+        console.error("Error getting location:", error);
+        setSearching(false);
+      }
+    })();
   }, []);
 
+  const handleSearch = useCallback(
+    async (query: string) => {
+      setSearchQuery(query);
+      if (query.trim().length < 2) {
+        setSearchResults([]);
+        return;
+      }
+
+      setSearching(true);
+      try {
+        const results = await searchGooglePlaces(
+          query,
+          userLocation?.latitude,
+          userLocation?.longitude
+        );
+        setSearchResults(results);
+      } catch (error) {
+        console.error("Search error:", error);
+      } finally {
+        setSearching(false);
+      }
+    },
+    [userLocation]
+  );
+
   const displayedPlaces =
-    searchQuery.trim().length >= 2 ? searchResults : allPlaces;
+    searchQuery.trim().length >= 2 ? searchResults : nearbyPlaces;
+
+  const getCategoryIcon = (category: Place["category"]) => {
+    switch (category) {
+      case "cafe":
+        return "cafe";
+      case "restaurant":
+        return "restaurant";
+      case "bar":
+        return "wine";
+      case "park":
+        return "leaf";
+      case "attraction":
+        return "star";
+      case "venue":
+        return "musical-notes";
+      default:
+        return "location";
+    }
+  };
 
   const handleSelectPlace = (place: Place) => {
     Keyboard.dismiss();
@@ -60,28 +130,30 @@ export function PlaceSearchSheet() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <HapticPressable onPress={() => router.back()} style={styles.backButton}>
+      <View style={styles.searchHeader}>
+        <HapticPressable
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <Ionicons name="arrow-back" size={24} color={colors.text} />
         </HapticPressable>
-        <Text style={styles.headerTitle}>Search Places</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-
-      <View style={styles.searchContainer}>
-        <Ionicons name="search" size={20} color={colors.gray400} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search for places in Wellington..."
-          placeholderTextColor={colors.gray400}
-          value={searchQuery}
-          onChangeText={handleSearch}
-          autoCapitalize="none"
-          autoCorrect={false}
-          autoFocus
-          returnKeyType="search"
-        />
-        {searching && <ActivityIndicator size="small" color={colors.primary} />}
+        <View style={styles.searchInputContainer}>
+          <Ionicons name="search" size={18} color={colors.gray400} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search for places in Wellington..."
+            placeholderTextColor={colors.gray400}
+            value={searchQuery}
+            onChangeText={handleSearch}
+            autoCapitalize="none"
+            autoCorrect={false}
+            autoFocus
+            returnKeyType="search"
+          />
+          {searching && (
+            <ActivityIndicator size="small" color={colors.primary} />
+          )}
+        </View>
       </View>
 
       <FlatList
@@ -110,19 +182,21 @@ export function PlaceSearchSheet() {
           >
             <View
               style={[
-                styles.categoryDot,
-                { backgroundColor: colors.category[item.category] },
+                styles.categoryIcon,
+                { backgroundColor: colors.category[item.category] + "20" },
               ]}
-            />
+            >
+              <Ionicons
+                name={getCategoryIcon(item.category) as any}
+                size={18}
+                color={colors.category[item.category]}
+              />
+            </View>
             <View style={styles.placeInfo}>
               <Text style={styles.placeName}>{item.name}</Text>
               <Text style={styles.placeAddress}>{item.address}</Text>
             </View>
-            <Ionicons
-              name="chevron-forward"
-              size={20}
-              color={colors.gray400}
-            />
+            <Ionicons name="chevron-forward" size={20} color={colors.gray400} />
           </HapticPressable>
         )}
       />
@@ -135,14 +209,15 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
+  searchHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
+    backgroundColor: colors.background,
   },
   backButton: {
     width: 40,
@@ -150,29 +225,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: colors.text,
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  searchContainer: {
+  searchInputContainer: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.background,
+    gap: 8,
+    backgroundColor: colors.gray100,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: colors.text,
-    paddingVertical: 8,
+    paddingVertical: 0,
   },
   listContent: {
     paddingBottom: 20,
@@ -196,10 +263,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  categoryDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  categoryIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: 12,
   },
   placeInfo: {
