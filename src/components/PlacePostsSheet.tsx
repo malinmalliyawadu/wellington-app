@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,18 +9,18 @@ import {
   Dimensions,
   Linking,
   Platform,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Place, Post, PlaceCategory } from '../types';
-import { PlacePopularity } from '../utils/placePopularity';
-import { formatNumber } from '../utils/formatNumber';
-import { useLike } from '../context/LikeContext';
-import { useQuery } from '../hooks/useQuery';
-import { getProfileById } from '../services/users';
-import { fetchPlaceDetails } from '../services/googlePlaceDetails';
-import { VideoThumbnail } from './VideoThumbnail';
-import { colors } from '../theme/colors';
-import { HapticPressable } from './HapticPressable';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Place, Post, PlaceCategory } from "../types";
+import { PlacePopularity } from "../utils/placePopularity";
+import { formatNumber } from "../utils/formatNumber";
+import { useLike } from "../context/LikeContext";
+import { useQuery } from "../hooks/useQuery";
+import { getProfileById } from "../services/users";
+import { fetchPlaceDetails } from "../services/googlePlaceDetails";
+import { VideoThumbnail } from "./VideoThumbnail";
+import { colors } from "../theme/colors";
+import { HapticPressable } from "./HapticPressable";
 
 interface PlacePostsSheetProps {
   place: Place;
@@ -33,15 +33,15 @@ interface PlacePostsSheetProps {
 }
 
 const CATEGORY_LABELS: Record<PlaceCategory, string> = {
-  cafe: 'Cafe',
-  restaurant: 'Restaurant',
-  bar: 'Bar',
-  attraction: 'Attraction',
-  park: 'Park',
-  venue: 'Venue',
+  cafe: "Cafe",
+  restaurant: "Restaurant",
+  bar: "Bar",
+  attraction: "Attraction",
+  park: "Park",
+  venue: "Venue",
 };
 
-const SCREEN_HEIGHT = Dimensions.get('window').height;
+const SCREEN_HEIGHT = Dimensions.get("window").height;
 const MAX_HEIGHT = SCREEN_HEIGHT * 0.6;
 
 export function PlacePostsSheet({
@@ -54,7 +54,10 @@ export function PlacePostsSheet({
   onPressPost,
 }: PlacePostsSheetProps) {
   const categoryColor = colors.category[place.category];
-  const [placeDetails, setPlaceDetails] = useState<{ rating?: number; userRatingsTotal?: number }>({
+  const [placeDetails, setPlaceDetails] = useState<{
+    rating?: number;
+    userRatingsTotal?: number;
+  }>({
     rating: place.rating,
     userRatingsTotal: place.userRatingsTotal,
   });
@@ -62,11 +65,13 @@ export function PlacePostsSheet({
   // Fetch place details if not already present
   useEffect(() => {
     if (!place.rating) {
-      fetchPlaceDetails(place.latitude, place.longitude, place.name).then(details => {
-        if (details.rating) {
-          setPlaceDetails(details);
+      fetchPlaceDetails(place.latitude, place.longitude, place.name).then(
+        (details) => {
+          if (details.rating) {
+            setPlaceDetails(details);
+          }
         }
-      });
+      );
     }
   }, [place.id, place.latitude, place.longitude, place.name, place.rating]);
 
@@ -91,15 +96,27 @@ export function PlacePostsSheet({
 
     if (url) {
       Linking.openURL(url).catch((err) => {
-        console.error('Failed to open maps:', err);
+        console.error("Failed to open maps:", err);
         // Fallback to Google Maps web
-        Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`);
+        Linking.openURL(
+          `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
+        );
       });
     }
   }, [place]);
 
+  const hasPosts = sortedPosts.length > 0;
+  console.log(
+    "PlacePostsSheet:",
+    place.name,
+    "hasPosts:",
+    hasPosts,
+    "postsCount:",
+    posts.length
+  );
+
   return (
-    <View style={[styles.container, { maxHeight: MAX_HEIGHT }]}>
+    <View style={[styles.container, hasPosts && { maxHeight: MAX_HEIGHT }]}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <HapticPressable
@@ -145,60 +162,82 @@ export function PlacePostsSheet({
         </View>
         <View style={styles.statsRow}>
           <View style={styles.stat}>
-            <Ionicons name="chatbubble-outline" size={14} color={colors.textSecondary} />
+            <Ionicons
+              name="chatbubble-outline"
+              size={14}
+              color={colors.textSecondary}
+            />
             <Text style={styles.statText}>{posts.length} posts</Text>
           </View>
           <View style={styles.stat}>
-            <Ionicons name="heart-outline" size={14} color={colors.textSecondary} />
+            <Ionicons
+              name="heart-outline"
+              size={14}
+              color={colors.textSecondary}
+            />
             <Text style={styles.statText}>{totalLikes} likes</Text>
           </View>
-          <HapticPressable style={styles.directionsButton} onPress={handleOpenDirections}>
+          <HapticPressable
+            style={styles.directionsButton}
+            onPress={handleOpenDirections}
+          >
             <Ionicons name="navigate" size={14} color={colors.primary} />
             <Text style={styles.directionsText}>Directions</Text>
           </HapticPressable>
         </View>
       </View>
 
-      <ScrollView style={styles.postList} showsVerticalScrollIndicator={false}>
-        {sortedPosts.map((post) => (
-          <HapticPressable
-            key={post.id}
-            onPress={() => onPressPost?.(post.id)}
-            disabled={!onPressPost}
-          >
-            <PostRow
-              post={post}
-              isFollowed={followingIds.includes(post.userId)}
-            />
-          </HapticPressable>
-        ))}
-      </ScrollView>
+      {hasPosts ? (
+        <ScrollView
+          style={styles.postList}
+          showsVerticalScrollIndicator={false}
+        >
+          {sortedPosts.map((post) => (
+            <HapticPressable
+              key={post.id}
+              onPress={() => onPressPost?.(post.id)}
+              disabled={!onPressPost}
+            >
+              <PostRow
+                post={post}
+                isFollowed={followingIds.includes(post.userId)}
+              />
+            </HapticPressable>
+          ))}
+        </ScrollView>
+      ) : (
+        <View style={styles.emptyState}>
+          <Ionicons
+            name="chatbubble-outline"
+            size={48}
+            color={colors.gray300}
+          />
+          <Text style={styles.emptyStateText}>No posts yet</Text>
+          <Text style={styles.emptyStateSubtext}>
+            Be the first to share your experience!
+          </Text>
+        </View>
+      )}
     </View>
   );
 }
 
-function PostRow({
-  post,
-  isFollowed,
-}: {
-  post: Post;
-  isFollowed: boolean;
-}) {
-  const fetchUser = useCallback(() => getProfileById(post.userId), [post.userId]);
+function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
+  const fetchUser = useCallback(
+    () => getProfileById(post.userId),
+    [post.userId]
+  );
   const { data: user } = useQuery(fetchUser);
   const { isLiked, toggleLike, getLikeCount } = useLike();
   const liked = isLiked(post.id);
 
   return (
     <View style={styles.postRow}>
-      <Image
-        source={{ uri: user?.avatarUrl }}
-        style={styles.avatar}
-      />
+      <Image source={{ uri: user?.avatarUrl }} style={styles.avatar} />
       <View style={styles.postContent}>
         <View style={styles.postHeader}>
           <Text style={styles.displayName} numberOfLines={1}>
-            {user?.displayName ?? 'Unknown'}
+            {user?.displayName ?? "Unknown"}
           </Text>
           {isFollowed && (
             <View style={styles.followBadge}>
@@ -218,7 +257,7 @@ function PostRow({
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Ionicons
-            name={liked ? 'heart' : 'heart-outline'}
+            name={liked ? "heart" : "heart-outline"}
             size={14}
             color={liked ? colors.liked : colors.textMuted}
           />
@@ -227,13 +266,15 @@ function PostRow({
           </Text>
         </HapticPressable>
       </View>
-      {post.mediaUrl && (
-        post.type === 'video' ? (
-          <VideoThumbnail thumbnailUrl={post.thumbnailUrl} style={styles.thumbnail} />
+      {post.mediaUrl &&
+        (post.type === "video" ? (
+          <VideoThumbnail
+            thumbnailUrl={post.thumbnailUrl}
+            style={styles.thumbnail}
+          />
         ) : (
           <Image source={{ uri: post.mediaUrl }} style={styles.thumbnail} />
-        )
-      )}
+        ))}
     </View>
   );
 }
@@ -242,12 +283,12 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.cardBackground,
     borderRadius: 16,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   header: {
     padding: 16,
@@ -255,20 +296,20 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.gray200,
   },
   titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
   nameButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
     marginRight: 8,
   },
   name: {
     fontSize: 18,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text,
     flexShrink: 1,
   },
@@ -276,8 +317,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
   categoryBadge: {
@@ -287,19 +328,19 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   categoryText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 3,
     marginRight: 8,
   },
   ratingText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
   },
   reviewCountText: {
@@ -312,13 +353,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 16,
   },
   stat: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
   },
   statText: {
@@ -326,21 +367,21 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   directionsButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
-    marginLeft: 'auto',
+    marginLeft: "auto",
   },
   directionsText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.primary,
   },
   postList: {
     paddingHorizontal: 16,
   },
   postRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingVertical: 12,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.gray200,
@@ -357,25 +398,25 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   postHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 2,
   },
   displayName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
     marginRight: 6,
   },
   followBadge: {
-    backgroundColor: colors.primary + '20',
+    backgroundColor: colors.primary + "20",
     paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,
   },
   followBadgeText: {
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.primary,
   },
   postText: {
@@ -384,8 +425,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   postMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 3,
     marginTop: 4,
   },
@@ -398,5 +439,21 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 6,
     backgroundColor: colors.gray200,
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: colors.text,
+    marginTop: 12,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 4,
   },
 });

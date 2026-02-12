@@ -66,11 +66,12 @@ Route files are thin re-exports: `export { ScreenName as default } from '../../s
 
 | Screen | Description |
 |---|---|
-| `MapScreen` | Primary map view with popularity markers, search bar, category/following filters, place posts sheet |
+| `MapScreen` | Primary map view with popularity markers, search bar, category/following filters |
 | `FeedScreen` | Scrollable feed of posts from followed users with like/comment actions |
 | `CreateScreen` | Post creation form with type selector, place picker, content input |
 | `ProfileScreen` | Current user profile with stats, post grid |
 | `UserProfileScreen` | Other users' profiles with follow button, post grid |
+| `PlacePostsSheetScreen` | **Full-screen modal** showing all posts for a place (opened from MapScreen markers) |
 | `PlaceDetailScreen` | All posts for a place, sorted by followed-first then likes |
 | `PostDetailScreen` | Instagram-style single post view with likes, comments, place tag |
 | `EventsScreen` | List of upcoming Wellington events |
@@ -83,12 +84,13 @@ Route files are thin re-exports: `export { ScreenName as default } from '../../s
 | Component | Description |
 |---|---|
 | `FeedPost` | Post card in feed: user header, media, caption, place badge, like/comment actions |
-| `PlacePostsSheet` | Bottom sheet on map showing posts for a selected place |
 | `PopularityMarker` | Map marker sized by popularity, styled by category and follow status |
 | `MapSearchBar` | Search input + category/following filter chips for map |
 | `EventCard` | Event card with image, date, title, attendee avatars |
 | `FollowButton` | Follow/Following toggle button using FollowContext |
 | `PlaceCard` | Compact place info card |
+
+**Note:** `PlacePostsSheet` (component) is deprecated. Use `PlacePostsSheetScreen` (screen) instead - accessed via routing from MapScreen.
 
 ### Context (`src/context/`)
 

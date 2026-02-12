@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack } from "expo-router";
 
 export default function MapLayout() {
   return (
@@ -6,23 +6,27 @@ export default function MapLayout() {
       <Stack.Screen name="(drawer)" />
       <Stack.Screen
         name="place/[placeId]"
-        options={{ headerShown: true, headerTitle: '', headerBackTitle: 'Map' }}
+        options={{ headerShown: true, headerTitle: "", headerBackTitle: "Map" }}
       />
       <Stack.Screen
         name="post/[postId]"
-        options={{ headerShown: true, headerTitle: '', headerBackTitle: 'Map' }}
+        options={{ headerShown: true, headerTitle: "", headerBackTitle: "Map" }}
       />
       <Stack.Screen
         name="user/[userId]"
-        options={{ headerShown: true, headerTitle: '', headerBackTitle: 'Back' }}
+        options={{
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Back",
+        }}
       />
       <Stack.Screen
         name="place-posts/[placeId]"
         options={{
-          presentation: 'formSheet',
+          presentation: "formSheet",
           headerShown: false,
-          contentStyle: { backgroundColor: '#FFFFFF' },
-          sheetAllowedDetents: [0.5, 0.85],
+          contentStyle: { backgroundColor: "#FFFFFF" },
+          sheetAllowedDetents: [0.4, 0.85],
           sheetGrabberVisible: true,
           sheetCornerRadius: 32,
           sheetInitialDetentIndex: 0,
@@ -33,9 +37,9 @@ export default function MapLayout() {
       <Stack.Screen
         name="create-post"
         options={{
-          presentation: 'formSheet',
+          presentation: "formSheet",
           headerShown: false,
-          contentStyle: { backgroundColor: '#FFFFFF' },
+          contentStyle: { backgroundColor: "#FFFFFF" },
           sheetAllowedDetents: [0.85, 1.0],
           sheetGrabberVisible: true,
           sheetCornerRadius: 32,
