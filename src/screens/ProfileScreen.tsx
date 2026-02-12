@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, Pressable, Alert } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { View, Text, Image, FlatList, StyleSheet, Pressable, Alert, RefreshControl } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,13 +23,24 @@ export function ProfileScreen() {
   const currentUser = profile ?? { id: '', username: 'you', displayName: 'You', avatarUrl: '', bio: '' };
 
   const fetchPosts = useCallback(() => getPostsByUserId(currentUser.id), [currentUser.id]);
-  const { data: posts } = useQuery(fetchPosts);
-  const { data: allPlaces } = useQuery(getPlaces);
+  const { data: posts, refetch: refetchPosts } = useQuery(fetchPosts);
+  const { data: allPlaces, refetch: refetchPlaces } = useQuery(getPlaces);
   const fetchFollowers = useCallback(
     () => getOtherProfiles(profile?.id ?? ''),
     [profile?.id]
   );
-  const { data: followerList, loading: loadingFollowers } = useQuery(fetchFollowers);
+  const { data: followerList, loading: loadingFollowers, refetch: refetchFollowers } = useQuery(fetchFollowers);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    refetchPosts();
+    refetchPlaces();
+    refetchFollowers();
+    // Give a small delay to ensure queries complete
+    setTimeout(() => setRefreshing(false), 1000);
+  }, [refetchPosts, refetchPlaces, refetchFollowers]);
 
   const postCount = posts?.length ?? 0;
 
@@ -66,6 +77,14 @@ export function ProfileScreen() {
         keyExtractor={(item) => item.id}
         numColumns={2}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
         ListHeaderComponent={
           <View style={styles.profileSection}>
             <Image source={{ uri: currentUser.avatarUrl }} style={styles.avatar} />
