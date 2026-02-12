@@ -7,6 +7,9 @@ export default function TabLayout() {
         <Icon sf={{ default: 'map', selected: 'map.fill' }} />
         <Label>Map</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="search" role="search">
+        <Label>Search</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="feed">
         <Icon sf={{ default: 'list.bullet', selected: 'list.bullet' }} />
         <Label>Feed</Label>
@@ -18,10 +21,6 @@ export default function TabLayout() {
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: 'person', selected: 'person.fill' }} />
         <Label>Profile</Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="search" role="search">
-        <Label>Search</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
