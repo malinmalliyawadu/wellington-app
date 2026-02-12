@@ -20,9 +20,8 @@ export default function TabLayout() {
         <Label>Profile</Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="create" role="search">
-        <Icon sf={{ default: 'plus.circle', selected: 'plus.circle.fill' }} />
-        <Label>Create</Label>
+      <NativeTabs.Trigger name="search" role="search">
+        <Label>Search</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );

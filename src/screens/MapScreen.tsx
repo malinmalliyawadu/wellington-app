@@ -3,12 +3,14 @@ import { View, Text, Image, StyleSheet, LayoutChangeEvent } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from 'expo-router';
+import { DrawerActions } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { BlurView } from 'expo-blur';
 import { PopularityMarker } from '../components/PopularityMarker';
-import { MapSearchBar } from '../components/MapSearchBar';
-import { PeekingMarkersOverlay } from '../components/PeekingMarkersOverlay';
 import { useFollow } from '../context/FollowContext';
+import { useMapFilters } from '../context/MapFilterContext';
 import { useQuery } from '../hooks/useQuery';
-import { usePeekingMarkers, PeekingMarker } from '../hooks/usePeekingMarkers';
 import { getPlaces } from '../services/places';
 import { getPosts } from '../services/posts';
 import { getProfiles } from '../services/users';
@@ -17,7 +19,7 @@ import {
   getMarkerSize,
   isFollowedPlace,
 } from '../utils/placePopularity';
-import { Place, PlaceCategory, User } from '../types';
+import { Place, User } from '../types';
 import { useRouter } from 'expo-router';
 import { colors } from '../theme/colors';
 import { HapticPressable } from 'src/components/HapticPressable';
@@ -35,7 +37,10 @@ export function MapScreen() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const mapRef = useRef<MapView>(null);
   const router = useRouter();
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
   const { followingIds } = useFollow();
+  const { selectedCategories, showFollowingOnly } = useMapFilters();
 
   const openPlaceSheet = useCallback((placeId: string) => {
     const path = `/map/place-posts/${placeId}` as const;
@@ -46,8 +51,6 @@ export function MapScreen() {
     }
   }, [router]);
 
-  const [selectedCategories, setSelectedCategories] = useState<PlaceCategory[]>([]);
-  const [showFollowingOnly, setShowFollowingOnly] = useState(false);
   const [visibleRegion, setVisibleRegion] = useState<Region>(WELLINGTON_REGION);
   const [mapLayout, setMapLayout] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
 
@@ -83,14 +86,6 @@ export function MapScreen() {
       return true;
     });
   }, [selectedCategories, showFollowingOnly, popularityMap, followingIds]);
-
-  const peekingMarkers = usePeekingMarkers(
-    filteredPlaces,
-    popularityMap,
-    followingIds,
-    visibleRegion,
-    mapLayout,
-  );
 
   const annotatedPlaceIds = useMemo(() => {
     const { latitude, longitude, latitudeDelta, longitudeDelta } = visibleRegion;
@@ -154,26 +149,6 @@ export function MapScreen() {
     setMapLayout({ width, height });
   }, []);
 
-  const handlePeekingMarkerPress = useCallback((marker: PeekingMarker) => {
-    mapRef.current?.animateToRegion({
-      latitude: marker.place.latitude,
-      longitude: marker.place.longitude,
-      latitudeDelta: visibleRegion.latitudeDelta,
-      longitudeDelta: visibleRegion.longitudeDelta,
-    }, 400);
-    openPlaceSheet(marker.place.id);
-  }, [visibleRegion, openPlaceSheet]);
-
-  const handleSearchSelect = (place: Place) => {
-    mapRef.current?.animateToRegion({
-      latitude: place.latitude,
-      longitude: place.longitude,
-      latitudeDelta: 0.005,
-      longitudeDelta: 0.005,
-    });
-    openPlaceSheet(place.id);
-  };
-
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -208,6 +183,12 @@ export function MapScreen() {
     }
   };
 
+  const openFilters = () => {
+    navigation.dispatch(DrawerActions.openDrawer());
+  };
+
+  const activeFilterCount = (selectedCategories.length > 0 ? 1 : 0) + (showFollowingOnly ? 1 : 0);
+
   return (
     <View style={styles.container} onLayout={handleMapLayout}>
       <MapView
@@ -216,6 +197,8 @@ export function MapScreen() {
         initialRegion={WELLINGTON_REGION}
         showsUserLocation
         showsMyLocationButton={false}
+        showsCompass={true}
+        compassOffset={{ x: -320, y: 0 }}
         onRegionChangeComplete={handleRegionChangeComplete}
         showsPointsOfInterest={false}
       >
@@ -279,29 +262,48 @@ export function MapScreen() {
         })}
       </MapView>
 
-      <PeekingMarkersOverlay
-        markers={peekingMarkers}
-        mapWidth={mapLayout.width}
-        mapHeight={mapLayout.height}
-        onPress={handlePeekingMarkerPress}
-      />
+      <View style={[styles.controlsWrapper, { top: insets.top + 8 }]}>
+        <View style={styles.controlsContainer}>
+          <BlurView
+            intensity={10}
+            tint="light"
+            style={styles.controlsBlur}
+          >
+            <HapticPressable
+              style={[
+                styles.controlButton,
+                styles.controlButtonTop,
+                activeFilterCount > 0 && styles.controlButtonActive,
+              ]}
+              onPress={openFilters}
+            >
+              <Ionicons
+                name="options"
+                size={22}
+                color={activeFilterCount > 0 ? '#FFFFFF' : colors.text}
+              />
+            </HapticPressable>
 
-      <MapSearchBar
-        places={allPlaces}
-        selectedCategories={selectedCategories}
-        showFollowingOnly={showFollowingOnly}
-        onSelectPlace={handleSearchSelect}
-        onCategoriesChange={setSelectedCategories}
-        onFollowingToggle={setShowFollowingOnly}
-      />
+            <View style={styles.controlDivider} />
 
-      <HapticPressable style={styles.locationButton} onPress={centerOnUser}>
-        <Ionicons
-          name={location ? 'navigate' : 'navigate-outline'}
-          size={22}
-          color={location ? colors.primary : colors.gray400}
-        />
-      </HapticPressable>
+            <HapticPressable
+              style={[styles.controlButton, styles.controlButtonBottom]}
+              onPress={centerOnUser}
+            >
+              <Ionicons
+                name={location ? 'navigate' : 'navigate-outline'}
+                size={22}
+                color={location ? colors.primary : colors.text}
+              />
+            </HapticPressable>
+          </BlurView>
+        </View>
+        {activeFilterCount > 0 && (
+          <View style={styles.filterBadge}>
+            <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
+          </View>
+        )}
+      </View>
 
     </View>
   );
@@ -314,21 +316,65 @@ const styles = StyleSheet.create({
   map: {
     flex: 1,
   },
-  locationButton: {
+  controlsWrapper: {
     position: 'absolute',
-    top: 120,
     right: 16,
+    width: 52,
+  },
+  controlsContainer: {
     width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 4,
+  },
+  controlsBlur: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 1)',
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  controlButton: {
+    width: '100%',
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  controlButtonTop: {
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+  },
+  controlButtonBottom: {
+    borderBottomLeftRadius: 18,
+    borderBottomRightRadius: 18,
+  },
+  controlButtonActive: {
+    backgroundColor: colors.primary,
+  },
+  controlDivider: {
+    height: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+  },
+  filterBadge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: '#FFFFFF',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
+  filterBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.primary,
   },
   markerContainer: {
     alignItems: 'center',
