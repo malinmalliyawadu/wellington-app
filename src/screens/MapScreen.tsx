@@ -1,30 +1,43 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, StyleSheet, LayoutChangeEvent, ActivityIndicator } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
-import * as Location from 'expo-location';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from 'expo-router';
-import { DrawerActions } from '@react-navigation/native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { BlurView } from 'expo-blur';
-import { PopularityMarker } from '../components/PopularityMarker';
-import { useFollow } from '../context/FollowContext';
-import { useMapFilters } from '../context/MapFilterContext';
-import { useQuery } from '../hooks/useQuery';
-import { getPlaces } from '../services/places';
-import { getPosts } from '../services/posts';
-import { getProfiles } from '../services/users';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  LayoutChangeEvent,
+  ActivityIndicator,
+  Animated,
+} from "react-native";
+import MapView, { Marker, Region } from "react-native-maps";
+import * as Location from "expo-location";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "expo-router";
+import { DrawerActions } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { BlurView } from "expo-blur";
+import { PopularityMarker } from "../components/PopularityMarker";
+import { useFollow } from "../context/FollowContext";
+import { useMapFilters } from "../context/MapFilterContext";
+import { useQuery } from "../hooks/useQuery";
+import { getPlaces } from "../services/places";
+import { getPosts } from "../services/posts";
+import { getProfiles } from "../services/users";
 import {
   computePlacePopularity,
   getMarkerSize,
   isFollowedPlace,
-} from '../utils/placePopularity';
-import { Place, User } from '../types';
-import { useRouter } from 'expo-router';
-import { colors } from '../theme/colors';
-import { HapticPressable } from 'src/components/HapticPressable';
-import { FloatingCreateButton } from 'src/components/FloatingCreateButton';
-import * as Haptics from 'expo-haptics';
+} from "../utils/placePopularity";
+import { Place, User } from "../types";
+import { useRouter } from "expo-router";
+import { colors } from "../theme/colors";
+import { HapticPressable } from "src/components/HapticPressable";
+import { FloatingCreateButton } from "src/components/FloatingCreateButton";
+import * as Haptics from "expo-haptics";
 
 const WELLINGTON_REGION = {
   latitude: -41.2865,
@@ -34,7 +47,9 @@ const WELLINGTON_REGION = {
 };
 
 export function MapScreen() {
-  const [location, setLocation] = useState<Location.LocationObject | null>(null);
+  const [location, setLocation] = useState<Location.LocationObject | null>(
+    null
+  );
   const [locationError, setLocationError] = useState<string | null>(null);
   const mapRef = useRef<MapView>(null);
   const router = useRouter();
@@ -43,17 +58,57 @@ export function MapScreen() {
   const { followingIds } = useFollow();
   const { selectedCategories, showFollowingOnly } = useMapFilters();
 
-  const openPlaceSheet = useCallback((placeId: string) => {
-    const path = `/map/place-posts/${placeId}` as const;
-    if (router.canDismiss()) {
-      router.replace(path);
-    } else {
-      router.push(path);
-    }
-  }, [router]);
+  // Track animated scale values for each marker
+  const markerScales = useRef(new Map<string, Animated.Value>()).current;
+
+  const getMarkerScale = useCallback(
+    (placeId: string) => {
+      if (!markerScales.has(placeId)) {
+        markerScales.set(placeId, new Animated.Value(1));
+      }
+      return markerScales.get(placeId)!;
+    },
+    [markerScales]
+  );
+
+  const animateMarkerPress = useCallback(
+    (placeId: string) => {
+      const scale = getMarkerScale(placeId);
+
+      Animated.sequence([
+        Animated.spring(scale, {
+          toValue: 0.85,
+          useNativeDriver: true,
+          speed: 5000,
+          bounciness: 0,
+        }),
+        Animated.spring(scale, {
+          toValue: 1,
+          useNativeDriver: true,
+          speed: 3000,
+          bounciness: 8,
+        }),
+      ]).start();
+    },
+    [getMarkerScale]
+  );
+
+  const openPlaceSheet = useCallback(
+    (placeId: string) => {
+      const path = `/map/place-posts/${placeId}` as const;
+      if (router.canDismiss()) {
+        router.replace(path);
+      } else {
+        router.push(path);
+      }
+    },
+    [router]
+  );
 
   const [visibleRegion, setVisibleRegion] = useState<Region>(WELLINGTON_REGION);
-  const [mapLayout, setMapLayout] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [mapLayout, setMapLayout] = useState<{ width: number; height: number }>(
+    { width: 0, height: 0 }
+  );
 
   const { data: places, loading: placesLoading } = useQuery(getPlaces);
   const allPlaces = places ?? [];
@@ -77,7 +132,10 @@ export function MapScreen() {
 
   const filteredPlaces = useMemo(() => {
     return allPlaces.filter((place) => {
-      if (selectedCategories.length > 0 && !selectedCategories.includes(place.category)) {
+      if (
+        selectedCategories.length > 0 &&
+        !selectedCategories.includes(place.category)
+      ) {
         return false;
       }
       if (showFollowingOnly) {
@@ -88,10 +146,17 @@ export function MapScreen() {
       }
       return true;
     });
-  }, [allPlaces, selectedCategories, showFollowingOnly, popularityMap, followingIds]);
+  }, [
+    allPlaces,
+    selectedCategories,
+    showFollowingOnly,
+    popularityMap,
+    followingIds,
+  ]);
 
   const annotatedPlaceIds = useMemo(() => {
-    const { latitude, longitude, latitudeDelta, longitudeDelta } = visibleRegion;
+    const { latitude, longitude, latitudeDelta, longitudeDelta } =
+      visibleRegion;
     const { width: mw, height: mh } = mapLayout;
     if (mw === 0 || mh === 0) return new Set<string>();
 
@@ -101,7 +166,11 @@ export function MapScreen() {
     const west = longitude - longitudeDelta / 2;
 
     const visible = filteredPlaces.filter(
-      (p) => p.latitude >= south && p.latitude <= north && p.longitude >= west && p.longitude <= east,
+      (p) =>
+        p.latitude >= south &&
+        p.latitude <= north &&
+        p.longitude >= west &&
+        p.longitude <= east
     );
 
     const targetCount = Math.max(3, Math.round(visible.length * 0.35));
@@ -132,7 +201,7 @@ export function MapScreen() {
 
       // Check overlap with already-selected labels
       const overlaps = selected.some(
-        (s) => Math.abs(s.x - x) < LABEL_W && Math.abs(s.y - y) < LABEL_H,
+        (s) => Math.abs(s.x - x) < LABEL_W && Math.abs(s.y - y) < LABEL_H
       );
 
       if (!overlaps) {
@@ -155,8 +224,8 @@ export function MapScreen() {
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setLocationError('Location permission denied');
+      if (status !== "granted") {
+        setLocationError("Location permission denied");
         return;
       }
 
@@ -170,8 +239,8 @@ export function MapScreen() {
       });
       mapRef.current?.animateCamera({
         pitch: 40,
-        heading: 90
-      })
+        heading: 90,
+      });
     })();
   }, []);
 
@@ -190,7 +259,8 @@ export function MapScreen() {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
-  const activeFilterCount = (selectedCategories.length > 0 ? 1 : 0) + (showFollowingOnly ? 1 : 0);
+  const activeFilterCount =
+    (selectedCategories.length > 0 ? 1 : 0) + (showFollowingOnly ? 1 : 0);
 
   return (
     <View style={styles.container} onLayout={handleMapLayout}>
@@ -205,47 +275,53 @@ export function MapScreen() {
         onRegionChangeComplete={handleRegionChangeComplete}
         showsPointsOfInterest={false}
       >
-        {isDataLoaded && filteredPlaces.map((place) => {
-          const popularity = popularityMap.get(place.id);
-          const score = popularity?.score ?? 1;
-          const postCount = popularity?.postCount ?? 0;
-          const posterIds = popularity?.posterIds ?? [];
-          const size = getMarkerSize(score, popularityMap);
-          const followed = isFollowedPlace(posterIds, followingIds);
-          const showLabel = annotatedPlaceIds.has(place.id);
+        {isDataLoaded &&
+          filteredPlaces.map((place) => {
+            const popularity = popularityMap.get(place.id);
+            const score = popularity?.score ?? 1;
+            const postCount = popularity?.postCount ?? 0;
+            const posterIds = popularity?.posterIds ?? [];
+            const size = getMarkerSize(score, popularityMap);
+            const followed = isFollowedPlace(posterIds, followingIds);
+            const showLabel = annotatedPlaceIds.has(place.id);
 
-          // Get poster avatars
-          const posterAvatars = posterIds
-            .slice(0, 8)
-            .map(uid => userMap.get(uid)?.avatarUrl)
-            .filter((url): url is string => !!url);
+            // Get poster avatars
+            const posterAvatars = posterIds
+              .slice(0, 8)
+              .map((uid) => userMap.get(uid)?.avatarUrl)
+              .filter((url): url is string => !!url);
 
-          return (
-            <Marker.Animated
-              key={place.id}
-              coordinate={{
-                latitude: place.latitude,
-                longitude: place.longitude,
-              }}
-              anchor={{ x: 0.5, y: showLabel ? 0.35 : 0.5 }}
-              onPress={(e) => {
-                e.stopPropagation();
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
-                openPlaceSheet(place.id);
-              }}
-            >
-              <PopularityMarker
-                size={size}
-                category={place.category}
-                postCount={postCount}
-                isFollowed={followed}
-                placeName={place.name}
-                posterAvatars={posterAvatars}
-                showLabel={showLabel}
-              />
-            </Marker.Animated>
-          );
-        })}
+            const scale = getMarkerScale(place.id);
+
+            return (
+              <Marker.Animated
+                key={place.id}
+                coordinate={{
+                  latitude: place.latitude,
+                  longitude: place.longitude,
+                }}
+                anchor={{ x: 0.5, y: showLabel ? 0.35 : 0.5 }}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
+                  animateMarkerPress(place.id);
+                  openPlaceSheet(place.id);
+                }}
+              >
+                <Animated.View style={{ transform: [{ scale }] }}>
+                  <PopularityMarker
+                    size={size}
+                    category={place.category}
+                    postCount={postCount}
+                    isFollowed={followed}
+                    placeName={place.name}
+                    posterAvatars={posterAvatars}
+                    showLabel={showLabel}
+                  />
+                </Animated.View>
+              </Marker.Animated>
+            );
+          })}
       </MapView>
 
       {!isDataLoaded && (
@@ -259,11 +335,7 @@ export function MapScreen() {
 
       <View style={[styles.controlsWrapper, { top: insets.top + 8 }]}>
         <View style={styles.controlsContainer}>
-          <BlurView
-            intensity={10}
-            tint="light"
-            style={styles.controlsBlur}
-          >
+          <BlurView intensity={10} tint="light" style={styles.controlsBlur}>
             <HapticPressable
               style={[
                 styles.controlButton,
@@ -275,7 +347,7 @@ export function MapScreen() {
               <Ionicons
                 name="options"
                 size={22}
-                color={activeFilterCount > 0 ? '#FFFFFF' : colors.text}
+                color={activeFilterCount > 0 ? "#FFFFFF" : colors.text}
               />
             </HapticPressable>
 
@@ -286,7 +358,7 @@ export function MapScreen() {
               onPress={centerOnUser}
             >
               <Ionicons
-                name={location ? 'navigate' : 'navigate-outline'}
+                name={location ? "navigate" : "navigate-outline"}
                 size={22}
                 color={location ? colors.primary : colors.text}
               />
@@ -313,22 +385,22 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   loadingOverlay: {
-    position: 'absolute',
+    position: "absolute",
     left: 16,
     right: 16,
-    alignItems: 'center',
+    alignItems: "center",
   },
   loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: "rgba(255, 255, 255, 0.4)",
     borderRadius: 20,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
@@ -336,35 +408,35 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
   },
   controlsWrapper: {
-    position: 'absolute',
+    position: "absolute",
     right: 16,
     width: 52,
   },
   controlsContainer: {
     width: 44,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 4,
   },
   controlsBlur: {
-    width: '100%',
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    width: "100%",
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: "rgba(255, 255, 255, 0.4)",
     borderRadius: 18,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   controlButton: {
-    width: '100%',
+    width: "100%",
     height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   controlButtonTop: {
     borderTopLeftRadius: 18,
@@ -379,24 +451,24 @@ const styles = StyleSheet.create({
   },
   controlDivider: {
     height: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.08)',
+    backgroundColor: "rgba(0, 0, 0, 0.08)",
   },
   filterBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: -4,
     right: -4,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     width: 18,
     height: 18,
     borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderWidth: 2,
     borderColor: colors.primary,
   },
   filterBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.primary,
   },
 });
