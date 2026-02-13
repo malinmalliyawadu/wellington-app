@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, Image, StyleSheet, LayoutChangeEvent } from 'react-native';
+import { View, Text, Image, StyleSheet, LayoutChangeEvent, ActivityIndicator } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -88,7 +88,7 @@ export function MapScreen() {
       }
       return true;
     });
-  }, [selectedCategories, showFollowingOnly, popularityMap, followingIds]);
+  }, [allPlaces, selectedCategories, showFollowingOnly, popularityMap, followingIds]);
 
   const annotatedPlaceIds = useMemo(() => {
     const { latitude, longitude, latitudeDelta, longitudeDelta } = visibleRegion;
@@ -174,15 +174,6 @@ export function MapScreen() {
       })
     })();
   }, []);
-
-  // Ensure visible region is initialized once data and layout are ready
-  useEffect(() => {
-    if (isDataLoaded && mapLayout.width > 0 && mapLayout.height > 0) {
-      // Force a state update to trigger annotatedPlaceIds recalculation
-      // This ensures markers render properly on initial load
-      setVisibleRegion(prev => ({ ...prev }));
-    }
-  }, [isDataLoaded, mapLayout.width, mapLayout.height]);
 
   const centerOnUser = () => {
     if (location && mapRef.current) {
@@ -280,6 +271,15 @@ export function MapScreen() {
         })}
       </MapView>
 
+      {!isDataLoaded && (
+        <View style={[styles.loadingOverlay, { top: insets.top + 16 }]}>
+          <BlurView intensity={15} tint="light" style={styles.loadingContainer}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={styles.loadingText}>Loading places...</Text>
+          </BlurView>
+        </View>
+      )}
+
       <View style={[styles.controlsWrapper, { top: insets.top + 8 }]}>
         <View style={styles.controlsContainer}>
           <BlurView
@@ -334,6 +334,33 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    alignItems: 'center',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.text,
   },
   controlsWrapper: {
     position: 'absolute',
