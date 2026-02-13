@@ -652,9 +652,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
   },
-  headerLeft: {},
-  headerCenter: {},
-  headerRight: {},
+  headerLeft: {
+    flex: 1,
+    alignItems: "flex-start",
+  },
+  headerCenter: {
+    alignItems: "center",
+  },
+  headerRight: {
+    flex: 1,
+    alignItems: "flex-end",
+  },
   closeButton: {
     width: 40,
     height: 40,
