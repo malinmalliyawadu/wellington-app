@@ -7,6 +7,7 @@ export interface Place {
   address: string;
   latitude: number;
   longitude: number;
+  googlePlaceId?: string;
   rating?: number;
   userRatingsTotal?: number;
 }

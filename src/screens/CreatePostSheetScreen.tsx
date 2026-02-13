@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Modal,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -17,7 +18,7 @@ import MapView, { Marker } from "react-native-maps";
 import { Place, PostType, EventCategory } from "../types";
 import { colors } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
-import { createPlace, getPlaceById } from "../services/places";
+import { findOrCreatePlace, getPlaceById } from "../services/places";
 import { createPost } from "../services/posts";
 import { uploadMedia } from "../services/storage";
 import { HapticPressable } from "src/components/HapticPressable";
@@ -119,7 +120,7 @@ export function CreatePostSheetScreen() {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: mediaType,
-      allowsEditing: true,
+      allowsEditing: false,
       quality: 0.8,
     });
 
@@ -168,17 +169,18 @@ export function CreatePostSheetScreen() {
 
     setPosting(true);
     try {
-      // If the place doesn't have an ID (came from Google Places), create it first
+      // If the place doesn't have an ID (came from Google Places), find or create it
       let placeId = selectedPlace.id;
       if (!placeId) {
-        const newPlace = await createPlace({
+        const place = await findOrCreatePlace({
           name: selectedPlace.name,
           category: selectedPlace.category,
           address: selectedPlace.address,
           latitude: selectedPlace.latitude,
           longitude: selectedPlace.longitude,
+          googlePlaceId: selectedPlace.googlePlaceId,
         });
-        placeId = newPlace.id;
+        placeId = place.id;
       }
 
       if (createType === "post") {
@@ -256,13 +258,14 @@ export function CreatePostSheetScreen() {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      stickyHeaderIndices={[0]}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
-    >
+    <>
+      <ScrollView
+        style={styles.container}
+        stickyHeaderIndices={[0]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+      >
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <HapticPressable
@@ -312,8 +315,7 @@ export function CreatePostSheetScreen() {
           <LiquidGlassButton
             title={createType === "post" ? "Post" : "Create"}
             onPress={handleSubmit}
-            disabled={!isFormValid()}
-            loading={posting}
+            disabled={!isFormValid() || posting}
             size="medium"
           />
         </View>
@@ -556,6 +558,27 @@ export function CreatePostSheetScreen() {
         />
       </View>
     </ScrollView>
+
+      {/* Full screen progress overlay */}
+      <Modal
+        visible={posting}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View style={styles.progressOverlay}>
+          <View style={styles.progressContent}>
+            <ActivityIndicator size="large" color={colors.primary} />
+            <Text style={styles.progressText}>
+              {createType === "post" ? "Posting..." : "Creating event..."}
+            </Text>
+            <Text style={styles.progressSubtext}>
+              This may take a moment
+            </Text>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -730,5 +753,34 @@ const styles = StyleSheet.create({
   dateTimeRow: {
     flexDirection: "row",
     gap: 12,
+  },
+  progressOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.7)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  progressContent: {
+    backgroundColor: colors.background,
+    borderRadius: 20,
+    padding: 32,
+    alignItems: "center",
+    minWidth: 200,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  progressText: {
+    marginTop: 16,
+    fontSize: 17,
+    fontWeight: "600",
+    color: colors.text,
+  },
+  progressSubtext: {
+    marginTop: 6,
+    fontSize: 14,
+    color: colors.textMuted,
   },
 });

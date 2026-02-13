@@ -16,7 +16,7 @@ import {
 import MapView, { Marker, Region } from "react-native-maps";
 import * as Location from "expo-location";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "expo-router";
+import { useNavigation, useFocusEffect } from "expo-router";
 import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -112,10 +112,19 @@ export function MapScreen() {
     { width: 0, height: 0 }
   );
 
-  const { data: places, loading: placesLoading } = useQuery(getPlaces);
+  const { data: places, loading: placesLoading, refetch: refetchPlaces } = useQuery(getPlaces);
   const allPlaces = places ?? [];
-  const { data: allPosts, loading: postsLoading } = useQuery(getPosts);
-  const { data: allUsers, loading: usersLoading } = useQuery(getProfiles);
+  const { data: allPosts, loading: postsLoading, refetch: refetchPosts } = useQuery(getPosts);
+  const { data: allUsers, loading: usersLoading, refetch: refetchUsers } = useQuery(getProfiles);
+
+  // Refetch data when screen comes into focus (e.g., after creating a new post)
+  useFocusEffect(
+    useCallback(() => {
+      refetchPosts();
+      refetchPlaces();
+      refetchUsers();
+    }, [refetchPosts, refetchPlaces, refetchUsers])
+  );
 
   const isDataLoaded = !placesLoading && !postsLoading && !usersLoading;
 

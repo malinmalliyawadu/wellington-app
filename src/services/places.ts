@@ -36,6 +36,7 @@ export async function createPlace(place: Omit<Place, 'id'>): Promise<Place> {
       address: place.address,
       latitude: place.latitude,
       longitude: place.longitude,
+      google_place_id: place.googlePlaceId,
     })
     .select()
     .single();
@@ -45,6 +46,26 @@ export async function createPlace(place: Omit<Place, 'id'>): Promise<Place> {
   return mapPlace(data);
 }
 
+export async function findOrCreatePlace(place: Omit<Place, 'id'>): Promise<Place> {
+  // First, check if we have a Google Place ID and if it already exists
+  if (place.googlePlaceId) {
+    const { data: existingPlace, error: searchError } = await supabase
+      .from('places')
+      .select('*')
+      .eq('google_place_id', place.googlePlaceId)
+      .maybeSingle();
+
+    if (searchError) throw searchError;
+
+    if (existingPlace) {
+      return mapPlace(existingPlace);
+    }
+  }
+
+  // No Google Place ID match found, create a new place
+  return createPlace(place);
+}
+
 function mapPlace(row: {
   id: string;
   name: string;
@@ -52,6 +73,7 @@ function mapPlace(row: {
   address: string;
   latitude: number;
   longitude: number;
+  google_place_id?: string;
 }): Place {
   return {
     id: row.id,
@@ -60,5 +82,6 @@ function mapPlace(row: {
     address: row.address,
     latitude: row.latitude,
     longitude: row.longitude,
+    googlePlaceId: row.google_place_id,
   };
 }
