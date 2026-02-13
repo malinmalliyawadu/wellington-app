@@ -21,6 +21,7 @@ import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { PopularityMarker } from "../components/PopularityMarker";
+import { ExplorationOverlay } from "../components/ExplorationOverlay";
 import { useFollow } from "../context/FollowContext";
 import { useMapFilters } from "../context/MapFilterContext";
 import { useQuery } from "../hooks/useQuery";
@@ -51,6 +52,7 @@ export function MapScreen() {
     null
   );
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [showExplorationOverlay, setShowExplorationOverlay] = useState(false);
   const mapRef = useRef<MapView>(null);
   const router = useRouter();
   const navigation = useNavigation();
@@ -286,6 +288,10 @@ export function MapScreen() {
         onRegionChangeComplete={handleRegionChangeComplete}
         showsPointsOfInterest={false}
       >
+        <ExplorationOverlay
+          places={filteredPlaces}
+          visible={showExplorationOverlay}
+        />
         {isDataLoaded &&
           filteredPlaces.map((place) => {
             const popularity = popularityMap.get(place.id);
@@ -359,6 +365,19 @@ export function MapScreen() {
                 name="options"
                 size={22}
                 color={activeFilterCount > 0 ? "#FFFFFF" : colors.text}
+              />
+            </HapticPressable>
+
+            <View style={styles.controlDivider} />
+
+            <HapticPressable
+              style={[styles.controlButton]}
+              onPress={() => setShowExplorationOverlay(!showExplorationOverlay)}
+            >
+              <Ionicons
+                name={showExplorationOverlay ? "eye" : "eye-outline"}
+                size={22}
+                color={showExplorationOverlay ? colors.primary : colors.text}
               />
             </HapticPressable>
 

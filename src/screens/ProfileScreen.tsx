@@ -18,8 +18,10 @@ import { useQuery } from "../hooks/useQuery";
 import { getPostsByUserId } from "../services/posts";
 import { getPlaces } from "../services/places";
 import { getFollowCounts } from "../services/follows";
+import { getUnlockedAchievementCount } from "../services/achievements";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { PostsGrid } from "../components/PostsGrid";
+import { AchievementsList } from "../components/AchievementsList";
 import { colors } from "../theme/colors";
 import { HapticPressable } from "src/components/HapticPressable";
 
@@ -48,6 +50,11 @@ export function ProfileScreen() {
     [currentUser.id]
   );
   const { data: counts, refetch: refetchCounts } = useQuery(fetchCounts);
+  const fetchAchievementCount = useCallback(
+    () => getUnlockedAchievementCount(currentUser.id),
+    [currentUser.id]
+  );
+  const { data: achievementCount, refetch: refetchAchievementCount } = useQuery(fetchAchievementCount);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
@@ -55,7 +62,8 @@ export function ProfileScreen() {
       refetchPosts();
       refetchPlaces();
       refetchCounts();
-    }, [refetchPosts, refetchPlaces, refetchCounts])
+      refetchAchievementCount();
+    }, [refetchPosts, refetchPlaces, refetchCounts, refetchAchievementCount])
   );
 
   const [refreshing, setRefreshing] = useState(false);
@@ -65,9 +73,10 @@ export function ProfileScreen() {
     refetchPosts();
     refetchPlaces();
     refetchCounts();
+    refetchAchievementCount();
     // Give a small delay to ensure queries complete
     setTimeout(() => setRefreshing(false), 1000);
-  }, [refetchPosts, refetchPlaces, refetchCounts]);
+  }, [refetchPosts, refetchPlaces, refetchCounts, refetchAchievementCount]);
 
   const postCount = posts?.length ?? 0;
   const followerCount = counts?.followers ?? 0;
@@ -158,6 +167,11 @@ export function ProfileScreen() {
               <Text style={styles.statNumber}>{followingCount}</Text>
               <Text style={styles.statLabel}>Following</Text>
             </HapticPressable>
+            <View style={styles.statDivider} />
+            <View style={styles.stat}>
+              <Text style={styles.statNumber}>{achievementCount ?? 0}</Text>
+              <Text style={styles.statLabel}>Achievements</Text>
+            </View>
           </View>
 
           <View style={styles.buttonRow}>
@@ -184,6 +198,10 @@ export function ProfileScreen() {
           posts={userPosts}
           onPostPress={(postId) => router.push(`/profile/post/${postId}`)}
         />
+
+        <Text style={styles.sectionTitle}>Achievements</Text>
+
+        <AchievementsList userId={currentUser.id} />
       </ScrollView>
     </View>
   );

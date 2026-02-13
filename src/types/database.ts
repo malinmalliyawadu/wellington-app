@@ -283,6 +283,108 @@ export type Database = {
           },
         ];
       };
+      user_explorations: {
+        Row: {
+          user_id: string;
+          place_id: string;
+          explored_at: string;
+          exploration_method: ExplorationMethod;
+        };
+        Insert: {
+          user_id: string;
+          place_id: string;
+          explored_at?: string;
+          exploration_method: ExplorationMethod;
+        };
+        Update: {
+          explored_at?: string;
+          exploration_method?: ExplorationMethod;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'user_explorations_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+          {
+            foreignKeyName: 'user_explorations_place_id_fkey';
+            columns: ['place_id'];
+            referencedRelation: 'places';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+        ];
+      };
+      achievement_definitions: {
+        Row: {
+          id: string;
+          type: AchievementType;
+          title: string;
+          description: string;
+          icon_name: string;
+          requirement: Record<string, any>;
+          badge_color: string;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          type: AchievementType;
+          title: string;
+          description: string;
+          icon_name: string;
+          requirement: Record<string, any>;
+          badge_color: string;
+          sort_order: number;
+          created_at?: string;
+        };
+        Update: {
+          type?: AchievementType;
+          title?: string;
+          description?: string;
+          icon_name?: string;
+          requirement?: Record<string, any>;
+          badge_color?: string;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
+      user_achievements: {
+        Row: {
+          user_id: string;
+          achievement_id: string;
+          unlocked_at: string;
+          progress: Record<string, any>;
+        };
+        Insert: {
+          user_id: string;
+          achievement_id: string;
+          unlocked_at?: string;
+          progress?: Record<string, any>;
+        };
+        Update: {
+          unlocked_at?: string;
+          progress?: Record<string, any>;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'user_achievements_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+          {
+            foreignKeyName: 'user_achievements_achievement_id_fkey';
+            columns: ['achievement_id'];
+            referencedRelation: 'achievement_definitions';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+        ];
+      };
     };
     Views: {};
     Functions: {};
@@ -290,6 +392,7 @@ export type Database = {
       place_category: PlaceCategory;
       post_type: PostType;
       event_category: EventCategory;
+      exploration_method: ExplorationMethod;
     };
     CompositeTypes: {};
   };
@@ -298,6 +401,8 @@ export type Database = {
 export type PlaceCategory = 'cafe' | 'restaurant' | 'bar' | 'attraction' | 'park' | 'venue';
 export type PostType = 'photo' | 'video' | 'text';
 export type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community';
+export type ExplorationMethod = 'viewed' | 'posted';
+export type AchievementType = 'category' | 'milestone' | 'neighborhood' | 'social';
 
 export type Tables<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Row'];

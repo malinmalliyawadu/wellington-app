@@ -21,9 +21,12 @@ import MapView, { Marker } from "react-native-maps";
 import { Place, PostType, EventCategory } from "../types";
 import { colors } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
+import { useExploration } from "../context/ExplorationContext";
+import { useToast } from "../context/ToastContext";
 import { findOrCreatePlace, getPlaceById } from "../services/places";
 import { createPost } from "../services/posts";
 import { uploadMedia } from "../services/storage";
+import { createAchievementToast } from "../utils/achievementHelpers";
 import { HapticPressable } from "src/components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 
@@ -47,6 +50,8 @@ type CreateType = "post" | "event";
 export function CreatePostSheetScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
+  const { markExplored } = useExploration();
+  const { showToast } = useToast();
   const {
     placeId: placeIdParam,
     defaultType,
@@ -237,6 +242,12 @@ export function CreatePostSheetScreen() {
           content: content.trim(),
           mediaUrl,
         });
+
+        // Mark place as explored via posting
+        const newAchievements = await markExplored(placeId, 'posted');
+        if (newAchievements.length > 0) {
+          showToast(createAchievementToast(newAchievements[0]));
+        }
 
         Alert.alert(
           "Posted!",
