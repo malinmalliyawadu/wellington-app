@@ -51,9 +51,9 @@ export function PostDetailScreen() {
   const [commentText, setCommentText] = useState('');
   const [inputFocused, setInputFocused] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
-
   const fetchPost = useCallback(() => getPostByIdAsync(postId), [postId]);
   const { data: post, loading } = useQuery(fetchPost);
+  const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
 
   const fetchUser = useCallback(
     () => (post ? getProfileById(post.userId) : Promise.resolve(null)),
@@ -141,6 +141,19 @@ export function PostDetailScreen() {
     Keyboard.dismiss();
   };
 
+  const handleImageLoad = (event: any) => {
+    const { width, height } = event.nativeEvent.source;
+    if (width && height) {
+      setAspectRatio(width / height);
+    }
+  };
+
+  const handleVideoLoad = (event: { width: number; height: number }) => {
+    const { width, height } = event;
+    if (width && height) {
+      setAspectRatio(width / height);
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -168,12 +181,17 @@ export function PostDetailScreen() {
           post.type === 'video' ? (
             <VideoPlayer
               uri={post.mediaUrl}
-              style={styles.media}
+              style={[styles.media, { aspectRatio }]}
               shouldPlay
               useNativeControls
+              onLoad={handleVideoLoad}
             />
           ) : (
-            <Image source={{ uri: post.mediaUrl }} style={styles.media} />
+            <Image
+              source={{ uri: post.mediaUrl }}
+              style={[styles.media, { aspectRatio }]}
+              onLoad={handleImageLoad}
+            />
           )
         )}
 
@@ -358,7 +376,6 @@ const styles = StyleSheet.create({
   },
   media: {
     width: '100%',
-    height: 350,
     backgroundColor: colors.gray200,
   },
   actions: {

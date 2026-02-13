@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { colors } from '../theme/colors';
@@ -10,6 +10,7 @@ interface VideoPlayerProps {
   isMuted?: boolean;
   isLooping?: boolean;
   useNativeControls?: boolean;
+  onLoad?: (event: { width: number; height: number }) => void;
 }
 
 export function VideoPlayer({
@@ -19,6 +20,7 @@ export function VideoPlayer({
   isMuted = true,
   isLooping = false,
   useNativeControls = false,
+  onLoad,
 }: VideoPlayerProps) {
   const player = useVideoPlayer(uri, (p) => {
     p.loop = isLooping;
@@ -27,6 +29,23 @@ export function VideoPlayer({
       p.play();
     }
   });
+
+  useEffect(() => {
+    if (!onLoad || !player) return;
+
+    const subscription = player.addListener('statusChange', (status) => {
+      if (status.status === 'readyToPlay' && player.currentTime === 0) {
+        // Get video dimensions from the player
+        const width = (player as any).videoWidth;
+        const height = (player as any).videoHeight;
+        if (width && height) {
+          onLoad({ width, height });
+        }
+      }
+    });
+
+    return () => subscription.remove();
+  }, [player, onLoad]);
 
   return (
     <View style={[styles.container, style]}>
@@ -42,6 +61,7 @@ export function VideoPlayer({
 
 const styles = StyleSheet.create({
   container: {
+    width: '100%',
     backgroundColor: colors.gray200,
     overflow: 'hidden',
   },

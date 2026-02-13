@@ -9,7 +9,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useFollow } from "../context/FollowContext";
 import { useAuth } from "../context/AuthContext";
@@ -52,6 +52,15 @@ export function ProfileScreen() {
     loading: loadingFollowers,
     refetch: refetchFollowers,
   } = useQuery(fetchFollowers);
+
+  // Refetch data when screen comes into focus (e.g., after creating a new post)
+  useFocusEffect(
+    useCallback(() => {
+      refetchPosts();
+      refetchPlaces();
+      refetchFollowers();
+    }, [refetchPosts, refetchPlaces, refetchFollowers])
+  );
 
   const [refreshing, setRefreshing] = useState(false);
 

@@ -48,13 +48,18 @@ export async function getPostsByUserId(userId: string): Promise<Post[]> {
   return (data ?? []).map(mapPost);
 }
 
-export async function getFeedPosts(followingIds: string[]): Promise<Post[]> {
-  if (followingIds.length === 0) return [];
+export async function getFeedPosts(followingIds: string[], currentUserId?: string): Promise<Post[]> {
+  // Include both followed users and the current user's posts
+  const userIds = currentUserId
+    ? [...new Set([...followingIds, currentUserId])]
+    : followingIds;
+
+  if (userIds.length === 0) return [];
 
   const { data, error } = await supabase
     .from('posts')
     .select('*')
-    .in('user_id', followingIds)
+    .in('user_id', userIds)
     .order('created_at', { ascending: false });
 
   if (error) throw error;

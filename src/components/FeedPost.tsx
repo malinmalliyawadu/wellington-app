@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, Image, StyleSheet, Pressable, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Post, User, Place, PlaceCategory } from '../types';
@@ -50,6 +50,21 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPress
   const fetchComments = useCallback(() => getCommentsByPostId(post.id), [post.id]);
   const { data: comments } = useQuery(fetchComments);
   const commentCount = comments?.length ?? 0;
+  const [aspectRatio, setAspectRatio] = useState<number>(post.type === 'video' ? 16 / 9 : 1);
+
+  const handleImageLoad = (event: any) => {
+    const { width, height } = event.nativeEvent.source;
+    if (width && height) {
+      setAspectRatio(width / height);
+    }
+  };
+
+  const handleVideoLoad = (event: { width: number; height: number }) => {
+    const { width, height } = event;
+    if (width && height) {
+      setAspectRatio(width / height);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -76,13 +91,18 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPress
           post.type === 'video' ? (
             <VideoPlayer
               uri={post.mediaUrl}
-              style={styles.media}
+              style={[styles.media, { aspectRatio }]}
               shouldPlay
               isMuted
               isLooping
+              onLoad={handleVideoLoad}
             />
           ) : (
-            <Image source={{ uri: post.mediaUrl }} style={styles.media} />
+            <Image
+              source={{ uri: post.mediaUrl }}
+              style={[styles.media, { aspectRatio }]}
+              onLoad={handleImageLoad}
+            />
           )
         )}
       </HapticPressable>
@@ -181,7 +201,6 @@ const styles = StyleSheet.create({
   },
   media: {
     width: '100%',
-    height: 300,
     backgroundColor: colors.gray200,
   },
   content: {
