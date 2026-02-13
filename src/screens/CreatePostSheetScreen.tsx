@@ -81,6 +81,12 @@ export function CreatePostSheetScreen() {
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [posting, setPosting] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  const handleScroll = useCallback((event: any) => {
+    const scrollY = event.nativeEvent.contentOffset.y;
+    setIsScrolled(scrollY > 0);
+  }, []);
 
   // Keyboard visibility listeners
   useEffect(() => {
@@ -301,11 +307,13 @@ export function CreatePostSheetScreen() {
           stickyHeaderIndices={[0]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          onScroll={handleScroll}
           contentContainerStyle={{
             paddingBottom: keyboardVisible ? 350 : insets.bottom + 20,
           }}
         >
-          <View style={styles.header}>
+          <View style={[styles.header, isScrolled && styles.headerScrolled]}>
             <View
               style={{
                 flexDirection: "row",
@@ -649,7 +657,10 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: 16,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: "transparent",
+  },
+  headerScrolled: {
+    backgroundColor: "#FFFFFF",
   },
   headerLeft: {
     flex: 1,
