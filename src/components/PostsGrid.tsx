@@ -1,5 +1,7 @@
 import React from "react";
 import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import MasonryList from "reanimated-masonry-list";
 import { VideoThumbnail } from "./VideoThumbnail";
 import { HapticPressable } from "./HapticPressable";
@@ -46,27 +48,55 @@ export function PostsGrid({
         onPress={() => onPostPress(item.id)}
       >
         {item.mediaUrl ? (
-          item.type === "video" ? (
-            <VideoThumbnail
-              thumbnailUrl={item.thumbnailUrl}
-              style={styles.postImage}
+          <>
+            {item.type === "video" ? (
+              <VideoThumbnail
+                thumbnailUrl={item.thumbnailUrl}
+                style={styles.postImage}
+              />
+            ) : (
+              <Image source={{ uri: item.mediaUrl }} style={styles.postImage} />
+            )}
+            {/* Gradient overlay for better text contrast */}
+            <LinearGradient
+              colors={["transparent", "rgba(0,0,0,0.7)"]}
+              style={styles.gradientOverlay}
             />
-          ) : (
-            <Image source={{ uri: item.mediaUrl }} style={styles.postImage} />
-          )
+            {/* Video indicator */}
+            {item.type === "video" && (
+              <View style={styles.videoIndicator}>
+                <Ionicons
+                  name="play-circle"
+                  size={32}
+                  color="rgba(255,255,255,0.9)"
+                />
+              </View>
+            )}
+          </>
         ) : (
-          <View style={styles.textPostTile}>
+          <LinearGradient
+            colors={[colors.primary, colors.primaryDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.textPostTile}
+          >
             <Text style={styles.textPostContent} numberOfLines={6}>
               {item.content}
             </Text>
-          </View>
+          </LinearGradient>
         )}
         {item.place && (
-          <View style={styles.postOverlay}>
-            <Text style={styles.postPlace} numberOfLines={1}>
+          <LinearGradient
+            colors={["rgba(0,0,0,0)", "rgba(0,0,0,0.4)"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.placeTag}
+          >
+            <Ionicons name="location" size={10} color="#FFFFFF" />
+            <Text style={styles.placeText} numberOfLines={1}>
               {item.place.name}
             </Text>
-          </View>
+          </LinearGradient>
         )}
       </HapticPressable>
     );
@@ -91,45 +121,66 @@ export function PostsGrid({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingLeft: 16,
+    alignItems: "center",
+    alignContent: "center",
   },
   masonryContent: {
     paddingVertical: 8,
   },
   postTile: {
-    marginBottom: 8,
-    borderRadius: 16,
+    marginBottom: 16,
+    borderRadius: 20,
     overflow: "hidden",
-    backgroundColor: colors.gray100,
+    boxShadow: "rgba(0, 0, 0, 0.16) 0px 1px 4px",
   },
   postImage: {
     width: "100%",
     height: "100%",
   },
-  textPostTile: {
-    flex: 1,
-    padding: 12,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-  },
-  textPostContent: {
-    fontSize: 13,
-    color: "#FFFFFF",
-    lineHeight: 18,
-  },
-  postOverlay: {
+  gradientOverlay: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    height: "50%",
   },
-  postPlace: {
-    fontSize: 11,
+  videoIndicator: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: [{ translateX: -16 }, { translateY: -16 }],
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  textPostTile: {
+    flex: 1,
+    padding: 20,
+    justifyContent: "center",
+  },
+  textPostContent: {
+    fontSize: 15,
     color: "#FFFFFF",
-    fontWeight: "500",
+    lineHeight: 22,
+    fontWeight: "600",
+  },
+  placeTag: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 4,
+  },
+  placeText: {
+    flex: 1,
+    fontSize: 12,
+    color: "#FFFFFF",
   },
   emptyState: {
     alignItems: "center",
