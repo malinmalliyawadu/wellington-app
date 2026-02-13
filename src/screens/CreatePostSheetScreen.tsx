@@ -305,58 +305,69 @@ export function CreatePostSheetScreen() {
             paddingBottom: keyboardVisible ? 350 : insets.bottom + 20,
           }}
         >
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <HapticPressable
-                onPress={() => router.dismiss()}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={24} color={colors.text} />
-              </HapticPressable>
-            </View>
-            <View style={styles.headerCenter}>
-              <View style={styles.segmentControl}>
+          <View style={styles.content}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                paddingVertical: 24,
+                alignContent: "center",
+                alignItems: "center",
+                gap: 16,
+              }}
+            >
+              <View style={styles.headerLeft}>
                 <HapticPressable
-                  style={[
-                    styles.segment,
-                    createType === "post" && styles.segmentActive,
-                  ]}
-                  onPress={() => setCreateType("post")}
+                  onPress={() => router.dismiss()}
+                  style={styles.closeButton}
                 >
-                  <Text
-                    style={[
-                      styles.segmentText,
-                      createType === "post" && styles.segmentTextActive,
-                    ]}
-                  >
-                    Post
-                  </Text>
-                </HapticPressable>
-                <HapticPressable
-                  style={[
-                    styles.segment,
-                    createType === "event" && styles.segmentActive,
-                  ]}
-                  onPress={() => setCreateType("event")}
-                >
-                  <Text
-                    style={[
-                      styles.segmentText,
-                      createType === "event" && styles.segmentTextActive,
-                    ]}
-                  >
-                    Event
-                  </Text>
+                  <Ionicons name="close" size={24} color={colors.text} />
                 </HapticPressable>
               </View>
-            </View>
-            <View style={styles.headerRight}>
-              <LiquidGlassButton
-                title={createType === "post" ? "Post" : "Create"}
-                onPress={handleSubmit}
-                disabled={!isFormValid() || posting}
-                size="medium"
-              />
+              <View style={styles.headerCenter}>
+                <View style={styles.segmentControl}>
+                  <HapticPressable
+                    style={[
+                      styles.segment,
+                      createType === "post" && styles.segmentActive,
+                    ]}
+                    onPress={() => setCreateType("post")}
+                  >
+                    <Text
+                      style={[
+                        styles.segmentText,
+                        createType === "post" && styles.segmentTextActive,
+                      ]}
+                    >
+                      Post
+                    </Text>
+                  </HapticPressable>
+                  <HapticPressable
+                    style={[
+                      styles.segment,
+                      createType === "event" && styles.segmentActive,
+                    ]}
+                    onPress={() => setCreateType("event")}
+                  >
+                    <Text
+                      style={[
+                        styles.segmentText,
+                        createType === "event" && styles.segmentTextActive,
+                      ]}
+                    >
+                      Event
+                    </Text>
+                  </HapticPressable>
+                </View>
+              </View>
+              <View style={styles.headerRight}>
+                <LiquidGlassButton
+                  title={"Create"}
+                  onPress={handleSubmit}
+                  disabled={!isFormValid() || posting}
+                  size="medium"
+                />
+              </View>
             </View>
           </View>
 
@@ -637,23 +648,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.translucentCardBackground,
   },
   header: {
+    flex: 1,
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.translucentCardBackground,
+    gap: 12,
   },
   headerLeft: {},
-  headerCenter: {
-    flex: 1,
-    alignItems: "center",
-  },
-  headerRight: {
-    alignItems: "flex-end",
-  },
+  headerCenter: {},
+  headerRight: {},
   closeButton: {
     width: 40,
     height: 40,
@@ -669,19 +670,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: colors.gray100,
     borderRadius: 10,
-    padding: 2,
+    padding: 4,
   },
   segment: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    minWidth: 60,
   },
   segmentActive: {
     backgroundColor: colors.background,
   },
   segmentText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: "500",
     color: colors.textMuted,
   },
