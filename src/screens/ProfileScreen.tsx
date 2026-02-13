@@ -1,18 +1,27 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, Pressable, Alert, RefreshControl } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { useFollow } from '../context/FollowContext';
-import { useAuth } from '../context/AuthContext';
-import { signOut } from '../services/auth';
-import { useQuery } from '../hooks/useQuery';
-import { getPostsByUserId } from '../services/posts';
-import { getPlaces } from '../services/places';
-import { VideoThumbnail } from '../components/VideoThumbnail';
-import { colors } from '../theme/colors';
-import { getOtherProfiles } from 'src/services/users';
-import { HapticPressable } from 'src/components/HapticPressable';
+import React, { useCallback, useMemo, useState } from "react";
+import {
+  View,
+  Text,
+  Image,
+  FlatList,
+  StyleSheet,
+  Pressable,
+  Alert,
+  RefreshControl,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useFollow } from "../context/FollowContext";
+import { useAuth } from "../context/AuthContext";
+import { signOut } from "../services/auth";
+import { useQuery } from "../hooks/useQuery";
+import { getPostsByUserId } from "../services/posts";
+import { getPlaces } from "../services/places";
+import { VideoThumbnail } from "../components/VideoThumbnail";
+import { colors } from "../theme/colors";
+import { getOtherProfiles } from "src/services/users";
+import { HapticPressable } from "src/components/HapticPressable";
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
@@ -20,16 +29,29 @@ export function ProfileScreen() {
   const { followingIds } = useFollow();
   const { profile } = useAuth();
 
-  const currentUser = profile ?? { id: '', username: 'you', displayName: 'You', avatarUrl: '', bio: '' };
+  const currentUser = profile ?? {
+    id: "",
+    username: "you",
+    displayName: "You",
+    avatarUrl: "",
+    bio: "",
+  };
 
-  const fetchPosts = useCallback(() => getPostsByUserId(currentUser.id), [currentUser.id]);
+  const fetchPosts = useCallback(
+    () => getPostsByUserId(currentUser.id),
+    [currentUser.id]
+  );
   const { data: posts, refetch: refetchPosts } = useQuery(fetchPosts);
   const { data: allPlaces, refetch: refetchPlaces } = useQuery(getPlaces);
   const fetchFollowers = useCallback(
-    () => getOtherProfiles(profile?.id ?? ''),
+    () => getOtherProfiles(profile?.id ?? ""),
     [profile?.id]
   );
-  const { data: followerList, loading: loadingFollowers, refetch: refetchFollowers } = useQuery(fetchFollowers);
+  const {
+    data: followerList,
+    loading: loadingFollowers,
+    refetch: refetchFollowers,
+  } = useQuery(fetchFollowers);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -61,9 +83,13 @@ export function ProfileScreen() {
         <HapticPressable
           style={styles.logoutButton}
           onPress={() =>
-            Alert.alert('Sign Out', 'Are you sure?', [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
+            Alert.alert("Sign Out", "Are you sure?", [
+              { text: "Cancel", style: "cancel" },
+              {
+                text: "Sign Out",
+                style: "destructive",
+                onPress: () => signOut(),
+              },
             ])
           }
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -87,7 +113,10 @@ export function ProfileScreen() {
         }
         ListHeaderComponent={
           <View style={styles.profileSection}>
-            <Image source={{ uri: currentUser.avatarUrl }} style={styles.avatar} />
+            <Image
+              source={{ uri: currentUser.avatarUrl }}
+              style={styles.avatar}
+            />
             <Text style={styles.displayName}>{currentUser.displayName}</Text>
             <Text style={styles.username}>@{currentUser.username}</Text>
             {currentUser.bio && (
@@ -104,8 +133,8 @@ export function ProfileScreen() {
                 style={styles.stat}
                 onPress={() =>
                   router.push({
-                    pathname: '/profile/follow-list',
-                    params: { userId: currentUser.id, tab: 'followers' },
+                    pathname: "/profile/follow-list",
+                    params: { userId: currentUser.id, tab: "followers" },
                   })
                 }
               >
@@ -117,8 +146,8 @@ export function ProfileScreen() {
                 style={styles.stat}
                 onPress={() =>
                   router.push({
-                    pathname: '/profile/follow-list',
-                    params: { userId: currentUser.id, tab: 'following' },
+                    pathname: "/profile/follow-list",
+                    params: { userId: currentUser.id, tab: "following" },
                   })
                 }
               >
@@ -130,13 +159,13 @@ export function ProfileScreen() {
             <View style={styles.buttonRow}>
               <HapticPressable
                 style={styles.editButton}
-                onPress={() => router.push('/profile/edit-profile')}
+                onPress={() => router.push("/profile/edit-profile")}
               >
                 <Text style={styles.editButtonText}>Edit Profile</Text>
               </HapticPressable>
               <HapticPressable
                 style={styles.findPeopleButton}
-                onPress={() => router.push('/profile/discover')}
+                onPress={() => router.push("/profile/discover")}
               >
                 <Text style={styles.findPeopleButtonText}>Find People</Text>
               </HapticPressable>
@@ -151,10 +180,16 @@ export function ProfileScreen() {
             onPress={() => router.push(`/profile/post/${item.id}`)}
           >
             {item.mediaUrl ? (
-              item.type === 'video' ? (
-                <VideoThumbnail thumbnailUrl={item.thumbnailUrl} style={styles.postImage} />
+              item.type === "video" ? (
+                <VideoThumbnail
+                  thumbnailUrl={item.thumbnailUrl}
+                  style={styles.postImage}
+                />
               ) : (
-                <Image source={{ uri: item.mediaUrl }} style={styles.postImage} />
+                <Image
+                  source={{ uri: item.mediaUrl }}
+                  style={styles.postImage}
+                />
               )
             ) : (
               <View style={styles.textPostTile}>
@@ -165,12 +200,17 @@ export function ProfileScreen() {
             )}
             {item.place && (
               <View style={styles.postOverlay}>
-                <Text style={styles.postPlace} numberOfLines={1}>{item.place.name}</Text>
+                <Text style={styles.postPlace} numberOfLines={1}>
+                  {item.place.name}
+                </Text>
               </View>
             )}
           </HapticPressable>
         )}
-        contentContainerStyle={[styles.postsGrid, { paddingBottom: 60 + insets.bottom }]}
+        contentContainerStyle={[
+          styles.postsGrid,
+          { paddingBottom: 60 + insets.bottom },
+        ]}
       />
     </View>
   );
@@ -182,9 +222,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
@@ -195,14 +235,14 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
   },
   logoutButton: {
     padding: 2,
   },
   profileSection: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 24,
     paddingHorizontal: 16,
   },
@@ -215,7 +255,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text,
   },
   username: {
@@ -226,24 +266,24 @@ const styles = StyleSheet.create({
   bio: {
     fontSize: 14,
     color: colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 8,
     paddingHorizontal: 32,
     lineHeight: 20,
   },
   statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 20,
     paddingHorizontal: 20,
   },
   stat: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingHorizontal: 20,
   },
   statNumber: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text,
   },
   statLabel: {
@@ -257,7 +297,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray200,
   },
   buttonRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginTop: 20,
     gap: 10,
   },
@@ -270,7 +310,7 @@ const styles = StyleSheet.create({
   },
   editButtonText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
   },
   findPeopleButton: {
@@ -281,16 +321,16 @@ const styles = StyleSheet.create({
   },
   findPeopleButtonText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   sectionTitle: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
-    alignSelf: 'flex-start',
+    alignSelf: "flex-start",
     marginTop: 28,
-    marginBottom: 4,
+    marginBottom: 0,
   },
   postsGrid: {
     paddingHorizontal: 12,
@@ -301,36 +341,36 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     margin: 4,
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: colors.gray100,
   },
   postImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   textPostTile: {
     flex: 1,
     padding: 10,
     backgroundColor: colors.primary,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   textPostContent: {
     fontSize: 12,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     lineHeight: 16,
   },
   postOverlay: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: "rgba(0,0,0,0.5)",
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
   postPlace: {
     fontSize: 11,
-    color: '#FFFFFF',
-    fontWeight: '500',
+    color: "#FFFFFF",
+    fontWeight: "500",
   },
 });

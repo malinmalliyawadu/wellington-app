@@ -39,7 +39,7 @@ export default function MapLayout() {
         options={{
           presentation: "formSheet",
           headerShown: false,
-          contentStyle: { backgroundColor: "#FFFFFF" },
+          contentStyle: { backgroundColor: "transparent" },
           sheetAllowedDetents: [0.85, 1.0],
           sheetGrabberVisible: true,
           sheetCornerRadius: 32,

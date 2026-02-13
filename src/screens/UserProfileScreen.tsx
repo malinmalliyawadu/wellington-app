@@ -1,23 +1,33 @@
-import React, { useCallback, useMemo } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
-import { useRouter, useLocalSearchParams, usePathname } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFollow } from '../context/FollowContext';
-import { useQuery } from '../hooks/useQuery';
-import { getProfileById } from '../services/users';
-import { getPostsByUserId as getPostsByUserIdAsync } from '../services/posts';
-import { getPlaces } from '../services/places';
-import { getFollowCounts } from '../services/follows';
-import { FollowButton } from '../components/FollowButton';
-import { VideoThumbnail } from '../components/VideoThumbnail';
-import { colors } from '../theme/colors';
-import { HapticPressable } from 'src/components/HapticPressable';
+import React, { useCallback, useMemo } from "react";
+import {
+  View,
+  Text,
+  Image,
+  FlatList,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+} from "react-native";
+import { useRouter, useLocalSearchParams, usePathname } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFollow } from "../context/FollowContext";
+import { useQuery } from "../hooks/useQuery";
+import { getProfileById } from "../services/users";
+import { getPostsByUserId as getPostsByUserIdAsync } from "../services/posts";
+import { getPlaces } from "../services/places";
+import { getFollowCounts } from "../services/follows";
+import { getEventsByUserId } from "../services/events";
+import { FollowButton } from "../components/FollowButton";
+import { VideoThumbnail } from "../components/VideoThumbnail";
+import { EventCard } from "../components/EventCard";
+import { colors } from "../theme/colors";
+import { HapticPressable } from "src/components/HapticPressable";
 
 export function UserProfileScreen() {
   const router = useRouter();
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const pathname = usePathname();
-  const tabBase = '/' + pathname.split('/')[1];
+  const tabBase = "/" + pathname.split("/")[1];
   const insets = useSafeAreaInsets();
   const { followingIds } = useFollow();
 
@@ -31,6 +41,9 @@ export function UserProfileScreen() {
   const fetchCounts = useCallback(() => getFollowCounts(userId), [userId]);
   const { data: counts } = useQuery(fetchCounts);
 
+  const fetchEvents = useCallback(() => getEventsByUserId(userId), [userId]);
+  const { data: events } = useQuery(fetchEvents);
+
   const userPosts = useMemo(() => {
     if (!posts || !allPlaces) return [];
     const placeMap = new Map(allPlaces.map((p) => [p.id, p]));
@@ -40,9 +53,25 @@ export function UserProfileScreen() {
     }));
   }, [posts, allPlaces]);
 
+  const userEvents = useMemo(() => {
+    if (!events || !allPlaces) return [];
+    const placeMap = new Map(allPlaces.map((p) => [p.id, p]));
+    return events
+      .map((event) => ({
+        ...event,
+        place: placeMap.get(event.placeId),
+      }))
+      .filter((e) => e.place != null);
+  }, [events, allPlaces]);
+
   if (loadingUser) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -54,94 +83,129 @@ export function UserProfileScreen() {
   const followingCount = counts?.following ?? 0;
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={userPosts}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
-        showsVerticalScrollIndicator={false}
-        ListHeaderComponent={
-          <View style={styles.profileSection}>
-            <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
-            <Text style={styles.displayName}>{user.displayName}</Text>
-            <Text style={styles.username}>@{user.username}</Text>
-            {user.bio && <Text style={styles.bio}>{user.bio}</Text>}
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: 60 + insets.bottom }}
+    >
+      <View style={styles.profileSection}>
+        <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+        <Text style={styles.displayName}>{user.displayName}</Text>
+        <Text style={styles.username}>@{user.username}</Text>
+        {user.bio && <Text style={styles.bio}>{user.bio}</Text>}
 
-            <View style={styles.statsRow}>
-              <View style={styles.stat}>
-                <Text style={styles.statNumber}>{userPosts.length}</Text>
-                <Text style={styles.statLabel}>Posts</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <HapticPressable
-                style={styles.stat}
-                onPress={() =>
-                  router.push({
-                    pathname: `${tabBase}/follow-list`,
-                    params: { userId, tab: 'followers' },
-                  })
-                }
-              >
-                <Text style={styles.statNumber}>{followerCount}</Text>
-                <Text style={styles.statLabel}>Followers</Text>
-              </HapticPressable>
-              <View style={styles.statDivider} />
-              <HapticPressable
-                style={styles.stat}
-                onPress={() =>
-                  router.push({
-                    pathname: `${tabBase}/follow-list`,
-                    params: { userId, tab: 'following' },
-                  })
-                }
-              >
-                <Text style={styles.statNumber}>{followingCount}</Text>
-                <Text style={styles.statLabel}>Following</Text>
-              </HapticPressable>
-            </View>
-
-            <View style={styles.actionRow}>
-              <FollowButton userId={userId} />
-            </View>
-
-            <Text style={styles.sectionTitle}>Posts</Text>
+        <View style={styles.statsRow}>
+          <View style={styles.stat}>
+            <Text style={styles.statNumber}>{userPosts.length}</Text>
+            <Text style={styles.statLabel}>Posts</Text>
           </View>
-        }
-        renderItem={({ item }) => (
+          <View style={styles.statDivider} />
           <HapticPressable
-            style={styles.postTile}
-            onPress={() => router.push(`${tabBase}/post/${item.id}`)}
+            style={styles.stat}
+            onPress={() =>
+              router.push({
+                pathname: `${tabBase}/follow-list`,
+                params: { userId, tab: "followers" },
+              })
+            }
           >
-            {item.mediaUrl ? (
-              item.type === 'video' ? (
-                <VideoThumbnail thumbnailUrl={item.thumbnailUrl} style={styles.postImage} />
-              ) : (
-                <Image source={{ uri: item.mediaUrl }} style={styles.postImage} />
-              )
-            ) : (
-              <View style={styles.textPostTile}>
-                <Text style={styles.textPostContent} numberOfLines={4}>
-                  {item.content}
-                </Text>
-              </View>
-            )}
-            {item.place && (
-              <View style={styles.postOverlay}>
-                <Text style={styles.postPlace} numberOfLines={1}>
-                  {item.place.name}
-                </Text>
-              </View>
-            )}
+            <Text style={styles.statNumber}>{followerCount}</Text>
+            <Text style={styles.statLabel}>Followers</Text>
           </HapticPressable>
-        )}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No posts yet</Text>
-          </View>
-        }
-        contentContainerStyle={[styles.postsGrid, { paddingBottom: 60 + insets.bottom }]}
-      />
-    </View>
+          <View style={styles.statDivider} />
+          <HapticPressable
+            style={styles.stat}
+            onPress={() =>
+              router.push({
+                pathname: `${tabBase}/follow-list`,
+                params: { userId, tab: "following" },
+              })
+            }
+          >
+            <Text style={styles.statNumber}>{followingCount}</Text>
+            <Text style={styles.statLabel}>Following</Text>
+          </HapticPressable>
+        </View>
+
+        <View style={styles.actionRow}>
+          <FollowButton userId={userId} />
+        </View>
+      </View>
+
+      {userEvents.length > 0 && (
+        <View>
+          <Text style={styles.sectionTitle}>Upcoming Events</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.eventsScrollContent}
+          >
+            {userEvents.map((event) => (
+              <View key={event.id} style={styles.eventCardWrapper}>
+                <EventCard
+                  event={event}
+                  place={event.place!}
+                  onPress={() => {
+                    // Navigate within the current tab
+                    if (tabBase === "/events") {
+                      router.push(`/events/${event.id}`);
+                    } else {
+                      // For other tabs, switch to events tab
+                      router.push(`/events/${event.id}`);
+                    }
+                  }}
+                />
+              </View>
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      <Text style={styles.sectionTitle}>Posts</Text>
+
+      {userPosts.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>No posts yet</Text>
+        </View>
+      ) : (
+        <View style={styles.postsGrid}>
+          {userPosts.map((item) => (
+            <HapticPressable
+              key={item.id}
+              style={styles.postTile}
+              onPress={() => router.push(`${tabBase}/post/${item.id}`)}
+            >
+              {item.mediaUrl ? (
+                item.type === "video" ? (
+                  <VideoThumbnail
+                    thumbnailUrl={item.thumbnailUrl}
+                    style={styles.postImage}
+                  />
+                ) : (
+                  <Image
+                    source={{ uri: item.mediaUrl }}
+                    style={styles.postImage}
+                  />
+                )
+              ) : (
+                <View style={styles.textPostTile}>
+                  <Text style={styles.textPostContent} numberOfLines={4}>
+                    {item.content}
+                  </Text>
+                </View>
+              )}
+              {item.place && (
+                <View style={styles.postOverlay}>
+                  <Text style={styles.postPlace} numberOfLines={1}>
+                    {item.place.name}
+                  </Text>
+                </View>
+              )}
+            </HapticPressable>
+          ))}
+        </View>
+      )}
+    </ScrollView>
   );
 }
 
@@ -151,7 +215,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
   profileSection: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 24,
     paddingHorizontal: 16,
   },
@@ -164,7 +228,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 22,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text,
   },
   username: {
@@ -175,24 +239,24 @@ const styles = StyleSheet.create({
   bio: {
     fontSize: 14,
     color: colors.textSecondary,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 8,
     paddingHorizontal: 32,
     lineHeight: 20,
   },
   statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 20,
     paddingHorizontal: 20,
   },
   stat: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingHorizontal: 20,
   },
   statNumber: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     color: colors.text,
   },
   statLabel: {
@@ -210,55 +274,60 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
-    alignSelf: 'flex-start',
     marginTop: 28,
-    marginBottom: 4,
+    marginBottom: 12,
+    paddingHorizontal: 16,
+  },
+  eventsScrollContent: {},
+  eventCardWrapper: {
+    width: 300,
   },
   postsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     paddingHorizontal: 12,
-    paddingBottom: 20,
   },
   postTile: {
-    flex: 1,
+    width: "48%",
     aspectRatio: 1,
-    margin: 4,
+    margin: "1%",
     borderRadius: 8,
-    overflow: 'hidden',
+    overflow: "hidden",
     backgroundColor: colors.gray100,
   },
   postImage: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   textPostTile: {
     flex: 1,
     padding: 10,
     backgroundColor: colors.primary,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   textPostContent: {
     fontSize: 12,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     lineHeight: 16,
   },
   postOverlay: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: "rgba(0,0,0,0.5)",
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
   postPlace: {
     fontSize: 11,
-    color: '#FFFFFF',
-    fontWeight: '500',
+    color: "#FFFFFF",
+    fontWeight: "500",
   },
   emptyState: {
-    alignItems: 'center',
+    alignItems: "center",
     paddingVertical: 40,
   },
   emptyText: {

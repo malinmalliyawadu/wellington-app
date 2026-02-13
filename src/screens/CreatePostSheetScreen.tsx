@@ -21,6 +21,7 @@ import { createPlace, getPlaceById } from "../services/places";
 import { createPost } from "../services/posts";
 import { uploadMedia } from "../services/storage";
 import { HapticPressable } from "src/components/HapticPressable";
+import { LiquidGlassButton } from "../components/LiquidGlassButton";
 
 const POST_TYPES: { type: PostType; icon: string; label: string }[] = [
   { type: "photo", icon: "image", label: "Photo" },
@@ -42,7 +43,11 @@ type CreateType = "post" | "event";
 export function CreatePostSheetScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
-  const { placeId: placeIdParam, defaultType, selectedPlaceData } = useLocalSearchParams<{
+  const {
+    placeId: placeIdParam,
+    defaultType,
+    selectedPlaceData,
+  } = useLocalSearchParams<{
     placeId?: string;
     defaultType?: CreateType;
     selectedPlaceData?: string;
@@ -304,22 +309,13 @@ export function CreatePostSheetScreen() {
           </View>
         </View>
         <View style={styles.headerRight}>
-          <HapticPressable
-            style={[
-              styles.postButton,
-              (!isFormValid() || posting) && styles.postButtonDisabled,
-            ]}
+          <LiquidGlassButton
+            title={createType === "post" ? "Post" : "Create"}
             onPress={handleSubmit}
-            disabled={posting || !isFormValid()}
-          >
-            {posting ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={styles.postButtonText}>
-                {createType === "post" ? "Post" : "Create"}
-              </Text>
-            )}
-          </HapticPressable>
+            disabled={!isFormValid()}
+            loading={posting}
+            size="medium"
+          />
         </View>
       </View>
 
@@ -468,7 +464,7 @@ export function CreatePostSheetScreen() {
         <Text style={styles.label}>Place</Text>
         <HapticPressable
           style={styles.placeSelector}
-          onPress={() => router.push('./place-search')}
+          onPress={() => router.push("./place-search")}
         >
           {selectedPlace ? (
             <>
@@ -490,17 +486,17 @@ export function CreatePostSheetScreen() {
                 }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
-                <Ionicons name="close-circle" size={20} color={colors.gray400} />
+                <Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={colors.gray400}
+                />
               </HapticPressable>
             </>
           ) : (
             <>
               <View style={styles.selectedPlace}>
-                <Ionicons
-                  name="search"
-                  size={20}
-                  color={colors.gray400}
-                />
+                <Ionicons name="search" size={20} color={colors.gray400} />
                 <Text style={styles.placeholderText}>
                   Search for a place...
                 </Text>
@@ -566,7 +562,7 @@ export function CreatePostSheetScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.translucentCardBackground,
   },
   header: {
     flexDirection: "row",
@@ -576,7 +572,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
-    backgroundColor: colors.cardBackground,
+    backgroundColor: colors.translucentCardBackground,
   },
   headerLeft: {},
   headerCenter: {
@@ -620,22 +616,6 @@ const styles = StyleSheet.create({
   segmentTextActive: {
     color: colors.text,
     fontWeight: "600",
-  },
-  postButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    borderRadius: 20,
-    minWidth: 60,
-    alignItems: "center",
-  },
-  postButtonDisabled: {
-    backgroundColor: colors.gray300,
-  },
-  postButtonText: {
-    color: "#FFFFFF",
-    fontWeight: "600",
-    fontSize: 14,
   },
   content: {
     paddingHorizontal: 16,

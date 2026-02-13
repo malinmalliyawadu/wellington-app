@@ -16,6 +16,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
 import { uploadAvatar } from '../services/storage';
 import { HapticPressable } from '../components/HapticPressable';
+import { LiquidGlassButton } from '../components/LiquidGlassButton';
 import { colors } from '../theme/colors';
 
 export function EditProfileScreen() {
@@ -162,15 +163,15 @@ export function EditProfileScreen() {
               </View>
             )}
           </View>
-          <HapticPressable
-            style={styles.changePhotoButton}
+          <LiquidGlassButton
+            title="Change Photo"
+            icon="camera"
             onPress={handleChangePhoto}
-            disabled={uploadingPhoto}
-          >
-            <Text style={[styles.changePhotoText, uploadingPhoto && styles.changePhotoTextDisabled]}>
-              {uploadingPhoto ? 'Uploading...' : 'Change Photo'}
-            </Text>
-          </HapticPressable>
+            loading={uploadingPhoto}
+            size="small"
+            variant="secondary"
+            style={styles.changePhotoButton}
+          />
         </View>
 
         <View style={styles.form}>
@@ -288,15 +289,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   changePhotoButton: {
-    paddingVertical: 8,
-  },
-  changePhotoText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: colors.primary,
-  },
-  changePhotoTextDisabled: {
-    color: colors.textMuted,
+    marginTop: 8,
   },
   form: {
     padding: 16,

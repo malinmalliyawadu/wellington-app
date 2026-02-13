@@ -63,6 +63,32 @@ export async function getEventAttendees(eventId: string): Promise<string[]> {
   return (data ?? []).map((row) => row.user_id);
 }
 
+export async function getEventsByUserId(userId: string): Promise<Event[]> {
+  const today = new Date().toISOString().split('T')[0];
+
+  // Get event IDs the user is attending
+  const { data: attendeeRows, error: attendeeError } = await supabase
+    .from('event_attendees')
+    .select('event_id')
+    .eq('user_id', userId);
+
+  if (attendeeError) throw attendeeError;
+  if (!attendeeRows || attendeeRows.length === 0) return [];
+
+  const eventIds = attendeeRows.map((row) => row.event_id);
+
+  // Get the actual events (only upcoming ones)
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .in('id', eventIds)
+    .gte('date', today)
+    .order('date', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []).map(mapEvent);
+}
+
 export async function toggleAttendance(eventId: string, userId: string): Promise<boolean> {
   // Check if already attending
   const { data: existing } = await supabase

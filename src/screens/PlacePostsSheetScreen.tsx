@@ -21,6 +21,7 @@ import { fetchPlaceDetails } from "../services/googlePlaceDetails";
 import { formatNumber } from "../utils/formatNumber";
 import { VideoThumbnail } from "../components/VideoThumbnail";
 import { HapticPressable } from "../components/HapticPressable";
+import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { colors } from "../theme/colors";
 import type { Place, PlaceCategory, Post } from "../types";
 
@@ -223,8 +224,11 @@ export function PlacePostsSheetScreen() {
                   />
                 </HapticPressable>
               ))}
-              <HapticPressable
-                style={styles.listCreateButton}
+              <LiquidGlassButton
+                title="Create Post"
+                icon="add-circle"
+                size="large"
+                fullWidth
                 onPress={() => {
                   router.dismiss();
                   router.push({
@@ -232,24 +236,24 @@ export function PlacePostsSheetScreen() {
                     params: { placeId: place.id },
                   });
                 }}
-              >
-                <Ionicons name="add-circle" size={20} color="#FFFFFF" />
-                <Text style={styles.listCreateButtonText}>Create Post</Text>
-              </HapticPressable>
+                style={styles.listCreateButton}
+              />
             </View>
           ) : (
             <View style={styles.emptyState}>
               <Ionicons
                 name="chatbubble-outline"
                 size={48}
-                color={colors.gray300}
+                color={colors.gray600}
               />
               <Text style={styles.emptyStateText}>No posts yet</Text>
               <Text style={styles.emptyStateSubtext}>
                 Be the first to share your experience!
               </Text>
-              <HapticPressable
-                style={styles.createButton}
+              <LiquidGlassButton
+                title="Create Post"
+                icon="add-circle"
+                size="large"
                 onPress={() => {
                   router.dismiss();
                   router.push({
@@ -257,10 +261,7 @@ export function PlacePostsSheetScreen() {
                     params: { placeId: place.id },
                   });
                 }}
-              >
-                <Ionicons name="add-circle" size={20} color="#FFFFFF" />
-                <Text style={styles.createButtonText}>Create Post</Text>
-              </HapticPressable>
+              />
             </View>
           )}
         </ScrollView>
@@ -524,9 +525,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: "transparent",
     margin: 16,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.5)",
   },
   emptyStateText: {
     fontSize: 16,
@@ -540,50 +538,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
     marginBottom: 20,
   },
-  createButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 24,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  createButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#FFFFFF",
-  },
   listCreateButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 24,
-    gap: 8,
     marginTop: 12,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  listCreateButtonText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#FFFFFF",
   },
 });

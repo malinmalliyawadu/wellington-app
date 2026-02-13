@@ -15,6 +15,7 @@ import { VideoThumbnail } from '../components/VideoThumbnail';
 import { colors } from '../theme/colors';
 import type { PlaceCategory } from '../types';
 import { HapticPressable } from 'src/components/HapticPressable';
+import { LiquidGlassButton } from '../components/LiquidGlassButton';
 
 const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   cafe: 'Cafe',
@@ -159,13 +160,15 @@ export function PlaceDetailScreen() {
                 <Text style={styles.directionsText}>Directions</Text>
               </HapticPressable>
             </View>
-            <HapticPressable
+            <LiquidGlassButton
+              title="Write a post"
+              icon="create-outline"
+              variant="secondary"
+              fullWidth
+              size="medium"
               style={styles.writePostButton}
               onPress={() => router.navigate({ pathname: '/(tabs)/create', params: { placeId: place.id } })}
-            >
-              <Ionicons name="create-outline" size={18} color={colors.primary} />
-              <Text style={styles.writePostText}>Write a post</Text>
-            </HapticPressable>
+            />
           </View>
         }
         renderItem={({ item }) => (
@@ -295,20 +298,7 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   writePostButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
     marginTop: 14,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.primary,
-  },
-  writePostText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.primary,
   },
   stat: {
     flexDirection: 'row',

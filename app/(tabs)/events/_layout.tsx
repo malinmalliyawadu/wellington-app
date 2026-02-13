@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack } from "expo-router";
 
 export default function EventsLayout() {
   return (
@@ -6,14 +6,26 @@ export default function EventsLayout() {
       <Stack.Screen name="(drawer)" />
       <Stack.Screen
         name="[eventId]"
-        options={{ headerShown: true, headerTitle: '', headerBackTitle: 'Events' }}
+        options={{
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Events",
+        }}
+      />
+      <Stack.Screen
+        name="user/[userId]"
+        options={{
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Events",
+        }}
       />
       <Stack.Screen
         name="create-post"
         options={{
-          presentation: 'formSheet',
+          presentation: "formSheet",
           headerShown: false,
-          contentStyle: { backgroundColor: '#FFFFFF' },
+          contentStyle: { backgroundColor: "transparent" },
           sheetAllowedDetents: [0.85, 1.0],
           sheetGrabberVisible: true,
           sheetCornerRadius: 32,
