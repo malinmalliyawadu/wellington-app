@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -20,6 +20,9 @@ interface PopularityMarkerProps {
   category: PlaceCategory;
   postCount: number;
   isFollowed: boolean;
+  placeName?: string;
+  posterAvatars?: string[];
+  showLabel?: boolean;
 }
 
 export function PopularityMarker({
@@ -27,13 +30,86 @@ export function PopularityMarker({
   category,
   postCount,
   isFollowed,
+  placeName,
+  posterAvatars = [],
+  showLabel = false,
 }: PopularityMarkerProps) {
   const color = colors.category[category];
   const iconSize = size < 36 ? 14 : 18;
   const iconName = CATEGORY_ICONS[category];
 
-  if (isFollowed) {
-    // Filled marker with liquid glass effect
+  const renderMarker = () => {
+    if (isFollowed) {
+      // Filled marker with liquid glass effect
+      return (
+        <View
+          style={[
+            styles.markerContainer,
+            {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+            },
+          ]}
+        >
+          <BlurView
+            intensity={30}
+            tint="light"
+            style={[
+              styles.marker,
+              {
+                width: size,
+                height: size,
+                borderRadius: size / 2,
+              },
+            ]}
+          >
+            {/* Base color layer with transparency */}
+            <View
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  backgroundColor: color,
+                  opacity: 0.85,
+                  borderRadius: size / 2,
+                },
+              ]}
+            />
+
+            {/* Gradient overlay for depth */}
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.4)', 'rgba(255, 255, 255, 0)', 'rgba(0, 0, 0, 0.15)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[
+                StyleSheet.absoluteFill,
+                { borderRadius: size / 2 },
+              ]}
+            />
+
+            {/* Glass reflection highlight */}
+            <LinearGradient
+              colors={['rgba(255, 255, 255, 0.6)', 'rgba(255, 255, 255, 0)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0.5, y: 0.7 }}
+              style={[
+                styles.highlight,
+                {
+                  width: size * 0.6,
+                  height: size * 0.6,
+                  borderRadius: (size * 0.6) / 2,
+                },
+              ]}
+            />
+
+            {/* Icon */}
+            <Ionicons name={iconName} size={iconSize} color="#FFFFFF" style={{ zIndex: 10 }} />
+          </BlurView>
+        </View>
+      );
+    }
+
+    // Unfilled marker with enhanced glass effect
     return (
       <View
         style={[
@@ -46,10 +122,10 @@ export function PopularityMarker({
         ]}
       >
         <BlurView
-          intensity={30}
+          intensity={40}
           tint="light"
           style={[
-            styles.marker,
+            styles.blurMarker,
             {
               width: size,
               height: size,
@@ -57,21 +133,22 @@ export function PopularityMarker({
             },
           ]}
         >
-          {/* Base color layer with transparency */}
+          {/* Frosted glass background */}
           <View
             style={[
               StyleSheet.absoluteFill,
               {
-                backgroundColor: color,
-                opacity: 0.85,
+                backgroundColor: 'rgba(255, 255, 255, 0.4)',
                 borderRadius: size / 2,
+                borderWidth: 2.5,
+                borderColor: color,
               },
             ]}
           />
 
-          {/* Gradient overlay for depth */}
+          {/* Gradient overlay for glass depth */}
           <LinearGradient
-            colors={['rgba(255, 255, 255, 0.4)', 'rgba(255, 255, 255, 0)', 'rgba(0, 0, 0, 0.15)']}
+            colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)', 'rgba(0, 0, 0, 0.1)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[
@@ -80,99 +157,65 @@ export function PopularityMarker({
             ]}
           />
 
-          {/* Glass reflection highlight */}
+          {/* Top highlight for glass reflection */}
           <LinearGradient
-            colors={['rgba(255, 255, 255, 0.6)', 'rgba(255, 255, 255, 0)']}
+            colors={['rgba(255, 255, 255, 0.7)', 'rgba(255, 255, 255, 0)']}
             start={{ x: 0, y: 0 }}
             end={{ x: 0.5, y: 0.7 }}
             style={[
               styles.highlight,
               {
-                width: size * 0.6,
-                height: size * 0.6,
-                borderRadius: (size * 0.6) / 2,
+                width: size * 0.5,
+                height: size * 0.5,
+                borderRadius: (size * 0.5) / 2,
               },
             ]}
           />
 
           {/* Icon */}
-          <Ionicons name={iconName} size={iconSize} color="#FFFFFF" style={{ zIndex: 10 }} />
+          <Ionicons name={iconName} size={iconSize} color={color} style={{ zIndex: 10 }} />
         </BlurView>
       </View>
     );
-  }
+  };
 
-  // Unfilled marker with enhanced glass effect
   return (
-    <View
-      style={[
-        styles.markerContainer,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-        },
-      ]}
-    >
-      <BlurView
-        intensity={40}
-        tint="light"
-        style={[
-          styles.blurMarker,
-          {
-            width: size,
-            height: size,
-            borderRadius: size / 2,
-          },
-        ]}
-      >
-        {/* Frosted glass background */}
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              backgroundColor: 'rgba(255, 255, 255, 0.4)',
-              borderRadius: size / 2,
-              borderWidth: 2.5,
-              borderColor: color,
-            },
-          ]}
-        />
-
-        {/* Gradient overlay for glass depth */}
-        <LinearGradient
-          colors={['rgba(255, 255, 255, 0.5)', 'rgba(255, 255, 255, 0)', 'rgba(0, 0, 0, 0.1)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[
-            StyleSheet.absoluteFill,
-            { borderRadius: size / 2 },
-          ]}
-        />
-
-        {/* Top highlight for glass reflection */}
-        <LinearGradient
-          colors={['rgba(255, 255, 255, 0.7)', 'rgba(255, 255, 255, 0)']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 0.5, y: 0.7 }}
-          style={[
-            styles.highlight,
-            {
-              width: size * 0.5,
-              height: size * 0.5,
-              borderRadius: (size * 0.5) / 2,
-            },
-          ]}
-        />
-
-        {/* Icon */}
-        <Ionicons name={iconName} size={iconSize} color={color} style={{ zIndex: 10 }} />
-      </BlurView>
+    <View style={styles.container}>
+      {renderMarker()}
+      {showLabel && placeName && (
+        <View style={styles.labelWrapper}>
+          <BlurView
+            intensity={15}
+            tint="light"
+            style={styles.labelContainer}
+          >
+            <Text style={styles.labelName} numberOfLines={1}>
+              {placeName}
+            </Text>
+            {posterAvatars.length > 1 && (
+              <View style={styles.avatarRow}>
+                <View style={styles.avatarStack}>
+                  {posterAvatars.slice(0, 8).map((avatarUrl, i) => (
+                    <Image
+                      key={`${avatarUrl}-${i}`}
+                      source={{ uri: avatarUrl }}
+                      style={[styles.avatar, { left: i * 10 }]}
+                    />
+                  ))}
+                </View>
+              </View>
+            )}
+          </BlurView>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    alignItems: 'center',
+  },
   marker: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -200,5 +243,50 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '10%',
     left: '10%',
+  },
+  labelWrapper: {
+    marginTop: 2,
+    borderRadius: 8,
+    overflow: 'hidden',
+    maxWidth: 120,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.16,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  labelContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  labelName: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.text,
+    textAlign: 'center',
+  },
+  avatarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+    gap: 4,
+  },
+  avatarStack: {
+    flexDirection: 'row',
+    height: 14,
+    width: 34, // 14 + 2*10 overlap
+  },
+  avatar: {
+    position: 'absolute',
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
   },
 });

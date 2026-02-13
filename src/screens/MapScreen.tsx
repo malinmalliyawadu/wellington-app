@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, Image, StyleSheet, LayoutChangeEvent, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, LayoutChangeEvent, ActivityIndicator } from 'react-native';
 import MapView, { Marker, Region } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -214,6 +214,12 @@ export function MapScreen() {
           const followed = isFollowedPlace(posterIds, followingIds);
           const showLabel = annotatedPlaceIds.has(place.id);
 
+          // Get poster avatars
+          const posterAvatars = posterIds
+            .slice(0, 8)
+            .map(uid => userMap.get(uid)?.avatarUrl)
+            .filter((url): url is string => !!url);
+
           return (
             <Marker.Animated
               key={place.id}
@@ -228,44 +234,15 @@ export function MapScreen() {
                 openPlaceSheet(place.id);
               }}
             >
-              <View style={styles.markerContainer}>
-                <PopularityMarker
-                  size={size}
-                  category={place.category}
-                  postCount={postCount}
-                  isFollowed={followed}
-                />
-                {showLabel && (
-                  <View style={styles.labelWrapper}>
-                    <BlurView
-                      intensity={15}
-                      tint="light"
-                      style={styles.labelContainer}
-                    >
-                      <Text style={styles.labelName} numberOfLines={1}>
-                        {place.name}
-                      </Text>
-                      {posterIds.length > 1 && (
-                        <View style={styles.avatarRow}>
-                          <View style={styles.avatarStack}>
-                            {posterIds.slice(0, 8).map((uid, i) => {
-                              const user = userMap.get(uid);
-                              if (!user?.avatarUrl) return null;
-                              return (
-                                <Image
-                                  key={uid}
-                                  source={{ uri: user.avatarUrl }}
-                                  style={[styles.avatar, { left: i * 10 }]}
-                                />
-                              );
-                            })}
-                          </View>
-                        </View>
-                      )}
-                    </BlurView>
-                  </View>
-                )}
-              </View>
+              <PopularityMarker
+                size={size}
+                category={place.category}
+                postCount={postCount}
+                isFollowed={followed}
+                placeName={place.name}
+                posterAvatars={posterAvatars}
+                showLabel={showLabel}
+              />
             </Marker.Animated>
           );
         })}
@@ -421,57 +398,5 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: colors.primary,
-  },
-  markerContainer: {
-    alignItems: 'center',
-  },
-  labelWrapper: {
-    marginTop: 2,
-    borderRadius: 8,
-    overflow: 'hidden',
-    maxWidth: 120,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.16,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  labelContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.4)',
-    borderRadius: 8,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.5)',
-  },
-  labelName: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.text,
-    textAlign: 'center',
-  },
-  avatarRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
-    gap: 4,
-  },
-  avatarStack: {
-    flexDirection: 'row',
-    height: 14,
-    width: 34, // 14 + 2*10 overlap
-  },
-  avatar: {
-    position: 'absolute',
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
-  },
-  labelSubtitle: {
-    fontSize: 9,
-    color: colors.textMuted,
   },
 });
