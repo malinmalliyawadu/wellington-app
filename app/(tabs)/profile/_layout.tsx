@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack } from "expo-router";
 
 export default function ProfileLayout() {
   return (
@@ -9,8 +9,8 @@ export default function ProfileLayout() {
         name="user/[userId]"
         options={{
           headerShown: true,
-          headerTitle: '',
-          headerBackTitle: 'Profile',
+          headerTitle: "",
+          headerBackTitle: "Profile",
           headerTransparent: true,
         }}
       />
@@ -18,8 +18,8 @@ export default function ProfileLayout() {
         name="follow-list"
         options={{
           headerShown: true,
-          headerTitle: '',
-          headerBackTitle: 'Back',
+          headerTitle: "",
+          headerBackTitle: "Back",
           headerTransparent: true,
         }}
       />
@@ -27,8 +27,8 @@ export default function ProfileLayout() {
         name="discover"
         options={{
           headerShown: true,
-          headerTitle: 'Discover People',
-          headerBackTitle: 'Back',
+          headerTitle: "Discover People",
+          headerBackTitle: "Back",
           headerTransparent: true,
         }}
       />
@@ -36,8 +36,8 @@ export default function ProfileLayout() {
         name="place/[placeId]"
         options={{
           headerShown: true,
-          headerTitle: '',
-          headerBackTitle: 'Profile',
+          headerTitle: "",
+          headerBackTitle: "Profile",
           headerTransparent: true,
         }}
       />
@@ -45,9 +45,23 @@ export default function ProfileLayout() {
         name="post/[postId]"
         options={{
           headerShown: true,
-          headerTitle: '',
-          headerBackTitle: 'Profile',
+          headerTitle: "",
+          headerBackTitle: "Profile",
           headerTransparent: true,
+        }}
+      />
+      <Stack.Screen
+        name="create-post"
+        options={{
+          presentation: "formSheet",
+          headerShown: false,
+          contentStyle: { backgroundColor: "transparent" },
+          sheetAllowedDetents: [0.95, 1.0],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 32,
+          sheetInitialDetentIndex: 0,
+          sheetLargestUndimmedDetentIndex: 0,
+          sheetExpandsWhenScrolledToEdge: false,
         }}
       />
     </Stack>

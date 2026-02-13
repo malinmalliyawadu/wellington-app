@@ -87,7 +87,10 @@ export function UserProfileScreen() {
     <ScrollView
       style={styles.container}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingTop: headerHeight, paddingBottom: 60 + insets.bottom }}
+      contentContainerStyle={{
+        paddingTop: headerHeight - 30,
+        paddingBottom: 60 + insets.bottom,
+      }}
     >
       <View style={styles.profileSection}>
         <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />

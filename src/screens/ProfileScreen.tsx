@@ -47,10 +47,7 @@ export function ProfileScreen() {
     () => getFollowCounts(currentUser.id),
     [currentUser.id]
   );
-  const {
-    data: counts,
-    refetch: refetchCounts,
-  } = useQuery(fetchCounts);
+  const { data: counts, refetch: refetchCounts } = useQuery(fetchCounts);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
@@ -128,9 +125,7 @@ export function ProfileScreen() {
           />
           <Text style={styles.displayName}>{currentUser.displayName}</Text>
           <Text style={styles.username}>@{currentUser.username}</Text>
-          {currentUser.bio && (
-            <Text style={styles.bio}>{currentUser.bio}</Text>
-          )}
+          {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
 
           <View style={styles.statsRow}>
             <View style={styles.stat}>

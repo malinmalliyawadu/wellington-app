@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack } from "expo-router";
 
 export default function SearchLayout() {
   return (
@@ -38,6 +38,20 @@ export default function SearchLayout() {
           headerTitle: "",
           headerBackTitle: "Search",
           headerTransparent: true,
+        }}
+      />
+      <Stack.Screen
+        name="create-post"
+        options={{
+          presentation: "formSheet",
+          headerShown: false,
+          contentStyle: { backgroundColor: "transparent" },
+          sheetAllowedDetents: [0.95, 1.0],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 32,
+          sheetInitialDetentIndex: 0,
+          sheetLargestUndimmedDetentIndex: 0,
+          sheetExpandsWhenScrolledToEdge: false,
         }}
       />
     </Stack>

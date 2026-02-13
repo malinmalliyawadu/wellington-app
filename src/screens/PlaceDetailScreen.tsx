@@ -173,7 +173,7 @@ export function PlaceDetailScreen() {
               fullWidth
               size="medium"
               style={styles.writePostButton}
-              onPress={() => router.navigate({ pathname: '/(tabs)/create', params: { placeId: place.id } })}
+              onPress={() => router.push({ pathname: `${tabBase}/create-post`, params: { placeId: place.id } })}
             />
           </View>
         }
