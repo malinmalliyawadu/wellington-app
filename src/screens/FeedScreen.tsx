@@ -8,17 +8,19 @@ import {
   Animated,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import { FeedPost } from "../components/FeedPost";
 import { useFollow } from "../context/FollowContext";
+import { useAuth } from "../context/AuthContext";
 import { colors } from "../theme/colors";
 import { useQuery } from "../hooks/useQuery";
 import { getFeedPosts } from "../services/posts";
 import { getProfilesByIds } from "../services/users";
 import { getPlaces } from "../services/places";
+import { sortPosts } from "../utils/postSorting";
 import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 
@@ -28,18 +30,26 @@ export function FeedScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { followingIds } = useFollow();
+  const { profile } = useAuth();
   const scrollY = useRef(new Animated.Value(0)).current;
 
   const fetchFeedPosts = useCallback(
-    () => getFeedPosts(followingIds),
-    [followingIds]
+    () => getFeedPosts(followingIds, profile?.id),
+    [followingIds, profile?.id]
   );
   const {
     data: feedPosts,
     loading: loadingPosts,
     refetch: refetchPosts,
-  } = useQuery(fetchFeedPosts, followingIds);
+  } = useQuery(fetchFeedPosts, [followingIds, profile?.id]);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Refetch data when screen comes into focus (e.g., after creating a new post)
+  useFocusEffect(
+    useCallback(() => {
+      refetchPosts();
+    }, [refetchPosts])
+  );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -60,7 +70,9 @@ export function FeedScreen() {
     if (!feedPosts || !users || !places) return [];
     const userMap = new Map(users.map((u) => [u.id, u]));
     const placeMap = new Map(places.map((p) => [p.id, p]));
-    return feedPosts
+    // Use centralized sorting - sorts by most recent first
+    const sorted = sortPosts(feedPosts);
+    return sorted
       .map((post) => {
         const user = userMap.get(post.userId);
         const place = placeMap.get(post.placeId);

@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, Pressable, ActivityIndicator, Linking, Platform } from 'react-native';
-import { useLocalSearchParams, usePathname, useRouter } from 'expo-router';
+import { useLocalSearchParams, usePathname, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '../hooks/useQuery';
@@ -9,6 +9,7 @@ import { getPostsByPlaceId as getPostsByPlaceIdAsync } from '../services/posts';
 import { getProfilesByIds } from '../services/users';
 import { fetchPlaceDetails } from '../services/googlePlaceDetails';
 import { formatNumber } from '../utils/formatNumber';
+import { sortPosts } from '../utils/postSorting';
 import { useFollow } from '../context/FollowContext';
 import { useLike } from '../context/LikeContext';
 import { VideoThumbnail } from '../components/VideoThumbnail';
@@ -35,10 +36,17 @@ export function PlaceDetailScreen() {
   const { followingIds } = useFollow();
 
   const fetchPlace = useCallback(() => getPlaceById(placeId), [placeId]);
-  const { data: place, loading: loadingPlace } = useQuery(fetchPlace);
+  const { data: place, loading: loadingPlace, refetch: refetchPlace } = useQuery(fetchPlace);
 
   const fetchPosts = useCallback(() => getPostsByPlaceIdAsync(placeId), [placeId]);
-  const { data: posts, loading: loadingPosts } = useQuery(fetchPosts);
+  const { data: posts, loading: loadingPosts, refetch: refetchPosts } = useQuery(fetchPosts);
+
+  // Refetch data when screen comes into focus (e.g., after creating a new post)
+  useFocusEffect(
+    useCallback(() => {
+      refetchPosts();
+    }, [refetchPosts])
+  );
 
   const userIds = useMemo(
     () => [...new Set((posts ?? []).map((p) => p.userId))],
@@ -100,12 +108,8 @@ export function PlaceDetailScreen() {
   const totalLikes = allPosts.reduce((sum, p) => sum + p.likes, 0);
   const categoryColor = colors.category[place.category];
 
-  const sortedPosts = [...allPosts].sort((a, b) => {
-    const aFollowed = followingIds.includes(a.userId);
-    const bFollowed = followingIds.includes(b.userId);
-    if (aFollowed !== bFollowed) return aFollowed ? -1 : 1;
-    return b.likes - a.likes;
-  });
+  // Use centralized sorting - sorts by most recent first
+  const sortedPosts = sortPosts(allPosts);
 
   const postsWithUsers = sortedPosts.map((post) => ({
     post,

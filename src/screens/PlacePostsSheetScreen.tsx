@@ -10,7 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { useFollow } from "../context/FollowContext";
 import { useLike } from "../context/LikeContext";
 import { useQuery } from "../hooks/useQuery";
@@ -19,9 +19,11 @@ import { getPostsByPlaceId } from "../services/posts";
 import { getProfileById } from "../services/users";
 import { fetchPlaceDetails } from "../services/googlePlaceDetails";
 import { formatNumber } from "../utils/formatNumber";
+import { sortPosts } from "../utils/postSorting";
 import { VideoThumbnail } from "../components/VideoThumbnail";
 import { HapticPressable } from "../components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
+import { BlurView } from "expo-blur";
 import { colors } from "../theme/colors";
 import type { Place, PlaceCategory, Post } from "../types";
 
@@ -42,8 +44,15 @@ export function PlacePostsSheetScreen() {
   const fetchPlace = useCallback(() => getPlaceById(placeId!), [placeId]);
   const fetchPosts = useCallback(() => getPostsByPlaceId(placeId!), [placeId]);
 
-  const { data: place, loading: placeLoading } = useQuery(fetchPlace, placeId);
-  const { data: posts, loading: postsLoading } = useQuery(fetchPosts, placeId);
+  const { data: place, loading: placeLoading, refetch: refetchPlace } = useQuery(fetchPlace, placeId);
+  const { data: posts, loading: postsLoading, refetch: refetchPosts } = useQuery(fetchPosts, placeId);
+
+  // Refetch data when screen comes into focus (e.g., after creating a new post)
+  useFocusEffect(
+    useCallback(() => {
+      refetchPosts();
+    }, [refetchPosts])
+  );
 
   const [placeDetails, setPlaceDetails] = useState<{
     rating?: number;
@@ -68,15 +77,11 @@ export function PlacePostsSheetScreen() {
     }
   }, [place]);
 
+  // Use centralized sorting - sorts by most recent first
   const sortedPosts = useMemo(() => {
     if (!posts) return [];
-    return [...posts].sort((a, b) => {
-      const aFollowed = followingIds.includes(a.userId);
-      const bFollowed = followingIds.includes(b.userId);
-      if (aFollowed !== bFollowed) return aFollowed ? -1 : 1;
-      return b.likes - a.likes;
-    });
-  }, [posts, followingIds]);
+    return sortPosts(posts);
+  }, [posts]);
 
   const totalLikes = useMemo(
     () => (posts ?? []).reduce((sum, p) => sum + p.likes, 0),
@@ -122,7 +127,7 @@ export function PlacePostsSheetScreen() {
 
   return (
     <View style={styles.container}>
-      <View intensity={80} tint="extraLight" style={styles.blurContainer}>
+      <BlurView intensity={80} tint="extraLight" style={styles.blurContainer}>
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -265,7 +270,7 @@ export function PlacePostsSheetScreen() {
             </View>
           )}
         </ScrollView>
-      </View>
+      </BlurView>
     </View>
   );
 }
