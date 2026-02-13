@@ -3,7 +3,6 @@ import {
   View,
   Text,
   Image,
-  FlatList,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
@@ -18,7 +17,7 @@ import { getPlaces } from "../services/places";
 import { getFollowCounts } from "../services/follows";
 import { getEventsByUserId } from "../services/events";
 import { FollowButton } from "../components/FollowButton";
-import { VideoThumbnail } from "../components/VideoThumbnail";
+import { PostsGrid } from "../components/PostsGrid";
 import { EventCard } from "../components/EventCard";
 import { colors } from "../theme/colors";
 import { HapticPressable } from "src/components/HapticPressable";
@@ -163,48 +162,10 @@ export function UserProfileScreen() {
 
       <Text style={styles.sectionTitle}>Posts</Text>
 
-      {userPosts.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No posts yet</Text>
-        </View>
-      ) : (
-        <View style={styles.postsGrid}>
-          {userPosts.map((item) => (
-            <HapticPressable
-              key={item.id}
-              style={styles.postTile}
-              onPress={() => router.push(`${tabBase}/post/${item.id}`)}
-            >
-              {item.mediaUrl ? (
-                item.type === "video" ? (
-                  <VideoThumbnail
-                    thumbnailUrl={item.thumbnailUrl}
-                    style={styles.postImage}
-                  />
-                ) : (
-                  <Image
-                    source={{ uri: item.mediaUrl }}
-                    style={styles.postImage}
-                  />
-                )
-              ) : (
-                <View style={styles.textPostTile}>
-                  <Text style={styles.textPostContent} numberOfLines={4}>
-                    {item.content}
-                  </Text>
-                </View>
-              )}
-              {item.place && (
-                <View style={styles.postOverlay}>
-                  <Text style={styles.postPlace} numberOfLines={1}>
-                    {item.place.name}
-                  </Text>
-                </View>
-              )}
-            </HapticPressable>
-          ))}
-        </View>
-      )}
+      <PostsGrid
+        posts={userPosts}
+        onPostPress={(postId) => router.push(`${tabBase}/post/${postId}`)}
+      />
     </ScrollView>
   );
 }
@@ -283,55 +244,5 @@ const styles = StyleSheet.create({
   eventsScrollContent: {},
   eventCardWrapper: {
     width: 300,
-  },
-  postsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 12,
-  },
-  postTile: {
-    width: "48%",
-    aspectRatio: 1,
-    margin: "1%",
-    borderRadius: 8,
-    overflow: "hidden",
-    backgroundColor: colors.gray100,
-  },
-  postImage: {
-    width: "100%",
-    height: "100%",
-  },
-  textPostTile: {
-    flex: 1,
-    padding: 10,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-  },
-  textPostContent: {
-    fontSize: 12,
-    color: "#FFFFFF",
-    lineHeight: 16,
-  },
-  postOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  postPlace: {
-    fontSize: 11,
-    color: "#FFFFFF",
-    fontWeight: "500",
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: colors.textMuted,
   },
 });

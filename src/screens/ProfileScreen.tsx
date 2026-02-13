@@ -3,9 +3,8 @@ import {
   View,
   Text,
   Image,
-  FlatList,
+  ScrollView,
   StyleSheet,
-  Pressable,
   Alert,
   RefreshControl,
 } from "react-native";
@@ -18,7 +17,8 @@ import { signOut } from "../services/auth";
 import { useQuery } from "../hooks/useQuery";
 import { getPostsByUserId } from "../services/posts";
 import { getPlaces } from "../services/places";
-import { VideoThumbnail } from "../components/VideoThumbnail";
+import { LiquidGlassButton } from "../components/LiquidGlassButton";
+import { PostsGrid } from "../components/PostsGrid";
 import { colors } from "../theme/colors";
 import { getOtherProfiles } from "src/services/users";
 import { HapticPressable } from "src/components/HapticPressable";
@@ -98,10 +98,8 @@ export function ProfileScreen() {
         </HapticPressable>
       </View>
 
-      <FlatList
-        data={userPosts}
-        keyExtractor={(item) => item.id}
-        numColumns={2}
+      <ScrollView
+        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -111,107 +109,77 @@ export function ProfileScreen() {
             colors={[colors.primary]}
           />
         }
-        ListHeaderComponent={
-          <View style={styles.profileSection}>
-            <Image
-              source={{ uri: currentUser.avatarUrl }}
-              style={styles.avatar}
-            />
-            <Text style={styles.displayName}>{currentUser.displayName}</Text>
-            <Text style={styles.username}>@{currentUser.username}</Text>
-            {currentUser.bio && (
-              <Text style={styles.bio}>{currentUser.bio}</Text>
-            )}
+        contentContainerStyle={{ paddingBottom: 60 + insets.bottom }}
+      >
+        <View style={styles.profileSection}>
+          <Image
+            source={{ uri: currentUser.avatarUrl }}
+            style={styles.avatar}
+          />
+          <Text style={styles.displayName}>{currentUser.displayName}</Text>
+          <Text style={styles.username}>@{currentUser.username}</Text>
+          {currentUser.bio && (
+            <Text style={styles.bio}>{currentUser.bio}</Text>
+          )}
 
-            <View style={styles.statsRow}>
-              <View style={styles.stat}>
-                <Text style={styles.statNumber}>{postCount}</Text>
-                <Text style={styles.statLabel}>Posts</Text>
-              </View>
-              <View style={styles.statDivider} />
-              <HapticPressable
-                style={styles.stat}
-                onPress={() =>
-                  router.push({
-                    pathname: "/profile/follow-list",
-                    params: { userId: currentUser.id, tab: "followers" },
-                  })
-                }
-              >
-                <Text style={styles.statNumber}>{followerList?.length}</Text>
-                <Text style={styles.statLabel}>Followers</Text>
-              </HapticPressable>
-              <View style={styles.statDivider} />
-              <HapticPressable
-                style={styles.stat}
-                onPress={() =>
-                  router.push({
-                    pathname: "/profile/follow-list",
-                    params: { userId: currentUser.id, tab: "following" },
-                  })
-                }
-              >
-                <Text style={styles.statNumber}>{followingIds.length}</Text>
-                <Text style={styles.statLabel}>Following</Text>
-              </HapticPressable>
+          <View style={styles.statsRow}>
+            <View style={styles.stat}>
+              <Text style={styles.statNumber}>{postCount}</Text>
+              <Text style={styles.statLabel}>Posts</Text>
             </View>
-
-            <View style={styles.buttonRow}>
-              <HapticPressable
-                style={styles.editButton}
-                onPress={() => router.push("/profile/edit-profile")}
-              >
-                <Text style={styles.editButtonText}>Edit Profile</Text>
-              </HapticPressable>
-              <HapticPressable
-                style={styles.findPeopleButton}
-                onPress={() => router.push("/profile/discover")}
-              >
-                <Text style={styles.findPeopleButtonText}>Find People</Text>
-              </HapticPressable>
-            </View>
-
-            <Text style={styles.sectionTitle}>Your Posts</Text>
+            <View style={styles.statDivider} />
+            <HapticPressable
+              style={styles.stat}
+              onPress={() =>
+                router.push({
+                  pathname: "/profile/follow-list",
+                  params: { userId: currentUser.id, tab: "followers" },
+                })
+              }
+            >
+              <Text style={styles.statNumber}>{followerList?.length}</Text>
+              <Text style={styles.statLabel}>Followers</Text>
+            </HapticPressable>
+            <View style={styles.statDivider} />
+            <HapticPressable
+              style={styles.stat}
+              onPress={() =>
+                router.push({
+                  pathname: "/profile/follow-list",
+                  params: { userId: currentUser.id, tab: "following" },
+                })
+              }
+            >
+              <Text style={styles.statNumber}>{followingIds.length}</Text>
+              <Text style={styles.statLabel}>Following</Text>
+            </HapticPressable>
           </View>
-        }
-        renderItem={({ item }) => (
-          <HapticPressable
-            style={styles.postTile}
-            onPress={() => router.push(`/profile/post/${item.id}`)}
-          >
-            {item.mediaUrl ? (
-              item.type === "video" ? (
-                <VideoThumbnail
-                  thumbnailUrl={item.thumbnailUrl}
-                  style={styles.postImage}
-                />
-              ) : (
-                <Image
-                  source={{ uri: item.mediaUrl }}
-                  style={styles.postImage}
-                />
-              )
-            ) : (
-              <View style={styles.textPostTile}>
-                <Text style={styles.textPostContent} numberOfLines={4}>
-                  {item.content}
-                </Text>
-              </View>
-            )}
-            {item.place && (
-              <View style={styles.postOverlay}>
-                <Text style={styles.postPlace} numberOfLines={1}>
-                  {item.place.name}
-                </Text>
-              </View>
-            )}
-          </HapticPressable>
-        )}
-        contentContainerStyle={[
-          styles.postsGrid,
-          { paddingBottom: 60 + insets.bottom },
-        ]}
-      />
+
+          <View style={styles.buttonRow}>
+            <LiquidGlassButton
+              title="Edit Profile"
+              variant="secondary"
+              size="medium"
+              onPress={() => router.push("/profile/edit-profile")}
+              style={{ flex: 1 }}
+            />
+            <LiquidGlassButton
+              title="Find People"
+              variant="primary"
+              size="medium"
+              onPress={() => router.push("/profile/discover")}
+              style={{ flex: 1 }}
+            />
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>Your Posts</Text>
+
+        <PostsGrid
+          posts={userPosts}
+          onPostPress={(postId) => router.push(`/profile/post/${postId}`)}
+        />
+      </ScrollView>
     </View>
   );
 }
@@ -301,76 +269,15 @@ const styles = StyleSheet.create({
     marginTop: 20,
     gap: 10,
   },
-  editButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.gray300,
-  },
-  editButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: colors.text,
-  },
-  findPeopleButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: colors.primary,
-  },
-  findPeopleButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#FFFFFF",
+  scrollView: {
+    flex: 1,
   },
   sectionTitle: {
     fontSize: 17,
     fontWeight: "600",
     color: colors.text,
-    alignSelf: "flex-start",
     marginTop: 28,
-    marginBottom: 0,
-  },
-  postsGrid: {
-    paddingHorizontal: 12,
-    paddingBottom: 20,
-  },
-  postTile: {
-    flex: 1,
-    aspectRatio: 1,
-    margin: 4,
-    borderRadius: 8,
-    overflow: "hidden",
-    backgroundColor: colors.gray100,
-  },
-  postImage: {
-    width: "100%",
-    height: "100%",
-  },
-  textPostTile: {
-    flex: 1,
-    padding: 10,
-    backgroundColor: colors.primary,
-    justifyContent: "center",
-  },
-  textPostContent: {
-    fontSize: 12,
-    color: "#FFFFFF",
-    lineHeight: 16,
-  },
-  postOverlay: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-  },
-  postPlace: {
-    fontSize: 11,
-    color: "#FFFFFF",
-    fontWeight: "500",
+    marginBottom: 12,
+    paddingHorizontal: 16,
   },
 });
