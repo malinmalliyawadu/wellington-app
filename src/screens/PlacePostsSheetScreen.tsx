@@ -44,8 +44,16 @@ export function PlacePostsSheetScreen() {
   const fetchPlace = useCallback(() => getPlaceById(placeId!), [placeId]);
   const fetchPosts = useCallback(() => getPostsByPlaceId(placeId!), [placeId]);
 
-  const { data: place, loading: placeLoading, refetch: refetchPlace } = useQuery(fetchPlace, placeId);
-  const { data: posts, loading: postsLoading, refetch: refetchPosts } = useQuery(fetchPosts, placeId);
+  const {
+    data: place,
+    loading: placeLoading,
+    refetch: refetchPlace,
+  } = useQuery(fetchPlace, placeId);
+  const {
+    data: posts,
+    loading: postsLoading,
+    refetch: refetchPosts,
+  } = useQuery(fetchPosts, placeId);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
@@ -127,7 +135,7 @@ export function PlacePostsSheetScreen() {
 
   return (
     <View style={styles.container}>
-      <BlurView intensity={80} tint="extraLight" style={styles.blurContainer}>
+      <View style={styles.blurContainer}>
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -270,7 +278,7 @@ export function PlacePostsSheetScreen() {
             </View>
           )}
         </ScrollView>
-      </BlurView>
+      </View>
     </View>
   );
 }
