@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
 import {
@@ -77,6 +78,7 @@ export function EventDetailScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { session } = useAuth();
   const { followingIds } = useFollow();
   const [togglingAttendance, setTogglingAttendance] = useState(false);
@@ -155,7 +157,10 @@ export function EventDetailScreen() {
         data={sortedAttendees}
         keyExtractor={(item) => item.user!.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 60 }}
+        contentContainerStyle={{
+          paddingTop: 0,
+          paddingBottom: insets.bottom + 60,
+        }}
         ListHeaderComponent={
           <>
             {event.imageUrl && (

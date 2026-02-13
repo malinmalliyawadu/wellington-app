@@ -10,6 +10,7 @@ export default function EventsLayout() {
           headerShown: true,
           headerTitle: "",
           headerBackTitle: "Events",
+          headerTransparent: true,
         }}
       />
       <Stack.Screen
@@ -18,6 +19,7 @@ export default function EventsLayout() {
           headerShown: true,
           headerTitle: "",
           headerBackTitle: "Events",
+          headerTransparent: true,
         }}
       />
       <Stack.Screen

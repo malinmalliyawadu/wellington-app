@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useRouter, useLocalSearchParams, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { useFollow } from "../context/FollowContext";
 import { useQuery } from "../hooks/useQuery";
 import { getProfileById } from "../services/users";
@@ -28,6 +29,7 @@ export function UserProfileScreen() {
   const pathname = usePathname();
   const tabBase = "/" + pathname.split("/")[1];
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { followingIds } = useFollow();
 
   const fetchUser = useCallback(() => getProfileById(userId), [userId]);
@@ -85,7 +87,7 @@ export function UserProfileScreen() {
     <ScrollView
       style={styles.container}
       showsVerticalScrollIndicator={false}
-      contentContainerStyle={{ paddingBottom: 60 + insets.bottom }}
+      contentContainerStyle={{ paddingTop: headerHeight, paddingBottom: 60 + insets.bottom }}
     >
       <View style={styles.profileSection}>
         <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />

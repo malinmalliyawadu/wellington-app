@@ -2,6 +2,7 @@ import React, { useCallback, useMemo } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useFollow } from '../context/FollowContext';
 import { useAuth } from '../context/AuthContext';
 import { FollowButton } from '../components/FollowButton';
@@ -16,6 +17,7 @@ export function DiscoverUsersScreen() {
   const pathname = usePathname();
   const tabBase = '/' + pathname.split('/')[1];
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { isFollowing } = useFollow();
   const { profile } = useAuth();
 
@@ -54,7 +56,7 @@ export function DiscoverUsersScreen() {
             <FollowButton userId={item.id} compact />
           </HapticPressable>
         )}
-        contentContainerStyle={[styles.list, { paddingBottom: 8 + insets.bottom }]}
+        contentContainerStyle={[styles.list, { paddingTop: headerHeight, paddingBottom: 8 + insets.bottom }]}
       />
     </View>
   );

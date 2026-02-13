@@ -6,11 +6,21 @@ export default function MapLayout() {
       <Stack.Screen name="(drawer)" />
       <Stack.Screen
         name="place/[placeId]"
-        options={{ headerShown: true, headerTitle: "", headerBackTitle: "Map" }}
+        options={{
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Map",
+          headerTransparent: true,
+        }}
       />
       <Stack.Screen
         name="post/[postId]"
-        options={{ headerShown: true, headerTitle: "", headerBackTitle: "Map" }}
+        options={{
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Map",
+          headerTransparent: true,
+        }}
       />
       <Stack.Screen
         name="user/[userId]"
@@ -18,6 +28,7 @@ export default function MapLayout() {
           headerShown: true,
           headerTitle: "",
           headerBackTitle: "Back",
+          headerTransparent: true,
         }}
       />
       <Stack.Screen

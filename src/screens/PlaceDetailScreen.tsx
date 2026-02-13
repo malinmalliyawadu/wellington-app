@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState, useEffect } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, Pressable, ActivityIndicator, Linking, Platform } from 'react-native';
 import { useLocalSearchParams, usePathname, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { Ionicons } from '@expo/vector-icons';
 import { useQuery } from '../hooks/useQuery';
 import { getPlaceById } from '../services/places';
@@ -33,6 +34,7 @@ export function PlaceDetailScreen() {
   const pathname = usePathname();
   const tabBase = '/' + pathname.split('/')[1];
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { followingIds } = useFollow();
 
   const fetchPlace = useCallback(() => getPlaceById(placeId), [placeId]);
@@ -123,7 +125,7 @@ export function PlaceDetailScreen() {
         data={postsWithUsers}
         keyExtractor={(item) => item.post.id}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 60 }}
+        contentContainerStyle={{ paddingTop: headerHeight, paddingBottom: insets.bottom + 60 }}
         ListHeaderComponent={
           <View style={styles.header}>
             <Text style={styles.name}>{place.name}</Text>

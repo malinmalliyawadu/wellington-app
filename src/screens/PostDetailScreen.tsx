@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { Ionicons } from '@expo/vector-icons';
 import { getPostById as getPostByIdAsync } from '../services/posts';
 import { getProfileById, getProfilesByIds } from '../services/users';
@@ -43,6 +44,7 @@ function formatTimeAgo(dateString: string): string {
 export function PostDetailScreen() {
   const { postId } = useLocalSearchParams<{ postId: string }>();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const router = useRouter();
   const pathname = usePathname();
   const { isLiked, toggleLike, getLikeCount } = useLike();
@@ -163,7 +165,7 @@ export function PostDetailScreen() {
     >
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: 16 }}
+        contentContainerStyle={{ paddingTop: headerHeight, paddingBottom: 16 }}
         keyboardShouldPersistTaps="handled"
       >
         {/* Author header */}

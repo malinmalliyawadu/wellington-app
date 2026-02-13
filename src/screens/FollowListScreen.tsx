@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, Image, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useHeaderHeight } from '@react-navigation/elements';
 import { useAuth } from '../context/AuthContext';
 import { FollowButton } from '../components/FollowButton';
 import { colors } from '../theme/colors';
@@ -16,6 +17,7 @@ export function FollowListScreen() {
   const pathname = usePathname();
   const tabBase = '/' + pathname.split('/')[1];
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const [activeTab, setActiveTab] = useState<'followers' | 'following'>(initialTab);
   const { profile } = useAuth();
 
@@ -60,7 +62,7 @@ export function FollowListScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.headerName}>
+      <Text style={[styles.headerName, { paddingTop: headerHeight }]}>
         {userId === profile?.id ? 'You' : user?.displayName}
       </Text>
 

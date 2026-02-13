@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { colors } from "../theme/colors";
 import { useQuery } from "../hooks/useQuery";
 import { getPlaces } from "../services/places";
@@ -49,10 +50,12 @@ interface TrendingPlace extends Place {
 
 interface SearchScreenProps {
   query?: string;
+  onQueryChange?: (query: string) => void;
 }
 
-export function SearchScreen({ query = "" }: SearchScreenProps) {
+export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
   const router = useRouter();
+  const headerHeight = useHeaderHeight();
 
   // Fetch all data
   const { data: places } = useQuery(getPlaces);
@@ -297,7 +300,10 @@ export function SearchScreen({ query = "" }: SearchScreenProps) {
               <Text style={styles.sectionTitle}>{section.title}</Text>
             </View>
           )}
-          contentContainerStyle={styles.searchResults}
+          contentContainerStyle={[
+            styles.searchResults,
+            { paddingTop: headerHeight },
+          ]}
           ListEmptyComponent={
             <View style={styles.emptyState}>
               <Ionicons name="search" size={48} color={colors.gray300} />
@@ -315,7 +321,7 @@ export function SearchScreen({ query = "" }: SearchScreenProps) {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[styles.scrollContent, { paddingTop: headerHeight }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Trending Searches */}
@@ -323,7 +329,11 @@ export function SearchScreen({ query = "" }: SearchScreenProps) {
         <Text style={styles.sectionTitle}>Trending Searches</Text>
         <View style={styles.chipGrid}>
           {TRENDING_SEARCHES.map((search) => (
-            <HapticPressable key={search} style={styles.trendingChip}>
+            <HapticPressable
+              key={search}
+              style={styles.trendingChip}
+              onPress={() => onQueryChange?.(search)}
+            >
               <Ionicons name="trending-up" size={14} color={colors.primary} />
               <Text style={styles.trendingText}>{search}</Text>
             </HapticPressable>
