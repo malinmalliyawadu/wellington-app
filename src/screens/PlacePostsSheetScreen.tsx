@@ -13,8 +13,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { useFollow } from "../context/FollowContext";
 import { useLike } from "../context/LikeContext";
-import { useExploration } from "../context/ExplorationContext";
-import { useToast } from "../context/ToastContext";
 import { useQuery } from "../hooks/useQuery";
 import { getPlaceById } from "../services/places";
 import { getPostsByPlaceId } from "../services/posts";
@@ -22,7 +20,6 @@ import { getProfileById } from "../services/users";
 import { fetchPlaceDetails } from "../services/googlePlaceDetails";
 import { formatNumber } from "../utils/formatNumber";
 import { sortPosts } from "../utils/postSorting";
-import { createAchievementToast } from "../utils/achievementHelpers";
 import { VideoThumbnail } from "../components/VideoThumbnail";
 import { HapticPressable } from "../components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
@@ -43,8 +40,6 @@ export function PlacePostsSheetScreen() {
   const { placeId } = useLocalSearchParams<{ placeId: string }>();
   const router = useRouter();
   const { followingIds } = useFollow();
-  const { markExplored } = useExploration();
-  const { showToast } = useToast();
 
   const fetchPlace = useCallback(() => getPlaceById(placeId!), [placeId]);
   const fetchPosts = useCallback(() => getPostsByPlaceId(placeId!), [placeId]);
@@ -96,17 +91,6 @@ export function PlacePostsSheetScreen() {
       });
     }
   }, [place]);
-
-  // Mark place as explored when viewed
-  useEffect(() => {
-    if (place?.id) {
-      markExplored(place.id, 'viewed').then((newAchievements) => {
-        if (newAchievements.length > 0) {
-          showToast(createAchievementToast(newAchievements[0]));
-        }
-      });
-    }
-  }, [place?.id]);
 
   // Use centralized sorting - sorts by most recent first
   const sortedPosts = useMemo(() => {

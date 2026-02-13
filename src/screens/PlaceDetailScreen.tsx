@@ -11,11 +11,8 @@ import { getProfilesByIds } from '../services/users';
 import { fetchPlaceDetails } from '../services/googlePlaceDetails';
 import { formatNumber } from '../utils/formatNumber';
 import { sortPosts } from '../utils/postSorting';
-import { createAchievementToast } from '../utils/achievementHelpers';
 import { useFollow } from '../context/FollowContext';
 import { useLike } from '../context/LikeContext';
-import { useExploration } from '../context/ExplorationContext';
-import { useToast } from '../context/ToastContext';
 import { VideoThumbnail } from '../components/VideoThumbnail';
 import { colors } from '../theme/colors';
 import type { PlaceCategory } from '../types';
@@ -39,8 +36,6 @@ export function PlaceDetailScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { followingIds } = useFollow();
-  const { markExplored } = useExploration();
-  const { showToast } = useToast();
 
   const fetchPlace = useCallback(() => getPlaceById(placeId), [placeId]);
   const { data: place, loading: loadingPlace, refetch: refetchPlace } = useQuery(fetchPlace);
@@ -78,17 +73,6 @@ export function PlaceDetailScreen() {
       setPlaceDetails({ rating: place.rating, userRatingsTotal: place.userRatingsTotal });
     }
   }, [place]);
-
-  // Mark place as explored when viewed
-  useEffect(() => {
-    if (place?.id) {
-      markExplored(place.id, 'viewed').then((newAchievements) => {
-        if (newAchievements.length > 0) {
-          showToast(createAchievementToast(newAchievements[0]));
-        }
-      });
-    }
-  }, [place?.id]);
 
   const handleOpenDirections = useCallback(() => {
     if (!place) return;

@@ -22,7 +22,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { PopularityMarker } from "../components/PopularityMarker";
 import { ExplorationOverlay } from "../components/ExplorationOverlay";
+import { NeighborhoodOverlay } from "../components/NeighborhoodOverlay";
 import { useFollow } from "../context/FollowContext";
+import { useExploration } from "../context/ExplorationContext";
+import { useToast } from "../context/ToastContext";
+import { createAchievementToast } from "../utils/achievementHelpers";
 import { useMapFilters } from "../context/MapFilterContext";
 import { useQuery } from "../hooks/useQuery";
 import { getPlaces } from "../services/places";
@@ -53,12 +57,15 @@ export function MapScreen() {
   );
   const [locationError, setLocationError] = useState<string | null>(null);
   const [showExplorationOverlay, setShowExplorationOverlay] = useState(false);
+  const [showNeighborhoods, setShowNeighborhoods] = useState(false);
   const mapRef = useRef<MapView>(null);
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { followingIds } = useFollow();
   const { selectedCategories, showFollowingOnly } = useMapFilters();
+  const { markExplored, isExplored } = useExploration();
+  const { showToast } = useToast();
 
   // Track animated scale values for each marker
   const markerScales = useRef(new Map<string, Animated.Value>()).current;
@@ -257,6 +264,49 @@ export function MapScreen() {
     })();
   }, []);
 
+  // Location-based exploration tracking
+  useEffect(() => {
+    if (!location || !places) return;
+
+    const EXPLORATION_RADIUS = 50; // meters - must be within 50m to explore
+
+    // Check for nearby unexplored places
+    const checkNearbyPlaces = async () => {
+      const { latitude, longitude } = location.coords;
+
+      for (const place of places) {
+        if (isExplored(place.id)) continue;
+
+        // Calculate distance to place
+        const R = 6371000; // Earth's radius in meters
+        const dLat = ((place.latitude - latitude) * Math.PI) / 180;
+        const dLng = ((place.longitude - longitude) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos((latitude * Math.PI) / 180) *
+            Math.cos((place.latitude * Math.PI) / 180) *
+            Math.sin(dLng / 2) *
+            Math.sin(dLng / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+
+        // If within exploration radius, mark as explored
+        if (distance <= EXPLORATION_RADIUS) {
+          const newAchievements = await markExplored(place.id, "viewed");
+          if (newAchievements.length > 0) {
+            showToast(createAchievementToast(newAchievements[0]));
+          }
+        }
+      }
+    };
+
+    checkNearbyPlaces();
+
+    // Set up interval to check periodically (every 10 seconds)
+    const interval = setInterval(checkNearbyPlaces, 10000);
+    return () => clearInterval(interval);
+  }, [location, places, isExplored, markExplored, showToast]);
+
   const centerOnUser = () => {
     if (location && mapRef.current) {
       mapRef.current.animateToRegion({
@@ -288,6 +338,7 @@ export function MapScreen() {
         onRegionChangeComplete={handleRegionChangeComplete}
         showsPointsOfInterest={false}
       >
+        <NeighborhoodOverlay visible={showNeighborhoods} />
         <ExplorationOverlay
           places={filteredPlaces}
           visible={showExplorationOverlay}
@@ -365,6 +416,19 @@ export function MapScreen() {
                 name="options"
                 size={22}
                 color={activeFilterCount > 0 ? "#FFFFFF" : colors.text}
+              />
+            </HapticPressable>
+
+            <View style={styles.controlDivider} />
+
+            <HapticPressable
+              style={[styles.controlButton]}
+              onPress={() => setShowNeighborhoods(!showNeighborhoods)}
+            >
+              <Ionicons
+                name={showNeighborhoods ? "map" : "map-outline"}
+                size={22}
+                color={showNeighborhoods ? colors.primary : colors.text}
               />
             </HapticPressable>
 
