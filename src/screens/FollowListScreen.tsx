@@ -1,13 +1,13 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, Image, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useFollow } from '../context/FollowContext';
 import { useAuth } from '../context/AuthContext';
 import { FollowButton } from '../components/FollowButton';
 import { colors } from '../theme/colors';
 import { useQuery } from '../hooks/useQuery';
-import { getProfileById, getProfilesByIds, getOtherProfiles } from '../services/users';
+import { getProfileById, getProfilesByIds } from '../services/users';
+import { getFollowerIds, getFollowingIds } from '../services/follows';
 import { HapticPressable } from 'src/components/HapticPressable';
 
 export function FollowListScreen() {
@@ -17,26 +17,46 @@ export function FollowListScreen() {
   const tabBase = '/' + pathname.split('/')[1];
   const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<'followers' | 'following'>(initialTab);
-  const { followingIds } = useFollow();
   const { profile } = useAuth();
 
   const fetchUser = useCallback(() => getProfileById(userId), [userId]);
   const { data: user } = useQuery(fetchUser);
 
-  // Fetch following list (profiles the user follows)
-  const fetchFollowing = useCallback(() => getProfilesByIds(followingIds), [followingIds]);
-  const { data: followingList, loading: loadingFollowing } = useQuery(fetchFollowing, followingIds);
+  // Fetch following IDs for this user
+  const fetchFollowingIds = useCallback(() => getFollowingIds(userId), [userId]);
+  const { data: followingUserIds, loading: loadingFollowingIds } = useQuery(fetchFollowingIds);
 
-  // Fetch other profiles as mock followers for now
-  const fetchFollowers = useCallback(
-    () => getOtherProfiles(profile?.id ?? ''),
-    [profile?.id]
+  // Fetch follower IDs for this user
+  const fetchFollowerIds = useCallback(() => getFollowerIds(userId), [userId]);
+  const { data: followerUserIds, loading: loadingFollowerIds } = useQuery(fetchFollowerIds);
+
+  // Fetch following profiles
+  const fetchFollowing = useCallback(
+    () => getProfilesByIds(followingUserIds ?? []),
+    [followingUserIds]
   );
-  const { data: followerList, loading: loadingFollowers } = useQuery(fetchFollowers);
+  const { data: followingList, loading: loadingFollowingProfiles } = useQuery(
+    fetchFollowing,
+    followingUserIds && followingUserIds.length > 0
+  );
+
+  // Fetch follower profiles
+  const fetchFollowers = useCallback(
+    () => getProfilesByIds(followerUserIds ?? []),
+    [followerUserIds]
+  );
+  const { data: followerList, loading: loadingFollowerProfiles } = useQuery(
+    fetchFollowers,
+    followerUserIds && followerUserIds.length > 0
+  );
 
   const listData = activeTab === 'following'
     ? (followingList ?? [])
-    : (followerList ?? []).slice(0, 4);
+    : (followerList ?? []);
+
+  const isLoading = activeTab === 'following'
+    ? loadingFollowingIds || loadingFollowingProfiles
+    : loadingFollowerIds || loadingFollowerProfiles;
 
   return (
     <View style={styles.container}>
@@ -63,37 +83,45 @@ export function FollowListScreen() {
         </HapticPressable>
       </View>
 
-      <FlatList
-        data={listData}
-        keyExtractor={(item) => item!.id}
-        renderItem={({ item }) => {
-          if (!item) return null;
-          const isCurrentUser = item.id === profile?.id;
-          return (
-            <HapticPressable
-              style={styles.userRow}
-              onPress={() => {
-                if (!isCurrentUser) {
-                  router.push(`${tabBase}/user/${item.id}`);
-                }
-              }}
-            >
-              <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
-              <View style={styles.userInfo}>
-                <Text style={styles.displayName}>{item.displayName}</Text>
-                <Text style={styles.username}>@{item.username}</Text>
-              </View>
-              {!isCurrentUser && <FollowButton userId={item.id} compact />}
-            </HapticPressable>
-          );
-        }}
-        ListEmptyComponent={
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No users to show</Text>
-          </View>
-        }
-        contentContainerStyle={[styles.list, { paddingBottom: 8 + insets.bottom }]}
-      />
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={listData}
+          keyExtractor={(item) => item!.id}
+          renderItem={({ item }) => {
+            if (!item) return null;
+            const isCurrentUser = item.id === profile?.id;
+            return (
+              <HapticPressable
+                style={styles.userRow}
+                onPress={() => {
+                  if (!isCurrentUser) {
+                    router.push(`${tabBase}/user/${item.id}`);
+                  }
+                }}
+              >
+                <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+                <View style={styles.userInfo}>
+                  <Text style={styles.displayName}>{item.displayName}</Text>
+                  <Text style={styles.username}>@{item.username}</Text>
+                </View>
+                {!isCurrentUser && <FollowButton userId={item.id} compact />}
+              </HapticPressable>
+            );
+          }}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>
+                {activeTab === 'following' ? 'Not following anyone yet' : 'No followers yet'}
+              </Text>
+            </View>
+          }
+          contentContainerStyle={[styles.list, { paddingBottom: 8 + insets.bottom }]}
+        />
+      )}
     </View>
   );
 }
@@ -163,6 +191,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     marginTop: 1,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyState: {
     alignItems: 'center',

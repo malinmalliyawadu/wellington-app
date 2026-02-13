@@ -17,10 +17,10 @@ import { signOut } from "../services/auth";
 import { useQuery } from "../hooks/useQuery";
 import { getPostsByUserId } from "../services/posts";
 import { getPlaces } from "../services/places";
+import { getFollowCounts } from "../services/follows";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { PostsGrid } from "../components/PostsGrid";
 import { colors } from "../theme/colors";
-import { getOtherProfiles } from "src/services/users";
 import { HapticPressable } from "src/components/HapticPressable";
 
 export function ProfileScreen() {
@@ -43,23 +43,22 @@ export function ProfileScreen() {
   );
   const { data: posts, refetch: refetchPosts } = useQuery(fetchPosts);
   const { data: allPlaces, refetch: refetchPlaces } = useQuery(getPlaces);
-  const fetchFollowers = useCallback(
-    () => getOtherProfiles(profile?.id ?? ""),
-    [profile?.id]
+  const fetchCounts = useCallback(
+    () => getFollowCounts(currentUser.id),
+    [currentUser.id]
   );
   const {
-    data: followerList,
-    loading: loadingFollowers,
-    refetch: refetchFollowers,
-  } = useQuery(fetchFollowers);
+    data: counts,
+    refetch: refetchCounts,
+  } = useQuery(fetchCounts);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
     useCallback(() => {
       refetchPosts();
       refetchPlaces();
-      refetchFollowers();
-    }, [refetchPosts, refetchPlaces, refetchFollowers])
+      refetchCounts();
+    }, [refetchPosts, refetchPlaces, refetchCounts])
   );
 
   const [refreshing, setRefreshing] = useState(false);
@@ -68,12 +67,14 @@ export function ProfileScreen() {
     setRefreshing(true);
     refetchPosts();
     refetchPlaces();
-    refetchFollowers();
+    refetchCounts();
     // Give a small delay to ensure queries complete
     setTimeout(() => setRefreshing(false), 1000);
-  }, [refetchPosts, refetchPlaces, refetchFollowers]);
+  }, [refetchPosts, refetchPlaces, refetchCounts]);
 
   const postCount = posts?.length ?? 0;
+  const followerCount = counts?.followers ?? 0;
+  const followingCount = counts?.following ?? 0;
 
   const userPosts = useMemo(() => {
     if (!posts || !allPlaces) return [];
@@ -146,7 +147,7 @@ export function ProfileScreen() {
                 })
               }
             >
-              <Text style={styles.statNumber}>{followerList?.length}</Text>
+              <Text style={styles.statNumber}>{followerCount}</Text>
               <Text style={styles.statLabel}>Followers</Text>
             </HapticPressable>
             <View style={styles.statDivider} />
@@ -159,7 +160,7 @@ export function ProfileScreen() {
                 })
               }
             >
-              <Text style={styles.statNumber}>{followingIds.length}</Text>
+              <Text style={styles.statNumber}>{followingCount}</Text>
               <Text style={styles.statLabel}>Following</Text>
             </HapticPressable>
           </View>
