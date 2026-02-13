@@ -305,7 +305,7 @@ export function CreatePostSheetScreen() {
             paddingBottom: keyboardVisible ? 350 : insets.bottom + 20,
           }}
         >
-          <View style={styles.content}>
+          <View style={styles.header}>
             <View
               style={{
                 flexDirection: "row",
@@ -648,9 +648,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.translucentCardBackground,
   },
   header: {
-    flex: 1,
-    flexDirection: "row",
-    gap: 12,
+    paddingHorizontal: 16,
+    backgroundColor: colors.cardBackground,
   },
   headerLeft: {
     flex: 1,
