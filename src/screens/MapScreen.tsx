@@ -121,10 +121,22 @@ export function MapScreen() {
     { width: 0, height: 0 }
   );
 
-  const { data: places, loading: placesLoading, refetch: refetchPlaces } = useQuery(getPlaces);
+  const {
+    data: places,
+    loading: placesLoading,
+    refetch: refetchPlaces,
+  } = useQuery(getPlaces);
   const allPlaces = places ?? [];
-  const { data: allPosts, loading: postsLoading, refetch: refetchPosts } = useQuery(getPosts);
-  const { data: allUsers, loading: usersLoading, refetch: refetchUsers } = useQuery(getProfiles);
+  const {
+    data: allPosts,
+    loading: postsLoading,
+    refetch: refetchPosts,
+  } = useQuery(getPosts);
+  const {
+    data: allUsers,
+    loading: usersLoading,
+    refetch: refetchUsers,
+  } = useQuery(getProfiles);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
@@ -337,6 +349,7 @@ export function MapScreen() {
         compassOffset={{ x: -320, y: 0 }}
         onRegionChangeComplete={handleRegionChangeComplete}
         showsPointsOfInterest={false}
+        userInterfaceStyle="light"
       >
         <NeighborhoodOverlay visible={showNeighborhoods} />
         <ExplorationOverlay

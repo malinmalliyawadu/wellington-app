@@ -1,21 +1,21 @@
-import React, { useCallback, useState } from 'react';
-import { View, Text, Image, StyleSheet, Pressable, Share } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Post, User, Place, PlaceCategory } from '../types';
-import { useLike } from '../context/LikeContext';
-import { useQuery } from '../hooks/useQuery';
-import { getCommentsByPostId } from '../services/comments';
-import { VideoPlayer } from './VideoPlayer';
-import { colors } from '../theme/colors';
-import { HapticPressable } from './HapticPressable';
+import React, { useCallback, useState } from "react";
+import { View, Text, Image, StyleSheet, Pressable, Share } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Post, User, Place, PlaceCategory } from "../types";
+import { useLike } from "../context/LikeContext";
+import { useQuery } from "../hooks/useQuery";
+import { getCommentsByPostId } from "../services/comments";
+import { VideoPlayer } from "./VideoPlayer";
+import { colors } from "../theme/colors";
+import { HapticPressable } from "./HapticPressable";
 
 const CATEGORY_ICONS: Record<PlaceCategory, keyof typeof Ionicons.glyphMap> = {
-  cafe: 'cafe',
-  restaurant: 'restaurant',
-  bar: 'wine',
-  attraction: 'compass',
-  park: 'leaf',
-  venue: 'musical-notes',
+  cafe: "cafe",
+  restaurant: "restaurant",
+  bar: "wine",
+  attraction: "compass",
+  park: "leaf",
+  venue: "musical-notes",
 };
 
 interface FeedPostProps {
@@ -40,17 +40,29 @@ function formatTimeAgo(dateString: string): string {
   if (diffHours > 0) {
     return `${diffHours}h ago`;
   }
-  return 'Just now';
+  return "Just now";
 }
 
-export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPressPost }: FeedPostProps) {
+export function FeedPost({
+  post,
+  user,
+  place,
+  onPressUser,
+  onPressPlace,
+  onPressPost,
+}: FeedPostProps) {
   const categoryColor = colors.category[place.category];
   const { isLiked, toggleLike, getLikeCount } = useLike();
   const liked = isLiked(post.id);
-  const fetchComments = useCallback(() => getCommentsByPostId(post.id), [post.id]);
+  const fetchComments = useCallback(
+    () => getCommentsByPostId(post.id),
+    [post.id]
+  );
   const { data: comments } = useQuery(fetchComments);
   const commentCount = comments?.length ?? 0;
-  const [aspectRatio, setAspectRatio] = useState<number>(post.type === 'video' ? 16 / 9 : 1);
+  const [aspectRatio, setAspectRatio] = useState<number>(
+    post.type === "video" ? 16 / 9 : 1
+  );
 
   const handleImageLoad = (event: any) => {
     const { width, height } = event.nativeEvent.source;
@@ -87,8 +99,8 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPress
         onPress={() => onPressPost?.(post.id)}
         disabled={!onPressPost}
       >
-        {post.mediaUrl && (
-          post.type === 'video' ? (
+        {post.mediaUrl &&
+          (post.type === "video" ? (
             <VideoPlayer
               uri={post.mediaUrl}
               style={[styles.media, { aspectRatio }]}
@@ -103,19 +115,25 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPress
               style={[styles.media, { aspectRatio }]}
               onLoad={handleImageLoad}
             />
-          )
-        )}
+          ))}
       </HapticPressable>
 
       <View style={styles.content}>
         <Text style={styles.caption}>{post.content}</Text>
         <HapticPressable
-          style={[styles.placeBadge, { backgroundColor: categoryColor + '15' }]}
+          style={[styles.placeBadge, { backgroundColor: categoryColor + "15" }]}
           onPress={() => onPressPlace?.(place.id)}
           disabled={!onPressPlace}
         >
-          <Ionicons name={CATEGORY_ICONS[place.category]} size={13} color={categoryColor} style={styles.placeIcon} />
-          <Text style={[styles.placeName, { color: categoryColor }]}>{place.name}</Text>
+          <Ionicons
+            name={CATEGORY_ICONS[place.category]}
+            size={13}
+            color={categoryColor}
+            style={styles.placeIcon}
+          />
+          <Text style={[styles.placeName, { color: categoryColor }]}>
+            {place.name}
+          </Text>
         </HapticPressable>
       </View>
 
@@ -126,7 +144,7 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPress
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Ionicons
-            name={liked ? 'heart' : 'heart-outline'}
+            name={liked ? "heart" : "heart-outline"}
             size={22}
             color={liked ? colors.liked : colors.textMuted}
           />
@@ -140,14 +158,18 @@ export function FeedPost({ post, user, place, onPressUser, onPressPlace, onPress
           disabled={!onPressPost}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons name="chatbubble-outline" size={20} color={colors.textMuted} />
-          <Text style={styles.actionCount}>
-            {commentCount}
-          </Text>
+          <Ionicons
+            name="chatbubble-outline"
+            size={20}
+            color={colors.textMuted}
+          />
+          <Text style={styles.actionCount}>{commentCount}</Text>
         </HapticPressable>
         <HapticPressable
           style={styles.actionButton}
-          onPress={() => Share.share({ message: `Check out ${place.name}: ${post.content}` })}
+          onPress={() =>
+            Share.share({ message: `Check out ${place.name}: ${post.content}` })
+          }
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
           <Ionicons name="share-outline" size={20} color={colors.textMuted} />
@@ -163,17 +185,16 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginHorizontal: 16,
     marginBottom: 16,
-    overflow: 'hidden',
-    boxShadow: "rgba(0, 0, 0, 0.16) 0px 1px 4px",
+    overflow: "hidden",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
   },
   headerUser: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
   },
   avatar: {
@@ -188,7 +209,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
   },
   username: {
@@ -200,7 +221,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   media: {
-    width: '100%',
+    width: "100%",
     backgroundColor: colors.gray200,
   },
   content: {
@@ -213,9 +234,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   placeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 16,
@@ -225,22 +246,22 @@ const styles = StyleSheet.create({
   },
   placeName: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   actions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 12,
     paddingBottom: 12,
     gap: 16,
   },
   actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 5,
   },
   actionCount: {
     fontSize: 14,
     color: colors.textMuted,
-    fontWeight: '500',
+    fontWeight: "500",
   },
 });

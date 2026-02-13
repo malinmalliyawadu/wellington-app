@@ -185,7 +185,7 @@ export function FeedScreen() {
               style={styles.headerButton}
               onPress={() => router.push("/feed/discover")}
             >
-              <Ionicons name="people-outline" size={20} color={colors.text} />
+              <Ionicons name="people-outline" size={24} color={colors.text} />
             </HapticPressable>
           </View>
         </View>
@@ -229,14 +229,16 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   headerButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.cardBackground,
-    borderWidth: 1,
-    borderColor: colors.gray300,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   emptyState: {
     alignItems: "center",

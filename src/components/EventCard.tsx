@@ -1,12 +1,12 @@
-import React, { useCallback, useMemo } from 'react';
-import { View, Text, Image, StyleSheet, Pressable, Share } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { Event, Place } from '../types';
-import { useFollow } from '../context/FollowContext';
-import { getProfilesByIds } from '../services/users';
-import { useQuery } from '../hooks/useQuery';
-import { colors } from '../theme/colors';
-import { HapticPressable } from './HapticPressable';
+import React, { useCallback, useMemo } from "react";
+import { View, Text, Image, StyleSheet, Pressable, Share } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Event, Place } from "../types";
+import { useFollow } from "../context/FollowContext";
+import { getProfilesByIds } from "../services/users";
+import { useQuery } from "../hooks/useQuery";
+import { colors } from "../theme/colors";
+import { HapticPressable } from "./HapticPressable";
 
 interface EventCardProps {
   event: Event;
@@ -14,41 +14,41 @@ interface EventCardProps {
   onPress?: () => void;
 }
 
-export const CATEGORY_COLORS: Record<Event['category'], string> = {
-  music: '#7209B7',
-  comedy: '#F72585',
-  art: '#4361EE',
-  food: '#E85D04',
-  market: '#2D6A4F',
-  community: '#0077B6',
+export const CATEGORY_COLORS: Record<Event["category"], string> = {
+  music: "#7209B7",
+  comedy: "#F72585",
+  art: "#4361EE",
+  food: "#E85D04",
+  market: "#2D6A4F",
+  community: "#0077B6",
 };
 
-const CATEGORY_LABELS: Record<Event['category'], string> = {
-  music: 'Music',
-  comedy: 'Comedy',
-  art: 'Art',
-  food: 'Food & Drink',
-  market: 'Market',
-  community: 'Community',
+const CATEGORY_LABELS: Record<Event["category"], string> = {
+  music: "Music",
+  comedy: "Comedy",
+  art: "Art",
+  food: "Food & Drink",
+  market: "Market",
+  community: "Community",
 };
 
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   const options: Intl.DateTimeFormatOptions = {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
+    weekday: "short",
+    month: "short",
+    day: "numeric",
   };
-  return date.toLocaleDateString('en-NZ', options);
+  return date.toLocaleDateString("en-NZ", options);
 }
 
 function formatTime(time: string, endTime?: string): string {
   const formatSingleTime = (t: string) => {
-    const [hours, minutes] = t.split(':');
+    const [hours, minutes] = t.split(":");
     const h = parseInt(hours, 10);
-    const suffix = h >= 12 ? 'pm' : 'am';
+    const suffix = h >= 12 ? "pm" : "am";
     const hour12 = h % 12 || 12;
-    return `${hour12}${minutes !== '00' ? `:${minutes}` : ''}${suffix}`;
+    return `${hour12}${minutes !== "00" ? `:${minutes}` : ""}${suffix}`;
   };
 
   if (endTime) {
@@ -73,58 +73,74 @@ export function EventCard({ event, place, onPress }: EventCardProps) {
         if (aFollowed !== bFollowed) return aFollowed ? -1 : 1;
         return 0;
       }),
-    [attendeeIds, followingIds],
+    [attendeeIds, followingIds]
   );
 
   const displayIds = sortedAttendeeIds.slice(0, 3);
   const fetchDisplayUsers = useCallback(
     () => getProfilesByIds(displayIds),
-    [displayIds],
+    [displayIds]
   );
   const { data: displayUsers } = useQuery(fetchDisplayUsers, displayIds);
   const displayAttendees = displayUsers ?? [];
 
   const totalCount = attendeeIds.length;
 
-  const firstFollowedId = sortedAttendeeIds.find((id) => followingIds.includes(id));
-  const firstFollowedUser = displayAttendees.find((u) => u.id === firstFollowedId);
+  const firstFollowedId = sortedAttendeeIds.find((id) =>
+    followingIds.includes(id)
+  );
+  const firstFollowedUser = displayAttendees.find(
+    (u) => u.id === firstFollowedId
+  );
   const firstFollowedName = firstFollowedUser?.displayName ?? null;
 
-  let attendeeText = '';
+  let attendeeText = "";
   if (totalCount > 0) {
     if (firstFollowedName) {
       const othersCount = totalCount - 1;
-      attendeeText = othersCount > 0
-        ? `${firstFollowedName} and ${othersCount} ${othersCount === 1 ? 'other' : 'others'} going`
-        : `${firstFollowedName} going`;
+      attendeeText =
+        othersCount > 0
+          ? `${firstFollowedName} and ${othersCount} ${
+              othersCount === 1 ? "other" : "others"
+            } going`
+          : `${firstFollowedName} going`;
     } else {
       attendeeText = `${totalCount} going`;
     }
   }
 
   return (
-    <HapticPressable
-      style={styles.container}
-      onPress={onPress}
-    >
+    <HapticPressable style={styles.container} onPress={onPress}>
       {event.imageUrl && (
         <Image source={{ uri: event.imageUrl }} style={styles.image} />
       )}
       <View style={styles.content}>
         <View style={styles.header}>
-          <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
-            <Text style={styles.categoryText}>{CATEGORY_LABELS[event.category]}</Text>
+          <View
+            style={[styles.categoryBadge, { backgroundColor: categoryColor }]}
+          >
+            <Text style={styles.categoryText}>
+              {CATEGORY_LABELS[event.category]}
+            </Text>
           </View>
           <View style={styles.dateRow}>
             <Text style={styles.date}>{formatDate(event.date)}</Text>
             <HapticPressable
               onPress={(e) => {
                 e.stopPropagation?.();
-                Share.share({ message: `${event.title} — ${formatDate(event.date)} at ${place.name}` });
+                Share.share({
+                  message: `${event.title} — ${formatDate(event.date)} at ${
+                    place.name
+                  }`,
+                });
               }}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons name="share-outline" size={16} color={colors.textSecondary} />
+              <Ionicons
+                name="share-outline"
+                size={16}
+                color={colors.textSecondary}
+              />
             </HapticPressable>
           </View>
         </View>
@@ -134,7 +150,9 @@ export function EventCard({ event, place, onPress }: EventCardProps) {
         </Text>
         <View style={styles.footer}>
           <Text style={styles.place}>{place.name}</Text>
-          <Text style={styles.time}>{formatTime(event.startTime, event.endTime)}</Text>
+          <Text style={styles.time}>
+            {formatTime(event.startTime, event.endTime)}
+          </Text>
         </View>
         {totalCount > 0 && (
           <View style={styles.attendeeRow}>
@@ -165,11 +183,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginHorizontal: 16,
     marginBottom: 16,
-    overflow: 'hidden',
-    boxShadow: "rgba(0, 0, 0, 0.16) 0px 1px 4px"
+    overflow: "hidden",
   },
   image: {
-    width: '100%',
+    width: "100%",
     height: 140,
     backgroundColor: colors.gray200,
   },
@@ -177,9 +194,9 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
   categoryBadge: {
@@ -188,23 +205,23 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   categoryText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
   },
   date: {
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.primary,
   },
   title: {
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
     marginBottom: 6,
   },
@@ -215,16 +232,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: colors.gray200,
   },
   place: {
     fontSize: 13,
-    fontWeight: '500',
+    fontWeight: "500",
     color: colors.text,
   },
   time: {
@@ -232,15 +249,15 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   attendeeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: colors.gray200,
   },
   avatarStack: {
-    flexDirection: 'row',
+    flexDirection: "row",
     marginRight: 8,
   },
   attendeeAvatar: {
