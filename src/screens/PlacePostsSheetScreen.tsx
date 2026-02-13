@@ -67,6 +67,13 @@ export function PlacePostsSheetScreen() {
     userRatingsTotal?: number;
   }>({});
 
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  const handleScroll = useCallback((event: any) => {
+    const scrollY = event.nativeEvent.contentOffset.y;
+    setIsScrolled(scrollY > 0);
+  }, []);
+
   // Fetch place details from Google Places API
   useEffect(() => {
     if (place && !place.rating) {
@@ -143,10 +150,16 @@ export function PlacePostsSheetScreen() {
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
           nestedScrollEnabled={true}
-          bounces={false}
+          bounces={true}
+          onScroll={handleScroll}
         >
           <View style={styles.header}>
-            <View style={styles.headerContent}>
+            <View
+              style={[
+                styles.headerContent,
+                isScrolled && styles.headerContentScrolled,
+              ]}
+            >
               <HapticPressable
                 onPress={() => {
                   router.dismiss();
@@ -353,7 +366,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    flex: 1,
+    paddingBottom: 32,
   },
   loading: {
     flex: 1,
@@ -375,6 +388,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 16,
     backgroundColor: "transparent",
+  },
+  headerContentScrolled: {
+    backgroundColor: "#FFFFFF",
   },
   nameButton: {
     flexDirection: "row",

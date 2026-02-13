@@ -26,7 +26,7 @@ export default function MapLayout() {
           presentation: "formSheet",
           headerShown: false,
           contentStyle: { backgroundColor: "transparent" },
-          sheetAllowedDetents: [0.4, 0.85],
+          sheetAllowedDetents: [0.5, 1],
           sheetGrabberVisible: true,
           sheetCornerRadius: 32,
           sheetInitialDetentIndex: 0,
