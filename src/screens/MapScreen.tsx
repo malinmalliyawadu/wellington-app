@@ -97,8 +97,10 @@ export function MapScreen() {
     (placeId: string) => {
       const path = `/map/place-posts/${placeId}` as const;
       if (router.canDismiss()) {
-        router.replace(path);
+        // Sheet is already open, just update the params without navigation animation
+        router.setParams({ placeId });
       } else {
+        // No sheet open, push a new one
         router.push(path);
       }
     },

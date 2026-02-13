@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: "center",
-    paddingVertical: 32,
+    paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: "transparent",
     margin: 16,
