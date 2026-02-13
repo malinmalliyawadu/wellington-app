@@ -183,6 +183,7 @@ export async function searchNearbyPlaces(
           latitude: result.geometry.location.lat,
           longitude: result.geometry.location.lng,
           category: mapGoogleCategory(result.types || []),
+          googlePlaceId: result.place_id,
           distance,
           rating: result.rating,
           ratingsTotal: result.user_ratings_total,
@@ -291,6 +292,7 @@ export async function searchGooglePlaces(
             latitude: result.geometry.location.lat,
             longitude: result.geometry.location.lng,
             category: mapGoogleCategory(result.types || []),
+            googlePlaceId: prediction.place_id,
             rating: result.rating,
             userRatingsTotal: result.user_ratings_total,
           };

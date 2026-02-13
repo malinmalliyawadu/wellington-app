@@ -44,8 +44,11 @@ create table places (
   address text not null,
   latitude double precision not null,
   longitude double precision not null,
+  google_place_id text unique,
   created_at timestamptz not null default now()
 );
+
+create index places_google_place_id_idx on places(google_place_id);
 
 -- Posts
 create table posts (
