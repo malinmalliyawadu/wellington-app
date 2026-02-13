@@ -9,6 +9,9 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -54,6 +57,7 @@ export function CreatePostSheetScreen() {
     selectedPlaceData?: string;
   }>();
   const router = useRouter();
+  const scrollViewRef = React.useRef<ScrollView>(null);
 
   // Determine initial create type based on defaultType param (events tab -> event, otherwise -> post)
   const [createType, setCreateType] = useState<CreateType>(
@@ -76,6 +80,33 @@ export function CreatePostSheetScreen() {
   // Shared state
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [posting, setPosting] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+
+  // Keyboard visibility listeners
+  useEffect(() => {
+    const keyboardDidShowListener = Keyboard.addListener(
+      "keyboardWillShow",
+      () => setKeyboardVisible(true)
+    );
+    const keyboardDidHideListener = Keyboard.addListener(
+      "keyboardWillHide",
+      () => setKeyboardVisible(false)
+    );
+
+    return () => {
+      keyboardDidShowListener.remove();
+      keyboardDidHideListener.remove();
+    };
+  }, []);
+
+  // Scroll to bottom when keyboard appears and padding is applied
+  useEffect(() => {
+    if (keyboardVisible) {
+      // setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+      // }, 0);
+    }
+  }, [keyboardVisible]);
 
   // Handle place selection from search sheet
   useFocusEffect(
@@ -259,305 +290,325 @@ export function CreatePostSheetScreen() {
 
   return (
     <>
-      <ScrollView
-        style={styles.container}
-        stickyHeaderIndices={[0]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
       >
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <HapticPressable
-            onPress={() => router.dismiss()}
-            style={styles.closeButton}
-          >
-            <Ionicons name="close" size={24} color={colors.text} />
-          </HapticPressable>
-        </View>
-        <View style={styles.headerCenter}>
-          <View style={styles.segmentControl}>
-            <HapticPressable
-              style={[
-                styles.segment,
-                createType === "post" && styles.segmentActive,
-              ]}
-              onPress={() => setCreateType("post")}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  createType === "post" && styles.segmentTextActive,
-                ]}
+        <ScrollView
+          ref={scrollViewRef}
+          style={styles.container}
+          stickyHeaderIndices={[0]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingBottom: keyboardVisible ? 350 : insets.bottom + 20,
+          }}
+        >
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <HapticPressable
+                onPress={() => router.dismiss()}
+                style={styles.closeButton}
               >
-                Post
-              </Text>
-            </HapticPressable>
-            <HapticPressable
-              style={[
-                styles.segment,
-                createType === "event" && styles.segmentActive,
-              ]}
-              onPress={() => setCreateType("event")}
-            >
-              <Text
-                style={[
-                  styles.segmentText,
-                  createType === "event" && styles.segmentTextActive,
-                ]}
-              >
-                Event
-              </Text>
-            </HapticPressable>
-          </View>
-        </View>
-        <View style={styles.headerRight}>
-          <LiquidGlassButton
-            title={createType === "post" ? "Post" : "Create"}
-            onPress={handleSubmit}
-            disabled={!isFormValid() || posting}
-            size="medium"
-          />
-        </View>
-      </View>
-
-      <View style={styles.content}>
-        {createType === "post" ? (
-          <>
-            <Text style={styles.label}>Post Type</Text>
-            <View style={styles.typeRow}>
-              {POST_TYPES.map((item) => (
+                <Ionicons name="close" size={24} color={colors.text} />
+              </HapticPressable>
+            </View>
+            <View style={styles.headerCenter}>
+              <View style={styles.segmentControl}>
                 <HapticPressable
-                  key={item.type}
                   style={[
-                    styles.typeButton,
-                    postType === item.type && styles.typeButtonActive,
+                    styles.segment,
+                    createType === "post" && styles.segmentActive,
                   ]}
-                  onPress={() => {
-                    setPostType(item.type);
-                    setMediaUri(null);
-                  }}
+                  onPress={() => setCreateType("post")}
                 >
-                  <Ionicons
-                    name={item.icon as any}
-                    size={24}
-                    color={
-                      postType === item.type ? colors.primary : colors.gray400
-                    }
-                  />
                   <Text
                     style={[
-                      styles.typeLabel,
-                      postType === item.type && styles.typeLabelActive,
+                      styles.segmentText,
+                      createType === "post" && styles.segmentTextActive,
                     ]}
                   >
-                    {item.label}
+                    Post
                   </Text>
                 </HapticPressable>
-              ))}
+                <HapticPressable
+                  style={[
+                    styles.segment,
+                    createType === "event" && styles.segmentActive,
+                  ]}
+                  onPress={() => setCreateType("event")}
+                >
+                  <Text
+                    style={[
+                      styles.segmentText,
+                      createType === "event" && styles.segmentTextActive,
+                    ]}
+                  >
+                    Event
+                  </Text>
+                </HapticPressable>
+              </View>
             </View>
+            <View style={styles.headerRight}>
+              <LiquidGlassButton
+                title={createType === "post" ? "Post" : "Create"}
+                onPress={handleSubmit}
+                disabled={!isFormValid() || posting}
+                size="medium"
+              />
+            </View>
+          </View>
 
-            {postType !== "text" && (
-              <HapticPressable style={styles.mediaButton} onPress={pickMedia}>
-                {mediaUri ? (
-                  <Image
-                    source={{ uri: mediaUri }}
-                    style={styles.mediaPreview}
+          <View style={styles.content}>
+            {createType === "post" ? (
+              <>
+                <Text style={styles.label}>Post Type</Text>
+                <View style={styles.typeRow}>
+                  {POST_TYPES.map((item) => (
+                    <HapticPressable
+                      key={item.type}
+                      style={[
+                        styles.typeButton,
+                        postType === item.type && styles.typeButtonActive,
+                      ]}
+                      onPress={() => {
+                        setPostType(item.type);
+                        setMediaUri(null);
+                      }}
+                    >
+                      <Ionicons
+                        name={item.icon as any}
+                        size={24}
+                        color={
+                          postType === item.type
+                            ? colors.primary
+                            : colors.gray400
+                        }
+                      />
+                      <Text
+                        style={[
+                          styles.typeLabel,
+                          postType === item.type && styles.typeLabelActive,
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </HapticPressable>
+                  ))}
+                </View>
+
+                {postType !== "text" && (
+                  <HapticPressable
+                    style={styles.mediaButton}
+                    onPress={pickMedia}
+                  >
+                    {mediaUri ? (
+                      <Image
+                        source={{ uri: mediaUri }}
+                        style={styles.mediaPreview}
+                      />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name={postType === "photo" ? "camera" : "videocam"}
+                          size={32}
+                          color={colors.gray400}
+                        />
+                        <Text style={styles.mediaButtonText}>
+                          Tap to add {postType}
+                        </Text>
+                      </>
+                    )}
+                  </HapticPressable>
+                )}
+              </>
+            ) : (
+              <>
+                <Text style={styles.label}>Event Title</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="e.g. Live Jazz Night"
+                  placeholderTextColor={colors.gray400}
+                  value={eventTitle}
+                  onChangeText={setEventTitle}
+                />
+
+                <Text style={styles.label}>Category</Text>
+                <View style={styles.typeRow}>
+                  {EVENT_CATEGORIES.slice(0, 3).map((item) => (
+                    <HapticPressable
+                      key={item.type}
+                      style={[
+                        styles.typeButton,
+                        eventCategory === item.type && styles.typeButtonActive,
+                      ]}
+                      onPress={() => setEventCategory(item.type)}
+                    >
+                      <Text
+                        style={[
+                          styles.typeLabel,
+                          eventCategory === item.type && styles.typeLabelActive,
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </HapticPressable>
+                  ))}
+                </View>
+                <View style={[styles.typeRow, { marginTop: 8 }]}>
+                  {EVENT_CATEGORIES.slice(3).map((item) => (
+                    <HapticPressable
+                      key={item.type}
+                      style={[
+                        styles.typeButton,
+                        eventCategory === item.type && styles.typeButtonActive,
+                      ]}
+                      onPress={() => setEventCategory(item.type)}
+                    >
+                      <Text
+                        style={[
+                          styles.typeLabel,
+                          eventCategory === item.type && styles.typeLabelActive,
+                        ]}
+                      >
+                        {item.label}
+                      </Text>
+                    </HapticPressable>
+                  ))}
+                </View>
+
+                <Text style={styles.label}>Date & Time</Text>
+                <View style={styles.dateTimeRow}>
+                  <TextInput
+                    style={[styles.textInput, { flex: 1 }]}
+                    placeholder="YYYY-MM-DD"
+                    placeholderTextColor={colors.gray400}
+                    value={eventDate}
+                    onChangeText={setEventDate}
                   />
-                ) : (
-                  <>
+                </View>
+                <View style={[styles.dateTimeRow, { marginTop: 8 }]}>
+                  <TextInput
+                    style={[styles.textInput, { flex: 1 }]}
+                    placeholder="Start (e.g. 19:00)"
+                    placeholderTextColor={colors.gray400}
+                    value={eventStartTime}
+                    onChangeText={setEventStartTime}
+                  />
+                  <TextInput
+                    style={[styles.textInput, { flex: 1 }]}
+                    placeholder="End (optional)"
+                    placeholderTextColor={colors.gray400}
+                    value={eventEndTime}
+                    onChangeText={setEventEndTime}
+                  />
+                </View>
+              </>
+            )}
+
+            <Text style={styles.label}>Place</Text>
+            <HapticPressable
+              style={styles.placeSelector}
+              onPress={() => router.push("./place-search")}
+            >
+              {selectedPlace ? (
+                <>
+                  <View style={styles.selectedPlace}>
                     <Ionicons
-                      name={postType === "photo" ? "camera" : "videocam"}
-                      size={32}
+                      name="location"
+                      size={20}
+                      color={colors.primary}
+                    />
+                    <View style={styles.placeInfo}>
+                      <Text style={styles.selectedPlaceText}>
+                        {selectedPlace.name}
+                      </Text>
+                      <Text style={styles.selectedPlaceAddress}>
+                        {selectedPlace.address}
+                      </Text>
+                    </View>
+                  </View>
+                  <HapticPressable
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      setSelectedPlace(null);
+                    }}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Ionicons
+                      name="close-circle"
+                      size={20}
                       color={colors.gray400}
                     />
-                    <Text style={styles.mediaButtonText}>
-                      Tap to add {postType}
+                  </HapticPressable>
+                </>
+              ) : (
+                <>
+                  <View style={styles.selectedPlace}>
+                    <Ionicons name="search" size={20} color={colors.gray400} />
+                    <Text style={styles.placeholderText}>
+                      Search for a place...
                     </Text>
-                  </>
-                )}
-              </HapticPressable>
+                  </View>
+                  <Ionicons
+                    name="chevron-forward"
+                    size={20}
+                    color={colors.gray400}
+                  />
+                </>
+              )}
+            </HapticPressable>
+
+            {selectedPlace && (
+              <View style={styles.mapPreview}>
+                <MapView
+                  style={styles.map}
+                  initialRegion={{
+                    latitude: selectedPlace.latitude,
+                    longitude: selectedPlace.longitude,
+                    latitudeDelta: 0.01,
+                    longitudeDelta: 0.01,
+                  }}
+                  scrollEnabled={false}
+                  zoomEnabled={false}
+                  pitchEnabled={false}
+                  rotateEnabled={false}
+                >
+                  <Marker
+                    coordinate={{
+                      latitude: selectedPlace.latitude,
+                      longitude: selectedPlace.longitude,
+                    }}
+                    title={selectedPlace.name}
+                  />
+                </MapView>
+              </View>
             )}
-          </>
-        ) : (
-          <>
-            <Text style={styles.label}>Event Title</Text>
+
+            <Text style={styles.label}>
+              {createType === "post"
+                ? "What do you want to share?"
+                : "Description"}
+            </Text>
             <TextInput
-              style={styles.textInput}
-              placeholder="e.g. Live Jazz Night"
+              style={[styles.textInput, { height: 120 }]}
+              placeholder={
+                createType === "post"
+                  ? "Write about this place..."
+                  : "Tell people about this event..."
+              }
               placeholderTextColor={colors.gray400}
-              value={eventTitle}
-              onChangeText={setEventTitle}
+              multiline
+              value={createType === "post" ? content : eventDescription}
+              onChangeText={
+                createType === "post" ? setContent : setEventDescription
+              }
+              textAlignVertical="top"
             />
-
-            <Text style={styles.label}>Category</Text>
-            <View style={styles.typeRow}>
-              {EVENT_CATEGORIES.slice(0, 3).map((item) => (
-                <HapticPressable
-                  key={item.type}
-                  style={[
-                    styles.typeButton,
-                    eventCategory === item.type && styles.typeButtonActive,
-                  ]}
-                  onPress={() => setEventCategory(item.type)}
-                >
-                  <Text
-                    style={[
-                      styles.typeLabel,
-                      eventCategory === item.type && styles.typeLabelActive,
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </HapticPressable>
-              ))}
-            </View>
-            <View style={[styles.typeRow, { marginTop: 8 }]}>
-              {EVENT_CATEGORIES.slice(3).map((item) => (
-                <HapticPressable
-                  key={item.type}
-                  style={[
-                    styles.typeButton,
-                    eventCategory === item.type && styles.typeButtonActive,
-                  ]}
-                  onPress={() => setEventCategory(item.type)}
-                >
-                  <Text
-                    style={[
-                      styles.typeLabel,
-                      eventCategory === item.type && styles.typeLabelActive,
-                    ]}
-                  >
-                    {item.label}
-                  </Text>
-                </HapticPressable>
-              ))}
-            </View>
-
-            <Text style={styles.label}>Date & Time</Text>
-            <View style={styles.dateTimeRow}>
-              <TextInput
-                style={[styles.textInput, { flex: 1 }]}
-                placeholder="YYYY-MM-DD"
-                placeholderTextColor={colors.gray400}
-                value={eventDate}
-                onChangeText={setEventDate}
-              />
-            </View>
-            <View style={[styles.dateTimeRow, { marginTop: 8 }]}>
-              <TextInput
-                style={[styles.textInput, { flex: 1 }]}
-                placeholder="Start (e.g. 19:00)"
-                placeholderTextColor={colors.gray400}
-                value={eventStartTime}
-                onChangeText={setEventStartTime}
-              />
-              <TextInput
-                style={[styles.textInput, { flex: 1 }]}
-                placeholder="End (optional)"
-                placeholderTextColor={colors.gray400}
-                value={eventEndTime}
-                onChangeText={setEventEndTime}
-              />
-            </View>
-          </>
-        )}
-
-        <Text style={styles.label}>Place</Text>
-        <HapticPressable
-          style={styles.placeSelector}
-          onPress={() => router.push("./place-search")}
-        >
-          {selectedPlace ? (
-            <>
-              <View style={styles.selectedPlace}>
-                <Ionicons name="location" size={20} color={colors.primary} />
-                <View style={styles.placeInfo}>
-                  <Text style={styles.selectedPlaceText}>
-                    {selectedPlace.name}
-                  </Text>
-                  <Text style={styles.selectedPlaceAddress}>
-                    {selectedPlace.address}
-                  </Text>
-                </View>
-              </View>
-              <HapticPressable
-                onPress={(e) => {
-                  e.stopPropagation();
-                  setSelectedPlace(null);
-                }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons
-                  name="close-circle"
-                  size={20}
-                  color={colors.gray400}
-                />
-              </HapticPressable>
-            </>
-          ) : (
-            <>
-              <View style={styles.selectedPlace}>
-                <Ionicons name="search" size={20} color={colors.gray400} />
-                <Text style={styles.placeholderText}>
-                  Search for a place...
-                </Text>
-              </View>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={colors.gray400}
-              />
-            </>
-          )}
-        </HapticPressable>
-
-        {selectedPlace && (
-          <View style={styles.mapPreview}>
-            <MapView
-              style={styles.map}
-              initialRegion={{
-                latitude: selectedPlace.latitude,
-                longitude: selectedPlace.longitude,
-                latitudeDelta: 0.01,
-                longitudeDelta: 0.01,
-              }}
-              scrollEnabled={false}
-              zoomEnabled={false}
-              pitchEnabled={false}
-              rotateEnabled={false}
-            >
-              <Marker
-                coordinate={{
-                  latitude: selectedPlace.latitude,
-                  longitude: selectedPlace.longitude,
-                }}
-                title={selectedPlace.name}
-              />
-            </MapView>
           </View>
-        )}
-
-        <Text style={styles.label}>
-          {createType === "post" ? "What do you want to share?" : "Description"}
-        </Text>
-        <TextInput
-          style={[styles.textInput, { height: 120 }]}
-          placeholder={
-            createType === "post"
-              ? "Write about this place..."
-              : "Tell people about this event..."
-          }
-          placeholderTextColor={colors.gray400}
-          multiline
-          value={createType === "post" ? content : eventDescription}
-          onChangeText={
-            createType === "post" ? setContent : setEventDescription
-          }
-          textAlignVertical="top"
-        />
-      </View>
-    </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Full screen progress overlay */}
       <Modal
@@ -572,9 +623,7 @@ export function CreatePostSheetScreen() {
             <Text style={styles.progressText}>
               {createType === "post" ? "Posting..." : "Creating event..."}
             </Text>
-            <Text style={styles.progressSubtext}>
-              This may take a moment
-            </Text>
+            <Text style={styles.progressSubtext}>This may take a moment</Text>
           </View>
         </View>
       </Modal>
