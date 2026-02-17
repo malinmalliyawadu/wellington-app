@@ -18,7 +18,7 @@ export default function SearchIndex() {
           },
         }}
       />
-      <SearchScreen query={searchQuery} />
+      <SearchScreen query={searchQuery} onQueryChange={setSearchQuery} />
     </>
   );
 }

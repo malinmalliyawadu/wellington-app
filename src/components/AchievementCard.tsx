@@ -1,61 +1,74 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { AchievementProgress } from '../types/Exploration';
-import { colors } from '../theme/colors';
+import React from "react";
+import { View, Text, StyleSheet } from "react-native";
+import { AchievementProgress } from "../types/Exploration";
+import { colors } from "../theme/colors";
 
 interface AchievementCardProps {
   achievement: AchievementProgress;
 }
 
 export function AchievementCard({ achievement }: AchievementCardProps) {
-  const { title, description, iconName, badgeColor, unlocked, unlockedAt, currentProgress, requiredProgress } = achievement;
+  const {
+    title,
+    description,
+    iconName,
+    badgeColor,
+    unlocked,
+    unlockedAt,
+    currentProgress,
+    requiredProgress,
+  } = achievement;
 
-  const formattedDate = unlockedAt ? new Date(unlockedAt).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  }) : undefined;
+  const formattedDate = unlockedAt
+    ? new Date(unlockedAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })
+    : undefined;
 
-  const progressPercent = requiredProgress && requiredProgress > 0
-    ? Math.min((currentProgress ?? 0) / requiredProgress, 1)
-    : 0;
+  const progressPercent =
+    requiredProgress && requiredProgress > 0
+      ? Math.min((currentProgress ?? 0) / requiredProgress, 1)
+      : 0;
 
   return (
-    <View style={[styles.card, unlocked && styles.cardUnlocked]}>
-      <View
-        style={[
-          styles.iconContainer,
-          { backgroundColor: unlocked ? badgeColor : colors.gray300 },
-        ]}
-      >
-        <Ionicons
-          name={iconName as any}
-          size={24}
-          color="#fff"
-        />
+    <View style={[styles.card, !unlocked && styles.cardLocked]}>
+      <View style={styles.iconContainer}>
+        <Text style={styles.emoji}>{iconName}</Text>
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.description}>{description}</Text>
+        <View style={styles.header}>
+          <Text
+            style={[styles.title, !unlocked && styles.titleLocked]}
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+          {unlocked && formattedDate && (
+            <Text style={styles.dateText}>{formattedDate}</Text>
+          )}
+        </View>
 
-        {unlocked && formattedDate && (
-          <Text style={styles.unlockedDate}>Unlocked {formattedDate}</Text>
-        )}
+        <Text style={styles.description} numberOfLines={2}>
+          {description}
+        </Text>
 
-        {!unlocked && requiredProgress && requiredProgress > 0 && (
+        {!unlocked && requiredProgress != null && requiredProgress > 0 && (
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
               <View
                 style={[
                   styles.progressFill,
-                  { width: `${progressPercent * 100}%` },
+                  {
+                    width: `${progressPercent * 100}%`,
+                    backgroundColor: badgeColor,
+                  },
                 ]}
               />
             </View>
             <Text style={styles.progressText}>
-              {currentProgress ?? 0} / {requiredProgress}
+              {currentProgress ?? 0}/{requiredProgress}
             </Text>
           </View>
         )}
@@ -66,67 +79,80 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
-    padding: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.gray200,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
   },
-  cardUnlocked: {
-    borderColor: colors.primary,
-    borderWidth: 2,
+  cardLocked: {
+    opacity: 0.55,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+  },
+  emoji: {
+    fontSize: 28,
   },
   content: {
     flex: 1,
+    minHeight: 44,
+    justifyContent: "center",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 2,
   },
   title: {
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
-    marginBottom: 4,
+    flex: 1,
+    marginRight: 8,
+  },
+  titleLocked: {
+    color: colors.textSecondary,
+  },
+  dateText: {
+    fontSize: 13,
+    color: colors.textMuted,
+    fontWeight: "500",
   },
   description: {
     fontSize: 14,
-    color: colors.textSecondary,
-    marginBottom: 8,
-  },
-  unlockedDate: {
-    fontSize: 12,
-    color: colors.primary,
-    fontWeight: '500',
+    color: colors.textMuted,
+    lineHeight: 19,
   },
   progressContainer: {
-    marginTop: 4,
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
   },
   progressBar: {
-    height: 6,
+    flex: 1,
+    height: 4,
     backgroundColor: colors.gray200,
-    borderRadius: 3,
-    overflow: 'hidden',
-    marginBottom: 4,
+    borderRadius: 2,
+    overflow: "hidden",
+    marginRight: 10,
   },
   progressFill: {
-    height: '100%',
-    backgroundColor: colors.primary,
-    borderRadius: 3,
+    height: "100%",
+    borderRadius: 2,
   },
   progressText: {
     fontSize: 12,
     color: colors.textMuted,
-    fontWeight: '500',
+    fontWeight: "600",
+    minWidth: 32,
+    textAlign: "right",
   },
 });

@@ -11,6 +11,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../theme/colors';
 
 export interface ToastConfig {
@@ -123,16 +124,34 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             { transform: [{ translateY }] },
           ]}
         >
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={hideToast}
-            style={[styles.toast, getToastStyle()]}
-          >
-            <Ionicons name={getIcon()} size={24} color="#fff" style={styles.icon} />
-            <Text style={styles.message} numberOfLines={2}>
-              {config.message}
-            </Text>
-          </TouchableOpacity>
+          {config.type === 'achievement' ? (
+            <TouchableOpacity activeOpacity={0.9} onPress={hideToast}>
+              <LinearGradient
+                colors={['#FFD700', '#FFA500']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={[styles.toast, styles.achievementToastGradient]}
+              >
+                <View style={styles.achievementIconContainer}>
+                  <Ionicons name={getIcon()} size={28} color="#fff" />
+                </View>
+                <Text style={[styles.message, styles.achievementMessage]} numberOfLines={2}>
+                  {config.message}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={hideToast}
+              style={[styles.toast, getToastStyle()]}
+            >
+              <Ionicons name={getIcon()} size={24} color="#fff" style={styles.icon} />
+              <Text style={styles.message} numberOfLines={2}>
+                {config.message}
+              </Text>
+            </TouchableOpacity>
+          )}
         </Animated.View>
       )}
     </ToastContext.Provider>
@@ -169,6 +188,32 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFD700',
     borderWidth: 2,
     borderColor: '#FFA500',
+  },
+  achievementToastGradient: {
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    borderRadius: 16,
+    shadowColor: '#FFA500',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  achievementIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 14,
+  },
+  achievementMessage: {
+    fontSize: 16,
+    fontWeight: '700',
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
   },
   errorToast: {
     backgroundColor: '#E74C3C',

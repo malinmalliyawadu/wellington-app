@@ -14,6 +14,15 @@ export default function ProfileLayout() {
         }}
       />
       <Stack.Screen
+        name="achievements"
+        options={{
+          headerShown: true,
+          headerTitle: "Achievements",
+          headerBackTitle: "Profile",
+          headerTransparent: true,
+        }}
+      />
+      <Stack.Screen
         name="user/[userId]"
         options={{
           headerShown: true,

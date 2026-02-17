@@ -21,7 +21,6 @@ import { getFollowCounts } from "../services/follows";
 import { getUnlockedAchievementCount } from "../services/achievements";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { PostsGrid } from "../components/PostsGrid";
-import { AchievementsList } from "../components/AchievementsList";
 import { colors } from "../theme/colors";
 import { HapticPressable } from "src/components/HapticPressable";
 
@@ -167,11 +166,6 @@ export function ProfileScreen() {
               <Text style={styles.statNumber}>{followingCount}</Text>
               <Text style={styles.statLabel}>Following</Text>
             </HapticPressable>
-            <View style={styles.statDivider} />
-            <View style={styles.stat}>
-              <Text style={styles.statNumber}>{achievementCount ?? 0}</Text>
-              <Text style={styles.statLabel}>Achievements</Text>
-            </View>
           </View>
 
           <View style={styles.buttonRow}>
@@ -180,7 +174,7 @@ export function ProfileScreen() {
               variant="secondary"
               size="medium"
               onPress={() => router.push("/profile/edit-profile")}
-              style={{ flex: 1 }}
+              style={{ flex: 1, marginRight: 10 }}
             />
             <LiquidGlassButton
               title="Find People"
@@ -190,6 +184,15 @@ export function ProfileScreen() {
               style={{ flex: 1 }}
             />
           </View>
+
+          <LiquidGlassButton
+            title={`Achievements · ${achievementCount ?? 0} unlocked`}
+            variant="secondary"
+            size="medium"
+            icon="trophy"
+            onPress={() => router.push('/profile/achievements')}
+            style={{ marginTop: 10 }}
+          />
         </View>
 
         <Text style={styles.sectionTitle}>Your Posts</Text>
@@ -198,10 +201,6 @@ export function ProfileScreen() {
           posts={userPosts}
           onPostPress={(postId) => router.push(`/profile/post/${postId}`)}
         />
-
-        <Text style={styles.sectionTitle}>Achievements</Text>
-
-        <AchievementsList userId={currentUser.id} />
       </ScrollView>
     </View>
   );
@@ -290,7 +289,6 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: "row",
     marginTop: 20,
-    gap: 10,
   },
   scrollView: {
     flex: 1,

@@ -21,7 +21,7 @@ import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { PopularityMarker } from "../components/PopularityMarker";
-import { ExplorationOverlay } from "../components/ExplorationOverlay";
+import { FogOfWarOverlay } from "../components/FogOfWarOverlay";
 import { NeighborhoodOverlay } from "../components/NeighborhoodOverlay";
 import { useFollow } from "../context/FollowContext";
 import { useExploration } from "../context/ExplorationContext";
@@ -318,7 +318,14 @@ export function MapScreen() {
     // Set up interval to check periodically (every 30 seconds - throttled for performance)
     const interval = setInterval(checkNearbyPlaces, 30000);
     return () => clearInterval(interval);
-  }, [location, places, showExplorationOverlay, isExplored, markExplored, showToast]);
+  }, [
+    location,
+    places,
+    showExplorationOverlay,
+    isExplored,
+    markExplored,
+    showToast,
+  ]);
 
   const centerOnUser = () => {
     if (location && mapRef.current) {
@@ -353,10 +360,9 @@ export function MapScreen() {
         userInterfaceStyle="light"
       >
         <NeighborhoodOverlay visible={showNeighborhoods} />
-        <ExplorationOverlay
+        <FogOfWarOverlay
           places={filteredPlaces}
           visible={showExplorationOverlay}
-          mapRegion={visibleRegion}
         />
         {!isInitialLoad &&
           filteredPlaces.map((place) => {

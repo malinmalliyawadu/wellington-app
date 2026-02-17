@@ -46,24 +46,38 @@ export async function markPlaceExplored(
  * Get exploration statistics for a user
  */
 export async function getExplorationStats(userId: string): Promise<ExplorationStats> {
-  // Get all explored places with their details
+  // Get explored place IDs
   const { data: explorations, error } = await supabase
     .from('user_explorations')
-    .select('place_id, places(category, latitude, longitude)')
+    .select('place_id')
     .eq('user_id', userId);
 
   if (error) throw error;
 
+  const placeIds = (explorations ?? []).map((e) => e.place_id);
+  if (placeIds.length === 0) {
+    return { totalPlaces: 0, byCategory: {}, byNeighborhood: {} };
+  }
+
+  // Fetch place details separately to avoid PostgREST FK join issues
+  const { data: places, error: placesError } = await supabase
+    .from('places')
+    .select('id, category, latitude, longitude')
+    .in('id', placeIds);
+
+  if (placesError) throw placesError;
+
+  const placesMap = new Map((places ?? []).map((p) => [p.id, p]));
+
   const byCategory: Record<string, number> = {};
   const byNeighborhood: Record<string, number> = {};
 
-  (explorations ?? []).forEach((exploration) => {
-    const place = exploration.places as any;
+  placeIds.forEach((placeId) => {
+    const place = placesMap.get(placeId);
     if (!place) return;
 
     // Count by category
-    const category = place.category;
-    byCategory[category] = (byCategory[category] ?? 0) + 1;
+    byCategory[place.category] = (byCategory[place.category] ?? 0) + 1;
 
     // Count by neighborhood
     const neighborhood = getNeighborhood(place.latitude, place.longitude);
@@ -73,7 +87,7 @@ export async function getExplorationStats(userId: string): Promise<ExplorationSt
   });
 
   return {
-    totalPlaces: explorations?.length ?? 0,
+    totalPlaces: placeIds.length,
     byCategory,
     byNeighborhood,
   };
