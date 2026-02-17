@@ -53,9 +53,42 @@ export function getMarkerSize(
   return MIN_SIZE + t * (MAX_SIZE - MIN_SIZE);
 }
 
+export interface MarkerSizeRange {
+  minScore: number;
+  maxScore: number;
+}
+
+export function getMarkerSizeRange(
+  allPopularities: Map<string, PlacePopularity>
+): MarkerSizeRange {
+  let minScore = Infinity;
+  let maxScore = -Infinity;
+  for (const p of allPopularities.values()) {
+    if (p.score < minScore) minScore = p.score;
+    if (p.score > maxScore) maxScore = p.score;
+  }
+  return { minScore, maxScore };
+}
+
+export function getMarkerSizeWithRange(
+  score: number,
+  range: MarkerSizeRange
+): number {
+  if (range.maxScore === range.minScore) return (MIN_SIZE + MAX_SIZE) / 2;
+  const t = (score - range.minScore) / (range.maxScore - range.minScore);
+  return MIN_SIZE + t * (MAX_SIZE - MIN_SIZE);
+}
+
 export function isFollowedPlace(
   posterIds: string[],
   followingIds: string[]
 ): boolean {
   return posterIds.some((id) => followingIds.includes(id));
+}
+
+export function isFollowedPlaceSet(
+  posterIds: string[],
+  followingSet: Set<string>
+): boolean {
+  return posterIds.some((id) => followingSet.has(id));
 }

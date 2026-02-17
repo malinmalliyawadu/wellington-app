@@ -28,7 +28,7 @@ interface PopularityMarkerProps {
   showLabel?: boolean;
 }
 
-export function PopularityMarker({
+function PopularityMarkerInner({
   size,
   category,
   isFollowed,
@@ -267,6 +267,26 @@ export function PopularityMarker({
     </View>
   );
 }
+
+function arraysEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
+export const PopularityMarker = React.memo(
+  PopularityMarkerInner,
+  (prev, next) =>
+    prev.size === next.size &&
+    prev.category === next.category &&
+    prev.postCount === next.postCount &&
+    prev.isFollowed === next.isFollowed &&
+    prev.placeName === next.placeName &&
+    prev.showLabel === next.showLabel &&
+    arraysEqual(prev.posterAvatars ?? [], next.posterAvatars ?? [])
+);
 
 const styles = StyleSheet.create({
   container: {

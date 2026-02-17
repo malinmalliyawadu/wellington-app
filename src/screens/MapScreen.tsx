@@ -35,8 +35,9 @@ import { getPosts } from "../services/posts";
 import { getProfiles } from "../services/users";
 import {
   computePlacePopularity,
-  getMarkerSize,
-  isFollowedPlace,
+  getMarkerSizeRange,
+  getMarkerSizeWithRange,
+  isFollowedPlaceSet,
 } from "../utils/placePopularity";
 import { Place, User } from "../types";
 import { useRouter } from "expo-router";
@@ -53,6 +54,56 @@ const WELLINGTON_REGION = {
   latitudeDelta: 0.006,
   longitudeDelta: 0.006,
 };
+
+interface MapMarkerItemProps {
+  place: Place;
+  size: number;
+  postCount: number;
+  isFollowed: boolean;
+  posterAvatars: string[];
+  showLabel: boolean;
+  scale: Animated.Value;
+  onPress: (placeId: string) => void;
+}
+
+const MapMarkerItem = React.memo(function MapMarkerItem({
+  place,
+  size,
+  postCount,
+  isFollowed,
+  posterAvatars,
+  showLabel,
+  scale,
+  onPress,
+}: MapMarkerItemProps) {
+  return (
+    <Marker.Animated
+      coordinate={{
+        latitude: place.latitude,
+        longitude: place.longitude,
+      }}
+      anchor={{ x: 0.5, y: showLabel ? 0.35 : 0.5 }}
+      tracksViewChanges={false}
+      onPress={(e) => {
+        e.stopPropagation();
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
+        onPress(place.id);
+      }}
+    >
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <PopularityMarker
+          size={size}
+          category={place.category}
+          postCount={postCount}
+          isFollowed={isFollowed}
+          placeName={place.name}
+          posterAvatars={posterAvatars}
+          showLabel={showLabel}
+        />
+      </Animated.View>
+    </Marker.Animated>
+  );
+});
 
 export function MapScreen() {
   const [location, setLocation] = useState<Location.LocationObject | null>(
@@ -109,14 +160,20 @@ export function MapScreen() {
     (placeId: string) => {
       const path = `/map/place-posts/${placeId}` as const;
       if (router.canDismiss()) {
-        // Sheet is already open, just update the params without navigation animation
         router.setParams({ placeId });
       } else {
-        // No sheet open, push a new one
         router.push(path);
       }
     },
     [router]
+  );
+
+  const handleMarkerPress = useCallback(
+    (placeId: string) => {
+      animateMarkerPress(placeId);
+      openPlaceSheet(placeId);
+    },
+    [animateMarkerPress, openPlaceSheet]
   );
 
   const [visibleRegion, setVisibleRegion] = useState<Region>(WELLINGTON_REGION);
@@ -166,6 +223,11 @@ export function MapScreen() {
     [allPosts]
   );
 
+  const followingSet = useMemo(
+    () => new Set(followingIds),
+    [followingIds]
+  );
+
   const filteredPlaces = useMemo(() => {
     return allPlaces.filter((place) => {
       if (
@@ -176,7 +238,7 @@ export function MapScreen() {
       }
       if (showFollowingOnly) {
         const posterIds = popularityMap.get(place.id)?.posterIds ?? [];
-        if (!isFollowedPlace(posterIds, followingIds)) {
+        if (!isFollowedPlaceSet(posterIds, followingSet)) {
           return false;
         }
       }
@@ -187,7 +249,7 @@ export function MapScreen() {
     selectedCategories,
     showFollowingOnly,
     popularityMap,
-    followingIds,
+    followingSet,
   ]);
 
   const annotatedPlaceIds = useMemo(() => {
@@ -248,8 +310,41 @@ export function MapScreen() {
     return new Set(selected.map((s) => s.id));
   }, [filteredPlaces, visibleRegion, popularityMap, mapLayout]);
 
+  const baseMarkerDataMap = useMemo(() => {
+    const sizeRange = getMarkerSizeRange(popularityMap);
+    const map = new Map<
+      string,
+      {
+        size: number;
+        isFollowed: boolean;
+        postCount: number;
+        posterAvatars: string[];
+      }
+    >();
+    for (const place of filteredPlaces) {
+      const popularity = popularityMap.get(place.id);
+      const score = popularity?.score ?? 1;
+      const posterIds = popularity?.posterIds ?? [];
+      const posterAvatars = posterIds
+        .slice(0, 8)
+        .map((uid) => userMap.get(uid)?.avatarUrl)
+        .filter((url): url is string => !!url);
+      map.set(place.id, {
+        size: getMarkerSizeWithRange(score, sizeRange),
+        isFollowed: isFollowedPlaceSet(posterIds, followingSet),
+        postCount: popularity?.postCount ?? 0,
+        posterAvatars,
+      });
+    }
+    return map;
+  }, [filteredPlaces, popularityMap, followingSet, userMap]);
+
+  const regionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleRegionChangeComplete = useCallback((region: Region) => {
-    setVisibleRegion(region);
+    if (regionTimerRef.current) clearTimeout(regionTimerRef.current);
+    regionTimerRef.current = setTimeout(() => {
+      setVisibleRegion(region);
+    }, 150);
   }, []);
 
   const handleMapLayout = useCallback((e: LayoutChangeEvent) => {
@@ -378,50 +473,20 @@ export function MapScreen() {
         />
         {!isInitialLoad &&
           filteredPlaces.map((place) => {
-            const popularity = popularityMap.get(place.id);
-            const score = popularity?.score ?? 1;
-            const postCount = popularity?.postCount ?? 0;
-            const posterIds = popularity?.posterIds ?? [];
-            const size = getMarkerSize(score, popularityMap);
-            const followed = isFollowedPlace(posterIds, followingIds);
-            const showLabel = annotatedPlaceIds.has(place.id);
-
-            // Get poster avatars
-            const posterAvatars = posterIds
-              .slice(0, 8)
-              .map((uid) => userMap.get(uid)?.avatarUrl)
-              .filter((url): url is string => !!url);
-
-            const scale = getMarkerScale(place.id);
-
+            const data = baseMarkerDataMap.get(place.id);
+            if (!data) return null;
             return (
-              <Marker.Animated
+              <MapMarkerItem
                 key={place.id}
-                coordinate={{
-                  latitude: place.latitude,
-                  longitude: place.longitude,
-                }}
-                anchor={{ x: 0.5, y: showLabel ? 0.35 : 0.5 }}
-                tracksViewChanges={false}
-                onPress={(e) => {
-                  e.stopPropagation();
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
-                  animateMarkerPress(place.id);
-                  openPlaceSheet(place.id);
-                }}
-              >
-                <Animated.View style={{ transform: [{ scale }] }}>
-                  <PopularityMarker
-                    size={size}
-                    category={place.category}
-                    postCount={postCount}
-                    isFollowed={followed}
-                    placeName={place.name}
-                    posterAvatars={posterAvatars}
-                    showLabel={showLabel}
-                  />
-                </Animated.View>
-              </Marker.Animated>
+                place={place}
+                size={data.size}
+                postCount={data.postCount}
+                isFollowed={data.isFollowed}
+                posterAvatars={data.posterAvatars}
+                showLabel={annotatedPlaceIds.has(place.id)}
+                scale={getMarkerScale(place.id)}
+                onPress={handleMarkerPress}
+              />
             );
           })}
       </MapView>
