@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { FollowProvider } from '../src/context/FollowContext';
 import { LikeProvider } from '../src/context/LikeContext';
@@ -30,21 +31,23 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <FollowProvider>
-          <LikeProvider>
-            <ToastProvider>
-              <ExplorationProvider>
-                <AuthGate>
-                  <Slot />
-                </AuthGate>
-                <StatusBar style="auto" />
-              </ExplorationProvider>
-            </ToastProvider>
-          </LikeProvider>
-        </FollowProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <FollowProvider>
+            <LikeProvider>
+              <ToastProvider>
+                <ExplorationProvider>
+                  <AuthGate>
+                    <Slot />
+                  </AuthGate>
+                  <StatusBar style="auto" />
+                </ExplorationProvider>
+              </ToastProvider>
+            </LikeProvider>
+          </FollowProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

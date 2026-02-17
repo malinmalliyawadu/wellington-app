@@ -37,7 +37,7 @@ export function PopularityMarker({
   showLabel = false,
 }: PopularityMarkerProps) {
   const color = colors.category[category];
-  const iconSize = size < 36 ? 14 : 18;
+  const iconSize = Math.round(size * 0.45);
   const iconName = CATEGORY_ICONS[category];
 
   const renderMarker = () => {
@@ -346,8 +346,7 @@ const styles = StyleSheet.create({
   },
   labelName: {
     fontSize: 11,
-    fontWeight: "700",
-    color: colors.text,
+    fontWeight: "500",
     textAlign: "center",
   },
   avatarRow: {

@@ -22,7 +22,7 @@ export function DiscoverUsersScreen() {
   const { profile } = useAuth();
 
   const fetchUsers = useCallback(() => getOtherProfiles(profile?.id ?? ''), [profile?.id]);
-  const { data: otherUsers, loading } = useQuery(fetchUsers);
+  const { data: otherUsers, loading } = useQuery(fetchUsers, profile?.id);
   const allUsers = otherUsers ?? [];
 
   // Show unfollowed users first, then followed users

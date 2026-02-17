@@ -27,3 +27,17 @@ export async function unlikePost(userId: string, postId: string): Promise<void> 
 
   if (error) throw error;
 }
+
+export async function getAllLikeCounts(): Promise<Record<string, number>> {
+  const { data, error } = await supabase
+    .from('post_likes')
+    .select('post_id');
+
+  if (error) throw error;
+
+  const counts: Record<string, number> = {};
+  for (const row of data ?? []) {
+    counts[row.post_id] = (counts[row.post_id] ?? 0) + 1;
+  }
+  return counts;
+}

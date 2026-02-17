@@ -18,12 +18,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSequence,
-  withSpring,
-} from "react-native-reanimated";
+import Animated from "react-native-reanimated";
+import { TapGestureHandler, State } from "react-native-gesture-handler";
 import { getPostById as getPostByIdAsync } from "../services/posts";
 import { getProfileById, getProfilesByIds } from "../services/users";
 import { getPlaceById as getPlaceByIdAsync } from "../services/places";
@@ -34,7 +30,7 @@ import {
   deleteComment,
 } from "../services/comments";
 import { useQuery } from "../hooks/useQuery";
-import { useLike } from "../context/LikeContext";
+import { useDoubleTapLike } from "../hooks/useDoubleTapLike";
 import { useAuth } from "../context/AuthContext";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { colors } from "../theme/colors";
@@ -58,7 +54,6 @@ export function PostDetailScreen() {
   const headerHeight = useHeaderHeight();
   const router = useRouter();
   const pathname = usePathname();
-  const { isLiked, toggleLike, getLikeCount } = useLike();
   const { profile } = useAuth();
   const inputRef = useRef<TextInput>(null);
   const [commentText, setCommentText] = useState("");
@@ -68,10 +63,15 @@ export function PostDetailScreen() {
   const { data: post, loading } = useQuery(fetchPost);
   const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
 
-  const likeScale = useSharedValue(1);
-  const likeAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: likeScale.value }],
-  }));
+  const {
+    liked,
+    likeCount,
+    doubleTapRef,
+    likeAnimatedStyle,
+    heartOverlayStyle,
+    handleLike,
+    handleDoubleTap,
+  } = useDoubleTapLike(postId);
 
   const fetchUser = useCallback(
     () => (post ? getProfileById(post.userId) : Promise.resolve(null)),
@@ -124,8 +124,6 @@ export function PostDetailScreen() {
   if (!post) return null;
 
   const allComments = comments ?? [];
-  const liked = isLiked(post.id);
-  const likeCount = getLikeCount(post.id);
   const categoryColor = place
     ? colors.category[place.category]
     : colors.gray400;
@@ -143,14 +141,6 @@ export function PostDetailScreen() {
 
   const handlePressPlace = (placeId: string) => {
     router.push(`${currentTab}/place/${placeId}` as any);
-  };
-
-  const handleLike = () => {
-    likeScale.value = withSequence(
-      withSpring(1.3, { damping: 4, stiffness: 300 }),
-      withSpring(1, { damping: 6, stiffness: 200 })
-    );
-    toggleLike(post.id);
   };
 
   const handleSubmitComment = async () => {
@@ -225,50 +215,68 @@ export function PostDetailScreen() {
           </HapticPressable>
         )}
 
-        {/* Media with overlaid header */}
+        {/* Media with overlaid header + double-tap to like */}
         {hasMedia && (
-          <View>
-            {post.type === "video" ? (
-              <VideoPlayer
-                uri={post.mediaUrl!}
-                style={[styles.media, { aspectRatio }]}
-                shouldPlay
-                useNativeControls
-                onLoad={handleVideoLoad}
-              />
-            ) : (
-              <Image
-                source={{ uri: post.mediaUrl }}
-                style={[styles.media, { aspectRatio }]}
-                onLoad={handleImageLoad}
-              />
-            )}
-            <LinearGradient
-              colors={["rgba(0,0,0,0.55)", "transparent"]}
-              style={styles.headerOverlay}
-            >
-              <HapticPressable
-                style={styles.overlaidHeaderUser}
-                onPress={() => handlePressUser(post.userId)}
-              >
-                <Image
-                  source={{ uri: user?.avatarUrl }}
-                  style={styles.overlaidAvatar}
+          <TapGestureHandler
+            ref={doubleTapRef}
+            numberOfTaps={2}
+            onHandlerStateChange={({ nativeEvent }) => {
+              if (nativeEvent.state === State.ACTIVE) {
+                handleDoubleTap();
+              }
+            }}
+          >
+            <View>
+              {post.type === "video" ? (
+                <VideoPlayer
+                  uri={post.mediaUrl!}
+                  style={[styles.media, { aspectRatio }]}
+                  shouldPlay
+                  useNativeControls
+                  onLoad={handleVideoLoad}
                 />
-                <View style={styles.headerText}>
-                  <Text style={styles.overlaidDisplayName}>
-                    {user?.displayName ?? "Unknown"}
-                  </Text>
-                  <Text style={styles.overlaidUsername}>
-                    @{user?.username ?? "unknown"}
-                  </Text>
-                </View>
-              </HapticPressable>
-              <Text style={styles.overlaidTimeAgo}>
-                {formatTimeAgo(post.createdAt)}
-              </Text>
-            </LinearGradient>
-          </View>
+              ) : (
+                <Image
+                  source={{ uri: post.mediaUrl }}
+                  style={[styles.media, { aspectRatio }]}
+                  onLoad={handleImageLoad}
+                />
+              )}
+              <LinearGradient
+                colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0.05)", "transparent"]}
+                locations={[0, 0.6, 0.7]}
+                style={styles.headerOverlay}
+              >
+                <HapticPressable
+                  style={styles.overlaidHeaderUser}
+                  onPress={() => handlePressUser(post.userId)}
+                >
+                  <Image
+                    source={{ uri: user?.avatarUrl }}
+                    style={styles.overlaidAvatar}
+                  />
+                  <View style={styles.headerText}>
+                    <Text style={styles.overlaidDisplayName}>
+                      {user?.displayName ?? "Unknown"}
+                    </Text>
+                    <Text style={styles.overlaidUsername}>
+                      @{user?.username ?? "unknown"}
+                    </Text>
+                  </View>
+                </HapticPressable>
+                <Text style={styles.overlaidTimeAgo}>
+                  {formatTimeAgo(post.createdAt)}
+                </Text>
+              </LinearGradient>
+              {/* Double-tap heart overlay */}
+              <Animated.View
+                style={[styles.heartOverlay, heartOverlayStyle]}
+                pointerEvents="none"
+              >
+                <Ionicons name="heart" size={80} color="#FFFFFF" />
+              </Animated.View>
+            </View>
+          </TapGestureHandler>
         )}
 
         {/* Actions row */}
@@ -511,7 +519,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: 12,
     paddingHorizontal: 12,
-    paddingBottom: 32,
+    paddingBottom: 60,
   },
   overlaidHeaderUser: {
     flexDirection: "row",
@@ -551,6 +559,11 @@ const styles = StyleSheet.create({
   media: {
     width: "100%",
     backgroundColor: colors.gray200,
+  },
+  heartOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
   },
   // Action bar
   actions: {

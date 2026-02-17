@@ -427,7 +427,7 @@ export function MapScreen() {
       </MapView>
 
       {isInitialLoad && (
-        <View style={[styles.loadingOverlay, { top: insets.top + 16 }]}>
+        <View style={[styles.loadingOverlay, { top: insets.top + 106 }]}>
           <BlurView intensity={15} tint="light" style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={colors.primary} />
             <Text style={styles.loadingText}>Loading places...</Text>
@@ -532,7 +532,9 @@ export function MapScreen() {
 
               <HapticPressable
                 style={[styles.controlButton]}
-                onPress={() => setShowExplorationOverlay(!showExplorationOverlay)}
+                onPress={() =>
+                  setShowExplorationOverlay(!showExplorationOverlay)
+                }
               >
                 <Ionicons
                   name={showExplorationOverlay ? "eye" : "eye-outline"}

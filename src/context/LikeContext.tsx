@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { getLikedPostIds, likePost, unlikePost } from '../services/likes';
+import { getLikedPostIds, likePost, unlikePost, getAllLikeCounts } from '../services/likes';
 
 interface LikeContextType {
   isLiked: (postId: string) => boolean;
@@ -24,6 +24,10 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
 
     getLikedPostIds(currentUserId)
       .then(setLikedPostIds)
+      .catch(() => {});
+
+    getAllLikeCounts()
+      .then(setLikeCounts)
       .catch(() => {});
   }, [currentUserId]);
 
@@ -71,19 +75,6 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
     (postId: string) => likeCounts[postId] ?? 0,
     [likeCounts]
   );
-
-  // Helper to initialize like counts from fetched posts
-  const initLikeCounts = useCallback((posts: Array<{ id: string; likes: number }>) => {
-    setLikeCounts((prev) => {
-      const next = { ...prev };
-      for (const post of posts) {
-        if (!(post.id in next)) {
-          next[post.id] = post.likes;
-        }
-      }
-      return next;
-    });
-  }, []);
 
   return (
     <LikeContext.Provider value={{ isLiked, toggleLike, getLikeCount }}>

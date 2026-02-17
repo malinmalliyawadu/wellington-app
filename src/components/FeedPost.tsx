@@ -2,15 +2,11 @@ import React, { useCallback, useState } from "react";
 import { View, Text, Image, StyleSheet, Share } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSequence,
-  withSpring,
-} from "react-native-reanimated";
+import Animated from "react-native-reanimated";
+import { TapGestureHandler, State } from "react-native-gesture-handler";
 import { Post, User, Place, PlaceCategory } from "../types";
-import { useLike } from "../context/LikeContext";
 import { useQuery } from "../hooks/useQuery";
+import { useDoubleTapLike } from "../hooks/useDoubleTapLike";
 import { getCommentsByPostId } from "../services/comments";
 import { VideoPlayer } from "./VideoPlayer";
 import { colors } from "../theme/colors";
@@ -59,8 +55,15 @@ export function FeedPost({
   onPressPost,
 }: FeedPostProps) {
   const categoryColor = colors.category[place.category];
-  const { isLiked, toggleLike, getLikeCount } = useLike();
-  const liked = isLiked(post.id);
+  const {
+    liked,
+    likeCount,
+    doubleTapRef,
+    likeAnimatedStyle,
+    heartOverlayStyle,
+    handleLike,
+    handleDoubleTap,
+  } = useDoubleTapLike(post.id);
   const fetchComments = useCallback(
     () => getCommentsByPostId(post.id),
     [post.id]
@@ -70,19 +73,6 @@ export function FeedPost({
   const [aspectRatio, setAspectRatio] = useState<number>(
     post.type === "video" ? 16 / 9 : 1
   );
-
-  const likeScale = useSharedValue(1);
-  const likeAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: likeScale.value }],
-  }));
-
-  const handleLike = () => {
-    likeScale.value = withSequence(
-      withSpring(1.3, { damping: 4, stiffness: 300 }),
-      withSpring(1, { damping: 6, stiffness: 200 })
-    );
-    toggleLike(post.id);
-  };
 
   const handleImageLoad = (event: any) => {
     const { width, height } = event.nativeEvent.source;
@@ -120,56 +110,80 @@ export function FeedPost({
         </View>
       )}
 
-      {/* Media with overlaid header */}
+      {/* Media with overlaid header + double-tap to like */}
       {hasMedia && (
-        <HapticPressable
-          onPress={() => onPressPost?.(post.id)}
-          disabled={!onPressPost}
+        <TapGestureHandler
+          ref={doubleTapRef}
+          numberOfTaps={2}
+          onHandlerStateChange={({ nativeEvent }) => {
+            if (nativeEvent.state === State.ACTIVE) {
+              handleDoubleTap();
+            }
+          }}
         >
-          <View>
-            {post.type === "video" ? (
-              <VideoPlayer
-                uri={post.mediaUrl!}
-                style={[styles.media, { aspectRatio }]}
-                shouldPlay
-                isMuted
-                isLooping
-                onLoad={handleVideoLoad}
-              />
-            ) : (
-              <Image
-                source={{ uri: post.mediaUrl }}
-                style={[styles.media, { aspectRatio }]}
-                onLoad={handleImageLoad}
-              />
-            )}
-            {/* Gradient scrim + overlaid header */}
-            <LinearGradient
-              colors={["rgba(0,0,0,0.55)", "transparent"]}
-              style={styles.headerOverlay}
-            >
-              <HapticPressable
-                style={styles.overlaidHeaderUser}
-                onPress={() => onPressUser?.(user.id)}
-                disabled={!onPressUser}
-              >
-                <Image
-                  source={{ uri: user.avatarUrl }}
-                  style={styles.overlaidAvatar}
+          <TapGestureHandler
+            waitFor={doubleTapRef}
+            onHandlerStateChange={({ nativeEvent }) => {
+              if (nativeEvent.state === State.ACTIVE && onPressPost) {
+                onPressPost(post.id);
+              }
+            }}
+          >
+            <View>
+              {post.type === "video" ? (
+                <VideoPlayer
+                  uri={post.mediaUrl!}
+                  style={[styles.media, { aspectRatio }]}
+                  shouldPlay
+                  isMuted
+                  isLooping
+                  onLoad={handleVideoLoad}
                 />
-                <View style={styles.headerText}>
-                  <Text style={styles.overlaidDisplayName}>
-                    {user.displayName}
-                  </Text>
-                  <Text style={styles.overlaidUsername}>@{user.username}</Text>
-                </View>
-              </HapticPressable>
-              <Text style={styles.overlaidTimeAgo}>
-                {formatTimeAgo(post.createdAt)}
-              </Text>
-            </LinearGradient>
-          </View>
-        </HapticPressable>
+              ) : (
+                <Image
+                  source={{ uri: post.mediaUrl }}
+                  style={[styles.media, { aspectRatio }]}
+                  onLoad={handleImageLoad}
+                />
+              )}
+              {/* Gradient scrim + overlaid header */}
+              <LinearGradient
+                colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0.05)", "transparent"]}
+                locations={[0, 0.6, 0.7]}
+                style={styles.headerOverlay}
+              >
+                <HapticPressable
+                  style={styles.overlaidHeaderUser}
+                  onPress={() => onPressUser?.(user.id)}
+                  disabled={!onPressUser}
+                >
+                  <Image
+                    source={{ uri: user.avatarUrl }}
+                    style={styles.overlaidAvatar}
+                  />
+                  <View style={styles.headerText}>
+                    <Text style={styles.overlaidDisplayName}>
+                      {user.displayName}
+                    </Text>
+                    <Text style={styles.overlaidUsername}>
+                      @{user.username}
+                    </Text>
+                  </View>
+                </HapticPressable>
+                <Text style={styles.overlaidTimeAgo}>
+                  {formatTimeAgo(post.createdAt)}
+                </Text>
+              </LinearGradient>
+              {/* Double-tap heart overlay */}
+              <Animated.View
+                style={[styles.heartOverlay, heartOverlayStyle]}
+                pointerEvents="none"
+              >
+                <Ionicons name="heart" size={80} color="#FFFFFF" />
+              </Animated.View>
+            </View>
+          </TapGestureHandler>
+        </TapGestureHandler>
       )}
 
       {/* Content */}
@@ -183,13 +197,13 @@ export function FeedPost({
         onPress={() => onPressPlace?.(place.id)}
         disabled={!onPressPlace}
       >
-        <Ionicons name="location" size={16} color={categoryColor} />
-        <Text style={styles.locationName}>{place.name}</Text>
         <Ionicons
-          name="chevron-forward"
-          size={14}
-          color={colors.textMuted}
+          name={CATEGORY_ICONS[place.category]}
+          size={16}
+          color={categoryColor}
         />
+        <Text style={styles.locationName}>{place.name}</Text>
+        <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
       </HapticPressable>
 
       {/* Action bar */}
@@ -210,7 +224,7 @@ export function FeedPost({
             <Text
               style={[styles.actionCount, liked && { color: colors.liked }]}
             >
-              {getLikeCount(post.id)}
+              {likeCount}
             </Text>
           </HapticPressable>
           <HapticPressable
@@ -219,11 +233,7 @@ export function FeedPost({
             disabled={!onPressPost}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons
-              name="chatbubble-outline"
-              size={22}
-              color={colors.text}
-            />
+            <Ionicons name="chatbubble-outline" size={22} color={colors.text} />
             <Text style={styles.actionCount}>{commentCount}</Text>
           </HapticPressable>
           <HapticPressable
@@ -299,7 +309,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: 12,
     paddingHorizontal: 12,
-    paddingBottom: 32,
+    paddingBottom: 60,
   },
   overlaidHeaderUser: {
     flexDirection: "row",
@@ -339,6 +349,11 @@ const styles = StyleSheet.create({
   media: {
     width: "100%",
     backgroundColor: colors.gray200,
+  },
+  heartOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
     paddingHorizontal: 12,
@@ -387,7 +402,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   divider: {
-    height: 1,
-    backgroundColor: colors.gray200,
+    height: 5,
+    backgroundColor: colors.gray100,
   },
 });
