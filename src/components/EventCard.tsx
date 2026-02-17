@@ -135,24 +135,28 @@ export function EventCard({
         </View>
 
         {/* Date badge (top-right) */}
-        <View
-          style={[styles.dateBadge, !glassEnabled && styles.dateBadgeFallback]}
-        >
-          {glassEnabled && (
-            <GlassView
-              glassEffectStyle="regular"
-              style={[StyleSheet.absoluteFill, { borderRadius: 10 }]}
-            />
-          )}
-          <Text
-            style={[styles.dateMonth, glassEnabled && styles.dateMonthGlass]}
+        {glassEnabled ? (
+          <GlassView
+            glassEffectStyle="regular"
+            style={styles.dateBadge}
           >
-            {getMonth(event.date)}
-          </Text>
-          <Text style={[styles.dateDay, glassEnabled && styles.dateDayGlass]}>
-            {getDay(event.date)}
-          </Text>
-        </View>
+            <Text style={[styles.dateMonth, styles.dateMonthGlass]}>
+              {getMonth(event.date)}
+            </Text>
+            <Text style={[styles.dateDay, styles.dateDayGlass]}>
+              {getDay(event.date)}
+            </Text>
+          </GlassView>
+        ) : (
+          <View style={[styles.dateBadge, styles.dateBadgeFallback]}>
+            <Text style={styles.dateMonth}>
+              {getMonth(event.date)}
+            </Text>
+            <Text style={styles.dateDay}>
+              {getDay(event.date)}
+            </Text>
+          </View>
+        )}
 
         {/* Title overlaid on bottom */}
         <Text style={styles.title} numberOfLines={2}>

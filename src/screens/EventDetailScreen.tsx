@@ -202,21 +202,20 @@ export function EventDetailScreen() {
               />
 
               {/* Date badge (top-right) */}
-              <View
-                style={[
-                  styles.heroDateBadge,
-                  !glassEnabled && styles.heroDateBadgeFallback,
-                ]}
-              >
-                {glassEnabled && (
-                  <GlassView
-                    glassEffectStyle="regular"
-                    style={[StyleSheet.absoluteFill, { borderRadius: 10 }]}
-                  />
-                )}
-                <Text style={[styles.heroDateMonth, glassEnabled && styles.heroDateMonthGlass]}>{getMonth(event.date)}</Text>
-                <Text style={[styles.heroDateDay, glassEnabled && styles.heroDateDayGlass]}>{getDay(event.date)}</Text>
-              </View>
+              {glassEnabled ? (
+                <GlassView
+                  glassEffectStyle="regular"
+                  style={styles.heroDateBadge}
+                >
+                  <Text style={[styles.heroDateMonth, styles.heroDateMonthGlass]}>{getMonth(event.date)}</Text>
+                  <Text style={[styles.heroDateDay, styles.heroDateDayGlass]}>{getDay(event.date)}</Text>
+                </GlassView>
+              ) : (
+                <View style={[styles.heroDateBadge, styles.heroDateBadgeFallback]}>
+                  <Text style={styles.heroDateMonth}>{getMonth(event.date)}</Text>
+                  <Text style={styles.heroDateDay}>{getDay(event.date)}</Text>
+                </View>
+              )}
 
               {/* Title overlaid on bottom */}
               <Text style={styles.heroTitle} numberOfLines={3}>

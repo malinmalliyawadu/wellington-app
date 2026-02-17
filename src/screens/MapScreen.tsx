@@ -436,17 +436,8 @@ export function MapScreen() {
       )}
 
       <View style={[styles.controlsWrapper, { top: insets.top + 8 }]}>
-        <View style={styles.controlsContainer}>
-          {glassEnabled ? (
-            <GlassView style={styles.controlsGlass} />
-          ) : (
-            <BlurView
-              intensity={10}
-              tint="light"
-              style={styles.controlsBlurBg}
-            />
-          )}
-          <View style={styles.controlsInner}>
+        {glassEnabled ? (
+          <GlassView style={styles.controlsGlass}>
             <HapticPressable
               style={[
                 styles.controlButton,
@@ -500,8 +491,71 @@ export function MapScreen() {
                 color={location ? colors.primary : colors.text}
               />
             </HapticPressable>
+          </GlassView>
+        ) : (
+          <View style={styles.controlsContainer}>
+            <BlurView
+              intensity={10}
+              tint="light"
+              style={styles.controlsBlurBg}
+            />
+            <View style={styles.controlsInner}>
+              <HapticPressable
+                style={[
+                  styles.controlButton,
+                  styles.controlButtonTop,
+                  activeFilterCount > 0 && styles.controlButtonActive,
+                ]}
+                onPress={openFilters}
+              >
+                <Ionicons
+                  name="options"
+                  size={22}
+                  color={activeFilterCount > 0 ? "#FFFFFF" : colors.text}
+                />
+              </HapticPressable>
+
+              <View style={styles.controlDivider} />
+
+              <HapticPressable
+                style={[styles.controlButton]}
+                onPress={() => setShowNeighborhoods(!showNeighborhoods)}
+              >
+                <Ionicons
+                  name={showNeighborhoods ? "map" : "map-outline"}
+                  size={22}
+                  color={showNeighborhoods ? colors.primary : colors.text}
+                />
+              </HapticPressable>
+
+              <View style={styles.controlDivider} />
+
+              <HapticPressable
+                style={[styles.controlButton]}
+                onPress={() => setShowExplorationOverlay(!showExplorationOverlay)}
+              >
+                <Ionicons
+                  name={showExplorationOverlay ? "eye" : "eye-outline"}
+                  size={22}
+                  color={showExplorationOverlay ? colors.primary : colors.text}
+                />
+              </HapticPressable>
+
+              <View style={styles.controlDivider} />
+
+              <HapticPressable
+                style={[styles.controlButton, styles.controlButtonBottom]}
+                onPress={centerOnUser}
+              >
+                <Ionicons
+                  name={location ? "navigate" : "navigate-outline"}
+                  size={22}
+                  color={location ? colors.primary : colors.text}
+                />
+              </HapticPressable>
+            </View>
           </View>
-        </View>
+        )}
         {activeFilterCount > 0 && (
           <View style={styles.filterBadge}>
             <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
@@ -531,8 +585,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 64,
+    paddingVertical: 40,
     backgroundColor: "rgba(255, 255, 255, 0.15)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.4)",
@@ -564,8 +618,14 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   controlsGlass: {
-    ...StyleSheet.absoluteFillObject,
+    width: 44,
     borderRadius: 18,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
   controlsBlurBg: {
     ...StyleSheet.absoluteFillObject,

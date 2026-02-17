@@ -79,8 +79,6 @@ export function LiquidGlassButton({
         onPress={onPress}
         disabled={isDisabled}
         style={[
-          styles.button,
-          sizeStyles.container,
           { opacity: isDisabled ? 0.6 : 1 },
           fullWidth && styles.fullWidth,
           style,
@@ -90,27 +88,28 @@ export function LiquidGlassButton({
           isInteractive
           glassEffectStyle="regular"
           style={[
-            StyleSheet.absoluteFill,
-            { borderRadius: sizeStyles.container.borderRadius },
+            styles.button,
+            sizeStyles.container,
           ]}
-        />
-        {loading ? (
-          <ActivityIndicator size="small" color={labelColor} />
-        ) : (
-          <>
-            {icon && (
-              <Ionicons
-                name={icon}
-                size={iconSize}
-                color={labelColor}
-                style={styles.icon}
-              />
-            )}
-            <Text style={[styles.text, sizeStyles.text, { color: labelColor }]}>
-              {title}
-            </Text>
-          </>
-        )}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color={labelColor} />
+          ) : (
+            <>
+              {icon && (
+                <Ionicons
+                  name={icon}
+                  size={iconSize}
+                  color={labelColor}
+                  style={styles.icon}
+                />
+              )}
+              <Text style={[styles.text, sizeStyles.text, { color: labelColor }]}>
+                {title}
+              </Text>
+            </>
+          )}
+        </GlassView>
       </HapticPressable>
     );
   }
