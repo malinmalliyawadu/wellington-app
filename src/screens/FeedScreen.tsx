@@ -1,17 +1,14 @@
-import React, { useCallback, useMemo, useState, useRef } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
   FlatList,
   StyleSheet,
   RefreshControl,
-  Animated,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { FeedPost } from "../components/FeedPost";
 import { useFollow } from "../context/FollowContext";
 import { useAuth } from "../context/AuthContext";
@@ -24,15 +21,12 @@ import { sortPosts } from "../utils/postSorting";
 import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 
-const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
-
 export function FeedScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { followingIds } = useFollow();
   const { profile } = useAuth();
-  const scrollY = useRef(new Animated.Value(0)).current;
-
+  const headerHeight = useHeaderHeight();
   const fetchFeedPosts = useCallback(
     () => getFeedPosts(followingIds, profile?.id),
     [followingIds, profile?.id]
@@ -94,18 +88,9 @@ export function FeedScreen() {
     router.push(`/feed/post/${postId}`);
   };
 
-  const headerHeight = insets.top + 84; // insets.top + header padding + title height
-
-  // Animate header opacity based on scroll position
-  const headerOpacity = scrollY.interpolate({
-    inputRange: [0, 50],
-    outputRange: [0.95, 0.95],
-    extrapolate: "clamp",
-  });
-
   return (
     <View style={styles.container}>
-      <Animated.FlatList
+      <FlatList
         data={postsWithData}
         keyExtractor={(item) => item.post.id}
         renderItem={({ item }) => (
@@ -127,15 +112,10 @@ export function FeedScreen() {
         }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: headerHeight - 60,
+          paddingTop: headerHeight,
           paddingBottom: insets.bottom + 40,
           flexGrow: 1,
         }}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-        scrollEventThrottle={16}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyTitle}>Your feed is empty</Text>
@@ -152,45 +132,6 @@ export function FeedScreen() {
         }
       />
 
-      <Animated.View
-        style={[
-          styles.headerContainer,
-          {
-            paddingTop: insets.top,
-            height: headerHeight,
-            opacity: headerOpacity,
-          },
-        ]}
-      >
-        <BlurView
-          intensity={80}
-          tint="regular"
-          style={{
-            ...StyleSheet.absoluteFillObject,
-            backgroundColor: "transparent",
-          }}
-        >
-          <LinearGradient
-            colors={["rgba(255,255,255,0.3)", "rgba(255,255,255,0)"]}
-            style={StyleSheet.absoluteFill}
-          />
-        </BlurView>
-        <View style={styles.header}>
-          <View style={styles.titleRow}>
-            <View>
-              <Text style={styles.title}>Feed</Text>
-              <Text style={styles.subtitle}>From people you follow</Text>
-            </View>
-            <HapticPressable
-              style={styles.headerButton}
-              onPress={() => router.push("/feed/discover")}
-            >
-              <Ionicons name="people-outline" size={24} color={colors.text} />
-            </HapticPressable>
-          </View>
-        </View>
-      </Animated.View>
-
       <FloatingCreateButton />
     </View>
   );
@@ -199,46 +140,7 @@ export function FeedScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  headerContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    overflow: "hidden",
-  },
-  header: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  titleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  headerButton: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: colors.background,
   },
   emptyState: {
     alignItems: "center",

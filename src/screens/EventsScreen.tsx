@@ -1,20 +1,17 @@
-import React, { useMemo, useCallback, useRef } from "react";
+import React, { useMemo, useCallback } from "react";
 import {
   View,
   Text,
   FlatList,
-  Pressable,
   StyleSheet,
   ActivityIndicator,
-  Animated,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useNavigation } from "expo-router";
 import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
-import { BlurView } from "expo-blur";
 import { EventCard } from "../components/EventCard";
 import { getUpcomingEvents } from "../services/events";
 import { getPlaces } from "../services/places";
@@ -68,7 +65,7 @@ export function EventsScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const { isFollowing } = useFollow();
-  const scrollY = useRef(new Animated.Value(0)).current;
+  const headerHeight = useHeaderHeight();
   const { selectedDateRange, selectedCategories, showFollowingOnly } =
     useEventFilters();
 
@@ -144,8 +141,6 @@ export function EventsScreen() {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
-  const headerHeight = insets.top + (activeFilterCount > 0 ? 104 : 84); // Adjust for filter summary
-
   if (loadingEvents) {
     return (
       <View
@@ -165,7 +160,7 @@ export function EventsScreen() {
 
   return (
     <View style={styles.container}>
-      <Animated.FlatList
+      <FlatList
         data={filteredEvents}
         keyExtractor={(item) => item.event.id}
         renderItem={({ item }) => (
@@ -183,11 +178,13 @@ export function EventsScreen() {
             paddingBottom: 40 + insets.bottom,
           },
         ]}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: false }
-        )}
-        scrollEventThrottle={16}
+        ListHeaderComponent={
+          activeFilterCount > 0 ? (
+            <View style={styles.filterSummaryRow}>
+              <Text style={styles.filterSummary}>{filterSummary}</Text>
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.empty}>
             <Ionicons
@@ -203,56 +200,6 @@ export function EventsScreen() {
         }
       />
 
-      <Animated.View
-        style={[
-          styles.headerContainer,
-          {
-            paddingTop: insets.top,
-            height: headerHeight,
-          },
-        ]}
-      >
-        <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFill}>
-          <LinearGradient
-            colors={["rgba(255,255,255,0.3)", "rgba(255,255,255,0)"]}
-            style={StyleSheet.absoluteFill}
-          />
-        </BlurView>
-        <View style={styles.header}>
-          <View style={styles.titleRow}>
-            <View>
-              <Text style={styles.title}>Events</Text>
-              <Text style={styles.subtitle}>
-                What's happening in Wellington
-              </Text>
-            </View>
-            <HapticPressable
-              style={[
-                styles.filterButton,
-                activeFilterCount > 0 && styles.filterButtonActive,
-              ]}
-              onPress={openFilters}
-            >
-              <Ionicons
-                name="options"
-                size={24}
-                color={activeFilterCount > 0 ? "#FFFFFF" : colors.text}
-              />
-              {activeFilterCount > 0 && (
-                <View style={styles.filterBadge}>
-                  <Text style={styles.filterBadgeText}>
-                    {activeFilterCount}
-                  </Text>
-                </View>
-              )}
-            </HapticPressable>
-          </View>
-          {activeFilterCount > 0 && (
-            <Text style={styles.filterSummary}>{filterSummary}</Text>
-          )}
-        </View>
-      </Animated.View>
-
       <FloatingCreateButton />
     </View>
   );
@@ -261,74 +208,16 @@ export function EventsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
-  headerContainer: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 1000,
-    overflow: "hidden",
-  },
-  header: {
+  filterSummaryRow: {
     paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 12,
-  },
-  titleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: colors.text,
-  },
-  subtitle: {
-    fontSize: 15,
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  filterButton: {
-    width: 60,
-    height: 60,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  filterButtonActive: {
-    backgroundColor: colors.primary,
-    borderColor: "rgba(255, 255, 255, 0.3)",
-    shadowColor: colors.primary,
-  },
-  filterBadge: {
-    position: "absolute",
-    top: -4,
-    right: -4,
-    backgroundColor: "#FFFFFF",
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: colors.primary,
-  },
-  filterBadgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-    color: colors.primary,
+    paddingVertical: 8,
   },
   filterSummary: {
     fontSize: 13,
     color: colors.primary,
     fontWeight: "500",
-    marginTop: 8,
   },
   list: {
     paddingTop: 8,

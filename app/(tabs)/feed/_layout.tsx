@@ -1,9 +1,29 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { HapticPressable } from "../../../src/components/HapticPressable";
+import { colors } from "../../../src/theme/colors";
+
+function DiscoverButton() {
+  const router = useRouter();
+  return (
+    <HapticPressable onPress={() => router.push("/feed/discover")}>
+      <Ionicons name="people-outline" size={22} color={colors.textMuted} />
+    </HapticPressable>
+  );
+}
 
 export default function FeedLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: true,
+          headerTitle: "Feed",
+          headerTransparent: true,
+          headerRight: () => <DiscoverButton />,
+        }}
+      />
       <Stack.Screen
         name="user/[userId]"
         options={{
