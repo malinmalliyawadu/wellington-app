@@ -10,7 +10,6 @@ import {
 import { useRouter, useLocalSearchParams, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { useFollow } from "../context/FollowContext";
 import { useQuery } from "../hooks/useQuery";
 import { getProfileById } from "../services/users";
 import { getPostsByUserId as getPostsByUserIdAsync } from "../services/posts";
@@ -19,7 +18,7 @@ import { getFollowCounts } from "../services/follows";
 import { getEventsByUserId } from "../services/events";
 import { FollowButton } from "../components/FollowButton";
 import { PostsGrid } from "../components/PostsGrid";
-import { EventCard } from "../components/EventCard";
+import { UpcomingEvents } from "../components/UpcomingEvents";
 import { colors } from "../theme/colors";
 import { HapticPressable } from "src/components/HapticPressable";
 
@@ -30,7 +29,6 @@ export function UserProfileScreen() {
   const tabBase = "/" + pathname.split("/")[1];
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const { followingIds } = useFollow();
 
   const fetchUser = useCallback(() => getProfileById(userId), [userId]);
   const { data: user, loading: loadingUser } = useQuery(fetchUser);
@@ -57,12 +55,10 @@ export function UserProfileScreen() {
   const userEvents = useMemo(() => {
     if (!events || !allPlaces) return [];
     const placeMap = new Map(allPlaces.map((p) => [p.id, p]));
-    return events
-      .map((event) => ({
-        ...event,
-        place: placeMap.get(event.placeId),
-      }))
-      .filter((e) => e.place != null);
+    return events.map((event) => ({
+      ...event,
+      place: placeMap.get(event.placeId),
+    }));
   }, [events, allPlaces]);
 
   if (loadingUser) {
@@ -136,39 +132,13 @@ export function UserProfileScreen() {
         </View>
       </View>
 
-      {userEvents.length > 0 && (
-        <View>
-          <Text style={styles.sectionTitle}>Upcoming Events</Text>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.eventsScrollContent}
-          >
-            {userEvents.map((event) => (
-              <View key={event.id} style={styles.eventCardWrapper}>
-                <EventCard
-                  event={event}
-                  place={event.place!}
-                  onPress={() => {
-                    // Navigate within the current tab
-                    if (tabBase === "/events") {
-                      router.push(`/events/${event.id}`);
-                    } else {
-                      // For other tabs, switch to events tab
-                      router.push(`/events/${event.id}`);
-                    }
-                  }}
-                />
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+      <UpcomingEvents events={userEvents} />
 
-      <Text style={styles.sectionTitle}>Posts</Text>
+      <View style={styles.gridDivider} />
 
       <PostsGrid
         posts={userPosts}
+        title="Posts"
         onPostPress={(postId) => router.push(`${tabBase}/post/${postId}`)}
       />
     </ScrollView>
@@ -184,13 +154,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 24,
     paddingHorizontal: 16,
+    backgroundColor: colors.background,
   },
   avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: colors.gray200,
     marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
   displayName: {
     fontSize: 22,
@@ -221,14 +197,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   statNumber: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: "800",
     color: colors.text,
   },
   statLabel: {
-    fontSize: 13,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    fontWeight: "600",
   },
   statDivider: {
     width: 1,
@@ -238,16 +217,9 @@ const styles = StyleSheet.create({
   actionRow: {
     marginTop: 20,
   },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: colors.text,
-    marginTop: 28,
-    marginBottom: 12,
-    paddingHorizontal: 16,
-  },
-  eventsScrollContent: {},
-  eventCardWrapper: {
-    width: 300,
+  gridDivider: {
+    height: 1,
+    // backgroundColor: colors.gray200,
+    marginTop: 8,
   },
 });

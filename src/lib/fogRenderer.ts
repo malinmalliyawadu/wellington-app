@@ -1,10 +1,4 @@
-import {
-  Skia,
-  BlendMode,
-  TileMode,
-  AlphaType,
-  ColorType,
-} from "@shopify/react-native-skia";
+import { Skia, BlendMode, TileMode } from "@shopify/react-native-skia";
 
 /** Geographic bounds for the fog coverage area */
 export interface FogBounds {
@@ -42,7 +36,7 @@ interface FogConfig {
 const DEFAULT_CONFIG: FogConfig = {
   trailClearRadius: 60,
   placeClearRadius: 300,
-  fogColor: "rgba(15, 20, 30, 0.9)",
+  fogColor: "rgba(15, 20, 30, 0.75)",
   width: 512,
   height: 512,
   bounds: {

@@ -438,10 +438,7 @@ export function MapScreen() {
       <View style={[styles.controlsWrapper, { top: insets.top + 8 }]}>
         <View style={styles.controlsContainer}>
           {glassEnabled ? (
-            <GlassView
-              glassEffectStyle="regular"
-              style={styles.controlsGlass}
-            />
+            <GlassView style={styles.controlsGlass} />
           ) : (
             <BlurView
               intensity={10}

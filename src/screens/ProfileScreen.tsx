@@ -5,29 +5,28 @@ import {
   Image,
   ScrollView,
   StyleSheet,
-  Alert,
   RefreshControl,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { useFollow } from "../context/FollowContext";
 import { useAuth } from "../context/AuthContext";
-import { signOut } from "../services/auth";
 import { useQuery } from "../hooks/useQuery";
 import { getPostsByUserId } from "../services/posts";
 import { getPlaces } from "../services/places";
 import { getFollowCounts } from "../services/follows";
 import { getUnlockedAchievementCount } from "../services/achievements";
+import { getEventsByUserId } from "../services/events";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { PostsGrid } from "../components/PostsGrid";
+import { UpcomingEvents } from "../components/UpcomingEvents";
 import { colors } from "../theme/colors";
 import { HapticPressable } from "src/components/HapticPressable";
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { followingIds } = useFollow();
   const { profile } = useAuth();
 
   const currentUser = profile ?? {
@@ -53,7 +52,14 @@ export function ProfileScreen() {
     () => getUnlockedAchievementCount(currentUser.id),
     [currentUser.id]
   );
-  const { data: achievementCount, refetch: refetchAchievementCount } = useQuery(fetchAchievementCount);
+  const { data: achievementCount, refetch: refetchAchievementCount } = useQuery(
+    fetchAchievementCount
+  );
+  const fetchEvents = useCallback(
+    () => getEventsByUserId(currentUser.id),
+    [currentUser.id]
+  );
+  const { data: events, refetch: refetchEvents } = useQuery(fetchEvents);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
@@ -62,7 +68,14 @@ export function ProfileScreen() {
       refetchPlaces();
       refetchCounts();
       refetchAchievementCount();
-    }, [refetchPosts, refetchPlaces, refetchCounts, refetchAchievementCount])
+      refetchEvents();
+    }, [
+      refetchPosts,
+      refetchPlaces,
+      refetchCounts,
+      refetchAchievementCount,
+      refetchEvents,
+    ])
   );
 
   const [refreshing, setRefreshing] = useState(false);
@@ -73,136 +86,134 @@ export function ProfileScreen() {
     refetchPlaces();
     refetchCounts();
     refetchAchievementCount();
+    refetchEvents();
     // Give a small delay to ensure queries complete
     setTimeout(() => setRefreshing(false), 1000);
-  }, [refetchPosts, refetchPlaces, refetchCounts, refetchAchievementCount]);
+  }, [
+    refetchPosts,
+    refetchPlaces,
+    refetchCounts,
+    refetchAchievementCount,
+    refetchEvents,
+  ]);
 
   const postCount = posts?.length ?? 0;
   const followerCount = counts?.followers ?? 0;
   const followingCount = counts?.following ?? 0;
 
+  const placeMap = useMemo(
+    () => (allPlaces ? new Map(allPlaces.map((p) => [p.id, p])) : new Map()),
+    [allPlaces]
+  );
+
   const userPosts = useMemo(() => {
     if (!posts || !allPlaces) return [];
-    const placeMap = new Map(allPlaces.map((p) => [p.id, p]));
     return posts.map((post) => ({
       ...post,
       place: placeMap.get(post.placeId),
     }));
-  }, [posts, allPlaces]);
+  }, [posts, allPlaces, placeMap]);
+
+  const userEvents = useMemo(() => {
+    if (!events || !allPlaces) return [];
+    return events.map((event) => ({
+      ...event,
+      place: placeMap.get(event.placeId),
+    }));
+  }, [events, allPlaces, placeMap]);
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <View style={styles.headerSpacer} />
-        <Text style={styles.headerTitle}>Profile</Text>
-        <HapticPressable
-          style={styles.logoutButton}
-          onPress={() =>
-            Alert.alert("Sign Out", "Are you sure?", [
-              { text: "Cancel", style: "cancel" },
-              {
-                text: "Sign Out",
-                style: "destructive",
-                onPress: () => signOut(),
-              },
-            ])
-          }
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="log-out-outline" size={22} color={colors.textMuted} />
-        </HapticPressable>
-      </View>
+    <ScrollView
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
+        />
+      }
+      contentContainerStyle={{
+        paddingBottom: insets.bottom,
+      }}
+    >
+      <View style={styles.profileSection}>
+        <Image source={{ uri: currentUser.avatarUrl }} style={styles.avatar} />
+        <Text style={styles.displayName}>{currentUser.displayName}</Text>
+        <Text style={styles.username}>@{currentUser.username}</Text>
+        {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
 
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-        contentContainerStyle={{ paddingBottom: 60 + insets.bottom }}
-      >
-        <View style={styles.profileSection}>
-          <Image
-            source={{ uri: currentUser.avatarUrl }}
-            style={styles.avatar}
-          />
-          <Text style={styles.displayName}>{currentUser.displayName}</Text>
-          <Text style={styles.username}>@{currentUser.username}</Text>
-          {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
-
-          <View style={styles.statsRow}>
-            <View style={styles.stat}>
-              <Text style={styles.statNumber}>{postCount}</Text>
-              <Text style={styles.statLabel}>Posts</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <HapticPressable
-              style={styles.stat}
-              onPress={() =>
-                router.push({
-                  pathname: "/profile/follow-list",
-                  params: { userId: currentUser.id, tab: "followers" },
-                })
-              }
-            >
-              <Text style={styles.statNumber}>{followerCount}</Text>
-              <Text style={styles.statLabel}>Followers</Text>
-            </HapticPressable>
-            <View style={styles.statDivider} />
-            <HapticPressable
-              style={styles.stat}
-              onPress={() =>
-                router.push({
-                  pathname: "/profile/follow-list",
-                  params: { userId: currentUser.id, tab: "following" },
-                })
-              }
-            >
-              <Text style={styles.statNumber}>{followingCount}</Text>
-              <Text style={styles.statLabel}>Following</Text>
-            </HapticPressable>
+        <View style={styles.statsRow}>
+          <View style={styles.stat}>
+            <Text style={styles.statNumber}>{postCount}</Text>
+            <Text style={styles.statLabel}>Posts</Text>
           </View>
+          <View style={styles.statDivider} />
+          <HapticPressable
+            style={styles.stat}
+            onPress={() =>
+              router.push({
+                pathname: "/profile/follow-list",
+                params: { userId: currentUser.id, tab: "followers" },
+              })
+            }
+          >
+            <Text style={styles.statNumber}>{followerCount}</Text>
+            <Text style={styles.statLabel}>Followers</Text>
+          </HapticPressable>
+          <View style={styles.statDivider} />
+          <HapticPressable
+            style={styles.stat}
+            onPress={() =>
+              router.push({
+                pathname: "/profile/follow-list",
+                params: { userId: currentUser.id, tab: "following" },
+              })
+            }
+          >
+            <Text style={styles.statNumber}>{followingCount}</Text>
+            <Text style={styles.statLabel}>Following</Text>
+          </HapticPressable>
+        </View>
 
-          <View style={styles.buttonRow}>
-            <LiquidGlassButton
-              title="Edit Profile"
-              variant="secondary"
-              size="medium"
-              onPress={() => router.push("/profile/edit-profile")}
-              style={{ flex: 1, marginRight: 10 }}
-            />
-            <LiquidGlassButton
-              title="Find People"
-              variant="primary"
-              size="medium"
-              onPress={() => router.push("/profile/discover")}
-              style={{ flex: 1 }}
-            />
-          </View>
-
+        <View style={styles.buttonRow}>
           <LiquidGlassButton
-            title={`Achievements · ${achievementCount ?? 0} unlocked`}
+            title="Edit Profile"
             variant="secondary"
             size="medium"
-            icon="trophy"
-            onPress={() => router.push('/profile/achievements')}
-            style={{ marginTop: 10 }}
+            onPress={() => router.push("/profile/edit-profile")}
+            style={{ flex: 1, marginRight: 10 }}
+          />
+          <LiquidGlassButton
+            title="Find People"
+            variant="primary"
+            size="medium"
+            onPress={() => router.push("/profile/discover")}
+            style={{ flex: 1 }}
           />
         </View>
 
-        <Text style={styles.sectionTitle}>Your Posts</Text>
-
-        <PostsGrid
-          posts={userPosts}
-          onPostPress={(postId) => router.push(`/profile/post/${postId}`)}
+        <LiquidGlassButton
+          title={`Achievements · ${achievementCount ?? 0} unlocked`}
+          variant="secondary"
+          size="medium"
+          icon="trophy"
+          onPress={() => router.push("/profile/achievements")}
+          style={{ marginTop: 10 }}
         />
-      </ScrollView>
-    </View>
+      </View>
+
+      <UpcomingEvents events={userEvents} />
+
+      <View style={styles.gridDivider} />
+
+      <PostsGrid
+        posts={userPosts}
+        title="Your Posts"
+        onPostPress={(postId) => router.push(`/profile/post/${postId}`)}
+      />
+    </ScrollView>
   );
 }
 
@@ -211,37 +222,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  headerSpacer: {
-    width: 22,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: colors.text,
-  },
-  logoutButton: {
-    padding: 2,
-  },
   profileSection: {
     alignItems: "center",
     paddingVertical: 24,
     paddingHorizontal: 16,
+    backgroundColor: colors.background,
   },
   avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: colors.gray200,
     marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 4,
   },
   displayName: {
     fontSize: 22,
@@ -272,14 +269,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   statNumber: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 24,
+    fontWeight: "800",
     color: colors.text,
   },
   statLabel: {
-    fontSize: 13,
+    fontSize: 11,
     color: colors.textMuted,
     marginTop: 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    fontWeight: "600",
   },
   statDivider: {
     width: 1,
@@ -290,15 +290,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginTop: 20,
   },
-  scrollView: {
-    flex: 1,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: colors.text,
-    marginTop: 28,
-    marginBottom: 12,
-    paddingHorizontal: 16,
+  gridDivider: {
+    height: 1,
+    paddingVertical: 8,
   },
 });

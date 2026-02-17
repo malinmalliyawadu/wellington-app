@@ -1,6 +1,13 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, StyleSheet, Pressable, Share } from "react-native";
+import { View, Text, Image, StyleSheet, Share } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSequence,
+  withSpring,
+} from "react-native-reanimated";
 import { Post, User, Place, PlaceCategory } from "../types";
 import { useLike } from "../context/LikeContext";
 import { useQuery } from "../hooks/useQuery";
@@ -64,6 +71,19 @@ export function FeedPost({
     post.type === "video" ? 16 / 9 : 1
   );
 
+  const likeScale = useSharedValue(1);
+  const likeAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: likeScale.value }],
+  }));
+
+  const handleLike = () => {
+    likeScale.value = withSequence(
+      withSpring(1.3, { damping: 4, stiffness: 300 }),
+      withSpring(1, { damping: 6, stiffness: 200 })
+    );
+    toggleLike(post.id);
+  };
+
   const handleImageLoad = (event: any) => {
     const { width, height } = event.nativeEvent.source;
     if (width && height) {
@@ -78,103 +98,155 @@ export function FeedPost({
     }
   };
 
+  const hasMedia = !!post.mediaUrl;
+
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <HapticPressable
-          style={styles.headerUser}
-          onPress={() => onPressUser?.(user.id)}
-          disabled={!onPressUser}
-        >
-          <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
-          <View style={styles.headerText}>
-            <Text style={styles.displayName}>{user.displayName}</Text>
-            <Text style={styles.username}>@{user.username}</Text>
-          </View>
-        </HapticPressable>
-        <Text style={styles.timeAgo}>{formatTimeAgo(post.createdAt)}</Text>
-      </View>
+      {/* Header: overlaid on media, or standard row for text-only posts */}
+      {!hasMedia && (
+        <View style={styles.header}>
+          <HapticPressable
+            style={styles.headerUser}
+            onPress={() => onPressUser?.(user.id)}
+            disabled={!onPressUser}
+          >
+            <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+            <View style={styles.headerText}>
+              <Text style={styles.displayName}>{user.displayName}</Text>
+              <Text style={styles.username}>@{user.username}</Text>
+            </View>
+          </HapticPressable>
+          <Text style={styles.timeAgo}>{formatTimeAgo(post.createdAt)}</Text>
+        </View>
+      )}
 
-      <HapticPressable
-        onPress={() => onPressPost?.(post.id)}
-        disabled={!onPressPost}
-      >
-        {post.mediaUrl &&
-          (post.type === "video" ? (
-            <VideoPlayer
-              uri={post.mediaUrl}
-              style={[styles.media, { aspectRatio }]}
-              shouldPlay
-              isMuted
-              isLooping
-              onLoad={handleVideoLoad}
-            />
-          ) : (
-            <Image
-              source={{ uri: post.mediaUrl }}
-              style={[styles.media, { aspectRatio }]}
-              onLoad={handleImageLoad}
-            />
-          ))}
-      </HapticPressable>
-
-      <View style={styles.content}>
-        <Text style={styles.caption}>{post.content}</Text>
+      {/* Media with overlaid header */}
+      {hasMedia && (
         <HapticPressable
-          style={[styles.placeBadge, { backgroundColor: categoryColor + "15" }]}
-          onPress={() => onPressPlace?.(place.id)}
-          disabled={!onPressPlace}
-        >
-          <Ionicons
-            name={CATEGORY_ICONS[place.category]}
-            size={13}
-            color={categoryColor}
-            style={styles.placeIcon}
-          />
-          <Text style={[styles.placeName, { color: categoryColor }]}>
-            {place.name}
-          </Text>
-        </HapticPressable>
-      </View>
-
-      <View style={styles.actions}>
-        <HapticPressable
-          style={styles.actionButton}
-          onPress={() => toggleLike(post.id)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons
-            name={liked ? "heart" : "heart-outline"}
-            size={22}
-            color={liked ? colors.liked : colors.textMuted}
-          />
-          <Text style={[styles.actionCount, liked && { color: colors.liked }]}>
-            {getLikeCount(post.id)}
-          </Text>
-        </HapticPressable>
-        <HapticPressable
-          style={styles.actionButton}
           onPress={() => onPressPost?.(post.id)}
           disabled={!onPressPost}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons
-            name="chatbubble-outline"
-            size={20}
-            color={colors.textMuted}
-          />
-          <Text style={styles.actionCount}>{commentCount}</Text>
+          <View>
+            {post.type === "video" ? (
+              <VideoPlayer
+                uri={post.mediaUrl!}
+                style={[styles.media, { aspectRatio }]}
+                shouldPlay
+                isMuted
+                isLooping
+                onLoad={handleVideoLoad}
+              />
+            ) : (
+              <Image
+                source={{ uri: post.mediaUrl }}
+                style={[styles.media, { aspectRatio }]}
+                onLoad={handleImageLoad}
+              />
+            )}
+            {/* Gradient scrim + overlaid header */}
+            <LinearGradient
+              colors={["rgba(0,0,0,0.55)", "transparent"]}
+              style={styles.headerOverlay}
+            >
+              <HapticPressable
+                style={styles.overlaidHeaderUser}
+                onPress={() => onPressUser?.(user.id)}
+                disabled={!onPressUser}
+              >
+                <Image
+                  source={{ uri: user.avatarUrl }}
+                  style={styles.overlaidAvatar}
+                />
+                <View style={styles.headerText}>
+                  <Text style={styles.overlaidDisplayName}>
+                    {user.displayName}
+                  </Text>
+                  <Text style={styles.overlaidUsername}>@{user.username}</Text>
+                </View>
+              </HapticPressable>
+              <Text style={styles.overlaidTimeAgo}>
+                {formatTimeAgo(post.createdAt)}
+              </Text>
+            </LinearGradient>
+          </View>
         </HapticPressable>
-        <HapticPressable
-          style={styles.actionButton}
-          onPress={() =>
-            Share.share({ message: `Check out ${place.name}: ${post.content}` })
-          }
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-        >
-          <Ionicons name="share-outline" size={20} color={colors.textMuted} />
-        </HapticPressable>
+      )}
+
+      {/* Content */}
+      <View style={styles.content}>
+        <Text style={styles.caption}>{post.content}</Text>
       </View>
+
+      {/* Location row */}
+      <HapticPressable
+        style={styles.locationRow}
+        onPress={() => onPressPlace?.(place.id)}
+        disabled={!onPressPlace}
+      >
+        <Ionicons name="location" size={16} color={categoryColor} />
+        <Text style={styles.locationName}>{place.name}</Text>
+        <Ionicons
+          name="chevron-forward"
+          size={14}
+          color={colors.textMuted}
+        />
+      </HapticPressable>
+
+      {/* Action bar */}
+      <View style={styles.actions}>
+        <View style={styles.actionsLeft}>
+          <HapticPressable
+            style={styles.actionButton}
+            onPress={handleLike}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Animated.View style={likeAnimatedStyle}>
+              <Ionicons
+                name={liked ? "heart" : "heart-outline"}
+                size={24}
+                color={liked ? colors.liked : colors.text}
+              />
+            </Animated.View>
+            <Text
+              style={[styles.actionCount, liked && { color: colors.liked }]}
+            >
+              {getLikeCount(post.id)}
+            </Text>
+          </HapticPressable>
+          <HapticPressable
+            style={styles.actionButton}
+            onPress={() => onPressPost?.(post.id)}
+            disabled={!onPressPost}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons
+              name="chatbubble-outline"
+              size={22}
+              color={colors.text}
+            />
+            <Text style={styles.actionCount}>{commentCount}</Text>
+          </HapticPressable>
+          <HapticPressable
+            style={styles.actionButton}
+            onPress={() =>
+              Share.share({
+                message: `Check out ${place.name}: ${post.content}`,
+              })
+            }
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons
+              name="paper-plane-outline"
+              size={22}
+              color={colors.text}
+            />
+          </HapticPressable>
+        </View>
+        <Ionicons name="bookmark-outline" size={22} color={colors.text} />
+      </View>
+
+      {/* Bottom divider */}
+      <View style={styles.divider} />
     </View>
   );
 }
@@ -182,11 +254,8 @@ export function FeedPost({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    marginHorizontal: 16,
-    marginBottom: 16,
-    overflow: "hidden",
   },
+  // Standard header (text-only posts)
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -220,38 +289,91 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
   },
+  // Overlaid header (on media)
+  headerOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 12,
+    paddingHorizontal: 12,
+    paddingBottom: 32,
+  },
+  overlaidHeaderUser: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  overlaidAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    backgroundColor: colors.gray200,
+  },
+  overlaidDisplayName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    textShadowColor: "rgba(0,0,0,0.4)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  overlaidUsername: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.85)",
+    textShadowColor: "rgba(0,0,0,0.4)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  overlaidTimeAgo: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.85)",
+    textShadowColor: "rgba(0,0,0,0.4)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
   media: {
     width: "100%",
     backgroundColor: colors.gray200,
   },
   content: {
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingTop: 10,
+    paddingBottom: 6,
   },
   caption: {
     fontSize: 15,
     color: colors.text,
     lineHeight: 20,
-    marginBottom: 10,
   },
-  placeBadge: {
+  // Location row
+  locationRow: {
     flexDirection: "row",
     alignItems: "center",
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 4,
   },
-  placeIcon: {
-    marginRight: 5,
+  locationName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text,
+    flex: 1,
   },
-  placeName: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
+  // Action bar
   actions: {
     flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 12,
-    paddingBottom: 12,
+    paddingVertical: 10,
+  },
+  actionsLeft: {
+    flexDirection: "row",
     gap: 16,
   },
   actionButton: {
@@ -261,7 +383,11 @@ const styles = StyleSheet.create({
   },
   actionCount: {
     fontSize: 14,
-    color: colors.textMuted,
+    color: colors.text,
     fontWeight: "500",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.gray200,
   },
 });

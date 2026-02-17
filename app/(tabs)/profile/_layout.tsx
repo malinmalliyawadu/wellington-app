@@ -1,9 +1,47 @@
+import { Alert } from "react-native";
 import { Stack } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { signOut } from "../../../src/services/auth";
+import { HapticPressable } from "../../../src/components/HapticPressable";
+import { colors } from "../../../src/theme/colors";
+
+function LogoutButton() {
+  return (
+    <HapticPressable
+      style={{
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 7,
+      }}
+      onPress={() =>
+        Alert.alert("Sign Out", "Are you sure?", [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Sign Out",
+            style: "destructive",
+            onPress: () => signOut(),
+          },
+        ])
+      }
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <Ionicons name="log-out-outline" size={22} color={colors.text} />
+    </HapticPressable>
+  );
+}
 
 export default function ProfileLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="index" />
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: true,
+          headerTitle: "Profile",
+          headerTransparent: true,
+          headerRight: () => <LogoutButton />,
+        }}
+      />
       <Stack.Screen
         name="edit-profile"
         options={{

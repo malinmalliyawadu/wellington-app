@@ -13,6 +13,8 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import * as WebBrowser from "expo-web-browser";
 import {
   getEventById,
@@ -69,10 +71,22 @@ function formatTime(time: string, endTime?: string): string {
   };
 
   if (endTime) {
-    return `${formatSingleTime(time)} - ${formatSingleTime(endTime)}`;
+    return `${formatSingleTime(time)} – ${formatSingleTime(endTime)}`;
   }
   return formatSingleTime(time);
 }
+
+function getMonth(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("en-NZ", { month: "short" }).toUpperCase();
+}
+
+function getDay(dateString: string): string {
+  const date = new Date(dateString);
+  return date.getDate().toString();
+}
+
+const glassEnabled = isLiquidGlassAvailable();
 
 export function EventDetailScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
@@ -163,24 +177,62 @@ export function EventDetailScreen() {
         }}
         ListHeaderComponent={
           <>
-            {event.imageUrl && (
-              <Image
-                source={{ uri: event.imageUrl }}
-                style={styles.heroImage}
+            {/* Hero image area with overlays */}
+            <View style={styles.heroContainer}>
+              {event.imageUrl ? (
+                <Image
+                  source={{ uri: event.imageUrl }}
+                  style={styles.heroImage}
+                />
+              ) : (
+                <LinearGradient
+                  colors={[categoryColor, categoryColor + "88"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.heroImage}
+                />
+              )}
+
+              {/* Bottom gradient for title readability */}
+              <LinearGradient
+                colors={["transparent", "rgba(0,0,0,0.7)"]}
+                start={{ x: 0, y: 0.3 }}
+                end={{ x: 0, y: 1 }}
+                style={styles.heroGradient}
               />
-            )}
+
+              {/* Date badge (top-right) */}
+              <View
+                style={[
+                  styles.heroDateBadge,
+                  !glassEnabled && styles.heroDateBadgeFallback,
+                ]}
+              >
+                {glassEnabled && (
+                  <GlassView
+                    glassEffectStyle="regular"
+                    style={[StyleSheet.absoluteFill, { borderRadius: 10 }]}
+                  />
+                )}
+                <Text style={[styles.heroDateMonth, glassEnabled && styles.heroDateMonthGlass]}>{getMonth(event.date)}</Text>
+                <Text style={[styles.heroDateDay, glassEnabled && styles.heroDateDayGlass]}>{getDay(event.date)}</Text>
+              </View>
+
+              {/* Title overlaid on bottom */}
+              <Text style={styles.heroTitle} numberOfLines={3}>
+                {event.title}
+              </Text>
+            </View>
+
+            {/* Info section */}
             <View style={styles.infoSection}>
-              <View style={styles.categoryRow}>
-                <View
-                  style={[
-                    styles.categoryBadge,
-                    { backgroundColor: categoryColor },
-                  ]}
-                >
-                  <Text style={styles.categoryText}>
-                    {CATEGORY_LABELS[event.category]}
-                  </Text>
-                </View>
+              <View style={styles.infoRow}>
+                <Ionicons
+                  name="calendar"
+                  size={18}
+                  color={colors.textSecondary}
+                />
+                <Text style={styles.infoText}>{formatDate(event.date)}</Text>
                 <HapticPressable
                   onPress={() => {
                     const placeName = place?.name ?? "Wellington";
@@ -191,42 +243,30 @@ export function EventDetailScreen() {
                     });
                   }}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={styles.shareButton}
                 >
                   <Ionicons
-                    name="share-outline"
-                    size={22}
-                    color={colors.textSecondary}
+                    name="paper-plane-outline"
+                    size={20}
+                    color={colors.text}
                   />
                 </HapticPressable>
               </View>
-              <Text style={styles.title}>{event.title}</Text>
-              <View style={styles.detailRow}>
-                <Ionicons
-                  name="calendar-outline"
-                  size={16}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.detailText}>{formatDate(event.date)}</Text>
-              </View>
-              <View style={styles.detailRow}>
-                <Ionicons
-                  name="time-outline"
-                  size={16}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.detailText}>
+              <View style={styles.infoRow}>
+                <Ionicons name="time" size={18} color={colors.textSecondary} />
+                <Text style={styles.infoText}>
                   {formatTime(event.startTime, event.endTime)}
                 </Text>
               </View>
               {place && (
-                <View style={styles.detailRow}>
+                <View style={styles.infoRow}>
                   <Ionicons
-                    name="location-outline"
-                    size={16}
+                    name="location"
+                    size={18}
                     color={colors.textSecondary}
                   />
-                  <View>
-                    <Text style={styles.detailText}>{place.name}</Text>
+                  <View style={styles.infoLocationContent}>
+                    <Text style={styles.infoText}>{place.name}</Text>
                     <Text style={styles.addressText}>{place.address}</Text>
                   </View>
                 </View>
@@ -345,48 +385,100 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+  // Hero image area with overlays
+  heroContainer: {
+    height: 280,
+    position: "relative",
+  },
   heroImage: {
     width: "100%",
-    height: 220,
+    height: "100%",
     backgroundColor: colors.gray200,
   },
+  heroGradient: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: "65%",
+  },
+  heroDateBadge: {
+    position: "absolute",
+    top: 60,
+    right: 16,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: "center",
+    minWidth: 52,
+    overflow: "hidden",
+  },
+  heroDateBadgeFallback: {
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  heroDateMonth: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.primary,
+    letterSpacing: 0.5,
+  },
+  heroDateMonthGlass: {
+    color: "#FFFFFF",
+    textShadowColor: "rgba(0,0,0,0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  heroDateDay: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: colors.text,
+    lineHeight: 28,
+  },
+  heroDateDayGlass: {
+    color: "#FFFFFF",
+    textShadowColor: "rgba(0,0,0,0.3)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
+  heroTitle: {
+    position: "absolute",
+    bottom: 20,
+    left: 20,
+    right: 20,
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#FFFFFF",
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  // Info section
   infoSection: {
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: colors.gray200,
+    gap: 12,
   },
-  categoryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  categoryBadge: {
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  categoryText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "700",
-    color: colors.text,
-    marginBottom: 16,
-  },
-  detailRow: {
+  infoRow: {
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 10,
-    marginBottom: 10,
   },
-  detailText: {
+  infoText: {
     fontSize: 15,
     color: colors.text,
+    flex: 1,
+  },
+  infoLocationContent: {
+    flex: 1,
+  },
+  shareButton: {
+    padding: 4,
   },
   addressText: {
     fontSize: 13,

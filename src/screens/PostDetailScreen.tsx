@@ -1,11 +1,10 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
   Image,
   ScrollView,
   StyleSheet,
-  Pressable,
   Share,
   ActivityIndicator,
   TextInput,
@@ -13,21 +12,33 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-} from 'react-native';
-import { useLocalSearchParams, useRouter, usePathname } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useHeaderHeight } from '@react-navigation/elements';
-import { Ionicons } from '@expo/vector-icons';
-import { getPostById as getPostByIdAsync } from '../services/posts';
-import { getProfileById, getProfilesByIds } from '../services/users';
-import { getPlaceById as getPlaceByIdAsync } from '../services/places';
-import { getCommentsByPostId as getCommentsAsync, createComment, updateComment, deleteComment } from '../services/comments';
-import { useQuery } from '../hooks/useQuery';
-import { useLike } from '../context/LikeContext';
-import { useAuth } from '../context/AuthContext';
-import { VideoPlayer } from '../components/VideoPlayer';
-import { colors } from '../theme/colors';
-import { HapticPressable } from 'src/components/HapticPressable';
+} from "react-native";
+import { useLocalSearchParams, useRouter, usePathname } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSequence,
+  withSpring,
+} from "react-native-reanimated";
+import { getPostById as getPostByIdAsync } from "../services/posts";
+import { getProfileById, getProfilesByIds } from "../services/users";
+import { getPlaceById as getPlaceByIdAsync } from "../services/places";
+import {
+  getCommentsByPostId as getCommentsAsync,
+  createComment,
+  updateComment,
+  deleteComment,
+} from "../services/comments";
+import { useQuery } from "../hooks/useQuery";
+import { useLike } from "../context/LikeContext";
+import { useAuth } from "../context/AuthContext";
+import { VideoPlayer } from "../components/VideoPlayer";
+import { colors } from "../theme/colors";
+import { HapticPressable } from "src/components/HapticPressable";
 
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -38,7 +49,7 @@ function formatTimeAgo(dateString: string): string {
 
   if (diffDays > 0) return `${diffDays}d ago`;
   if (diffHours > 0) return `${diffHours}h ago`;
-  return 'Just now';
+  return "Just now";
 }
 
 export function PostDetailScreen() {
@@ -50,12 +61,17 @@ export function PostDetailScreen() {
   const { isLiked, toggleLike, getLikeCount } = useLike();
   const { profile } = useAuth();
   const inputRef = useRef<TextInput>(null);
-  const [commentText, setCommentText] = useState('');
+  const [commentText, setCommentText] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const fetchPost = useCallback(() => getPostByIdAsync(postId), [postId]);
   const { data: post, loading } = useQuery(fetchPost);
   const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
+
+  const likeScale = useSharedValue(1);
+  const likeAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: likeScale.value }],
+  }));
 
   const fetchUser = useCallback(
     () => (post ? getProfileById(post.userId) : Promise.resolve(null)),
@@ -73,7 +89,10 @@ export function PostDetailScreen() {
     () => (post ? getCommentsAsync(post.id) : Promise.resolve([])),
     [post?.id]
   );
-  const { data: comments, refetch: refetchComments } = useQuery(fetchComments, post?.id);
+  const { data: comments, refetch: refetchComments } = useQuery(
+    fetchComments,
+    post?.id
+  );
 
   const commentUserIds = useMemo(
     () => [...new Set((comments ?? []).map((c) => c.userId))],
@@ -91,7 +110,12 @@ export function PostDetailScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
@@ -102,13 +126,16 @@ export function PostDetailScreen() {
   const allComments = comments ?? [];
   const liked = isLiked(post.id);
   const likeCount = getLikeCount(post.id);
-  const categoryColor = place ? colors.category[place.category] : colors.gray400;
+  const categoryColor = place
+    ? colors.category[place.category]
+    : colors.gray400;
+  const hasMedia = !!post.mediaUrl;
 
-  const currentTab = pathname.startsWith('/feed')
-    ? '/feed'
-    : pathname.startsWith('/profile')
-      ? '/profile'
-      : '/map';
+  const currentTab = pathname.startsWith("/feed")
+    ? "/feed"
+    : pathname.startsWith("/profile")
+    ? "/profile"
+    : "/map";
 
   const handlePressUser = (userId: string) => {
     router.push(`${currentTab}/user/${userId}` as any);
@@ -118,6 +145,14 @@ export function PostDetailScreen() {
     router.push(`${currentTab}/place/${placeId}` as any);
   };
 
+  const handleLike = () => {
+    likeScale.value = withSequence(
+      withSpring(1.3, { damping: 4, stiffness: 300 }),
+      withSpring(1, { damping: 6, stiffness: 200 })
+    );
+    toggleLike(post.id);
+  };
+
   const handleSubmitComment = async () => {
     const trimmed = commentText.trim();
     if (!trimmed || !profile) return;
@@ -125,21 +160,24 @@ export function PostDetailScreen() {
       if (editingCommentId) {
         await updateComment(editingCommentId, trimmed);
       } else {
-        await createComment({ postId: post.id, userId: profile.id, text: trimmed });
+        await createComment({
+          postId: post.id,
+          userId: profile.id,
+          text: trimmed,
+        });
       }
       setEditingCommentId(null);
-      setCommentText('');
+      setCommentText("");
       Keyboard.dismiss();
-      // Delay refetch to avoid the cleanup function cancelling the in-flight request
       setTimeout(() => refetchComments(), 0);
     } catch (err: any) {
-      Alert.alert('Error', err?.message ?? 'Failed to save comment');
+      Alert.alert("Error", err?.message ?? "Failed to save comment");
     }
   };
 
   const handleCancelEdit = () => {
     setEditingCommentId(null);
-    setCommentText('');
+    setCommentText("");
     Keyboard.dismiss();
   };
 
@@ -160,72 +198,123 @@ export function PostDetailScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={0}
     >
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{ paddingTop: headerHeight, paddingBottom: 16 }}
         keyboardShouldPersistTaps="handled"
       >
-        {/* Author header */}
-        <HapticPressable style={styles.header} onPress={() => handlePressUser(post.userId)}>
-          <Image source={{ uri: user?.avatarUrl }} style={styles.avatar} />
-          <View style={styles.headerText}>
-            <Text style={styles.displayName}>{user?.displayName ?? 'Unknown'}</Text>
-            <Text style={styles.username}>@{user?.username ?? 'unknown'}</Text>
-          </View>
-          <Text style={styles.timeAgo}>{formatTimeAgo(post.createdAt)}</Text>
-        </HapticPressable>
+        {/* Text-only: standard header */}
+        {!hasMedia && (
+          <HapticPressable
+            style={styles.header}
+            onPress={() => handlePressUser(post.userId)}
+          >
+            <Image source={{ uri: user?.avatarUrl }} style={styles.avatar} />
+            <View style={styles.headerText}>
+              <Text style={styles.displayName}>
+                {user?.displayName ?? "Unknown"}
+              </Text>
+              <Text style={styles.username}>
+                @{user?.username ?? "unknown"}
+              </Text>
+            </View>
+            <Text style={styles.timeAgo}>{formatTimeAgo(post.createdAt)}</Text>
+          </HapticPressable>
+        )}
 
-        {/* Media */}
-        {post.mediaUrl && (
-          post.type === 'video' ? (
-            <VideoPlayer
-              uri={post.mediaUrl}
-              style={[styles.media, { aspectRatio }]}
-              shouldPlay
-              useNativeControls
-              onLoad={handleVideoLoad}
-            />
-          ) : (
-            <Image
-              source={{ uri: post.mediaUrl }}
-              style={[styles.media, { aspectRatio }]}
-              onLoad={handleImageLoad}
-            />
-          )
+        {/* Media with overlaid header */}
+        {hasMedia && (
+          <View>
+            {post.type === "video" ? (
+              <VideoPlayer
+                uri={post.mediaUrl!}
+                style={[styles.media, { aspectRatio }]}
+                shouldPlay
+                useNativeControls
+                onLoad={handleVideoLoad}
+              />
+            ) : (
+              <Image
+                source={{ uri: post.mediaUrl }}
+                style={[styles.media, { aspectRatio }]}
+                onLoad={handleImageLoad}
+              />
+            )}
+            <LinearGradient
+              colors={["rgba(0,0,0,0.55)", "transparent"]}
+              style={styles.headerOverlay}
+            >
+              <HapticPressable
+                style={styles.overlaidHeaderUser}
+                onPress={() => handlePressUser(post.userId)}
+              >
+                <Image
+                  source={{ uri: user?.avatarUrl }}
+                  style={styles.overlaidAvatar}
+                />
+                <View style={styles.headerText}>
+                  <Text style={styles.overlaidDisplayName}>
+                    {user?.displayName ?? "Unknown"}
+                  </Text>
+                  <Text style={styles.overlaidUsername}>
+                    @{user?.username ?? "unknown"}
+                  </Text>
+                </View>
+              </HapticPressable>
+              <Text style={styles.overlaidTimeAgo}>
+                {formatTimeAgo(post.createdAt)}
+              </Text>
+            </LinearGradient>
+          </View>
         )}
 
         {/* Actions row */}
         <View style={styles.actions}>
-          <HapticPressable
-            style={styles.actionButton}
-            onPress={() => toggleLike(post.id)}
-          >
-            <Ionicons
-              name={liked ? 'heart' : 'heart-outline'}
-              size={26}
-              color={liked ? colors.liked : colors.text}
-            />
-          </HapticPressable>
-          <HapticPressable style={styles.actionButton} onPress={() => inputRef.current?.focus()}>
-            <Ionicons name="chatbubble-outline" size={24} color={colors.text} />
-          </HapticPressable>
-          <HapticPressable
-            style={styles.actionButton}
-            onPress={() => {
-              const placeName = place?.name ?? 'a place';
-              Share.share({ message: `Check out ${placeName}: ${post.content}` });
-            }}
-          >
-            <Ionicons name="share-outline" size={24} color={colors.text} />
-          </HapticPressable>
+          <View style={styles.actionsLeft}>
+            <HapticPressable style={styles.actionButton} onPress={handleLike}>
+              <Animated.View style={likeAnimatedStyle}>
+                <Ionicons
+                  name={liked ? "heart" : "heart-outline"}
+                  size={26}
+                  color={liked ? colors.liked : colors.text}
+                />
+              </Animated.View>
+            </HapticPressable>
+            <HapticPressable
+              style={styles.actionButton}
+              onPress={() => inputRef.current?.focus()}
+            >
+              <Ionicons
+                name="chatbubble-outline"
+                size={24}
+                color={colors.text}
+              />
+            </HapticPressable>
+            <HapticPressable
+              style={styles.actionButton}
+              onPress={() => {
+                const placeName = place?.name ?? "a place";
+                Share.share({
+                  message: `Check out ${placeName}: ${post.content}`,
+                });
+              }}
+            >
+              <Ionicons
+                name="paper-plane-outline"
+                size={24}
+                color={colors.text}
+              />
+            </HapticPressable>
+          </View>
+          <Ionicons name="bookmark-outline" size={24} color={colors.text} />
         </View>
 
         {/* Like count */}
         <Text style={styles.likeCount}>
-          {likeCount} {likeCount === 1 ? 'like' : 'likes'}
+          {likeCount} {likeCount === 1 ? "like" : "likes"}
         </Text>
 
         {/* Caption */}
@@ -236,14 +325,19 @@ export function PostDetailScreen() {
           </Text>
         </View>
 
-        {/* Place tag */}
+        {/* Location row */}
         {place && (
           <HapticPressable
-            style={[styles.placeBadge, { backgroundColor: categoryColor + '15' }]}
+            style={styles.locationRow}
             onPress={() => handlePressPlace(place.id)}
           >
-            <View style={[styles.placeDot, { backgroundColor: categoryColor }]} />
-            <Text style={[styles.placeName, { color: categoryColor }]}>{place.name}</Text>
+            <Ionicons name="location" size={16} color={categoryColor} />
+            <Text style={styles.locationName}>{place.name}</Text>
+            <Ionicons
+              name="chevron-forward"
+              size={14}
+              color={colors.textMuted}
+            />
           </HapticPressable>
         )}
 
@@ -255,7 +349,9 @@ export function PostDetailScreen() {
               const isOwn = comment.userId === profile?.id;
               return (
                 <View key={comment.id} style={styles.commentRow}>
-                  <HapticPressable onPress={() => handlePressUser(comment.userId)}>
+                  <HapticPressable
+                    onPress={() => handlePressUser(comment.userId)}
+                  >
                     <Image
                       source={{ uri: commentUser?.avatarUrl }}
                       style={styles.commentAvatar}
@@ -264,36 +360,54 @@ export function PostDetailScreen() {
                   <View style={styles.commentContent}>
                     <Text style={styles.commentText}>
                       <Text style={styles.commentAuthor}>
-                        {commentUser?.displayName ?? 'Unknown'}
+                        {commentUser?.displayName ?? "Unknown"}
                       </Text>
-                      <Text style={styles.commentTime}> {formatTimeAgo(comment.createdAt)}</Text>
+                      <Text style={styles.commentTime}>
+                        {" "}
+                        {formatTimeAgo(comment.createdAt)}
+                      </Text>
                     </Text>
                     <Text style={styles.commentBody}>{comment.text}</Text>
                     {isOwn && (
                       <View style={styles.commentActions}>
-                        <HapticPressable onPress={() => {
-                          setEditingCommentId(comment.id);
-                          setCommentText(comment.text);
-                          inputRef.current?.focus();
-                        }}>
+                        <HapticPressable
+                          onPress={() => {
+                            setEditingCommentId(comment.id);
+                            setCommentText(comment.text);
+                            inputRef.current?.focus();
+                          }}
+                        >
                           <Text style={styles.commentActionText}>Edit</Text>
                         </HapticPressable>
-                        <HapticPressable onPress={() => {
-                          Alert.alert('Delete comment?', 'This cannot be undone.', [
-                            { text: 'Cancel', style: 'cancel' },
-                            {
-                              text: 'Delete',
-                              style: 'destructive',
-                              onPress: async () => {
-                                try {
-                                  await deleteComment(comment.id);
-                                  refetchComments();
-                                } catch { }
-                              },
-                            },
-                          ]);
-                        }}>
-                          <Text style={[styles.commentActionText, { color: colors.liked }]}>Delete</Text>
+                        <HapticPressable
+                          onPress={() => {
+                            Alert.alert(
+                              "Delete comment?",
+                              "This cannot be undone.",
+                              [
+                                { text: "Cancel", style: "cancel" },
+                                {
+                                  text: "Delete",
+                                  style: "destructive",
+                                  onPress: async () => {
+                                    try {
+                                      await deleteComment(comment.id);
+                                      refetchComments();
+                                    } catch {}
+                                  },
+                                },
+                              ]
+                            );
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.commentActionText,
+                              { color: colors.liked },
+                            ]}
+                          >
+                            Delete
+                          </Text>
                         </HapticPressable>
                       </View>
                     )}
@@ -306,16 +420,26 @@ export function PostDetailScreen() {
       </ScrollView>
 
       {/* Comment input bar */}
-      <View style={[styles.inputBar, { paddingBottom: insets.bottom + (inputFocused ? 0 : 60) || 8 }]}>
+      <View
+        style={[
+          styles.inputBar,
+          { paddingBottom: inputFocused ? 8 : insets.bottom + 60 },
+        ]}
+      >
         {editingCommentId && (
-          <HapticPressable onPress={handleCancelEdit} style={styles.cancelButton}>
+          <HapticPressable
+            onPress={handleCancelEdit}
+            style={styles.cancelButton}
+          >
             <Ionicons name="close-circle" size={22} color={colors.textMuted} />
           </HapticPressable>
         )}
         <TextInput
           ref={inputRef}
           style={styles.commentInput}
-          placeholder={editingCommentId ? 'Edit comment...' : 'Add a comment...'}
+          placeholder={
+            editingCommentId ? "Edit comment..." : "Add a comment..."
+          }
           placeholderTextColor={colors.textMuted}
           value={commentText}
           onChangeText={setCommentText}
@@ -330,7 +454,7 @@ export function PostDetailScreen() {
           style={styles.sendButton}
         >
           <Ionicons
-            name={editingCommentId ? 'checkmark-circle' : 'send'}
+            name={editingCommentId ? "checkmark-circle" : "send"}
             size={22}
             color={commentText.trim() ? colors.primary : colors.gray300}
           />
@@ -348,9 +472,10 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  // Standard header (text-only posts)
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 12,
   },
   avatar: {
@@ -365,7 +490,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
   },
   username: {
@@ -376,13 +501,67 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
   },
-  media: {
-    width: '100%',
+  // Overlaid header (on media)
+  headerOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingTop: 12,
+    paddingHorizontal: 12,
+    paddingBottom: 32,
+  },
+  overlaidHeaderUser: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  overlaidAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
     backgroundColor: colors.gray200,
   },
+  overlaidDisplayName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    textShadowColor: "rgba(0,0,0,0.4)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  overlaidUsername: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.85)",
+    textShadowColor: "rgba(0,0,0,0.4)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  overlaidTimeAgo: {
+    fontSize: 13,
+    color: "rgba(255,255,255,0.85)",
+    textShadowColor: "rgba(0,0,0,0.4)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  media: {
+    width: "100%",
+    backgroundColor: colors.gray200,
+  },
+  // Action bar
   actions: {
-    flexDirection: 'row',
-    padding: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  actionsLeft: {
+    flexDirection: "row",
     gap: 16,
   },
   actionButton: {
@@ -390,7 +569,7 @@ const styles = StyleSheet.create({
   },
   likeCount: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
     paddingHorizontal: 14,
     marginBottom: 6,
@@ -405,27 +584,22 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   captionAuthor: {
-    fontWeight: '600',
+    fontWeight: "600",
   },
-  placeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginLeft: 14,
+  // Location row
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 14,
     marginBottom: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingVertical: 8,
+    gap: 4,
   },
-  placeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 6,
-  },
-  placeName: {
-    fontSize: 13,
-    fontWeight: '500',
+  locationName: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.text,
+    flex: 1,
   },
   commentsSection: {
     borderTopWidth: StyleSheet.hairlineWidth,
@@ -433,7 +607,7 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   commentRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     paddingHorizontal: 14,
     marginBottom: 12,
   },
@@ -452,7 +626,7 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   commentAuthor: {
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.text,
   },
   commentTime: {
@@ -466,18 +640,18 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   commentActions: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 16,
     marginTop: 4,
   },
   commentActionText: {
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     color: colors.textMuted,
   },
   inputBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 12,
     paddingTop: 8,
     borderTopWidth: StyleSheet.hairlineWidth,
