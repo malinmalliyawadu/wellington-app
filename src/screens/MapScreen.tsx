@@ -148,6 +148,7 @@ export function MapScreen() {
   );
 
   const isDataLoaded = !placesLoading && !postsLoading && !usersLoading;
+  const isInitialLoad = placesLoading && allPlaces.length === 0;
 
   const userMap = useMemo(() => {
     const map = new Map<string, User>();
@@ -276,9 +277,9 @@ export function MapScreen() {
     })();
   }, []);
 
-  // Location-based exploration tracking
+  // Location-based exploration tracking (only when overlay is visible for performance)
   useEffect(() => {
-    if (!location || !places) return;
+    if (!location || !places || !showExplorationOverlay) return;
 
     const EXPLORATION_RADIUS = 50; // meters - must be within 50m to explore
 
@@ -314,10 +315,10 @@ export function MapScreen() {
 
     checkNearbyPlaces();
 
-    // Set up interval to check periodically (every 10 seconds)
-    const interval = setInterval(checkNearbyPlaces, 10000);
+    // Set up interval to check periodically (every 30 seconds - throttled for performance)
+    const interval = setInterval(checkNearbyPlaces, 30000);
     return () => clearInterval(interval);
-  }, [location, places, isExplored, markExplored, showToast]);
+  }, [location, places, showExplorationOverlay, isExplored, markExplored, showToast]);
 
   const centerOnUser = () => {
     if (location && mapRef.current) {
@@ -355,8 +356,9 @@ export function MapScreen() {
         <ExplorationOverlay
           places={filteredPlaces}
           visible={showExplorationOverlay}
+          mapRegion={visibleRegion}
         />
-        {isDataLoaded &&
+        {!isInitialLoad &&
           filteredPlaces.map((place) => {
             const popularity = popularityMap.get(place.id);
             const score = popularity?.score ?? 1;
@@ -382,6 +384,7 @@ export function MapScreen() {
                   longitude: place.longitude,
                 }}
                 anchor={{ x: 0.5, y: showLabel ? 0.35 : 0.5 }}
+                tracksViewChanges={false}
                 onPress={(e) => {
                   e.stopPropagation();
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Rigid);
@@ -405,7 +408,7 @@ export function MapScreen() {
           })}
       </MapView>
 
-      {!isDataLoaded && (
+      {isInitialLoad && (
         <View style={[styles.loadingOverlay, { top: insets.top + 16 }]}>
           <BlurView intensity={15} tint="light" style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={colors.primary} />
