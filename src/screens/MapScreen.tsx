@@ -361,8 +361,17 @@ export function MapScreen() {
         onRegionChangeComplete={handleRegionChangeComplete}
         showsPointsOfInterest={false}
         userInterfaceStyle="light"
+        minZoomLevel={9}
       >
-        <NeighborhoodOverlay visible={showNeighborhoods} />
+        <NeighborhoodOverlay
+          visible={showNeighborhoods}
+          onNeighborhoodPress={(polygon) => {
+            mapRef.current?.fitToCoordinates(polygon, {
+              edgePadding: { top: 60, right: 60, bottom: 60, left: 60 },
+              animated: true,
+            });
+          }}
+        />
         <FogOfWarOverlay
           places={filteredPlaces}
           visible={showExplorationOverlay}

@@ -1,65 +1,60 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Polygon, Marker } from 'react-native-maps';
-import { NEIGHBORHOODS } from '../utils/neighborhoods';
+import { NEIGHBORHOODS, getNeighborhoodCenter } from '../utils/neighborhoods';
 
 interface NeighborhoodOverlayProps {
   visible: boolean;
+  onNeighborhoodPress?: (polygon: { latitude: number; longitude: number }[]) => void;
 }
 
-const NEIGHBORHOOD_COLORS: Record<string, string> = {
-  cbd: 'rgba(52, 73, 94, 0.2)',
-  te_aro: 'rgba(22, 160, 133, 0.2)',
-  mount_victoria: 'rgba(39, 174, 96, 0.2)',
-  waterfront: 'rgba(52, 152, 219, 0.2)',
-  thorndon: 'rgba(142, 68, 173, 0.2)',
-};
+// Generate distinct colors for each neighborhood using HSL
+// Spread hues evenly across the spectrum with consistent saturation/lightness
+function getNeighborhoodFillColor(index: number, total: number): string {
+  const hue = (index * (360 / total) + 200) % 360;
+  return `hsla(${Math.round(hue)}, 55%, 45%, 0.18)`;
+}
 
-const LABEL_COLORS: Record<string, string> = {
-  cbd: '#34495E',
-  te_aro: '#16A085',
-  mount_victoria: '#27AE60',
-  waterfront: '#3498DB',
-  thorndon: '#8E44AD',
-};
+function getNeighborhoodStrokeColor(index: number, total: number): string {
+  const hue = (index * (360 / total) + 200) % 360;
+  return `hsla(${Math.round(hue)}, 55%, 45%, 0.5)`;
+}
 
-export function NeighborhoodOverlay({ visible }: NeighborhoodOverlayProps) {
+function getNeighborhoodLabelColor(index: number, total: number): string {
+  const hue = (index * (360 / total) + 200) % 360;
+  return `hsl(${Math.round(hue)}, 55%, 35%)`;
+}
+
+export function NeighborhoodOverlay({ visible, onNeighborhoodPress }: NeighborhoodOverlayProps) {
   if (!visible) return null;
+
+  const total = NEIGHBORHOODS.length;
 
   return (
     <>
-      {NEIGHBORHOODS.map((neighborhood) => {
-        // Create a rectangle from the bounding box
-        const coordinates = [
-          { latitude: neighborhood.minLat, longitude: neighborhood.minLng }, // SW
-          { latitude: neighborhood.minLat, longitude: neighborhood.maxLng }, // SE
-          { latitude: neighborhood.maxLat, longitude: neighborhood.maxLng }, // NE
-          { latitude: neighborhood.maxLat, longitude: neighborhood.minLng }, // NW
-        ];
-
-        // Calculate center point for label
-        const centerLat = (neighborhood.minLat + neighborhood.maxLat) / 2;
-        const centerLng = (neighborhood.minLng + neighborhood.maxLng) / 2;
+      {NEIGHBORHOODS.map((neighborhood, index) => {
+        const center = getNeighborhoodCenter(neighborhood);
 
         return (
           <React.Fragment key={`neighborhood-${neighborhood.id}`}>
             <Polygon
-              coordinates={coordinates}
-              fillColor={NEIGHBORHOOD_COLORS[neighborhood.id] || 'rgba(149, 165, 166, 0.2)'}
-              strokeColor={NEIGHBORHOOD_COLORS[neighborhood.id]?.replace('0.2', '0.5') || 'rgba(149, 165, 166, 0.5)'}
+              coordinates={neighborhood.polygon}
+              fillColor={getNeighborhoodFillColor(index, total)}
+              strokeColor={getNeighborhoodStrokeColor(index, total)}
               strokeWidth={2}
               zIndex={-2}
             />
             <Marker
-              coordinate={{ latitude: centerLat, longitude: centerLng }}
+              coordinate={center}
               anchor={{ x: 0.5, y: 0.5 }}
               tracksViewChanges={false}
+              onPress={() => onNeighborhoodPress?.(neighborhood.polygon)}
             >
               <View style={styles.labelContainer}>
                 <Text
                   style={[
                     styles.label,
-                    { color: LABEL_COLORS[neighborhood.id] || '#95A5A6' },
+                    { color: getNeighborhoodLabelColor(index, total) },
                   ]}
                 >
                   {neighborhood.name.toUpperCase()}
