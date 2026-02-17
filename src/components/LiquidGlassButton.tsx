@@ -6,8 +6,11 @@ import {
   TextStyle,
   StyleProp,
   ActivityIndicator,
+  PlatformColor,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { HapticPressable } from "./HapticPressable";
 import { colors } from "../theme/colors";
 import type { PlaceCategory } from "../types";
@@ -40,6 +43,8 @@ interface LiquidGlassButtonProps {
   fullWidth?: boolean;
 }
 
+const glassEnabled = isLiquidGlassAvailable();
+
 export function LiquidGlassButton({
   title,
   onPress,
@@ -55,9 +60,63 @@ export function LiquidGlassButton({
 }: LiquidGlassButtonProps) {
   const sizeStyles = SIZE_STYLES[size];
   const iconSize = ICON_SIZES[size];
+  const isDisabled = disabled || loading;
 
-  // Determine background color
-  let bgColor = colors.primary; // default
+  // --- Glass path ---
+  if (glassEnabled) {
+    let labelColor: string | ReturnType<typeof PlatformColor> =
+      Platform.OS === "ios" ? PlatformColor("label") : colors.text;
+    if (backgroundColor) {
+      labelColor = backgroundColor;
+    } else if (variant === "primary") {
+      labelColor = colors.primary;
+    } else if (variant === "category" && category) {
+      labelColor = colors.category[category];
+    }
+
+    return (
+      <HapticPressable
+        onPress={onPress}
+        disabled={isDisabled}
+        style={[
+          styles.button,
+          sizeStyles.container,
+          { opacity: isDisabled ? 0.6 : 1 },
+          fullWidth && styles.fullWidth,
+          style,
+        ]}
+      >
+        <GlassView
+          isInteractive
+          glassEffectStyle="regular"
+          style={[
+            StyleSheet.absoluteFill,
+            { borderRadius: sizeStyles.container.borderRadius },
+          ]}
+        />
+        {loading ? (
+          <ActivityIndicator size="small" color={labelColor} />
+        ) : (
+          <>
+            {icon && (
+              <Ionicons
+                name={icon}
+                size={iconSize}
+                color={labelColor}
+                style={styles.icon}
+              />
+            )}
+            <Text style={[styles.text, sizeStyles.text, { color: labelColor }]}>
+              {title}
+            </Text>
+          </>
+        )}
+      </HapticPressable>
+    );
+  }
+
+  // --- Fallback path (Android / older iOS) ---
+  let bgColor = colors.primary;
   if (backgroundColor) {
     bgColor = backgroundColor;
   } else if (variant === "category" && category) {
@@ -66,20 +125,11 @@ export function LiquidGlassButton({
     bgColor = "transparent";
   }
 
-  // Determine border color
   const borderColor =
-    variant === "secondary"
-      ? colors.primary
-      : "rgba(255, 255, 255, 0.3)";
-
-  // Determine text and icon color
+    variant === "secondary" ? colors.primary : "rgba(255, 255, 255, 0.3)";
   const contentColor = variant === "secondary" ? colors.primary : "#FFFFFF";
-
-  // Shadow color based on variant
   const shadowColor =
     variant === "secondary" ? "#000" : backgroundColor || bgColor;
-
-  const isDisabled = disabled || loading;
 
   return (
     <HapticPressable
@@ -87,6 +137,7 @@ export function LiquidGlassButton({
       disabled={isDisabled}
       style={[
         styles.button,
+        styles.fallbackButton,
         sizeStyles.container,
         {
           backgroundColor: bgColor,
@@ -172,6 +223,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  fallbackButton: {
     borderWidth: 1,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,

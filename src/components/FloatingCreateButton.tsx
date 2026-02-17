@@ -1,11 +1,14 @@
 import React from "react";
-import { StyleSheet, ViewStyle } from "react-native";
+import { StyleSheet, ViewStyle, View } from "react-native";
 import { useRouter, usePathname } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { HapticPressable } from "./HapticPressable";
 import { colors } from "../theme/colors";
+
+const glassEnabled = isLiquidGlassAvailable();
 
 interface FloatingCreateButtonProps {
   style?: ViewStyle;
@@ -37,9 +40,20 @@ export function FloatingCreateButton({ style }: FloatingCreateButtonProps) {
       ]}
       onPress={handlePress}
     >
-      <BlurView intensity={10} tint="light" style={styles.blur}>
-        <Ionicons name="add" size={28} color={colors.gray600} />
-      </BlurView>
+      {glassEnabled ? (
+        <View style={styles.glassOuter}>
+          <GlassView
+            isInteractive
+            glassEffectStyle="regular"
+            style={StyleSheet.absoluteFill}
+          />
+          <Ionicons name="add" size={28} color={colors.gray600} />
+        </View>
+      ) : (
+        <BlurView intensity={10} tint="light" style={styles.blur}>
+          <Ionicons name="add" size={28} color={colors.gray600} />
+        </BlurView>
+      )}
     </HapticPressable>
   );
 }
@@ -53,6 +67,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 8,
+  },
+  glassOuter: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
   },
   blur: {
     width: 60,

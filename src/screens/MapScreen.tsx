@@ -20,6 +20,7 @@ import { useNavigation, useFocusEffect } from "expo-router";
 import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { PopularityMarker } from "../components/PopularityMarker";
 import { FogOfWarOverlay } from "../components/FogOfWarOverlay";
 import { NeighborhoodOverlay } from "../components/NeighborhoodOverlay";
@@ -43,6 +44,8 @@ import { colors } from "../theme/colors";
 import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 import * as Haptics from "expo-haptics";
+
+const glassEnabled = isLiquidGlassAvailable();
 
 const WELLINGTON_REGION = {
   latitude: -41.2865,
@@ -425,7 +428,19 @@ export function MapScreen() {
 
       <View style={[styles.controlsWrapper, { top: insets.top + 8 }]}>
         <View style={styles.controlsContainer}>
-          <BlurView intensity={10} tint="light" style={styles.controlsBlur}>
+          {glassEnabled ? (
+            <GlassView
+              glassEffectStyle="regular"
+              style={styles.controlsGlass}
+            />
+          ) : (
+            <BlurView
+              intensity={10}
+              tint="light"
+              style={styles.controlsBlurBg}
+            />
+          )}
+          <View style={styles.controlsInner}>
             <HapticPressable
               style={[
                 styles.controlButton,
@@ -479,7 +494,7 @@ export function MapScreen() {
                 color={location ? colors.primary : colors.text}
               />
             </HapticPressable>
-          </BlurView>
+          </View>
         </View>
         {activeFilterCount > 0 && (
           <View style={styles.filterBadge}>
@@ -534,19 +549,26 @@ const styles = StyleSheet.create({
   },
   controlsContainer: {
     width: 44,
+    borderRadius: 18,
+    overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
     shadowRadius: 4,
     elevation: 4,
   },
-  controlsBlur: {
-    width: "100%",
+  controlsGlass: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 18,
+  },
+  controlsBlurBg: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(255, 255, 255, 0.15)",
     borderWidth: 1,
     borderColor: "rgba(255, 255, 255, 0.4)",
-    borderRadius: 18,
-    overflow: "hidden",
+  },
+  controlsInner: {
+    width: "100%",
   },
   controlButton: {
     width: "100%",
