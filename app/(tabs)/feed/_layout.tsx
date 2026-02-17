@@ -6,8 +6,15 @@ import { colors } from "../../../src/theme/colors";
 function DiscoverButton() {
   const router = useRouter();
   return (
-    <HapticPressable onPress={() => router.push("/feed/discover")}>
-      <Ionicons name="people-outline" size={22} color={colors.textMuted} />
+    <HapticPressable
+      style={{
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 7,
+      }}
+      onPress={() => router.push("/feed/discover")}
+    >
+      <Ionicons name="people-outline" size={22} color={colors.text} />
     </HapticPressable>
   );
 }
