@@ -1,4 +1,4 @@
-import { Post } from '../types';
+import { Post } from "../types";
 
 export interface PlacePopularity {
   placeId: string;
@@ -9,9 +9,11 @@ export interface PlacePopularity {
 }
 
 const MIN_SIZE = 28;
-const MAX_SIZE = 52;
+const MAX_SIZE = 96;
 
-export function computePlacePopularity(posts: Post[]): Map<string, PlacePopularity> {
+export function computePlacePopularity(
+  posts: Post[]
+): Map<string, PlacePopularity> {
   const map = new Map<string, PlacePopularity>();
 
   for (const post of posts) {

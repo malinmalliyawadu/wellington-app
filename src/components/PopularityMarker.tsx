@@ -31,7 +31,6 @@ interface PopularityMarkerProps {
 export function PopularityMarker({
   size,
   category,
-  postCount,
   isFollowed,
   placeName,
   posterAvatars = [],
@@ -46,7 +45,7 @@ export function PopularityMarker({
       // Followed — solid vibrant color (glass washes it out)
       if (isFollowed) {
         return (
-          <View
+          <GlassView
             style={[
               styles.followedGlassMarker,
               {
@@ -56,9 +55,10 @@ export function PopularityMarker({
                 backgroundColor: color,
               },
             ]}
+            glassEffectStyle="clear"
           >
             <Ionicons name={iconName} size={iconSize} color="#FFFFFF" />
-          </View>
+          </GlassView>
         );
       }
 
@@ -71,11 +71,12 @@ export function PopularityMarker({
               width: size,
               height: size,
               borderRadius: size / 2,
-              backgroundColor: color,
+              backgroundColor: color + "44",
             },
           ]}
+          glassEffectStyle="clear"
         >
-          <Ionicons name={iconName} size={iconSize} color="#FFFFFF" />
+          <Ionicons name={iconName} size={iconSize} color={color} />
         </GlassView>
       );
     }
@@ -328,8 +329,7 @@ const styles = StyleSheet.create({
   labelWrapper: {
     marginTop: 2,
     borderRadius: 8,
-    overflow: "hidden",
-    maxWidth: 120,
+    maxWidth: 200,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.16,
