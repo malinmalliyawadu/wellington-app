@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, StyleSheet, Share } from "react-native";
+import { View, Text, Image, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated from "react-native-reanimated";
@@ -10,6 +10,7 @@ import { useDoubleTapLike } from "../hooks/useDoubleTapLike";
 import { getCommentsByPostId } from "../services/comments";
 import { VideoPlayer } from "./VideoPlayer";
 import { colors } from "../theme/colors";
+import { sharePost } from "../utils/sharing";
 import { HapticPressable } from "./HapticPressable";
 
 const CATEGORY_ICONS: Record<PlaceCategory, keyof typeof Ionicons.glyphMap> = {
@@ -70,8 +71,12 @@ export function FeedPost({
   );
   const { data: comments } = useQuery(fetchComments);
   const commentCount = comments?.length ?? 0;
+  const storedAspectRatio =
+    post.mediaWidth && post.mediaHeight
+      ? post.mediaWidth / post.mediaHeight
+      : null;
   const [aspectRatio, setAspectRatio] = useState<number>(
-    post.type === "video" ? 16 / 9 : 1
+    storedAspectRatio ?? (post.type === "video" ? 16 / 9 : 1)
   );
 
   const handleImageLoad = (event: any) => {
@@ -238,11 +243,7 @@ export function FeedPost({
           </HapticPressable>
           <HapticPressable
             style={styles.actionButton}
-            onPress={() =>
-              Share.share({
-                message: `Check out ${place.name}: ${post.content}`,
-              })
-            }
+            onPress={() => sharePost(post.id, place.name, post.content)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Ionicons

@@ -59,6 +59,8 @@ create table posts (
   content text not null,
   media_url text,
   thumbnail_url text,
+  media_width integer,
+  media_height integer,
   likes integer not null default 0,
   created_at timestamptz not null default now()
 );

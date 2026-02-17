@@ -73,6 +73,10 @@ export function CreatePostSheetScreen() {
   const [postType, setPostType] = useState<PostType>("photo");
   const [content, setContent] = useState("");
   const [mediaUri, setMediaUri] = useState<string | null>(null);
+  const [mediaDimensions, setMediaDimensions] = useState<{
+    width: number;
+    height: number;
+  } | null>(null);
 
   // Event-specific state
   const [eventTitle, setEventTitle] = useState("");
@@ -130,6 +134,38 @@ export function CreatePostSheetScreen() {
     }, [])
   );
 
+  // Handle content shared into the app (from Instagram, Safari, etc.)
+  useEffect(() => {
+    const shared = (global as any).__sharedIntent as
+      | {
+          text?: string;
+          imageUri?: string;
+          videoUri?: string;
+          mediaWidth?: number;
+          mediaHeight?: number;
+        }
+      | undefined;
+    if (!shared) return;
+    delete (global as any).__sharedIntent;
+
+    if (shared.videoUri) {
+      setPostType("video");
+      setMediaUri(shared.videoUri);
+    } else if (shared.imageUri) {
+      setPostType("photo");
+      setMediaUri(shared.imageUri);
+    }
+    if (shared.mediaWidth && shared.mediaHeight) {
+      setMediaDimensions({
+        width: shared.mediaWidth,
+        height: shared.mediaHeight,
+      });
+    }
+    if (shared.text) {
+      setContent(shared.text);
+    }
+  }, []);
+
   useEffect(() => {
     // Also handle place from params (alternative method)
     if (selectedPlaceData) {
@@ -167,7 +203,11 @@ export function CreatePostSheetScreen() {
     });
 
     if (!result.canceled && result.assets[0]) {
-      setMediaUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      setMediaUri(asset.uri);
+      if (asset.width && asset.height) {
+        setMediaDimensions({ width: asset.width, height: asset.height });
+      }
     }
   };
 
@@ -241,6 +281,8 @@ export function CreatePostSheetScreen() {
           type: postType,
           content: content.trim(),
           mediaUrl,
+          mediaWidth: mediaDimensions?.width,
+          mediaHeight: mediaDimensions?.height,
         });
 
         // Mark place as explored via posting
@@ -259,6 +301,7 @@ export function CreatePostSheetScreen() {
                 setContent("");
                 setSelectedPlace(null);
                 setMediaUri(null);
+                setMediaDimensions(null);
                 router.dismiss();
               },
             },
@@ -405,6 +448,7 @@ export function CreatePostSheetScreen() {
                       onPress={() => {
                         setPostType(item.type);
                         setMediaUri(null);
+                        setMediaDimensions(null);
                       }}
                     >
                       <Ionicons

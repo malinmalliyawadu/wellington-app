@@ -8,6 +8,8 @@ export interface Post {
   content: string;
   mediaUrl?: string;
   thumbnailUrl?: string;
+  mediaWidth?: number;
+  mediaHeight?: number;
   likes: number;
   createdAt: string;
 }

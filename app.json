@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "wellington-app",
+    "name": "Welly",
     "slug": "wellington-app",
     "version": "1.0.0",
     "scheme": "wellington",
@@ -49,7 +49,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Wellington App needs your location to show nearby places."
+          "locationWhenInUsePermission": "Welly needs your location to show nearby places."
         }
       ],
       "expo-router",
@@ -59,15 +59,27 @@
       [
         "expo-calendar",
         {
-          "calendarPermission": "Wellington App needs access to your calendar to add events."
+          "calendarPermission": "Welly needs access to your calendar to add events."
         }
       ],
       "expo-apple-authentication",
       [
         "expo-image-picker",
         {
-          "photosPermission": "Wellington App needs access to your photos to share recommendations.",
-          "cameraPermission": "Wellington App needs access to your camera to take photos."
+          "photosPermission": "Welly needs access to your photos to share recommendations.",
+          "cameraPermission": "Welly needs access to your camera to take photos."
+        }
+      ],
+      [
+        "expo-share-intent",
+        {
+          "iosActivationRules": {
+            "NSExtensionActivationSupportsWebURLWithMaxCount": 1,
+            "NSExtensionActivationSupportsWebPageWithMaxCount": 1,
+            "NSExtensionActivationSupportsImageWithMaxCount": 1,
+            "NSExtensionActivationSupportsMovieWithMaxCount": 1
+          },
+          "androidIntentFilters": ["text/*", "image/*", "video/*"]
         }
       ]
     ],

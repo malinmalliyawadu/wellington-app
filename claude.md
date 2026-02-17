@@ -28,7 +28,7 @@ File-based routing with 5 tabs, each containing an independent stack navigator:
 
 ```
 app/
-  _layout.tsx              # Root: SafeAreaProvider → FollowProvider → LikeProvider → Slot
+  _layout.tsx              # Root: SafeAreaProvider → Providers → AuthGate (with share intent handling) → Slot
   (tabs)/
     _layout.tsx            # NativeTabs: Map, Feed, Events, Create, Profile
     map/
@@ -119,11 +119,16 @@ All mock data, no backend. Helpers follow the pattern `getXById(id)`, `getXsByYI
 - **Place** - `id, name, category (cafe|restaurant|bar|attraction|park|venue), address, latitude, longitude`
 - **Event** - `id, title, description, placeId, date, startTime, endTime?, imageUrl?, category (music|comedy|art|food|market|community), attendeeIds`
 
-### Utils (`src/utils/placePopularity.ts`)
+### Utils (`src/utils/`)
 
+**`placePopularity.ts`**
 - `computePlacePopularity(posts)` - Aggregates posts into `PlacePopularity` map (postCount, totalLikes, score, posterIds)
 - `getMarkerSize(score, allPopularities)` - Linear interpolation for marker size (28-52px)
 - `isFollowedPlace(posterIds, followingIds)` - Checks if any poster is followed
+
+**`sharing.ts`** - Deep link URL generators and share helpers
+- `getPostUrl(postId)`, `getPlaceUrl(placeId)`, `getEventUrl(eventId)`, `getUserUrl(userId)` - Generate `wellington:///` deep link URLs via `expo-linking` `createURL()`
+- `sharePost(postId, placeName, content)`, `shareEvent(eventId, title, date, placeName, description)` - Call `Share.share()` with message text + deep link URL appended
 
 ### Theme (`src/theme/colors.ts`)
 
@@ -139,6 +144,8 @@ All mock data, no backend. Helpers follow the pattern `getXById(id)`, `getXsByYI
 - **Post sorting**: Followed users' posts appear first, then sorted by likes
 - **Popularity markers**: Map markers scale with engagement (posts + likes), filled for followed places, outlined for unfollowed
 - **Like state shared globally**: Liking a post in the map sheet persists when viewing the same post in feed or detail view
+- **Deep linking**: URL scheme `wellington://` configured in `app.json`. Expo Router auto-handles incoming deep links by matching paths to file-based routes. Share helpers in `src/utils/sharing.ts` generate deep link URLs for shared content.
+- **Share extension**: `expo-share-intent` registers the app as an iOS/Android share target. Incoming shared `wellington://` URLs are parsed and navigated to in `AuthGate` (`app/_layout.tsx`). Requires a development build (not Expo Go).
 
 ## Design Principles
 

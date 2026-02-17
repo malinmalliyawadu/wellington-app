@@ -1,11 +1,10 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
   Image,
   ScrollView,
   StyleSheet,
-  Share,
   ActivityIndicator,
   TextInput,
   Keyboard,
@@ -34,6 +33,7 @@ import { useDoubleTapLike } from "../hooks/useDoubleTapLike";
 import { useAuth } from "../context/AuthContext";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { colors } from "../theme/colors";
+import { sharePost } from "../utils/sharing";
 import { HapticPressable } from "src/components/HapticPressable";
 
 function formatTimeAgo(dateString: string): string {
@@ -62,6 +62,13 @@ export function PostDetailScreen() {
   const fetchPost = useCallback(() => getPostByIdAsync(postId), [postId]);
   const { data: post, loading } = useQuery(fetchPost);
   const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
+
+  // Use stored dimensions when available to avoid layout shift
+  useEffect(() => {
+    if (post?.mediaWidth && post?.mediaHeight) {
+      setAspectRatio(post.mediaWidth / post.mediaHeight);
+    }
+  }, [post?.mediaWidth, post?.mediaHeight]);
 
   const {
     liked,
@@ -303,12 +310,9 @@ export function PostDetailScreen() {
             </HapticPressable>
             <HapticPressable
               style={styles.actionButton}
-              onPress={() => {
-                const placeName = place?.name ?? "a place";
-                Share.share({
-                  message: `Check out ${placeName}: ${post.content}`,
-                });
-              }}
+              onPress={() =>
+                sharePost(post.id, place?.name ?? "a place", post.content)
+              }
             >
               <Ionicons
                 name="paper-plane-outline"

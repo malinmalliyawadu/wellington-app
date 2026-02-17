@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -6,16 +6,19 @@ import {
   ScrollView,
   SectionList,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../theme/colors";
 import { useQuery } from "../hooks/useQuery";
-import { getPlaces } from "../services/places";
+import { getPlaces, findOrCreatePlace } from "../services/places";
 import { getPosts } from "../services/posts";
 import { getProfiles } from "../services/users";
 import { getUpcomingEvents } from "../services/events";
+import { searchGooglePlaces } from "../services/googlePlaces";
 import { EventCard } from "../components/EventCard";
 import { HapticPressable } from "../components/HapticPressable";
 import type { Place, Post, User, Event, PlaceCategory } from "../types";
@@ -59,11 +62,8 @@ const ALL_CATEGORIES: PlaceCategory[] = [
 interface SearchResult {
   id: string;
   type: "place" | "post" | "user" | "event";
-  data: Place | Post | User | Event;
-}
-
-interface TrendingPlace extends Place {
-  postCount: number;
+  data: Place | Post | User | Event | Omit<Place, "id">;
+  source?: "google";
 }
 
 interface SearchScreenProps {
@@ -73,12 +73,71 @@ interface SearchScreenProps {
 
 export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
   const router = useRouter();
-  const headerHeight = useHeaderHeight();
+  const insets = useSafeAreaInsets();
 
   const { data: places } = useQuery(getPlaces);
   const { data: posts } = useQuery(getPosts);
   const { data: users } = useQuery(getProfiles);
   const { data: events } = useQuery(getUpcomingEvents);
+
+  // Google Places search state
+  const [googleResults, setGoogleResults] = useState<Array<Omit<Place, "id">>>(
+    []
+  );
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [creatingPlaceId, setCreatingPlaceId] = useState<string | null>(null);
+
+  // Debounced Google Places search
+  useEffect(() => {
+    if (!query.trim() || query.trim().length < 2) {
+      setGoogleResults([]);
+      setGoogleLoading(false);
+      return;
+    }
+
+    let stale = false;
+    setGoogleLoading(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const results = await searchGooglePlaces(query);
+        if (!stale) {
+          setGoogleResults(results);
+        }
+      } catch (error) {
+        if (!stale) {
+          console.error("Google Places search error:", error);
+          setGoogleResults([]);
+        }
+      } finally {
+        if (!stale) {
+          setGoogleLoading(false);
+        }
+      }
+    }, 300);
+
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
+  }, [query]);
+
+  const handleGooglePlacePress = useCallback(
+    async (placeData: Omit<Place, "id">) => {
+      if (!placeData.googlePlaceId || creatingPlaceId) return;
+
+      setCreatingPlaceId(placeData.googlePlaceId);
+      try {
+        const place = await findOrCreatePlace(placeData);
+        router.push(`/search/place/${place.id}`);
+      } catch (error) {
+        console.error("Error creating place:", error);
+      } finally {
+        setCreatingPlaceId(null);
+      }
+    },
+    [creatingPlaceId, router]
+  );
 
   // Trending places (most posts)
   const trendingPlaces = useMemo(() => {
@@ -180,7 +239,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
     return results;
   }, [query, places, posts, users, events]);
 
-  // Group search results by type
+  // Group search results by type, merging Google Places into the Places section
   const groupedResults = useMemo(() => {
     const sections = [];
 
@@ -189,8 +248,26 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
     const postResults = searchResults.filter((r) => r.type === "post");
     const eventResults = searchResults.filter((r) => r.type === "event");
 
-    if (placeResults.length > 0)
-      sections.push({ title: "Places", data: placeResults });
+    // Deduplicate: skip Google results that already exist locally
+    const localGooglePlaceIds = new Set(
+      placeResults.map((r) => (r.data as Place).googlePlaceId).filter(Boolean)
+    );
+
+    const uniqueGoogleResults: SearchResult[] = googleResults
+      .filter(
+        (gp) => gp.googlePlaceId && !localGooglePlaceIds.has(gp.googlePlaceId)
+      )
+      .map((gp) => ({
+        id: `google-${gp.googlePlaceId}`,
+        type: "place" as const,
+        data: gp,
+        source: "google" as const,
+      }));
+
+    const allPlaceResults = [...placeResults, ...uniqueGoogleResults];
+
+    if (allPlaceResults.length > 0 || googleLoading)
+      sections.push({ title: "Places", data: allPlaceResults });
     if (userResults.length > 0)
       sections.push({ title: "People", data: userResults });
     if (postResults.length > 0)
@@ -199,7 +276,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
       sections.push({ title: "Events", data: eventResults });
 
     return sections;
-  }, [searchResults]);
+  }, [searchResults, googleResults, googleLoading]);
 
   const handlePlacePress = (placeId: string) => {
     router.push(`/search/place/${placeId}`);
@@ -220,11 +297,17 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
   const renderSearchResult = ({ item }: { item: SearchResult }) => {
     switch (item.type) {
       case "place": {
-        const place = item.data as Place;
+        const isGoogle = item.source === "google";
+        const place = item.data as Place & Omit<Place, "id">;
+        const isCreating = isGoogle && creatingPlaceId === place.googlePlaceId;
         return (
           <HapticPressable
             style={styles.resultItem}
-            onPress={() => handlePlacePress(place.id)}
+            onPress={() =>
+              isGoogle
+                ? handleGooglePlacePress(place)
+                : handlePlacePress((place as Place).id)
+            }
           >
             <View
               style={[
@@ -239,10 +322,30 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
               />
             </View>
             <View style={styles.resultText}>
-              <Text style={styles.resultTitle}>{place.name}</Text>
+              <View style={styles.resultTitleRow}>
+                <Text
+                  style={[styles.resultTitle, { marginBottom: 0 }]}
+                  numberOfLines={1}
+                >
+                  {place.name}
+                </Text>
+                {isGoogle && (
+                  <View style={styles.googleBadge}>
+                    <Text style={styles.googleBadgeText}>Google</Text>
+                  </View>
+                )}
+              </View>
               <Text style={styles.resultSubtitle}>{place.address}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.gray300} />
+            {isCreating ? (
+              <ActivityIndicator size="small" color={colors.primary} />
+            ) : (
+              <Ionicons
+                name="chevron-forward"
+                size={18}
+                color={colors.gray300}
+              />
+            )}
           </HapticPressable>
         );
       }
@@ -325,6 +428,9 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
           sections={groupedResults}
           keyExtractor={(item) => item.id}
           renderItem={renderSearchResult}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          automaticallyAdjustKeyboardInsets
           renderSectionHeader={({ section }) => (
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionHeaderText}>{section.title}</Text>
@@ -333,9 +439,22 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
               </Text>
             </View>
           )}
+          renderSectionFooter={({ section }) => {
+            if (section.title === "Places" && googleLoading) {
+              return (
+                <View style={styles.googleLoadingRow}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={styles.googleLoadingText}>
+                    Searching Google Places...
+                  </Text>
+                </View>
+              );
+            }
+            return null;
+          }}
           contentContainerStyle={[
             styles.searchResults,
-            { paddingTop: headerHeight },
+            { paddingTop: insets.top },
           ]}
           ListHeaderComponent={
             onQueryChange ? (
@@ -368,7 +487,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={[styles.scrollContent]}
+      contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Trending Searches */}
@@ -690,6 +809,42 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   resultSubtitle: {
+    fontSize: 13,
+    color: colors.textMuted,
+  },
+
+  // Google Places
+  resultTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 2,
+  },
+  googleBadge: {
+    backgroundColor: colors.gray100,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.gray300,
+  },
+  googleBadgeText: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: colors.textMuted,
+    letterSpacing: 0.3,
+  },
+  googleLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    gap: 8,
+    backgroundColor: colors.cardBackground,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  googleLoadingText: {
     fontSize: 13,
     color: colors.textMuted,
   },

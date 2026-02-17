@@ -6,6 +6,7 @@ import { VideoThumbnail } from "./VideoThumbnail";
 import { HapticPressable } from "./HapticPressable";
 import { colors } from "../theme/colors";
 import type { Post, Place } from "../types";
+import { GlassView } from "expo-glass-effect";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
 const GAP = 1.5;
@@ -40,60 +41,64 @@ export function PostsGrid({
       {title && <Text style={styles.title}>{title}</Text>}
       <View style={styles.container}>
         {posts.map((item) => (
-        <HapticPressable
-          key={item.id}
-          style={styles.postTile}
-          onPress={() => onPostPress(item.id)}
-        >
-          {item.mediaUrl ? (
-            <>
-              {item.type === "video" ? (
-                <VideoThumbnail
-                  thumbnailUrl={item.thumbnailUrl}
-                  style={styles.postImage}
-                />
-              ) : (
-                <Image
-                  source={{ uri: item.mediaUrl }}
-                  style={styles.postImage}
-                />
-              )}
-              {item.type === "video" && (
-                <View style={styles.videoIndicator}>
-                  <Ionicons
-                    name="play-circle"
-                    size={28}
-                    color="rgba(255,255,255,0.9)"
+          <HapticPressable
+            key={item.id}
+            style={styles.postTile}
+            onPress={() => onPostPress(item.id)}
+          >
+            {item.mediaUrl ? (
+              <>
+                {item.type === "video" ? (
+                  <VideoThumbnail
+                    thumbnailUrl={item.thumbnailUrl}
+                    style={styles.postImage}
                   />
-                </View>
-              )}
-            </>
-          ) : (
-            <LinearGradient
-              colors={[colors.primary, colors.primaryDark]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.textPostTile}
-            >
-              <Text style={styles.textPostContent} numberOfLines={4}>
-                {item.content}
-              </Text>
-            </LinearGradient>
-          )}
-          {item.place && (
-            <View style={styles.placeTag}>
-              <Ionicons
-                name="location"
-                size={9}
-                color="rgba(255,255,255,0.85)"
-              />
-              <Text style={styles.placeText} numberOfLines={1}>
-                {item.place.name}
-              </Text>
-            </View>
-          )}
-        </HapticPressable>
-      ))}
+                ) : (
+                  <Image
+                    source={{ uri: item.mediaUrl }}
+                    style={styles.postImage}
+                  />
+                )}
+                {item.type === "video" && (
+                  <View style={styles.videoIndicator}>
+                    <Ionicons
+                      name="play-circle"
+                      size={28}
+                      color="rgba(255,255,255,0.9)"
+                    />
+                  </View>
+                )}
+              </>
+            ) : (
+              <LinearGradient
+                colors={[colors.primary, colors.primaryDark]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.textPostTile}
+              >
+                <Text style={styles.textPostContent} numberOfLines={4}>
+                  {item.content}
+                </Text>
+              </LinearGradient>
+            )}
+            {item.place && (
+              <GlassView
+                style={styles.placeTag}
+                colorScheme="light"
+                glassEffectStyle="clear"
+              >
+                <Ionicons
+                  name="location"
+                  size={9}
+                  color="rgba(255,255,255,0.85)"
+                />
+                <Text style={styles.placeText} numberOfLines={1}>
+                  {item.place.name}
+                </Text>
+              </GlassView>
+            )}
+          </HapticPressable>
+        ))}
       </View>
     </View>
   );
@@ -149,15 +154,15 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.35)",
     paddingHorizontal: 5,
     paddingVertical: 4,
     gap: 2,
+    backgroundColor: "rgba(0, 0, 0, 0.4)",
   },
   placeText: {
     flex: 1,
     fontSize: 9,
-    color: "rgba(255,255,255,0.85)",
+    color: "rgba(255,255,255,1)",
     fontWeight: "500",
   },
   emptyState: {

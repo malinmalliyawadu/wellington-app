@@ -73,6 +73,8 @@ export async function createPost(post: {
   content: string;
   mediaUrl?: string;
   thumbnailUrl?: string;
+  mediaWidth?: number;
+  mediaHeight?: number;
 }): Promise<Post> {
   const { data, error } = await supabase
     .from('posts')
@@ -83,6 +85,8 @@ export async function createPost(post: {
       content: post.content,
       media_url: post.mediaUrl ?? null,
       thumbnail_url: post.thumbnailUrl ?? null,
+      media_width: post.mediaWidth ?? null,
+      media_height: post.mediaHeight ?? null,
     })
     .select()
     .single();
@@ -99,6 +103,8 @@ function mapPost(row: {
   content: string;
   media_url: string | null;
   thumbnail_url: string | null;
+  media_width?: number | null;
+  media_height?: number | null;
   likes: number;
   created_at: string;
 }): Post {
@@ -110,6 +116,8 @@ function mapPost(row: {
     content: row.content,
     mediaUrl: row.media_url ?? undefined,
     thumbnailUrl: row.thumbnail_url ?? undefined,
+    mediaWidth: row.media_width ?? undefined,
+    mediaHeight: row.media_height ?? undefined,
     likes: row.likes,
     createdAt: row.created_at,
   };

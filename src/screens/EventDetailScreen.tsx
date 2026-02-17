@@ -5,7 +5,6 @@ import {
   Image,
   FlatList,
   StyleSheet,
-  Share,
   ActivityIndicator,
   Alert,
 } from "react-native";
@@ -29,6 +28,7 @@ import { useFollow } from "../context/FollowContext";
 import { addToCalendar } from "../utils/addToCalendar";
 import { colors } from "../theme/colors";
 import type { Event } from "../types";
+import { shareEvent } from "../utils/sharing";
 import { HapticPressable } from "src/components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 
@@ -233,14 +233,15 @@ export function EventDetailScreen() {
                 />
                 <Text style={styles.infoText}>{formatDate(event.date)}</Text>
                 <HapticPressable
-                  onPress={() => {
-                    const placeName = place?.name ?? "Wellington";
-                    Share.share({
-                      message: `${event.title} — ${formatDate(
-                        event.date
-                      )} at ${placeName}\n${event.description}`,
-                    });
-                  }}
+                  onPress={() =>
+                    shareEvent(
+                      event.id,
+                      event.title,
+                      formatDate(event.date),
+                      place?.name ?? "Wellington",
+                      event.description
+                    )
+                  }
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={styles.shareButton}
                 >
