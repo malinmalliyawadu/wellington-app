@@ -2,11 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { SFSymbol } from 'expo-symbols';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { useMapFilters } from '../context/MapFilterContext';
+import { PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { PlaceCategory } from '../types';
 import { colors } from '../theme/colors';
 import { HapticPressable } from './HapticPressable';
+import { SFIcon } from './SFIcon';
 
 const ALL_CATEGORIES: PlaceCategory[] = [
   'cafe',
@@ -26,16 +29,17 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   venue: 'Venue',
 };
 
-const CATEGORY_ICONS: Record<PlaceCategory, keyof typeof Ionicons.glyphMap> = {
-  cafe: 'cafe',
-  restaurant: 'restaurant',
-  bar: 'wine',
-  attraction: 'compass',
-  park: 'leaf',
-  venue: 'musical-notes',
+const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
+  cafe: { sf: 'cup.and.saucer.fill', fallback: 'cafe' },
+  restaurant: { sf: 'fork.knife', fallback: 'restaurant' },
+  bar: { sf: 'wineglass.fill', fallback: 'wine' },
+  attraction: { sf: 'safari', fallback: 'compass' },
+  park: { sf: 'leaf.fill', fallback: 'leaf' },
+  venue: { sf: 'music.note.list', fallback: 'musical-notes' },
 };
 
 export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_700Bold });
   const insets = useSafeAreaInsets();
   const {
     selectedCategories,
@@ -83,11 +87,11 @@ export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
               style={[styles.option, active && styles.optionActive]}
               onPress={() => toggleCategory(cat)}
             >
-              <Ionicons name={CATEGORY_ICONS[cat]} size={20} color={catColor} />
+              <SFIcon name={CATEGORY_ICONS[cat].sf} fallback={CATEGORY_ICONS[cat].fallback} size={20} color={catColor} />
               <Text style={[styles.optionLabel, active && styles.optionLabelActive]}>
                 {CATEGORY_LABELS[cat]}
               </Text>
-              {active && <Ionicons name="checkmark" size={18} color={colors.primary} style={styles.check} />}
+              {active && <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />}
             </HapticPressable>
           );
         })}
@@ -98,12 +102,12 @@ export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
           style={[styles.option, showFollowingOnly && styles.optionActive]}
           onPress={() => setShowFollowingOnly(!showFollowingOnly)}
         >
-          <Ionicons name="people" size={20} color={showFollowingOnly ? colors.primary : colors.text} />
+          <SFIcon name="person.2" fallback="people" size={20} color={showFollowingOnly ? colors.primary : colors.text} />
           <Text style={[styles.optionLabel, showFollowingOnly && styles.optionLabelActive]}>
             Following only
           </Text>
           {showFollowingOnly && (
-            <Ionicons name="checkmark" size={18} color={colors.primary} style={styles.check} />
+            <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />
           )}
         </HapticPressable>
       </ScrollView>
@@ -132,7 +136,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'PlusJakartaSans_700Bold',
     color: colors.text,
   },
   clearAll: {

@@ -21,10 +21,12 @@ import { getEventsByUserId } from "../services/events";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { PostsGrid } from "../components/PostsGrid";
 import { UpcomingEvents } from "../components/UpcomingEvents";
+import { PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { colors } from "../theme/colors";
 import { HapticPressable } from "src/components/HapticPressable";
 
 export function ProfileScreen() {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold });
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { profile } = useAuth();
@@ -242,7 +244,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 22,
-    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
     color: colors.text,
   },
   username: {
@@ -270,7 +272,7 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 24,
-    fontWeight: "800",
+    fontFamily: "PlusJakartaSans_800ExtraBold",
     color: colors.text,
   },
   statLabel: {

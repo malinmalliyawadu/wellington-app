@@ -20,6 +20,8 @@ import {
   isLiquidGlassAvailable,
 } from "expo-glass-effect";
 import { Ionicons } from "@expo/vector-icons";
+import { SFSymbol } from "expo-symbols";
+import { SFIcon } from "../components/SFIcon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Gesture,
@@ -312,7 +314,8 @@ export function LoginScreen() {
     onPress: () => void,
     icon: keyof typeof Ionicons.glyphMap,
     label: string,
-    loadingKey: string
+    loadingKey: string,
+    sfIcon?: SFSymbol
   ) => {
     const isLoading = loading === loadingKey;
     const content = (
@@ -321,7 +324,11 @@ export function LoginScreen() {
           <ActivityIndicator color="#fff" />
         ) : (
           <>
-            <Ionicons name={icon} size={22} color="#fff" />
+            {sfIcon ? (
+              <SFIcon name={sfIcon} fallback={icon} size={22} color="#fff" />
+            ) : (
+              <Ionicons name={icon} size={22} color="#fff" />
+            )}
             <Text style={styles.buttonText}>{label}</Text>
           </>
         )}
@@ -499,7 +506,8 @@ export function LoginScreen() {
                       handleAppleSignIn,
                       "logo-apple",
                       "Continue with Apple",
-                      "apple"
+                      "apple",
+                      "apple.logo"
                     )}
                 </GlassContainer>
               ) : (
@@ -515,7 +523,8 @@ export function LoginScreen() {
                       handleAppleSignIn,
                       "logo-apple",
                       "Continue with Apple",
-                      "apple"
+                      "apple",
+                      "apple.logo"
                     )}
                 </>
               )}

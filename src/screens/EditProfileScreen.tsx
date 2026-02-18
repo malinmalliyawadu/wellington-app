@@ -16,10 +16,12 @@ import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
 import { uploadAvatar } from "../services/storage";
 import { HapticPressable } from "../components/HapticPressable";
+import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { colors } from "../theme/colors";
 
 export function EditProfileScreen() {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
   const router = useRouter();
   const navigation = useNavigation();
   const headerHeight = useHeaderHeight();
@@ -246,7 +248,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
   saveButtonDisabled: {
     color: colors.textMuted,
@@ -292,7 +294,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
     marginBottom: 8,
   },

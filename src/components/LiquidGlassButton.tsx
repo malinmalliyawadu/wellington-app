@@ -10,6 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { HapticPressable } from "./HapticPressable";
 import { colors } from "../theme/colors";
@@ -19,12 +20,14 @@ type ButtonSize = "small" | "medium" | "large";
 type ButtonVariant = "primary" | "secondary" | "category";
 
 interface LiquidGlassButtonProps {
-  /** Button text */
-  title: string;
+  /** Button text (optional when iconOnly is true) */
+  title?: string;
   /** Press handler */
   onPress: () => void;
   /** Optional icon name from Ionicons */
   icon?: keyof typeof Ionicons.glyphMap;
+  /** Icon-only circular button */
+  iconOnly?: boolean;
   /** Button size - default: medium */
   size?: ButtonSize;
   /** Button variant - default: primary */
@@ -49,6 +52,7 @@ export function LiquidGlassButton({
   title,
   onPress,
   icon,
+  iconOnly = false,
   size = "medium",
   variant = "primary",
   category,
@@ -58,8 +62,10 @@ export function LiquidGlassButton({
   style,
   fullWidth = false,
 }: LiquidGlassButtonProps) {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
   const sizeStyles = SIZE_STYLES[size];
   const iconSize = ICON_SIZES[size];
+  const circleSize = CIRCLE_SIZES[size];
   const isDisabled = disabled || loading;
 
   // --- Glass path ---
@@ -89,7 +95,9 @@ export function LiquidGlassButton({
           glassEffectStyle="regular"
           style={[
             styles.button,
-            sizeStyles.container,
+            iconOnly
+              ? { width: circleSize, height: circleSize, borderRadius: circleSize / 2 }
+              : sizeStyles.container,
           ]}
         >
           {loading ? (
@@ -101,12 +109,14 @@ export function LiquidGlassButton({
                   name={icon}
                   size={iconSize}
                   color={labelColor}
-                  style={styles.icon}
+                  style={!iconOnly ? styles.icon : undefined}
                 />
               )}
-              <Text style={[styles.text, sizeStyles.text, { color: labelColor }]}>
-                {title}
-              </Text>
+              {!iconOnly && (
+                <Text style={[styles.text, sizeStyles.text, { color: labelColor }]}>
+                  {title}
+                </Text>
+              )}
             </>
           )}
         </GlassView>
@@ -137,7 +147,9 @@ export function LiquidGlassButton({
       style={[
         styles.button,
         styles.fallbackButton,
-        sizeStyles.container,
+        iconOnly
+          ? { width: circleSize, height: circleSize, borderRadius: circleSize / 2 }
+          : sizeStyles.container,
         {
           backgroundColor: bgColor,
           borderColor,
@@ -157,12 +169,14 @@ export function LiquidGlassButton({
               name={icon}
               size={iconSize}
               color={contentColor}
-              style={styles.icon}
+              style={!iconOnly ? styles.icon : undefined}
             />
           )}
-          <Text style={[styles.text, sizeStyles.text, { color: contentColor }]}>
-            {title}
-          </Text>
+          {!iconOnly && (
+            <Text style={[styles.text, sizeStyles.text, { color: contentColor }]}>
+              {title}
+            </Text>
+          )}
         </>
       )}
     </HapticPressable>
@@ -182,7 +196,7 @@ const SIZE_STYLES: Record<
     },
     text: {
       fontSize: 13,
-      fontWeight: "600",
+      fontFamily: "PlusJakartaSans_600SemiBold",
     },
   },
   medium: {
@@ -194,7 +208,7 @@ const SIZE_STYLES: Record<
     },
     text: {
       fontSize: 15,
-      fontWeight: "600",
+      fontFamily: "PlusJakartaSans_600SemiBold",
     },
   },
   large: {
@@ -206,7 +220,7 @@ const SIZE_STYLES: Record<
     },
     text: {
       fontSize: 15,
-      fontWeight: "600",
+      fontFamily: "PlusJakartaSans_600SemiBold",
     },
   },
 };
@@ -215,6 +229,12 @@ const ICON_SIZES: Record<ButtonSize, number> = {
   small: 16,
   medium: 18,
   large: 20,
+};
+
+const CIRCLE_SIZES: Record<ButtonSize, number> = {
+  small: 32,
+  medium: 40,
+  large: 48,
 };
 
 const styles = StyleSheet.create({

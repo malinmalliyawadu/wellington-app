@@ -15,6 +15,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { SFSymbol } from "expo-symbols";
+import { SFIcon } from "../components/SFIcon";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import MapView, { Marker } from "react-native-maps";
@@ -27,13 +29,14 @@ import { findOrCreatePlace, getPlaceById } from "../services/places";
 import { createPost } from "../services/posts";
 import { uploadMedia } from "../services/storage";
 import { createAchievementToast } from "../utils/achievementHelpers";
+import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { HapticPressable } from "src/components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 
-const POST_TYPES: { type: PostType; icon: string; label: string }[] = [
-  { type: "photo", icon: "image", label: "Photo" },
-  { type: "video", icon: "videocam", label: "Video" },
-  { type: "text", icon: "document-text", label: "Text" },
+const POST_TYPES: { type: PostType; icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }; label: string }[] = [
+  { type: "photo", icon: { sf: "photo.fill", fallback: "image" }, label: "Photo" },
+  { type: "video", icon: { sf: "video.fill", fallback: "videocam" }, label: "Video" },
+  { type: "text", icon: { sf: "doc.text.fill", fallback: "document-text" }, label: "Text" },
 ];
 
 const EVENT_CATEGORIES: { type: EventCategory; label: string }[] = [
@@ -48,6 +51,7 @@ const EVENT_CATEGORIES: { type: EventCategory; label: string }[] = [
 type CreateType = "post" | "event";
 
 export function CreatePostSheetScreen() {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const { markExplored } = useExploration();
@@ -383,7 +387,7 @@ export function CreatePostSheetScreen() {
                   onPress={() => router.dismiss()}
                   style={styles.closeButton}
                 >
-                  <Ionicons name="close" size={24} color={colors.text} />
+                  <SFIcon name="xmark" fallback="close" size={24} color={colors.text} />
                 </HapticPressable>
               </View>
               <View style={styles.headerCenter}>
@@ -451,8 +455,9 @@ export function CreatePostSheetScreen() {
                         setMediaDimensions(null);
                       }}
                     >
-                      <Ionicons
-                        name={item.icon as any}
+                      <SFIcon
+                        name={item.icon.sf}
+                        fallback={item.icon.fallback}
                         size={24}
                         color={
                           postType === item.type
@@ -484,8 +489,9 @@ export function CreatePostSheetScreen() {
                       />
                     ) : (
                       <>
-                        <Ionicons
-                          name={postType === "photo" ? "camera" : "videocam"}
+                        <SFIcon
+                          name={postType === "photo" ? "camera.fill" : "video.fill"}
+                          fallback={postType === "photo" ? "camera" : "videocam"}
                           size={32}
                           color={colors.gray400}
                         />
@@ -589,8 +595,9 @@ export function CreatePostSheetScreen() {
               {selectedPlace ? (
                 <>
                   <View style={styles.selectedPlace}>
-                    <Ionicons
-                      name="location"
+                    <SFIcon
+                      name="mappin"
+                      fallback="location"
                       size={20}
                       color={colors.primary}
                     />
@@ -610,8 +617,9 @@ export function CreatePostSheetScreen() {
                     }}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   >
-                    <Ionicons
-                      name="close-circle"
+                    <SFIcon
+                      name="xmark.circle.fill"
+                      fallback="close-circle"
                       size={20}
                       color={colors.gray400}
                     />
@@ -620,13 +628,14 @@ export function CreatePostSheetScreen() {
               ) : (
                 <>
                   <View style={styles.selectedPlace}>
-                    <Ionicons name="search" size={20} color={colors.gray400} />
+                    <SFIcon name="magnifyingglass" fallback="search" size={20} color={colors.gray400} />
                     <Text style={styles.placeholderText}>
                       Search for a place...
                     </Text>
                   </View>
-                  <Ionicons
-                    name="chevron-forward"
+                  <SFIcon
+                    name="chevron.right"
+                    fallback="chevron-forward"
                     size={20}
                     color={colors.gray400}
                   />
@@ -736,7 +745,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
   },
   segmentControl: {
@@ -760,14 +769,14 @@ const styles = StyleSheet.create({
   },
   segmentTextActive: {
     color: colors.text,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
   content: {
     paddingHorizontal: 16,
   },
   label: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
     marginBottom: 10,
     marginTop: 16,
@@ -897,7 +906,7 @@ const styles = StyleSheet.create({
   progressText: {
     marginTop: 16,
     fontSize: 17,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
   },
   progressSubtext: {

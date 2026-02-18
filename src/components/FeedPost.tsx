@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SFSymbol } from "expo-symbols";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated from "react-native-reanimated";
 import { TapGestureHandler, State } from "react-native-gesture-handler";
@@ -9,17 +10,23 @@ import { useQuery } from "../hooks/useQuery";
 import { useDoubleTapLike } from "../hooks/useDoubleTapLike";
 import { getCommentsByPostId } from "../services/comments";
 import { VideoPlayer } from "./VideoPlayer";
+import { SFIcon } from "./SFIcon";
 import { colors } from "../theme/colors";
 import { sharePost } from "../utils/sharing";
 import { HapticPressable } from "./HapticPressable";
+import {
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  useFonts,
+} from "@expo-google-fonts/plus-jakarta-sans";
 
-const CATEGORY_ICONS: Record<PlaceCategory, keyof typeof Ionicons.glyphMap> = {
-  cafe: "cafe",
-  restaurant: "restaurant",
-  bar: "wine",
-  attraction: "compass",
-  park: "leaf",
-  venue: "musical-notes",
+const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
+  cafe: { sf: "cup.and.saucer.fill", fallback: "cafe" },
+  restaurant: { sf: "fork.knife", fallback: "restaurant" },
+  bar: { sf: "wineglass.fill", fallback: "wine" },
+  attraction: { sf: "safari", fallback: "compass" },
+  park: { sf: "leaf.fill", fallback: "leaf" },
+  venue: { sf: "music.note.list", fallback: "musical-notes" },
 };
 
 interface FeedPostProps {
@@ -55,6 +62,11 @@ export function FeedPost({
   onPressPlace,
   onPressPost,
 }: FeedPostProps) {
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+  });
+
   const categoryColor = colors.category[place.category];
   const {
     liked,
@@ -184,7 +196,7 @@ export function FeedPost({
                 style={[styles.heartOverlay, heartOverlayStyle]}
                 pointerEvents="none"
               >
-                <Ionicons name="heart" size={80} color="#FFFFFF" />
+                <SFIcon name="heart.fill" fallback="heart" size={80} color="#FFFFFF" />
               </Animated.View>
             </View>
           </TapGestureHandler>
@@ -202,13 +214,14 @@ export function FeedPost({
         onPress={() => onPressPlace?.(place.id)}
         disabled={!onPressPlace}
       >
-        <Ionicons
-          name={CATEGORY_ICONS[place.category]}
+        <SFIcon
+          name={CATEGORY_ICONS[place.category].sf}
+          fallback={CATEGORY_ICONS[place.category].fallback}
           size={16}
           color={categoryColor}
         />
         <Text style={styles.locationName}>{place.name}</Text>
-        <Ionicons name="chevron-forward" size={14} color={colors.textMuted} />
+        <SFIcon name="chevron.right" fallback="chevron-forward" size={14} color={colors.textMuted} />
       </HapticPressable>
 
       {/* Action bar */}
@@ -220,8 +233,9 @@ export function FeedPost({
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <Animated.View style={likeAnimatedStyle}>
-              <Ionicons
-                name={liked ? "heart" : "heart-outline"}
+              <SFIcon
+                name={liked ? "heart.fill" : "heart"}
+                fallback={liked ? "heart" : "heart-outline"}
                 size={24}
                 color={liked ? colors.liked : colors.text}
               />
@@ -238,7 +252,7 @@ export function FeedPost({
             disabled={!onPressPost}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons name="chatbubble-outline" size={22} color={colors.text} />
+            <SFIcon name="bubble.left" fallback="chatbubble-outline" size={22} color={colors.text} />
             <Text style={styles.actionCount}>{commentCount}</Text>
           </HapticPressable>
           <HapticPressable
@@ -246,14 +260,15 @@ export function FeedPost({
             onPress={() => sharePost(post.id, place.name, post.content)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Ionicons
-              name="paper-plane-outline"
+            <SFIcon
+              name="paperplane"
+              fallback="paper-plane-outline"
               size={22}
               color={colors.text}
             />
           </HapticPressable>
         </View>
-        <Ionicons name="bookmark-outline" size={22} color={colors.text} />
+        <SFIcon name="bookmark" fallback="bookmark-outline" size={22} color={colors.text} />
       </View>
 
       {/* Bottom divider */}
@@ -289,7 +304,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
   },
   username: {
@@ -327,7 +342,7 @@ const styles = StyleSheet.create({
   },
   overlaidDisplayName: {
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
     color: "#FFFFFF",
     textShadowColor: "rgba(0,0,0,0.4)",
     textShadowOffset: { width: 0, height: 1 },
@@ -376,7 +391,7 @@ const styles = StyleSheet.create({
   },
   locationName: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
     flex: 1,
   },

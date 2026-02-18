@@ -1,8 +1,9 @@
 import React from "react";
 import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
 import { VideoThumbnail } from "./VideoThumbnail";
+import { SFIcon } from "./SFIcon";
+import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { HapticPressable } from "./HapticPressable";
 import { colors } from "../theme/colors";
 import type { Post, Place } from "../types";
@@ -28,6 +29,7 @@ export function PostsGrid({
   title,
   emptyText = "No posts yet",
 }: PostsGridProps) {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
   if (posts.length === 0) {
     return (
       <View style={styles.emptyState}>
@@ -61,8 +63,9 @@ export function PostsGrid({
                 )}
                 {item.type === "video" && (
                   <View style={styles.videoIndicator}>
-                    <Ionicons
-                      name="play-circle"
+                    <SFIcon
+                      name="play.circle.fill"
+                      fallback="play-circle"
                       size={28}
                       color="rgba(255,255,255,0.9)"
                     />
@@ -87,8 +90,9 @@ export function PostsGrid({
                 colorScheme="light"
                 glassEffectStyle="clear"
               >
-                <Ionicons
-                  name="location"
+                <SFIcon
+                  name="mappin"
+                  fallback="location"
                   size={9}
                   color="rgba(255,255,255,0.85)"
                 />
@@ -107,7 +111,7 @@ export function PostsGrid({
 const styles = StyleSheet.create({
   title: {
     fontSize: 17,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
     marginTop: 28,
     marginBottom: 12,

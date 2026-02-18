@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useAuth } from "../context/AuthContext";
 import { FollowButton } from "../components/FollowButton";
+import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { colors } from "../theme/colors";
 import { useQuery } from "../hooks/useQuery";
 import { getProfileById, getProfilesByIds } from "../services/users";
@@ -19,6 +20,7 @@ import { getFollowerIds, getFollowingIds } from "../services/follows";
 import { HapticPressable } from "src/components/HapticPressable";
 
 export function FollowListScreen() {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
   const router = useRouter();
   const navigation = useNavigation();
   const { userId, tab: initialTab } = useLocalSearchParams<{
@@ -225,7 +227,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
   },
   username: {

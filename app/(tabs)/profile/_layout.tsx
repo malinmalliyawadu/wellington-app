@@ -1,6 +1,6 @@
 import { Alert } from "react-native";
 import { Stack } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { SFIcon } from "../../../src/components/SFIcon";
 import { signOut } from "../../../src/services/auth";
 import { HapticPressable } from "../../../src/components/HapticPressable";
 import { colors } from "../../../src/theme/colors";
@@ -25,7 +25,7 @@ function LogoutButton() {
       }
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
-      <Ionicons name="log-out-outline" size={22} color={colors.text} />
+      <SFIcon name="rectangle.portrait.and.arrow.right" fallback="log-out-outline" size={22} color={colors.text} />
     </HapticPressable>
   );
 }

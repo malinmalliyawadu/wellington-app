@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import * as Location from "expo-location";
-import { Ionicons } from "@expo/vector-icons";
+import { SFIcon } from "../components/SFIcon";
 import { useNavigation, useFocusEffect } from "expo-router";
 import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -511,8 +511,9 @@ export function MapScreen() {
               ]}
               onPress={openFilters}
             >
-              <Ionicons
-                name="options"
+              <SFIcon
+                name="slider.horizontal.3"
+                fallback="options"
                 size={22}
                 color={activeFilterCount > 0 ? "#FFFFFF" : colors.text}
               />
@@ -524,8 +525,9 @@ export function MapScreen() {
               style={[styles.controlButton]}
               onPress={() => setShowNeighborhoods(!showNeighborhoods)}
             >
-              <Ionicons
-                name={showNeighborhoods ? "map" : "map-outline"}
+              <SFIcon
+                name={showNeighborhoods ? "map.fill" : "map"}
+                fallback={showNeighborhoods ? "map" : "map-outline"}
                 size={22}
                 color={showNeighborhoods ? colors.primary : colors.text}
               />
@@ -537,8 +539,9 @@ export function MapScreen() {
               style={[styles.controlButton]}
               onPress={() => setShowExplorationOverlay(!showExplorationOverlay)}
             >
-              <Ionicons
-                name={showExplorationOverlay ? "eye" : "eye-outline"}
+              <SFIcon
+                name={showExplorationOverlay ? "eye.fill" : "eye"}
+                fallback={showExplorationOverlay ? "eye" : "eye-outline"}
                 size={22}
                 color={showExplorationOverlay ? colors.primary : colors.text}
               />
@@ -550,8 +553,9 @@ export function MapScreen() {
               style={[styles.controlButton, styles.controlButtonBottom]}
               onPress={centerOnUser}
             >
-              <Ionicons
-                name={location ? "navigate" : "navigate-outline"}
+              <SFIcon
+                name={location ? "location.fill" : "location"}
+                fallback={location ? "navigate" : "navigate-outline"}
                 size={22}
                 color={location ? colors.primary : colors.text}
               />
@@ -573,8 +577,9 @@ export function MapScreen() {
                 ]}
                 onPress={openFilters}
               >
-                <Ionicons
-                  name="options"
+                <SFIcon
+                  name="slider.horizontal.3"
+                  fallback="options"
                   size={22}
                   color={activeFilterCount > 0 ? "#FFFFFF" : colors.text}
                 />
@@ -586,8 +591,9 @@ export function MapScreen() {
                 style={[styles.controlButton]}
                 onPress={() => setShowNeighborhoods(!showNeighborhoods)}
               >
-                <Ionicons
-                  name={showNeighborhoods ? "map" : "map-outline"}
+                <SFIcon
+                  name={showNeighborhoods ? "map.fill" : "map"}
+                  fallback={showNeighborhoods ? "map" : "map-outline"}
                   size={22}
                   color={showNeighborhoods ? colors.primary : colors.text}
                 />
@@ -601,8 +607,9 @@ export function MapScreen() {
                   setShowExplorationOverlay(!showExplorationOverlay)
                 }
               >
-                <Ionicons
-                  name={showExplorationOverlay ? "eye" : "eye-outline"}
+                <SFIcon
+                  name={showExplorationOverlay ? "eye.fill" : "eye"}
+                  fallback={showExplorationOverlay ? "eye" : "eye-outline"}
                   size={22}
                   color={showExplorationOverlay ? colors.primary : colors.text}
                 />
@@ -614,8 +621,9 @@ export function MapScreen() {
                 style={[styles.controlButton, styles.controlButtonBottom]}
                 onPress={centerOnUser}
               >
-                <Ionicons
-                  name={location ? "navigate" : "navigate-outline"}
+                <SFIcon
+                  name={location ? "location.fill" : "location"}
+                  fallback={location ? "navigate" : "navigate-outline"}
                   size={22}
                   color={location ? colors.primary : colors.text}
                 />

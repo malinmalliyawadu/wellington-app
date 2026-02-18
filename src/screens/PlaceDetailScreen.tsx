@@ -3,7 +3,7 @@ import { View, Text, Image, FlatList, StyleSheet, Pressable, ActivityIndicator, 
 import { useLocalSearchParams, usePathname, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
-import { Ionicons } from '@expo/vector-icons';
+import { SFIcon } from '../components/SFIcon';
 import { useQuery } from '../hooks/useQuery';
 import { getPlaceById } from '../services/places';
 import { getPostsByPlaceId as getPostsByPlaceIdAsync } from '../services/posts';
@@ -16,6 +16,7 @@ import { useLike } from '../context/LikeContext';
 import { VideoThumbnail } from '../components/VideoThumbnail';
 import { colors } from '../theme/colors';
 import type { PlaceCategory } from '../types';
+import { PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { HapticPressable } from 'src/components/HapticPressable';
 import { LiquidGlassButton } from '../components/LiquidGlassButton';
 
@@ -29,6 +30,7 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
 };
 
 export function PlaceDetailScreen() {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold });
   const { placeId } = useLocalSearchParams<{ placeId: string }>();
   const router = useRouter();
   const pathname = usePathname();
@@ -137,7 +139,7 @@ export function PlaceDetailScreen() {
               </View>
               {placeDetails.rating && (
                 <View style={styles.ratingContainer}>
-                  <Ionicons name="star" size={14} color="#FFA500" />
+                  <SFIcon name="star.fill" fallback="star" size={14} color="#FFA500" />
                   <Text style={styles.ratingText}>
                     {placeDetails.rating.toFixed(1)}
                   </Text>
@@ -154,15 +156,15 @@ export function PlaceDetailScreen() {
             </View>
             <View style={styles.statsRow}>
               <View style={styles.stat}>
-                <Ionicons name="chatbubble-outline" size={16} color={colors.textSecondary} />
+                <SFIcon name="bubble.left" fallback="chatbubble-outline" size={16} color={colors.textSecondary} />
                 <Text style={styles.statText}>{allPosts.length} posts</Text>
               </View>
               <View style={styles.stat}>
-                <Ionicons name="heart-outline" size={16} color={colors.textSecondary} />
+                <SFIcon name="heart" fallback="heart-outline" size={16} color={colors.textSecondary} />
                 <Text style={styles.statText}>{totalLikes} likes</Text>
               </View>
               <HapticPressable style={styles.directionsButton} onPress={handleOpenDirections}>
-                <Ionicons name="navigate" size={16} color={colors.primary} />
+                <SFIcon name="location.fill" fallback="navigate" size={16} color={colors.primary} />
                 <Text style={styles.directionsText}>Directions</Text>
               </HapticPressable>
             </View>
@@ -234,8 +236,9 @@ function PostLikeButton({ postId }: { postId: string }) {
       onPress={() => toggleLike(postId)}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
-      <Ionicons
-        name={liked ? 'heart' : 'heart-outline'}
+      <SFIcon
+        name={liked ? 'heart.fill' : 'heart'}
+        fallback={liked ? 'heart' : 'heart-outline'}
         size={15}
         color={liked ? colors.liked : colors.textMuted}
       />
@@ -258,7 +261,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'PlusJakartaSans_700Bold',
     color: colors.text,
     marginBottom: 10,
   },
@@ -323,7 +326,7 @@ const styles = StyleSheet.create({
   },
   directionsText: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'PlusJakartaSans_600SemiBold',
     color: colors.primary,
   },
   postRow: {
@@ -349,7 +352,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'PlusJakartaSans_600SemiBold',
     color: colors.text,
     marginRight: 8,
   },

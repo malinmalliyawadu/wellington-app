@@ -15,7 +15,7 @@ import {
 import { useLocalSearchParams, useRouter, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { Ionicons } from "@expo/vector-icons";
+import { SFIcon } from "../components/SFIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated from "react-native-reanimated";
 import { TapGestureHandler, State } from "react-native-gesture-handler";
@@ -33,6 +33,7 @@ import { useDoubleTapLike } from "../hooks/useDoubleTapLike";
 import { useAuth } from "../context/AuthContext";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { colors } from "../theme/colors";
+import { PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { sharePost } from "../utils/sharing";
 import { HapticPressable } from "src/components/HapticPressable";
 
@@ -49,6 +50,7 @@ function formatTimeAgo(dateString: string): string {
 }
 
 export function PostDetailScreen() {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold });
   const { postId } = useLocalSearchParams<{ postId: string }>();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
@@ -280,7 +282,7 @@ export function PostDetailScreen() {
                 style={[styles.heartOverlay, heartOverlayStyle]}
                 pointerEvents="none"
               >
-                <Ionicons name="heart" size={80} color="#FFFFFF" />
+                <SFIcon name="heart.fill" fallback="heart" size={80} color="#FFFFFF" />
               </Animated.View>
             </View>
           </TapGestureHandler>
@@ -291,8 +293,9 @@ export function PostDetailScreen() {
           <View style={styles.actionsLeft}>
             <HapticPressable style={styles.actionButton} onPress={handleLike}>
               <Animated.View style={likeAnimatedStyle}>
-                <Ionicons
-                  name={liked ? "heart" : "heart-outline"}
+                <SFIcon
+                  name={liked ? "heart.fill" : "heart"}
+                  fallback={liked ? "heart" : "heart-outline"}
                   size={26}
                   color={liked ? colors.liked : colors.text}
                 />
@@ -302,8 +305,9 @@ export function PostDetailScreen() {
               style={styles.actionButton}
               onPress={() => inputRef.current?.focus()}
             >
-              <Ionicons
-                name="chatbubble-outline"
+              <SFIcon
+                name="bubble.left"
+                fallback="chatbubble-outline"
                 size={24}
                 color={colors.text}
               />
@@ -314,14 +318,15 @@ export function PostDetailScreen() {
                 sharePost(post.id, place?.name ?? "a place", post.content)
               }
             >
-              <Ionicons
-                name="paper-plane-outline"
+              <SFIcon
+                name="paperplane"
+                fallback="paper-plane-outline"
                 size={24}
                 color={colors.text}
               />
             </HapticPressable>
           </View>
-          <Ionicons name="bookmark-outline" size={24} color={colors.text} />
+          <SFIcon name="bookmark" fallback="bookmark-outline" size={24} color={colors.text} />
         </View>
 
         {/* Like count */}
@@ -343,10 +348,11 @@ export function PostDetailScreen() {
             style={styles.locationRow}
             onPress={() => handlePressPlace(place.id)}
           >
-            <Ionicons name="location" size={16} color={categoryColor} />
+            <SFIcon name="mappin" fallback="location" size={16} color={categoryColor} />
             <Text style={styles.locationName}>{place.name}</Text>
-            <Ionicons
-              name="chevron-forward"
+            <SFIcon
+              name="chevron.right"
+              fallback="chevron-forward"
               size={14}
               color={colors.textMuted}
             />
@@ -443,7 +449,7 @@ export function PostDetailScreen() {
             onPress={handleCancelEdit}
             style={styles.cancelButton}
           >
-            <Ionicons name="close-circle" size={22} color={colors.textMuted} />
+            <SFIcon name="xmark.circle.fill" fallback="close-circle" size={22} color={colors.textMuted} />
           </HapticPressable>
         )}
         <TextInput
@@ -465,8 +471,9 @@ export function PostDetailScreen() {
           disabled={!commentText.trim()}
           style={styles.sendButton}
         >
-          <Ionicons
-            name={editingCommentId ? "checkmark-circle" : "send"}
+          <SFIcon
+            name={editingCommentId ? "checkmark.circle.fill" : "paperplane.fill"}
+            fallback={editingCommentId ? "checkmark-circle" : "send"}
             size={22}
             color={commentText.trim() ? colors.primary : colors.gray300}
           />
@@ -502,7 +509,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
   },
   username: {
@@ -540,7 +547,7 @@ const styles = StyleSheet.create({
   },
   overlaidDisplayName: {
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
     color: "#FFFFFF",
     textShadowColor: "rgba(0,0,0,0.4)",
     textShadowOffset: { width: 0, height: 1 },
@@ -614,7 +621,7 @@ const styles = StyleSheet.create({
   },
   locationName: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
     flex: 1,
   },

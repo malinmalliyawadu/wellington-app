@@ -1,9 +1,12 @@
 import React, { useMemo } from "react";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SFSymbol } from "expo-symbols";
 import { useQuery } from "../hooks/useQuery";
 import { getAchievementProgress } from "../services/achievements";
+import { PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { AchievementCard } from "./AchievementCard";
+import { SFIcon } from "./SFIcon";
 import { colors } from "../theme/colors";
 import { AchievementProgress } from "../types/Exploration";
 
@@ -16,21 +19,22 @@ type AchievementType = "category" | "milestone" | "neighborhood" | "social";
 interface AchievementGroup {
   type: AchievementType;
   title: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap };
   achievements: AchievementProgress[];
 }
 
 const TYPE_CONFIG: Record<
   AchievementType,
-  { title: string; icon: keyof typeof Ionicons.glyphMap }
+  { title: string; icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap } }
 > = {
-  category: { title: "Category Explorer", icon: "grid-outline" },
-  milestone: { title: "Milestones", icon: "trophy-outline" },
-  neighborhood: { title: "Neighborhoods", icon: "map-outline" },
-  social: { title: "Social", icon: "people-outline" },
+  category: { title: "Category Explorer", icon: { sf: "square.grid.2x2", fallback: "grid-outline" } },
+  milestone: { title: "Milestones", icon: { sf: "trophy", fallback: "trophy-outline" } },
+  neighborhood: { title: "Neighborhoods", icon: { sf: "map", fallback: "map-outline" } },
+  social: { title: "Social", icon: { sf: "person.2", fallback: "people-outline" } },
 };
 
 export function AchievementsList({ userId }: AchievementsListProps) {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_700Bold });
   const { data: achievements, loading, error } = useQuery(
     () => getAchievementProgress(userId),
     [userId]
@@ -116,7 +120,7 @@ export function AchievementsList({ userId }: AchievementsListProps) {
   if (error) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="warning-outline" size={48} color={colors.gray300} />
+        <SFIcon name="exclamationmark.triangle" fallback="warning-outline" size={48} color={colors.gray300} />
         <Text style={styles.emptyTitle}>Something went wrong</Text>
         <Text style={styles.emptyText}>{error}</Text>
       </View>
@@ -126,7 +130,7 @@ export function AchievementsList({ userId }: AchievementsListProps) {
   if (!achievements || achievements.length === 0) {
     return (
       <View style={styles.emptyContainer}>
-        <Ionicons name="trophy-outline" size={48} color={colors.gray300} />
+        <SFIcon name="trophy" fallback="trophy-outline" size={48} color={colors.gray300} />
         <Text style={styles.emptyTitle}>No Achievements Yet</Text>
         <Text style={styles.emptyText}>
           Start exploring Wellington to unlock your first achievement!
@@ -175,8 +179,9 @@ export function AchievementsList({ userId }: AchievementsListProps) {
         return (
           <View key={group.type} style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Ionicons
-                name={group.icon}
+              <SFIcon
+                name={group.icon.sf}
+                fallback={group.icon.fallback}
                 size={18}
                 color={colors.textMuted}
               />
@@ -214,12 +219,12 @@ const styles = StyleSheet.create({
   summaryLeft: {},
   summaryCount: {
     fontSize: 28,
-    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
     color: colors.text,
   },
   summaryTotal: {
     fontSize: 28,
-    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
     color: colors.gray300,
   },
   summaryLabel: {
@@ -230,7 +235,7 @@ const styles = StyleSheet.create({
   summaryRight: {},
   summaryPercent: {
     fontSize: 32,
-    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
     color: colors.primary,
   },
   overallProgressContainer: {
@@ -286,7 +291,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
     color: colors.text,
   },
   emptyText: {

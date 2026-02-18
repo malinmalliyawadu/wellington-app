@@ -11,6 +11,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
+import { SFSymbol } from 'expo-symbols';
+import { SFIcon } from '../components/SFIcon';
+import { PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../theme/colors';
 
@@ -19,6 +22,7 @@ export interface ToastConfig {
   type?: 'default' | 'achievement' | 'error';
   duration?: number;
   icon?: keyof typeof Ionicons.glyphMap;
+  sfIcon?: SFSymbol;
 }
 
 interface ToastContextValue {
@@ -36,6 +40,7 @@ export function useToast() {
 }
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold });
   const [visible, setVisible] = useState(false);
   const [config, setConfig] = useState<ToastConfig>({ message: '' });
   const translateY = useRef(new Animated.Value(-100)).current;
@@ -100,16 +105,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const getIcon = () => {
-    if (config.icon) return config.icon;
+  const getIcon = (): { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap } => {
+    if (config.icon) return { sf: config.sfIcon ?? 'checkmark.circle.fill', fallback: config.icon };
 
     switch (config.type) {
       case 'achievement':
-        return 'trophy';
+        return { sf: 'trophy.fill', fallback: 'trophy' };
       case 'error':
-        return 'alert-circle';
+        return { sf: 'exclamationmark.circle.fill', fallback: 'alert-circle' };
       default:
-        return 'checkmark-circle';
+        return { sf: 'checkmark.circle.fill', fallback: 'checkmark-circle' };
     }
   };
 
@@ -133,7 +138,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 style={[styles.toast, styles.achievementToastGradient]}
               >
                 <View style={styles.achievementIconContainer}>
-                  <Ionicons name={getIcon()} size={28} color="#fff" />
+                  <SFIcon name={getIcon().sf} fallback={getIcon().fallback} size={28} color="#fff" />
                 </View>
                 <Text style={[styles.message, styles.achievementMessage]} numberOfLines={2}>
                   {config.message}
@@ -146,7 +151,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               onPress={hideToast}
               style={[styles.toast, getToastStyle()]}
             >
-              <Ionicons name={getIcon()} size={24} color="#fff" style={styles.icon} />
+              <SFIcon name={getIcon().sf} fallback={getIcon().fallback} size={24} color="#fff" style={styles.icon} />
               <Text style={styles.message} numberOfLines={2}>
                 {config.message}
               </Text>
@@ -210,7 +215,7 @@ const styles = StyleSheet.create({
   },
   achievementMessage: {
     fontSize: 16,
-    fontWeight: '700',
+    fontFamily: 'PlusJakartaSans_700Bold',
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
@@ -224,7 +229,7 @@ const styles = StyleSheet.create({
   message: {
     flex: 1,
     fontSize: 15,
-    fontWeight: '600',
+    fontFamily: 'PlusJakartaSans_600SemiBold',
     color: '#fff',
   },
 });

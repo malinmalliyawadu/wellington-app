@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { SFIcon } from "./SFIcon";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { Event, Place } from "../types";
 import { useFollow } from "../context/FollowContext";
@@ -9,6 +9,11 @@ import { getProfilesByIds } from "../services/users";
 import { useQuery } from "../hooks/useQuery";
 import { colors } from "../theme/colors";
 import { HapticPressable } from "./HapticPressable";
+import {
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+  useFonts,
+} from "@expo-google-fonts/plus-jakarta-sans";
 
 interface EventCardProps {
   event: Event;
@@ -70,6 +75,11 @@ export function EventCard({
   onPress,
   hasBorder,
 }: EventCardProps) {
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+
   const categoryColor = CATEGORY_COLORS[event.category];
   const { followingIds } = useFollow();
   const attendeeIds = event.attendeeIds ?? [];
@@ -136,10 +146,7 @@ export function EventCard({
 
         {/* Date badge (top-right) */}
         {glassEnabled ? (
-          <GlassView
-            glassEffectStyle="regular"
-            style={styles.dateBadge}
-          >
+          <GlassView glassEffectStyle="regular" style={styles.dateBadge}>
             <Text style={[styles.dateMonth, styles.dateMonthGlass]}>
               {getMonth(event.date)}
             </Text>
@@ -149,12 +156,8 @@ export function EventCard({
           </GlassView>
         ) : (
           <View style={[styles.dateBadge, styles.dateBadgeFallback]}>
-            <Text style={styles.dateMonth}>
-              {getMonth(event.date)}
-            </Text>
-            <Text style={styles.dateDay}>
-              {getDay(event.date)}
-            </Text>
+            <Text style={styles.dateMonth}>{getMonth(event.date)}</Text>
+            <Text style={styles.dateDay}>{getDay(event.date)}</Text>
           </View>
         )}
 
@@ -168,14 +171,14 @@ export function EventCard({
       <View style={styles.footer}>
         <View style={styles.footerInfo}>
           <View style={styles.footerItem}>
-            <Ionicons name="location" size={14} color={colors.textSecondary} />
+            <SFIcon name="mappin" fallback="location" size={14} color={colors.textSecondary} />
             <Text style={styles.footerText} numberOfLines={1}>
               {place.name}
             </Text>
           </View>
           <View style={styles.footerDot} />
           <View style={styles.footerItem}>
-            <Ionicons name="time" size={14} color={colors.textSecondary} />
+            <SFIcon name="clock" fallback="time" size={14} color={colors.textSecondary} />
             <Text style={styles.footerText}>
               {formatTime(event.startTime, event.endTime)}
             </Text>
@@ -271,7 +274,7 @@ const styles = StyleSheet.create({
   },
   dateDay: {
     fontSize: 20,
-    fontWeight: "800",
+    fontFamily: "PlusJakartaSans_800ExtraBold",
     color: colors.text,
     lineHeight: 24,
   },
@@ -288,7 +291,7 @@ const styles = StyleSheet.create({
     left: 14,
     right: 14,
     fontSize: 20,
-    fontWeight: "800",
+    fontFamily: "PlusJakartaSans_700Bold",
     color: "#FFFFFF",
     textShadowColor: "rgba(0,0,0,0.5)",
     textShadowOffset: { width: 0, height: 1 },

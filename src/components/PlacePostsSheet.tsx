@@ -11,6 +11,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SFIcon } from "./SFIcon";
 import { Place, Post, PlaceCategory } from "../types";
 import { PlacePopularity } from "../utils/placePopularity";
 import { formatNumber } from "../utils/formatNumber";
@@ -128,11 +129,11 @@ export function PlacePostsSheet({
               {place.name}
             </Text>
             {onPressPlaceName && (
-              <Ionicons name="chevron-forward" size={18} color={colors.text} />
+              <SFIcon name="chevron.right" fallback="chevron-forward" size={18} color={colors.text} />
             )}
           </HapticPressable>
           <HapticPressable onPress={onClose} style={styles.closeButton}>
-            <Ionicons name="close" size={20} color={colors.gray400} />
+            <SFIcon name="xmark" fallback="close" size={20} color={colors.gray400} />
           </HapticPressable>
         </View>
         <View style={styles.metaRow}>
@@ -145,7 +146,7 @@ export function PlacePostsSheet({
           </View>
           {placeDetails.rating && (
             <View style={styles.ratingContainer}>
-              <Ionicons name="star" size={14} color="#FFA500" />
+              <SFIcon name="star.fill" fallback="star" size={14} color="#FFA500" />
               <Text style={styles.ratingText}>
                 {placeDetails.rating.toFixed(1)}
               </Text>
@@ -162,16 +163,18 @@ export function PlacePostsSheet({
         </View>
         <View style={styles.statsRow}>
           <View style={styles.stat}>
-            <Ionicons
-              name="chatbubble-outline"
+            <SFIcon
+              name="bubble.left"
+              fallback="chatbubble-outline"
               size={14}
               color={colors.textSecondary}
             />
             <Text style={styles.statText}>{posts.length} posts</Text>
           </View>
           <View style={styles.stat}>
-            <Ionicons
-              name="heart-outline"
+            <SFIcon
+              name="heart"
+              fallback="heart-outline"
               size={14}
               color={colors.textSecondary}
             />
@@ -181,7 +184,7 @@ export function PlacePostsSheet({
             style={styles.directionsButton}
             onPress={handleOpenDirections}
           >
-            <Ionicons name="navigate" size={14} color={colors.primary} />
+            <SFIcon name="location.fill" fallback="navigate" size={14} color={colors.primary} />
             <Text style={styles.directionsText}>Directions</Text>
           </HapticPressable>
         </View>
@@ -207,8 +210,9 @@ export function PlacePostsSheet({
         </ScrollView>
       ) : (
         <View style={styles.emptyState}>
-          <Ionicons
-            name="chatbubble-outline"
+          <SFIcon
+            name="bubble.left"
+            fallback="chatbubble-outline"
             size={48}
             color={colors.gray300}
           />
@@ -256,8 +260,9 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
           }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons
-            name={liked ? "heart" : "heart-outline"}
+          <SFIcon
+            name={liked ? "heart.fill" : "heart"}
+            fallback={liked ? "heart" : "heart-outline"}
             size={14}
             color={liked ? colors.liked : colors.textMuted}
           />

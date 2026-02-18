@@ -1,10 +1,10 @@
 import React from "react";
 import { StyleSheet, ViewStyle, View } from "react-native";
 import { useRouter, usePathname } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SFIcon } from "./SFIcon";
 import { HapticPressable } from "./HapticPressable";
 import { colors } from "../theme/colors";
 
@@ -42,11 +42,11 @@ export function FloatingCreateButton({ style }: FloatingCreateButtonProps) {
     >
       {glassEnabled ? (
         <GlassView isInteractive style={styles.glassOuter}>
-          <Ionicons name="add" size={28} />
+          <SFIcon name="plus" fallback="add" size={28} />
         </GlassView>
       ) : (
         <BlurView intensity={10} tint="light" style={styles.blur}>
-          <Ionicons name="add" size={28} color={colors.gray600} />
+          <SFIcon name="plus" fallback="add" size={28} color={colors.gray600} />
         </BlurView>
       )}
     </HapticPressable>

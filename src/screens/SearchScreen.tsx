@@ -10,6 +10,8 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { SFSymbol } from "expo-symbols";
+import { SFIcon } from "../components/SFIcon";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { colors } from "../theme/colors";
@@ -19,6 +21,7 @@ import { getPosts } from "../services/posts";
 import { getProfiles } from "../services/users";
 import { getUpcomingEvents } from "../services/events";
 import { searchGooglePlaces } from "../services/googlePlaces";
+import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { EventCard } from "../components/EventCard";
 import { HapticPressable } from "../components/HapticPressable";
 import type { Place, Post, User, Event, PlaceCategory } from "../types";
@@ -32,13 +35,13 @@ const TRENDING_SEARCHES = [
   "Cuba Street",
 ];
 
-const CATEGORY_ICONS: Record<PlaceCategory, keyof typeof Ionicons.glyphMap> = {
-  cafe: "cafe",
-  restaurant: "restaurant",
-  bar: "wine",
-  attraction: "compass",
-  park: "leaf",
-  venue: "musical-notes",
+const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
+  cafe: { sf: "cup.and.saucer.fill", fallback: "cafe" },
+  restaurant: { sf: "fork.knife", fallback: "restaurant" },
+  bar: { sf: "wineglass.fill", fallback: "wine" },
+  attraction: { sf: "safari", fallback: "compass" },
+  park: { sf: "leaf.fill", fallback: "leaf" },
+  venue: { sf: "music.note.list", fallback: "musical-notes" },
 };
 
 const CATEGORY_LABELS: Record<PlaceCategory, string> = {
@@ -72,6 +75,7 @@ interface SearchScreenProps {
 }
 
 export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -315,8 +319,9 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
                 { backgroundColor: colors.category[place.category] },
               ]}
             >
-              <Ionicons
-                name={CATEGORY_ICONS[place.category]}
+              <SFIcon
+                name={CATEGORY_ICONS[place.category].sf}
+                fallback={CATEGORY_ICONS[place.category].fallback}
                 size={18}
                 color="#FFFFFF"
               />
@@ -340,8 +345,9 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
             {isCreating ? (
               <ActivityIndicator size="small" color={colors.primary} />
             ) : (
-              <Ionicons
-                name="chevron-forward"
+              <SFIcon
+                name="chevron.right"
+                fallback="chevron-forward"
                 size={18}
                 color={colors.gray300}
               />
@@ -362,7 +368,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
               <Text style={styles.resultTitle}>{user.displayName}</Text>
               <Text style={styles.resultSubtitle}>@{user.username}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.gray300} />
+            <SFIcon name="chevron.right" fallback="chevron-forward" size={18} color={colors.gray300} />
           </HapticPressable>
         );
       }
@@ -384,8 +390,9 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
               <View
                 style={[styles.resultIcon, { backgroundColor: colors.gray200 }]}
               >
-                <Ionicons
-                  name="document-text"
+                <SFIcon
+                  name="doc.text.fill"
+                  fallback="document-text"
                   size={18}
                   color={colors.gray400}
                 />
@@ -397,7 +404,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
               </Text>
               {place && <Text style={styles.resultSubtitle}>{place.name}</Text>}
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.gray300} />
+            <SFIcon name="chevron.right" fallback="chevron-forward" size={18} color={colors.gray300} />
           </HapticPressable>
         );
       }
@@ -464,14 +471,14 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
                   onPress={() => onQueryChange("")}
                 >
                   <Text style={styles.activeFilterText}>{query}</Text>
-                  <Ionicons name="close" size={16} color={colors.primary} />
+                  <SFIcon name="xmark" fallback="close" size={16} color={colors.primary} />
                 </HapticPressable>
               </View>
             ) : null
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Ionicons name="search" size={48} color={colors.gray300} />
+              <SFIcon name="magnifyingglass" fallback="search" size={48} color={colors.gray300} />
               <Text style={styles.emptyTitle}>No results found</Text>
               <Text style={styles.emptySubtext}>
                 Try searching for places, people, or events
@@ -500,7 +507,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
               style={styles.trendingChip}
               onPress={() => onQueryChange?.(search)}
             >
-              <Ionicons name="trending-up" size={14} color={colors.primary} />
+              <SFIcon name="chart.line.uptrend.xyaxis" fallback="trending-up" size={14} color={colors.primary} />
               <Text style={styles.trendingText}>{search}</Text>
             </HapticPressable>
           ))}
@@ -527,8 +534,9 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
                   { backgroundColor: colors.category[cat] },
                 ]}
               >
-                <Ionicons
-                  name={CATEGORY_ICONS[cat]}
+                <SFIcon
+                  name={CATEGORY_ICONS[cat].sf}
+                  fallback={CATEGORY_ICONS[cat].fallback}
                   size={20}
                   color="#FFFFFF"
                 />
@@ -557,8 +565,9 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
                 { backgroundColor: colors.category[place.category] },
               ]}
             >
-              <Ionicons
-                name={CATEGORY_ICONS[place.category]}
+              <SFIcon
+                name={CATEGORY_ICONS[place.category].sf}
+                fallback={CATEGORY_ICONS[place.category].fallback}
                 size={18}
                 color="#FFFFFF"
               />
@@ -570,8 +579,9 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
               </Text>
             </View>
             <View style={styles.placeRowMeta}>
-              <Ionicons
-                name="image-outline"
+              <SFIcon
+                name="photo"
+                fallback="image-outline"
                 size={14}
                 color={colors.textMuted}
               />
@@ -618,7 +628,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 17,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
     paddingHorizontal: 16,
     marginBottom: 12,
@@ -712,7 +722,7 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 13,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
     textAlign: "center",
   },
@@ -744,7 +754,7 @@ const styles = StyleSheet.create({
   },
   placeRowName: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
     marginBottom: 2,
   },
@@ -804,7 +814,7 @@ const styles = StyleSheet.create({
   },
   resultTitle: {
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
     marginBottom: 2,
   },
@@ -858,7 +868,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
   },
   emptySubtext: {

@@ -9,7 +9,7 @@ import {
   Linking,
   Platform,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { SFIcon } from "../components/SFIcon";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { useFollow } from "../context/FollowContext";
 import { useLike } from "../context/LikeContext";
@@ -23,6 +23,7 @@ import { sortPosts } from "../utils/postSorting";
 import { VideoThumbnail } from "../components/VideoThumbnail";
 import { HapticPressable } from "../components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
+import { PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { BlurView } from "expo-blur";
 import { colors } from "../theme/colors";
 import type { Place, PlaceCategory, Post } from "../types";
@@ -37,6 +38,7 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
 };
 
 export function PlacePostsSheetScreen() {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold });
   const { placeId } = useLocalSearchParams<{ placeId: string }>();
   const router = useRouter();
   const { followingIds } = useFollow();
@@ -170,8 +172,9 @@ export function PlacePostsSheetScreen() {
                 <Text style={styles.name} numberOfLines={1}>
                   {place.name}
                 </Text>
-                <Ionicons
-                  name="chevron-forward"
+                <SFIcon
+                  name="chevron.right"
+                  fallback="chevron-forward"
                   size={18}
                   color={colors.text}
                 />
@@ -189,7 +192,7 @@ export function PlacePostsSheetScreen() {
                 </View>
                 {placeDetails.rating && (
                   <View style={styles.ratingContainer}>
-                    <Ionicons name="star" size={14} color="#FFA500" />
+                    <SFIcon name="star.fill" fallback="star" size={14} color="#FFA500" />
                     <Text style={styles.ratingText}>
                       {placeDetails.rating.toFixed(1)}
                     </Text>
@@ -206,8 +209,9 @@ export function PlacePostsSheetScreen() {
               </View>
               <View style={styles.statsRow}>
                 <View style={styles.stat}>
-                  <Ionicons
-                    name="chatbubble-outline"
+                  <SFIcon
+                    name="bubble.left"
+                    fallback="chatbubble-outline"
                     size={14}
                     color={colors.textSecondary}
                   />
@@ -216,8 +220,9 @@ export function PlacePostsSheetScreen() {
                   </Text>
                 </View>
                 <View style={styles.stat}>
-                  <Ionicons
-                    name="heart-outline"
+                  <SFIcon
+                    name="heart"
+                    fallback="heart-outline"
                     size={14}
                     color={colors.textSecondary}
                   />
@@ -227,7 +232,7 @@ export function PlacePostsSheetScreen() {
                   style={styles.directionsButton}
                   onPress={handleOpenDirections}
                 >
-                  <Ionicons name="navigate" size={14} color={colors.primary} />
+                  <SFIcon name="location.fill" fallback="navigate" size={14} color={colors.primary} />
                   <Text style={styles.directionsText}>Directions</Text>
                 </HapticPressable>
               </View>
@@ -267,8 +272,9 @@ export function PlacePostsSheetScreen() {
             </View>
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons
-                name="chatbubble-outline"
+              <SFIcon
+                name="bubble.left"
+                fallback="chatbubble-outline"
                 size={48}
                 color={colors.gray600}
               />
@@ -330,8 +336,9 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
           }}
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons
-            name={liked ? "heart" : "heart-outline"}
+          <SFIcon
+            name={liked ? "heart.fill" : "heart"}
+            fallback={liked ? "heart" : "heart-outline"}
             size={14}
             color={liked ? colors.liked : colors.textMuted}
           />
@@ -399,7 +406,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 22,
-    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
     color: colors.text,
     flexShrink: 1,
   },
@@ -508,7 +515,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 14,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
     marginRight: 6,
   },
@@ -557,7 +564,7 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
     marginTop: 12,
   },

@@ -2,7 +2,7 @@ import React, { useMemo, useCallback } from "react";
 import {
   View,
   Text,
-  FlatList,
+  SectionList,
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
@@ -12,6 +12,8 @@ import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Ionicons } from "@expo/vector-icons";
+import { SFSymbol } from "expo-symbols";
+import { SFIcon } from "../components/SFIcon";
 import { EventCard } from "../components/EventCard";
 import { getUpcomingEvents } from "../services/events";
 import { getPlaces } from "../services/places";
@@ -21,6 +23,10 @@ import { useEventFilters } from "../context/EventFilterContext";
 import { colors } from "../theme/colors";
 import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
+import {
+  PlusJakartaSans_700Bold,
+  useFonts,
+} from "@expo-google-fonts/plus-jakarta-sans";
 
 type DateRange = "today" | "tomorrow" | "weekend" | "month";
 
@@ -60,7 +66,87 @@ function getDateRange(range: DateRange): { start: string; end: string } {
   }
 }
 
+type TimeSection =
+  | "today"
+  | "tonight"
+  | "tomorrow"
+  | "weekend"
+  | "thisMonth"
+  | "comingUp";
+
+const SECTION_LABELS: Record<TimeSection, string> = {
+  today: "Today",
+  tonight: "Tonight",
+  tomorrow: "Tomorrow",
+  weekend: "This Weekend",
+  thisMonth: "This Month",
+  comingUp: "Coming Up",
+};
+
+const SECTION_ICONS: Record<TimeSection, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
+  today: { sf: "sun.max.fill", fallback: "sunny" },
+  tonight: { sf: "moon.fill", fallback: "moon" },
+  tomorrow: { sf: "arrow.right.circle", fallback: "arrow-forward-circle" },
+  weekend: { sf: "cup.and.saucer.fill", fallback: "cafe" },
+  thisMonth: { sf: "calendar", fallback: "calendar" },
+  comingUp: { sf: "binoculars.fill", fallback: "telescope" },
+};
+
+const SECTION_ORDER: TimeSection[] = [
+  "today",
+  "tonight",
+  "tomorrow",
+  "weekend",
+  "thisMonth",
+  "comingUp",
+];
+
+function getEventSection(eventDate: string, startTime: string): TimeSection {
+  const now = new Date();
+  const fmt = (d: Date) => d.toISOString().split("T")[0];
+
+  const todayStr = fmt(now);
+  const tomorrowDate = new Date(now);
+  tomorrowDate.setDate(now.getDate() + 1);
+  const tomorrowStr = fmt(tomorrowDate);
+
+  if (eventDate === todayStr) {
+    const hour = parseInt(startTime.split(":")[0], 10);
+    return hour >= 17 ? "tonight" : "today";
+  }
+
+  if (eventDate === tomorrowStr) {
+    return "tomorrow";
+  }
+
+  // Check if it falls on the nearest weekend (Sat/Sun)
+  const day = now.getDay(); // 0=Sun, 6=Sat
+  const daysUntilSat = day === 0 ? 6 : 6 - day;
+  const sat = new Date(now);
+  sat.setDate(now.getDate() + daysUntilSat);
+  const sun = new Date(sat);
+  sun.setDate(sat.getDate() + 1);
+  const satStr = fmt(sat);
+  const sunStr = fmt(sun);
+
+  if (eventDate === satStr || eventDate === sunStr) {
+    return "weekend";
+  }
+
+  // This month
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  if (eventDate <= fmt(endOfMonth)) {
+    return "thisMonth";
+  }
+
+  return "comingUp";
+}
+
 export function EventsScreen() {
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_700Bold,
+  });
+
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const navigation = useNavigation();
@@ -120,6 +206,23 @@ export function EventsScreen() {
     isFollowing,
   ]);
 
+  const sections = useMemo(() => {
+    const grouped = new Map<TimeSection, typeof filteredEvents>();
+    for (const item of filteredEvents) {
+      const section = getEventSection(item.event.date, item.event.startTime);
+      if (!grouped.has(section)) grouped.set(section, []);
+      grouped.get(section)!.push(item);
+    }
+    return SECTION_ORDER.filter((k) => grouped.has(k)).map((k, index) => ({
+      key: k,
+      title: SECTION_LABELS[k],
+      icon: SECTION_ICONS[k],
+      count: grouped.get(k)!.length,
+      isFirst: index === 0,
+      data: grouped.get(k)!,
+    }));
+  }, [filteredEvents]);
+
   const activeFilterCount =
     (selectedDateRange ? 1 : 0) +
     (selectedCategories.length > 0 ? 1 : 0) +
@@ -160,8 +263,8 @@ export function EventsScreen() {
 
   return (
     <View style={styles.container}>
-      <FlatList
-        data={filteredEvents}
+      <SectionList
+        sections={sections}
         keyExtractor={(item) => item.event.id}
         renderItem={({ item }) => (
           <EventCard
@@ -170,7 +273,29 @@ export function EventsScreen() {
             onPress={() => router.push(`/events/${item.event.id}`)}
           />
         )}
+        renderSectionHeader={({ section }) => (
+          <View
+            style={[
+              styles.sectionHeader,
+              !section.isFirst && styles.sectionHeaderWithDivider,
+            ]}
+          >
+            <View style={styles.sectionRow}>
+              <SFIcon
+                name={section.icon.sf}
+                fallback={section.icon.fallback}
+                size={18}
+                color={colors.primary}
+              />
+              <Text style={styles.sectionTitle}>{section.title}</Text>
+              <View style={styles.sectionCount}>
+                <Text style={styles.sectionCountText}>{section.count}</Text>
+              </View>
+            </View>
+          </View>
+        )}
         showsVerticalScrollIndicator={false}
+        stickySectionHeadersEnabled={false}
         contentContainerStyle={[
           styles.list,
           {
@@ -187,8 +312,9 @@ export function EventsScreen() {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Ionicons
-              name="calendar-outline"
+            <SFIcon
+              name="calendar"
+              fallback="calendar-outline"
               size={48}
               color={colors.gray300}
             />
@@ -209,6 +335,39 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  sectionHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  sectionHeaderWithDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.gray200,
+    marginTop: 8,
+    paddingTop: 24,
+  },
+  sectionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontFamily: "PlusJakartaSans_700Bold",
+    color: colors.text,
+    flex: 1,
+  },
+  sectionCount: {
+    backgroundColor: colors.gray100,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  sectionCountText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.textSecondary,
   },
   filterSummaryRow: {
     paddingHorizontal: 16,

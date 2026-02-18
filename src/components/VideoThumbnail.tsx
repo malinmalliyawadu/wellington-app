@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Image, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { SFIcon } from './SFIcon';
 import { colors } from '../theme/colors';
 
 interface VideoThumbnailProps {
@@ -17,7 +17,7 @@ export function VideoThumbnail({ thumbnailUrl, style }: VideoThumbnailProps) {
         <View style={styles.placeholder} />
       )}
       <View style={styles.overlay}>
-        <Ionicons name="play" size={24} color="#FFFFFF" />
+        <SFIcon name="play.fill" fallback="play" size={24} color="#FFFFFF" />
       </View>
     </View>
   );

@@ -10,6 +10,8 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { SFSymbol } from "expo-symbols";
+import { SFIcon } from "../components/SFIcon";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import * as Location from "expo-location";
 import { Place } from "../types";
@@ -101,22 +103,22 @@ export function PlaceSearchSheet() {
   const displayedPlaces =
     searchQuery.trim().length >= 2 ? searchResults : nearbyPlaces;
 
-  const getCategoryIcon = (category: Place["category"]) => {
+  const getCategoryIcon = (category: Place["category"]): { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap } => {
     switch (category) {
       case "cafe":
-        return "cafe";
+        return { sf: "cup.and.saucer.fill", fallback: "cafe" };
       case "restaurant":
-        return "restaurant";
+        return { sf: "fork.knife", fallback: "restaurant" };
       case "bar":
-        return "wine";
+        return { sf: "wineglass.fill", fallback: "wine" };
       case "park":
-        return "leaf";
+        return { sf: "leaf.fill", fallback: "leaf" };
       case "attraction":
-        return "star";
+        return { sf: "star.fill", fallback: "star" };
       case "venue":
-        return "musical-notes";
+        return { sf: "music.note.list", fallback: "musical-notes" };
       default:
-        return "location";
+        return { sf: "mappin", fallback: "location" };
     }
   };
 
@@ -135,10 +137,10 @@ export function PlaceSearchSheet() {
           onPress={() => router.back()}
           style={styles.backButton}
         >
-          <Ionicons name="arrow-back" size={24} color={colors.text} />
+          <SFIcon name="chevron.left" fallback="arrow-back" size={24} color={colors.text} />
         </HapticPressable>
         <View style={styles.searchInputContainer}>
-          <Ionicons name="search" size={18} color={colors.gray400} />
+          <SFIcon name="magnifyingglass" fallback="search" size={18} color={colors.gray400} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search for places in Wellington..."
@@ -163,8 +165,9 @@ export function PlaceSearchSheet() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Ionicons
-              name="location-outline"
+            <SFIcon
+              name="mappin"
+              fallback="location-outline"
               size={48}
               color={colors.gray300}
             />
@@ -186,8 +189,9 @@ export function PlaceSearchSheet() {
                 { backgroundColor: colors.category[item.category] + "20" },
               ]}
             >
-              <Ionicons
-                name={getCategoryIcon(item.category) as any}
+              <SFIcon
+                name={getCategoryIcon(item.category).sf}
+                fallback={getCategoryIcon(item.category).fallback}
                 size={18}
                 color={colors.category[item.category]}
               />
@@ -196,7 +200,7 @@ export function PlaceSearchSheet() {
               <Text style={styles.placeName}>{item.name}</Text>
               <Text style={styles.placeAddress}>{item.address}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.gray400} />
+            <SFIcon name="chevron.right" fallback="chevron-forward" size={20} color={colors.gray400} />
           </HapticPressable>
         )}
       />

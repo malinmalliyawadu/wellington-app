@@ -9,18 +9,21 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { SFSymbol } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { Place, PlaceCategory } from '../types';
+import { SFIcon } from './SFIcon';
 import { colors } from '../theme/colors';
 import { HapticPressable } from './HapticPressable';
 
-const CATEGORY_ICONS: Record<PlaceCategory, keyof typeof Ionicons.glyphMap> = {
-  cafe: 'cafe',
-  restaurant: 'restaurant',
-  bar: 'wine',
-  attraction: 'compass',
-  park: 'leaf',
-  venue: 'musical-notes',
+const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
+  cafe: { sf: 'cup.and.saucer.fill', fallback: 'cafe' },
+  restaurant: { sf: 'fork.knife', fallback: 'restaurant' },
+  bar: { sf: 'wineglass.fill', fallback: 'wine' },
+  attraction: { sf: 'safari', fallback: 'compass' },
+  park: { sf: 'leaf.fill', fallback: 'leaf' },
+  venue: { sf: 'music.note.list', fallback: 'musical-notes' },
 };
 
 const CATEGORY_LABELS: Record<PlaceCategory, string> = {
@@ -58,6 +61,7 @@ export function MapSearchBar({
   onCategoriesChange,
   onFollowingToggle,
 }: MapSearchBarProps) {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
   const [query, setQuery] = useState('');
   const inputRef = useRef<TextInput>(null);
   const insets = useSafeAreaInsets();
@@ -87,8 +91,9 @@ export function MapSearchBar({
     <View style={[styles.wrapper, { top: insets.top + 8 }]}>
       {/* Search input */}
       <View style={styles.searchContainer}>
-        <Ionicons
-          name="search"
+        <SFIcon
+          name="magnifyingglass"
+          fallback="search"
           size={18}
           color={colors.gray400}
           style={styles.searchIcon}
@@ -104,7 +109,7 @@ export function MapSearchBar({
         />
         {query.length > 0 && (
           <HapticPressable onPress={() => setQuery('')} style={styles.clearButton}>
-            <Ionicons name="close-circle" size={18} color={colors.gray400} />
+            <SFIcon name="xmark.circle.fill" fallback="close-circle" size={18} color={colors.gray400} />
           </HapticPressable>
         )}
       </View>
@@ -128,8 +133,9 @@ export function MapSearchBar({
                     { backgroundColor: colors.category[item.category] },
                   ]}
                 >
-                  <Ionicons
-                    name={CATEGORY_ICONS[item.category]}
+                  <SFIcon
+                    name={CATEGORY_ICONS[item.category].sf}
+                    fallback={CATEGORY_ICONS[item.category].fallback}
                     size={14}
                     color="#FFFFFF"
                   />
@@ -163,8 +169,9 @@ export function MapSearchBar({
           ]}
           onPress={() => onFollowingToggle(!showFollowingOnly)}
         >
-          <Ionicons
-            name="people"
+          <SFIcon
+            name="person.2"
+            fallback="people"
             size={14}
             color={showFollowingOnly ? '#FFFFFF' : colors.text}
           />
@@ -195,8 +202,9 @@ export function MapSearchBar({
               ]}
               onPress={() => toggleCategory(cat)}
             >
-              <Ionicons
-                name={CATEGORY_ICONS[cat]}
+              <SFIcon
+                name={CATEGORY_ICONS[cat].sf}
+                fallback={CATEGORY_ICONS[cat].fallback}
                 size={14}
                 color={active ? '#FFFFFF' : catColor}
               />
@@ -282,7 +290,7 @@ const styles = StyleSheet.create({
   },
   resultName: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'PlusJakartaSans_600SemiBold',
     color: colors.text,
   },
   resultAddress: {

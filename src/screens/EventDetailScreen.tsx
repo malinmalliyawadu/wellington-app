@@ -11,7 +11,7 @@ import {
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { Ionicons } from "@expo/vector-icons";
+import { SFIcon } from "../components/SFIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import * as WebBrowser from "expo-web-browser";
@@ -31,6 +31,12 @@ import type { Event } from "../types";
 import { shareEvent } from "../utils/sharing";
 import { HapticPressable } from "src/components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
+import {
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+  useFonts,
+} from "@expo-google-fonts/plus-jakarta-sans";
 
 const CATEGORY_COLORS: Record<Event["category"], string> = {
   music: "#7209B7",
@@ -89,6 +95,12 @@ function getDay(dateString: string): string {
 const glassEnabled = isLiquidGlassAvailable();
 
 export function EventDetailScreen() {
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -226,8 +238,9 @@ export function EventDetailScreen() {
             {/* Info section */}
             <View style={styles.infoSection}>
               <View style={styles.infoRow}>
-                <Ionicons
+                <SFIcon
                   name="calendar"
+                  fallback="calendar"
                   size={18}
                   color={colors.textSecondary}
                 />
@@ -245,23 +258,25 @@ export function EventDetailScreen() {
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={styles.shareButton}
                 >
-                  <Ionicons
-                    name="paper-plane-outline"
+                  <SFIcon
+                    name="paperplane"
+                    fallback="paper-plane-outline"
                     size={20}
                     color={colors.text}
                   />
                 </HapticPressable>
               </View>
               <View style={styles.infoRow}>
-                <Ionicons name="time" size={18} color={colors.textSecondary} />
+                <SFIcon name="clock" fallback="time" size={18} color={colors.textSecondary} />
                 <Text style={styles.infoText}>
                   {formatTime(event.startTime, event.endTime)}
                 </Text>
               </View>
               {place && (
                 <View style={styles.infoRow}>
-                  <Ionicons
-                    name="location"
+                  <SFIcon
+                    name="mappin"
+                    fallback="location"
                     size={18}
                     color={colors.textSecondary}
                   />
@@ -435,7 +450,7 @@ const styles = StyleSheet.create({
   },
   heroDateDay: {
     fontSize: 24,
-    fontWeight: "800",
+    fontFamily: "PlusJakartaSans_800ExtraBold",
     color: colors.text,
     lineHeight: 28,
   },
@@ -451,7 +466,7 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     fontSize: 26,
-    fontWeight: "800",
+    fontFamily: "PlusJakartaSans_700Bold",
     color: "#FFFFFF",
     textShadowColor: "rgba(0,0,0,0.5)",
     textShadowOffset: { width: 0, height: 1 },
@@ -522,7 +537,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
   },
   attendeeCount: {

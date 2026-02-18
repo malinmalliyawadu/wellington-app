@@ -1,5 +1,5 @@
 import { Stack, useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import { SFIcon } from "../../../src/components/SFIcon";
 import { HapticPressable } from "../../../src/components/HapticPressable";
 import { colors } from "../../../src/theme/colors";
 
@@ -14,7 +14,7 @@ function DiscoverButton() {
       }}
       onPress={() => router.push("/feed/discover")}
     >
-      <Ionicons name="people-outline" size={22} color={colors.text} />
+      <SFIcon name="person.2" fallback="people-outline" size={22} color={colors.text} />
     </HapticPressable>
   );
 }

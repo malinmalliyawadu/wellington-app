@@ -14,8 +14,13 @@ import { getPlaces } from "../services/places";
 import { sortPosts } from "../utils/postSorting";
 import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
+import {
+  PlusJakartaSans_700Bold,
+  useFonts,
+} from "@expo-google-fonts/plus-jakarta-sans";
 
 export function FeedScreen() {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_700Bold });
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { followingIds } = useFollow();
@@ -143,7 +148,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
     color: colors.text,
     marginBottom: 8,
   },

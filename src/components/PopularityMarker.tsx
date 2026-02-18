@@ -1,21 +1,23 @@
 import React from "react";
 import { View, Text, Image, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { SFSymbol } from "expo-symbols";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { PlaceCategory } from "../types";
+import { SFIcon } from "./SFIcon";
 import { colors } from "../theme/colors";
 
 const glassEnabled = isLiquidGlassAvailable();
 
-const CATEGORY_ICONS: Record<PlaceCategory, keyof typeof Ionicons.glyphMap> = {
-  cafe: "cafe",
-  restaurant: "restaurant",
-  bar: "wine",
-  attraction: "compass",
-  park: "leaf",
-  venue: "musical-notes",
+const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
+  cafe: { sf: "cup.and.saucer.fill", fallback: "cafe" },
+  restaurant: { sf: "fork.knife", fallback: "restaurant" },
+  bar: { sf: "wineglass.fill", fallback: "wine" },
+  attraction: { sf: "safari", fallback: "compass" },
+  park: { sf: "leaf.fill", fallback: "leaf" },
+  venue: { sf: "music.note.list", fallback: "musical-notes" },
 };
 
 interface PopularityMarkerProps {
@@ -57,7 +59,7 @@ function PopularityMarkerInner({
             ]}
             glassEffectStyle="clear"
           >
-            <Ionicons name={iconName} size={iconSize} color="#FFFFFF" />
+            <SFIcon name={iconName.sf} fallback={iconName.fallback} size={iconSize} color="#FFFFFF" />
           </GlassView>
         );
       }
@@ -76,7 +78,7 @@ function PopularityMarkerInner({
           ]}
           glassEffectStyle="clear"
         >
-          <Ionicons name={iconName} size={iconSize} color={color} />
+          <SFIcon name={iconName.sf} fallback={iconName.fallback} size={iconSize} color={color} />
         </GlassView>
       );
     }
@@ -139,8 +141,9 @@ function PopularityMarkerInner({
                 },
               ]}
             />
-            <Ionicons
-              name={iconName}
+            <SFIcon
+              name={iconName.sf}
+              fallback={iconName.fallback}
               size={iconSize}
               color="#FFFFFF"
               style={{ zIndex: 10 }}
@@ -207,8 +210,9 @@ function PopularityMarkerInner({
               },
             ]}
           />
-          <Ionicons
-            name={iconName}
+          <SFIcon
+            name={iconName.sf}
+            fallback={iconName.fallback}
             size={iconSize}
             color={color}
             style={{ zIndex: 10 }}

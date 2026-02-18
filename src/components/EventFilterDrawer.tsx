@@ -2,20 +2,26 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { SFSymbol } from 'expo-symbols';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { CATEGORY_COLORS } from './EventCard';
 import { useEventFilters } from '../context/EventFilterContext';
 import { colors } from '../theme/colors';
 import { HapticPressable } from './HapticPressable';
+import { SFIcon } from './SFIcon';
+import {
+  PlusJakartaSans_700Bold,
+  useFonts,
+} from "@expo-google-fonts/plus-jakarta-sans";
 
 type DateRange = 'today' | 'tomorrow' | 'weekend' | 'month';
 type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community';
 
-const DATE_RANGES: { key: DateRange; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'today', label: 'Today', icon: 'today' },
-  { key: 'tomorrow', label: 'Tomorrow', icon: 'arrow-forward' },
-  { key: 'weekend', label: 'This Weekend', icon: 'sunny' },
-  { key: 'month', label: 'This Month', icon: 'calendar' },
+const DATE_RANGES: { key: DateRange; label: string; icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap } }[] = [
+  { key: 'today', label: 'Today', icon: { sf: 'calendar.badge.clock', fallback: 'today' } },
+  { key: 'tomorrow', label: 'Tomorrow', icon: { sf: 'arrow.right', fallback: 'arrow-forward' } },
+  { key: 'weekend', label: 'This Weekend', icon: { sf: 'sun.max.fill', fallback: 'sunny' } },
+  { key: 'month', label: 'This Month', icon: { sf: 'calendar', fallback: 'calendar' } },
 ];
 
 const ALL_CATEGORIES: EventCategory[] = ['music', 'comedy', 'art', 'food', 'market', 'community'];
@@ -29,16 +35,17 @@ const CATEGORY_LABELS: Record<EventCategory, string> = {
   community: 'Community',
 };
 
-const CATEGORY_ICONS: Record<EventCategory, keyof typeof Ionicons.glyphMap> = {
-  music: 'musical-notes',
-  comedy: 'happy',
-  art: 'color-palette',
-  food: 'restaurant',
-  market: 'cart',
-  community: 'people',
+const CATEGORY_ICONS: Record<EventCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
+  music: { sf: 'music.note.list', fallback: 'musical-notes' },
+  comedy: { sf: 'face.smiling', fallback: 'happy' },
+  art: { sf: 'paintpalette.fill', fallback: 'color-palette' },
+  food: { sf: 'fork.knife', fallback: 'restaurant' },
+  market: { sf: 'cart.fill', fallback: 'cart' },
+  community: { sf: 'person.2', fallback: 'people' },
 };
 
 export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_700Bold });
   const insets = useSafeAreaInsets();
   const {
     selectedDateRange,
@@ -76,12 +83,12 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
           style={[styles.option, selectedDateRange === null && styles.optionActive]}
           onPress={() => setSelectedDateRange(null)}
         >
-          <Ionicons name="infinite" size={20} color={selectedDateRange === null ? colors.primary : colors.text} />
+          <SFIcon name="infinity" fallback="infinite" size={20} color={selectedDateRange === null ? colors.primary : colors.text} />
           <Text style={[styles.optionLabel, selectedDateRange === null && styles.optionLabelActive]}>
             Any time
           </Text>
           {selectedDateRange === null && (
-            <Ionicons name="checkmark" size={18} color={colors.primary} style={styles.check} />
+            <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />
           )}
         </HapticPressable>
 
@@ -93,9 +100,9 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
               style={[styles.option, active && styles.optionActive]}
               onPress={() => setSelectedDateRange(key)}
             >
-              <Ionicons name={icon} size={20} color={active ? colors.primary : colors.text} />
+              <SFIcon name={icon.sf} fallback={icon.fallback} size={20} color={active ? colors.primary : colors.text} />
               <Text style={[styles.optionLabel, active && styles.optionLabelActive]}>{label}</Text>
-              {active && <Ionicons name="checkmark" size={18} color={colors.primary} style={styles.check} />}
+              {active && <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />}
             </HapticPressable>
           );
         })}
@@ -119,11 +126,11 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
               style={[styles.option, active && styles.optionActive]}
               onPress={() => toggleCategory(cat)}
             >
-              <Ionicons name={CATEGORY_ICONS[cat]} size={20} color={catColor} />
+              <SFIcon name={CATEGORY_ICONS[cat].sf} fallback={CATEGORY_ICONS[cat].fallback} size={20} color={catColor} />
               <Text style={[styles.optionLabel, active && styles.optionLabelActive]}>
                 {CATEGORY_LABELS[cat]}
               </Text>
-              {active && <Ionicons name="checkmark" size={18} color={colors.primary} style={styles.check} />}
+              {active && <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />}
             </HapticPressable>
           );
         })}
@@ -134,12 +141,12 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
           style={[styles.option, showFollowingOnly && styles.optionActive]}
           onPress={() => setShowFollowingOnly(!showFollowingOnly)}
         >
-          <Ionicons name="people" size={20} color={showFollowingOnly ? colors.primary : colors.text} />
+          <SFIcon name="person.2" fallback="people" size={20} color={showFollowingOnly ? colors.primary : colors.text} />
           <Text style={[styles.optionLabel, showFollowingOnly && styles.optionLabelActive]}>
             Following only
           </Text>
           {showFollowingOnly && (
-            <Ionicons name="checkmark" size={18} color={colors.primary} style={styles.check} />
+            <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />
           )}
         </HapticPressable>
       </ScrollView>
@@ -168,7 +175,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: '700',
+    fontFamily: 'PlusJakartaSans_700Bold',
     color: colors.text,
   },
   clearAll: {
