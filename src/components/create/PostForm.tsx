@@ -1,10 +1,10 @@
 import React from "react";
-import { View, Text, TextInput, Image, StyleSheet } from "react-native";
+import { View, Text, TextInput, Image, ScrollView, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { SFSymbol } from "expo-symbols";
 import { SFIcon } from "../SFIcon";
 import { HapticPressable } from "../HapticPressable";
-import { VideoPlayer } from "../VideoPlayer";
+import { VideoThumbnail } from "../VideoThumbnail";
 import { PostType } from "../../types";
 import { colors } from "../../theme/colors";
 
@@ -19,6 +19,14 @@ const POST_TYPES: {
 ];
 
 const MAX_CONTENT_LENGTH = 500;
+const MAX_MEDIA_ITEMS = 5;
+
+export interface MediaPickerItem {
+  uri: string;
+  type: 'photo' | 'video';
+  width?: number;
+  height?: number;
+}
 
 interface PostFormProps {
   avatarUrl?: string;
@@ -26,9 +34,9 @@ interface PostFormProps {
   onContentChange: (text: string) => void;
   postType: PostType;
   onPostTypeChange: (type: PostType) => void;
-  mediaUri: string | null;
+  mediaItems: MediaPickerItem[];
   onPickMedia: () => void;
-  onClearMedia: () => void;
+  onRemoveMedia: (index: number) => void;
 }
 
 export function PostForm({
@@ -37,10 +45,13 @@ export function PostForm({
   onContentChange,
   postType,
   onPostTypeChange,
-  mediaUri,
+  mediaItems,
   onPickMedia,
-  onClearMedia,
+  onRemoveMedia,
 }: PostFormProps) {
+  const hasMedia = mediaItems.length > 0;
+  const canAddMore = mediaItems.length < MAX_MEDIA_ITEMS;
+
   return (
     <>
       {/* Composer: Avatar + Text Input */}
@@ -80,7 +91,10 @@ export function PostForm({
             ]}
             onPress={() => {
               onPostTypeChange(item.type);
-              onClearMedia();
+              // Clear all media when switching types
+              for (let i = mediaItems.length - 1; i >= 0; i--) {
+                onRemoveMedia(i);
+              }
             }}
           >
             <SFIcon
@@ -103,35 +117,54 @@ export function PostForm({
 
       {/* Media Section */}
       {postType !== "text" &&
-        (mediaUri ? (
-          <View style={styles.mediaPreviewContainer}>
-            {postType === "video" ? (
-              <VideoPlayer
-                uri={mediaUri}
-                style={styles.mediaPreview}
-                useNativeControls
-                isMuted
-              />
-            ) : (
-              <HapticPressable onPress={onPickMedia}>
-                <Image source={{ uri: mediaUri }} style={styles.mediaPreview} />
-              </HapticPressable>
-            )}
-            <HapticPressable style={styles.mediaChangeButton} onPress={onPickMedia}>
-              <SFIcon name="arrow.triangle.2.circlepath" fallback="refresh" size={14} color={colors.primary} />
-              <Text style={styles.mediaChangeText}>Change</Text>
-            </HapticPressable>
+        (hasMedia ? (
+          <View style={styles.mediaStripContainer}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.mediaStripContent}
+            >
+              {mediaItems.map((item, index) => (
+                <View key={`${item.uri}-${index}`} style={styles.mediaThumbnailWrapper}>
+                  {item.type === "video" ? (
+                    <VideoThumbnail style={styles.mediaThumbnail} />
+                  ) : (
+                    <Image source={{ uri: item.uri }} style={styles.mediaThumbnail} />
+                  )}
+                  <HapticPressable
+                    style={styles.mediaRemoveButton}
+                    onPress={() => onRemoveMedia(index)}
+                    hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                  >
+                    <SFIcon name="xmark.circle.fill" fallback="close-circle" size={20} color="rgba(0,0,0,0.7)" />
+                  </HapticPressable>
+                  {item.type === "video" && (
+                    <View style={styles.thumbnailVideoIcon}>
+                      <SFIcon name="play.fill" fallback="play" size={12} color="#FFFFFF" />
+                    </View>
+                  )}
+                </View>
+              ))}
+              {canAddMore && (
+                <HapticPressable style={styles.addMediaButton} onPress={onPickMedia}>
+                  <SFIcon name="plus" fallback="add" size={24} color={colors.gray400} />
+                </HapticPressable>
+              )}
+            </ScrollView>
+            <Text style={styles.mediaCounter}>
+              {mediaItems.length}/{MAX_MEDIA_ITEMS}
+            </Text>
           </View>
         ) : (
           <HapticPressable style={styles.mediaButton} onPress={onPickMedia}>
             <SFIcon
-              name={postType === "photo" ? "camera.fill" : "video.fill"}
-              fallback={postType === "photo" ? "camera" : "videocam"}
+              name="camera.fill"
+              fallback="camera"
               size={28}
               color={colors.gray400}
             />
             <Text style={styles.mediaButtonText}>
-              Add a {postType === "photo" ? "photo" : "video"}
+              Add photos & videos
             </Text>
           </HapticPressable>
         ))}
@@ -211,36 +244,59 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray100,
     overflow: "hidden",
   },
-  mediaPreviewContainer: {
-    marginTop: 16,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  mediaPreview: {
-    width: "100%",
-    height: 200,
-    borderRadius: 12,
-  },
-  mediaChangeButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 4,
-    marginTop: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: colors.primary + "10",
-  },
-  mediaChangeText: {
-    fontSize: 13,
-    fontFamily: "PlusJakartaSans_500Medium",
-    color: colors.primary,
-  },
   mediaButtonText: {
     marginTop: 8,
     fontSize: 14,
     color: colors.gray500,
     fontFamily: "PlusJakartaSans_500Medium",
+  },
+  mediaStripContainer: {
+    marginTop: 16,
+  },
+  mediaStripContent: {
+    gap: 8,
+    paddingRight: 4,
+  },
+  mediaThumbnailWrapper: {
+    position: "relative",
+  },
+  mediaThumbnail: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+    backgroundColor: colors.gray200,
+  },
+  mediaRemoveButton: {
+    position: "absolute",
+    top: 4,
+    right: 4,
+    backgroundColor: "rgba(255,255,255,0.8)",
+    borderRadius: 10,
+  },
+  thumbnailVideoIcon: {
+    position: "absolute",
+    bottom: 6,
+    left: 6,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: 10,
+    paddingHorizontal: 5,
+    paddingVertical: 3,
+  },
+  addMediaButton: {
+    width: 100,
+    height: 100,
+    borderRadius: 10,
+    backgroundColor: colors.gray100,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: colors.gray200,
+    borderStyle: "dashed",
+  },
+  mediaCounter: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 6,
+    textAlign: "right",
   },
 });

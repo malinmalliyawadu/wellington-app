@@ -6,6 +6,7 @@ import { SFIcon } from "./SFIcon";
 import { PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { HapticPressable } from "./HapticPressable";
 import { colors } from "../theme/colors";
+import { isMultiMediaPost } from "../utils/postMedia";
 import type { Post, Place } from "../types";
 import { GlassView } from "expo-glass-effect";
 
@@ -61,7 +62,16 @@ export function PostsGrid({
                     style={styles.postImage}
                   />
                 )}
-                {item.type === "video" && (
+                {isMultiMediaPost(item) ? (
+                  <View style={styles.multiMediaIndicator}>
+                    <SFIcon
+                      name="square.fill.on.square.fill"
+                      fallback="copy"
+                      size={16}
+                      color="rgba(255,255,255,0.9)"
+                    />
+                  </View>
+                ) : item.type === "video" ? (
                   <View style={styles.videoIndicator}>
                     <SFIcon
                       name="play.circle.fill"
@@ -70,7 +80,7 @@ export function PostsGrid({
                       color="rgba(255,255,255,0.9)"
                     />
                   </View>
-                )}
+                ) : null}
               </>
             ) : (
               <LinearGradient
@@ -138,6 +148,15 @@ const styles = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.3,
+    shadowRadius: 2,
+  },
+  multiMediaIndicator: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.4,
     shadowRadius: 2,
   },
   textPostTile: {

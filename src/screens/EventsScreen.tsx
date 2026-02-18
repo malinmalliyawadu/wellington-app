@@ -1,10 +1,11 @@
-import React, { useMemo, useCallback } from "react";
+import React, { useMemo, useCallback, useState } from "react";
 import {
   View,
   Text,
   SectionList,
   StyleSheet,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { useNavigation } from "expo-router";
@@ -160,10 +161,18 @@ export function EventsScreen() {
     useEventFilters();
 
   const fetchEvents = useCallback(() => getUpcomingEvents(), []);
-  const { data: events, loading: loadingEvents } = useQuery(fetchEvents);
+  const { data: events, loading: loadingEvents, refetch: refetchEvents } = useQuery(fetchEvents);
 
   const fetchPlaces = useCallback(() => getPlaces(), []);
-  const { data: places } = useQuery(fetchPlaces);
+  const { data: places, refetch: refetchPlaces } = useQuery(fetchPlaces);
+
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    refetchEvents();
+    refetchPlaces();
+    setTimeout(() => setRefreshing(false), 600);
+  }, [refetchEvents, refetchPlaces]);
 
   const placeMap = useMemo(
     () => new Map((places ?? []).map((p) => [p.id, p])),
@@ -298,12 +307,21 @@ export function EventsScreen() {
             </View>
           </View>
         )}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+          />
+        }
         showsVerticalScrollIndicator={false}
         stickySectionHeadersEnabled={false}
+        contentInset={{ top: headerHeight }}
+        contentOffset={{ x: 0, y: -headerHeight }}
+        scrollIndicatorInsets={{ top: headerHeight }}
         contentContainerStyle={[
           styles.list,
           {
-            paddingTop: headerHeight,
             paddingBottom: 40 + insets.bottom,
           },
         ]}

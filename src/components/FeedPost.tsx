@@ -9,7 +9,9 @@ import { Post, User, Place, PlaceCategory } from "../types";
 import { useQuery } from "../hooks/useQuery";
 import { useDoubleTapLike } from "../hooks/useDoubleTapLike";
 import { getCommentsByPostId } from "../services/comments";
+import { getPostMediaItems } from "../utils/postMedia";
 import { VideoPlayer } from "./VideoPlayer";
+import { MediaCarousel } from "./MediaCarousel";
 import { SFIcon } from "./SFIcon";
 import { colors } from "../theme/colors";
 import { sharePost } from "../utils/sharing";
@@ -107,7 +109,9 @@ export function FeedPost({
     }
   };
 
-  const hasMedia = !!post.mediaUrl;
+  const mediaItems = getPostMediaItems(post);
+  const hasMedia = mediaItems.length > 0;
+  const isMultiMedia = mediaItems.length > 1;
 
   return (
     <View style={styles.container}>
@@ -149,9 +153,16 @@ export function FeedPost({
             }}
           >
             <View>
-              {post.type === "video" ? (
+              {isMultiMedia ? (
+                <MediaCarousel
+                  mediaItems={mediaItems}
+                  aspectRatio={aspectRatio}
+                  onAspectRatioChange={setAspectRatio}
+                  videoMuted
+                />
+              ) : post.type === "video" ? (
                 <VideoPlayer
-                  uri={post.mediaUrl!}
+                  uri={mediaItems[0].mediaUrl}
                   style={[styles.media, { aspectRatio }]}
                   shouldPlay
                   isMuted
@@ -160,7 +171,7 @@ export function FeedPost({
                 />
               ) : (
                 <Image
-                  source={{ uri: post.mediaUrl }}
+                  source={{ uri: mediaItems[0].mediaUrl }}
                   style={[styles.media, { aspectRatio }]}
                   onLoad={handleImageLoad}
                 />

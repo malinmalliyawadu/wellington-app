@@ -16,6 +16,7 @@ import { SFIcon } from "../components/SFIcon";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { Place, PostType, EventCategory } from "../types";
+import type { MediaPickerItem } from "../components/create/PostForm";
 import { colors } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
 import { useExploration } from "../context/ExplorationContext";
@@ -70,11 +71,7 @@ export function CreatePostSheetScreen() {
   // Post-specific state
   const [postType, setPostType] = useState<PostType>("photo");
   const [content, setContent] = useState("");
-  const [mediaUri, setMediaUri] = useState<string | null>(null);
-  const [mediaDimensions, setMediaDimensions] = useState<{
-    width: number;
-    height: number;
-  } | null>(null);
+  const [mediaItems, setMediaItems] = useState<MediaPickerItem[]>([]);
 
   // Event-specific state
   const [eventTitle, setEventTitle] = useState("");
@@ -139,23 +136,38 @@ export function CreatePostSheetScreen() {
           videoUri?: string;
           mediaWidth?: number;
           mediaHeight?: number;
+          mediaFiles?: Array<{
+            uri: string;
+            type: 'photo' | 'video';
+            width?: number;
+            height?: number;
+          }>;
         }
       | undefined;
     if (!shared) return;
     delete (global as any).__sharedIntent;
 
-    if (shared.videoUri) {
+    if (shared.mediaFiles && shared.mediaFiles.length > 0) {
+      // Multi-file share
+      const hasVideo = shared.mediaFiles.some((f) => f.type === 'video');
+      setPostType(hasVideo ? 'video' : 'photo');
+      setMediaItems(shared.mediaFiles);
+    } else if (shared.videoUri) {
       setPostType("video");
-      setMediaUri(shared.videoUri);
-    } else if (shared.imageUri) {
-      setPostType("photo");
-      setMediaUri(shared.imageUri);
-    }
-    if (shared.mediaWidth && shared.mediaHeight) {
-      setMediaDimensions({
+      setMediaItems([{
+        uri: shared.videoUri,
+        type: 'video',
         width: shared.mediaWidth,
         height: shared.mediaHeight,
-      });
+      }]);
+    } else if (shared.imageUri) {
+      setPostType("photo");
+      setMediaItems([{
+        uri: shared.imageUri,
+        type: 'photo',
+        width: shared.mediaWidth,
+        height: shared.mediaHeight,
+      }]);
     }
     if (shared.text) {
       setContent(shared.text);
@@ -186,18 +198,24 @@ export function CreatePostSheetScreen() {
   }, [placeIdParam]);
 
   const pickMedia = async () => {
+    const remaining = 5 - mediaItems.length;
+    if (remaining <= 0) return;
+
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: postType === "video" ? ["videos"] : ["images"],
-      allowsEditing: false,
+      mediaTypes: ['images', 'videos'],
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
       quality: 0.8,
     });
 
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      setMediaUri(asset.uri);
-      if (asset.width && asset.height) {
-        setMediaDimensions({ width: asset.width, height: asset.height });
-      }
+    if (!result.canceled && result.assets.length > 0) {
+      const newItems: MediaPickerItem[] = result.assets.map((asset) => ({
+        uri: asset.uri,
+        type: (asset.type === 'video' ? 'video' : 'photo') as 'photo' | 'video',
+        width: asset.width || undefined,
+        height: asset.height || undefined,
+      }));
+      setMediaItems((prev) => [...prev, ...newItems].slice(0, 5));
     }
   };
 
@@ -263,13 +281,44 @@ export function CreatePostSheetScreen() {
       }
 
       if (createType === "post") {
-        let mediaUrl: string | undefined;
+        let coverMediaUrl: string | undefined;
+        let coverWidth: number | undefined;
+        let coverHeight: number | undefined;
+        let uploadedMediaItems: Array<{
+          mediaUrl: string;
+          mediaType: 'photo' | 'video';
+          mediaWidth?: number;
+          mediaHeight?: number;
+          sortOrder: number;
+        }> | undefined;
 
-        if (mediaUri && postType !== "text") {
-          const extension = postType === "video" ? "mp4" : "jpg";
-          const mimeType = postType === "video" ? "video/mp4" : "image/jpeg";
-          const fileName = `${profile.id}-${Date.now()}.${extension}`;
-          mediaUrl = await uploadMedia(mediaUri, fileName, mimeType);
+        if (mediaItems.length > 0 && postType !== "text") {
+          // Upload all media in parallel
+          const uploadResults = await Promise.all(
+            mediaItems.map(async (item, index) => {
+              const extension = item.type === "video" ? "mp4" : "jpg";
+              const mimeType = item.type === "video" ? "video/mp4" : "image/jpeg";
+              const fileName = `${profile.id}-${Date.now()}-${index}.${extension}`;
+              const url = await uploadMedia(item.uri, fileName, mimeType);
+              return {
+                mediaUrl: url,
+                mediaType: item.type,
+                mediaWidth: item.width,
+                mediaHeight: item.height,
+                sortOrder: index,
+              };
+            })
+          );
+
+          // Set cover to first item
+          coverMediaUrl = uploadResults[0].mediaUrl;
+          coverWidth = uploadResults[0].mediaWidth;
+          coverHeight = uploadResults[0].mediaHeight;
+
+          // Only create post_media rows for multi-media posts
+          if (uploadResults.length > 1) {
+            uploadedMediaItems = uploadResults;
+          }
         }
 
         await createPost({
@@ -277,9 +326,10 @@ export function CreatePostSheetScreen() {
           placeId: placeId,
           type: postType,
           content: content.trim(),
-          mediaUrl,
-          mediaWidth: mediaDimensions?.width,
-          mediaHeight: mediaDimensions?.height,
+          mediaUrl: coverMediaUrl,
+          mediaWidth: coverWidth,
+          mediaHeight: coverHeight,
+          mediaItems: uploadedMediaItems,
         });
 
         const newAchievements = await markExplored(placeId, "posted");
@@ -296,8 +346,7 @@ export function CreatePostSheetScreen() {
               onPress: () => {
                 setContent("");
                 setSelectedPlace(null);
-                setMediaUri(null);
-                setMediaDimensions(null);
+                setMediaItems([]);
                 router.dismiss();
               },
             },
@@ -466,11 +515,10 @@ export function CreatePostSheetScreen() {
                 onContentChange={setContent}
                 postType={postType}
                 onPostTypeChange={setPostType}
-                mediaUri={mediaUri}
+                mediaItems={mediaItems}
                 onPickMedia={pickMedia}
-                onClearMedia={() => {
-                  setMediaUri(null);
-                  setMediaDimensions(null);
+                onRemoveMedia={(index) => {
+                  setMediaItems((prev) => prev.filter((_, i) => i !== index));
                 }}
               />
             ) : (

@@ -5,6 +5,7 @@ DROP POLICY IF EXISTS "Users can delete own post media" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can upload post media" ON storage.objects;
 DROP POLICY IF EXISTS "Anyone can view post media" ON storage.objects;
 
+DROP TABLE IF EXISTS post_media CASCADE;
 DROP TABLE IF EXISTS post_likes CASCADE;
 DROP TABLE IF EXISTS follows CASCADE;
 DROP TABLE IF EXISTS comments CASCADE;

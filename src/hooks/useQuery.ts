@@ -20,10 +20,21 @@ export function useQuery<T>(queryFn: () => Promise<T>, key?: unknown): QueryResu
   }, []);
 
   const stableKey = key !== undefined ? JSON.stringify(key) : undefined;
+  const prevKeyRef = useRef(stableKey);
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
+    const keyChanged = prevKeyRef.current !== stableKey;
+    prevKeyRef.current = stableKey;
+
+    // Show loading on initial fetch or when the key changes (e.g. switching places)
+    // Don't show loading on refetch so old data stays visible
+    if (data === null || keyChanged) {
+      setLoading(true);
+      if (keyChanged) {
+        setData(null);
+      }
+    }
     setError(null);
 
     queryFnRef.current()

@@ -72,6 +72,12 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         videoUri?: string;
         mediaWidth?: number;
         mediaHeight?: number;
+        mediaFiles?: Array<{
+          uri: string;
+          type: 'photo' | 'video';
+          width?: number;
+          height?: number;
+        }>;
       } = {};
 
       if (shareIntent.type === 'weburl' && shareIntent.webUrl) {
@@ -80,18 +86,28 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         sharedData.text = shareIntent.text;
       }
 
-      if (shareIntent.type === 'media' && shareIntent.files?.[0]) {
-        const file = shareIntent.files[0];
-        if (file.mimeType?.startsWith('video/')) {
-          sharedData.videoUri = file.path;
+      if (shareIntent.type === 'media' && shareIntent.files && shareIntent.files.length > 0) {
+        if (shareIntent.files.length > 1) {
+          // Multi-file share: pass all files as array
+          sharedData.mediaFiles = shareIntent.files.map((file: any) => ({
+            uri: file.path,
+            type: file.mimeType?.startsWith('video/') ? 'video' as const : 'photo' as const,
+            width: file.width || undefined,
+            height: file.height || undefined,
+          }));
         } else {
-          sharedData.imageUri = file.path;
+          const file = shareIntent.files[0];
+          if (file.mimeType?.startsWith('video/')) {
+            sharedData.videoUri = file.path;
+          } else {
+            sharedData.imageUri = file.path;
+          }
+          if (file.width) sharedData.mediaWidth = file.width;
+          if (file.height) sharedData.mediaHeight = file.height;
         }
-        if (file.width) sharedData.mediaWidth = file.width;
-        if (file.height) sharedData.mediaHeight = file.height;
       }
 
-      if (sharedData.text || sharedData.imageUri || sharedData.videoUri) {
+      if (sharedData.text || sharedData.imageUri || sharedData.videoUri || sharedData.mediaFiles) {
         (global as any).__sharedIntent = sharedData;
         router.push('/feed/create-post' as any);
       }

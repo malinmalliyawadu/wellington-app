@@ -31,7 +31,9 @@ import {
 import { useQuery } from "../hooks/useQuery";
 import { useDoubleTapLike } from "../hooks/useDoubleTapLike";
 import { useAuth } from "../context/AuthContext";
+import { getPostMediaItems } from "../utils/postMedia";
 import { VideoPlayer } from "../components/VideoPlayer";
+import { MediaCarousel } from "../components/MediaCarousel";
 import { colors } from "../theme/colors";
 import { PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { sharePost } from "../utils/sharing";
@@ -136,7 +138,9 @@ export function PostDetailScreen() {
   const categoryColor = place
     ? colors.category[place.category]
     : colors.gray400;
-  const hasMedia = !!post.mediaUrl;
+  const mediaItems = getPostMediaItems(post);
+  const hasMedia = mediaItems.length > 0;
+  const isMultiMedia = mediaItems.length > 1;
 
   const currentTab = pathname.startsWith("/feed")
     ? "/feed"
@@ -236,9 +240,17 @@ export function PostDetailScreen() {
             }}
           >
             <View>
-              {post.type === "video" ? (
+              {isMultiMedia ? (
+                <MediaCarousel
+                  mediaItems={mediaItems}
+                  aspectRatio={aspectRatio}
+                  onAspectRatioChange={setAspectRatio}
+                  videoMuted={false}
+                  videoControls
+                />
+              ) : post.type === "video" ? (
                 <VideoPlayer
-                  uri={post.mediaUrl!}
+                  uri={mediaItems[0].mediaUrl}
                   style={[styles.media, { aspectRatio }]}
                   shouldPlay
                   useNativeControls
@@ -246,7 +258,7 @@ export function PostDetailScreen() {
                 />
               ) : (
                 <Image
-                  source={{ uri: post.mediaUrl }}
+                  source={{ uri: mediaItems[0].mediaUrl }}
                   style={[styles.media, { aspectRatio }]}
                   onLoad={handleImageLoad}
                 />

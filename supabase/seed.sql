@@ -51,7 +51,7 @@ ON CONFLICT (id) DO UPDATE SET
 -- ============================================================
 DELETE FROM comments;
 DELETE FROM post_likes;
-DELETE FROM posts;
+DELETE FROM posts; -- cascades to post_media via ON DELETE CASCADE
 DELETE FROM event_attendees;
 DELETE FROM events;
 DELETE FROM places;
@@ -404,6 +404,66 @@ INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, creat
   ('20000000-0000-0000-0000-000000000075', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000014', 'text',
    'Walked up the Cable Car track instead of riding. Great little workout with an amazing reward at the top.',
    null, 6, (CURRENT_DATE - 2) + TIME '09:00:00');
+
+-- ============================================================
+-- POST MEDIA (multi-media posts — up to 5 photos/videos per post)
+-- These posts have multiple images; the first item matches the post's media_url.
+-- Requires the post_media migration to have been applied first.
+-- ============================================================
+INSERT INTO post_media (id, post_id, media_url, media_type, sort_order) VALUES
+  -- Mt Vic sunrise by Tane (post 04) — 3 photos: sunrise, trail, panorama
+  ('50000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000004',
+   'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600', 'photo', 0),
+  ('50000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000004',
+   'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600', 'photo', 1),
+  ('50000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000004',
+   'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600', 'photo', 2),
+
+  -- Te Papa exhibition by Jordan (post 03) — 4 photos: exhibition, interior, art, building
+  ('50000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000003',
+   'https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=600', 'photo', 0),
+  ('50000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000003',
+   'https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=600', 'photo', 1),
+  ('50000000-0000-0000-0000-000000000006', '20000000-0000-0000-0000-000000000003',
+   'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600', 'photo', 2),
+  ('50000000-0000-0000-0000-000000000007', '20000000-0000-0000-0000-000000000003',
+   'https://images.unsplash.com/photo-1580537659466-0a9bfa916a54?w=600', 'photo', 3),
+
+  -- San Fran gig by Mel (post 06) — 3 photos: crowd, stage, band
+  ('50000000-0000-0000-0000-000000000008', '20000000-0000-0000-0000-000000000006',
+   'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600', 'photo', 0),
+  ('50000000-0000-0000-0000-000000000009', '20000000-0000-0000-0000-000000000006',
+   'https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=600', 'photo', 1),
+  ('50000000-0000-0000-0000-000000000010', '20000000-0000-0000-0000-000000000006',
+   'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600', 'photo', 2),
+
+  -- Loretta brunch by Sarah (post 07) — 3 photos: food, coffee, interior
+  ('50000000-0000-0000-0000-000000000011', '20000000-0000-0000-0000-000000000007',
+   'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600', 'photo', 0),
+  ('50000000-0000-0000-0000-000000000012', '20000000-0000-0000-0000-000000000007',
+   'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600', 'photo', 1),
+  ('50000000-0000-0000-0000-000000000013', '20000000-0000-0000-0000-000000000007',
+   'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600', 'photo', 2),
+
+  -- Zealandia dawn by Jordan (post 19) — 3 photos: forest, bird, glow worms
+  ('50000000-0000-0000-0000-000000000014', '20000000-0000-0000-0000-000000000019',
+   'https://images.unsplash.com/photo-1518709766631-a6a7f45921c3?w=600', 'photo', 0),
+  ('50000000-0000-0000-0000-000000000015', '20000000-0000-0000-0000-000000000019',
+   'https://images.unsplash.com/photo-1470058869958-2a77571e9182?w=600', 'photo', 1),
+  ('50000000-0000-0000-0000-000000000016', '20000000-0000-0000-0000-000000000019',
+   'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600', 'photo', 2),
+
+  -- Botanic Garden by Tane (post 08) — 5 photos: roses, fern house, trees, path, fountain
+  ('50000000-0000-0000-0000-000000000017', '20000000-0000-0000-0000-000000000008',
+   'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=600', 'photo', 0),
+  ('50000000-0000-0000-0000-000000000018', '20000000-0000-0000-0000-000000000008',
+   'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600', 'photo', 1),
+  ('50000000-0000-0000-0000-000000000019', '20000000-0000-0000-0000-000000000008',
+   'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600', 'photo', 2),
+  ('50000000-0000-0000-0000-000000000020', '20000000-0000-0000-0000-000000000008',
+   'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600', 'photo', 3),
+  ('50000000-0000-0000-0000-000000000021', '20000000-0000-0000-0000-000000000008',
+   'https://images.unsplash.com/photo-1518495973542-4542c06a5843?w=600', 'photo', 4);
 
 -- ============================================================
 -- COMMENTS (selected subset)

@@ -251,6 +251,47 @@ export type Database = {
           },
         ];
       };
+      post_media: {
+        Row: {
+          id: string;
+          post_id: string;
+          media_url: string;
+          thumbnail_url: string | null;
+          media_type: 'photo' | 'video';
+          media_width: number | null;
+          media_height: number | null;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          media_url: string;
+          thumbnail_url?: string | null;
+          media_type: 'photo' | 'video';
+          media_width?: number | null;
+          media_height?: number | null;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          media_url?: string;
+          thumbnail_url?: string | null;
+          media_type?: 'photo' | 'video';
+          media_width?: number | null;
+          media_height?: number | null;
+          sort_order?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'post_media_post_id_fkey';
+            columns: ['post_id'];
+            referencedRelation: 'posts';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+        ];
+      };
       post_likes: {
         Row: {
           post_id: string;

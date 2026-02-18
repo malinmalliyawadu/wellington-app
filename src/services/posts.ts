@@ -1,10 +1,12 @@
 import { supabase } from '../lib/supabase';
-import type { Post, PostType } from '../types';
+import type { Post, PostType, MediaItem } from '../types';
+
+const POST_SELECT = '*, post_media(*)';
 
 export async function getPosts(): Promise<Post[]> {
   const { data, error } = await supabase
     .from('posts')
-    .select('*')
+    .select(POST_SELECT)
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -14,7 +16,7 @@ export async function getPosts(): Promise<Post[]> {
 export async function getPostById(postId: string): Promise<Post | null> {
   const { data, error } = await supabase
     .from('posts')
-    .select('*')
+    .select(POST_SELECT)
     .eq('id', postId)
     .single();
 
@@ -29,7 +31,7 @@ export async function getPostById(postId: string): Promise<Post | null> {
 export async function getPostsByPlaceId(placeId: string): Promise<Post[]> {
   const { data, error } = await supabase
     .from('posts')
-    .select('*')
+    .select(POST_SELECT)
     .eq('place_id', placeId)
     .order('created_at', { ascending: false });
 
@@ -40,7 +42,7 @@ export async function getPostsByPlaceId(placeId: string): Promise<Post[]> {
 export async function getPostsByUserId(userId: string): Promise<Post[]> {
   const { data, error } = await supabase
     .from('posts')
-    .select('*')
+    .select(POST_SELECT)
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -58,7 +60,7 @@ export async function getFeedPosts(followingIds: string[], currentUserId?: strin
 
   const { data, error } = await supabase
     .from('posts')
-    .select('*')
+    .select(POST_SELECT)
     .in('user_id', userIds)
     .order('created_at', { ascending: false });
 
@@ -75,6 +77,14 @@ export async function createPost(post: {
   thumbnailUrl?: string;
   mediaWidth?: number;
   mediaHeight?: number;
+  mediaItems?: Array<{
+    mediaUrl: string;
+    thumbnailUrl?: string;
+    mediaType: 'photo' | 'video';
+    mediaWidth?: number;
+    mediaHeight?: number;
+    sortOrder: number;
+  }>;
 }): Promise<Post> {
   const { data, error } = await supabase
     .from('posts')
@@ -92,7 +102,50 @@ export async function createPost(post: {
     .single();
 
   if (error) throw error;
+
+  // Insert media items if provided
+  if (post.mediaItems && post.mediaItems.length > 0) {
+    const { error: mediaError } = await supabase.from('post_media').insert(
+      post.mediaItems.map((item) => ({
+        post_id: data.id,
+        media_url: item.mediaUrl,
+        thumbnail_url: item.thumbnailUrl ?? null,
+        media_type: item.mediaType,
+        media_width: item.mediaWidth ?? null,
+        media_height: item.mediaHeight ?? null,
+        sort_order: item.sortOrder,
+      }))
+    );
+
+    if (mediaError) throw mediaError;
+
+    // Re-fetch to get the complete post with media
+    const complete = await getPostById(data.id);
+    if (!complete) throw new Error('Failed to fetch created post');
+    return complete;
+  }
+
   return mapPost(data);
+}
+
+function mapMediaItem(row: {
+  id: string;
+  media_url: string;
+  thumbnail_url: string | null;
+  media_type: string;
+  media_width: number | null;
+  media_height: number | null;
+  sort_order: number;
+}): MediaItem {
+  return {
+    id: row.id,
+    mediaUrl: row.media_url,
+    thumbnailUrl: row.thumbnail_url ?? undefined,
+    mediaType: row.media_type as MediaItem['mediaType'],
+    mediaWidth: row.media_width ?? undefined,
+    mediaHeight: row.media_height ?? undefined,
+    sortOrder: row.sort_order,
+  };
 }
 
 function mapPost(row: {
@@ -107,7 +160,21 @@ function mapPost(row: {
   media_height?: number | null;
   likes: number;
   created_at: string;
+  post_media?: Array<{
+    id: string;
+    media_url: string;
+    thumbnail_url: string | null;
+    media_type: string;
+    media_width: number | null;
+    media_height: number | null;
+    sort_order: number;
+  }>;
 }): Post {
+  const mediaRows = row.post_media ?? [];
+  const media = mediaRows
+    .sort((a, b) => a.sort_order - b.sort_order)
+    .map(mapMediaItem);
+
   return {
     id: row.id,
     userId: row.user_id,
@@ -120,5 +187,6 @@ function mapPost(row: {
     mediaHeight: row.media_height ?? undefined,
     likes: row.likes,
     createdAt: row.created_at,
+    media: media.length > 0 ? media : undefined,
   };
 }

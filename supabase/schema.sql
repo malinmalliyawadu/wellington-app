@@ -69,6 +69,21 @@ create index posts_user_id_idx on posts(user_id);
 create index posts_place_id_idx on posts(place_id);
 create index posts_created_at_idx on posts(created_at desc);
 
+-- Post media (multi-media posts — up to 5 photos/videos per post)
+create table post_media (
+  id uuid primary key default gen_random_uuid(),
+  post_id uuid not null references posts(id) on delete cascade,
+  media_url text not null,
+  thumbnail_url text,
+  media_type text not null check (media_type in ('photo', 'video')),
+  media_width integer,
+  media_height integer,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+create index post_media_post_id_idx on post_media(post_id);
+
 -- Events
 create table events (
   id uuid primary key default gen_random_uuid(),
@@ -179,6 +194,22 @@ create policy "Users can update own posts"
 
 create policy "Users can delete own posts"
   on posts for delete using (auth.uid() = user_id);
+
+-- Post media: anyone can read, post owner can insert/delete
+alter table post_media enable row level security;
+
+create policy "Anyone can view post media"
+  on post_media for select using (true);
+
+create policy "Post owner can insert media"
+  on post_media for insert with check (
+    exists (select 1 from posts where posts.id = post_id and posts.user_id = auth.uid())
+  );
+
+create policy "Post owner can delete media"
+  on post_media for delete using (
+    exists (select 1 from posts where posts.id = post_id and posts.user_id = auth.uid())
+  );
 
 -- Events: anyone can read, authenticated users can insert
 alter table events enable row level security;

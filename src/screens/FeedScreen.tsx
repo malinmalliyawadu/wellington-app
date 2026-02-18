@@ -111,8 +111,10 @@ export function FeedScreen() {
           />
         }
         showsVerticalScrollIndicator={false}
+        contentInset={{ top: headerHeight }}
+        contentOffset={{ x: 0, y: -headerHeight }}
+        scrollIndicatorInsets={{ top: headerHeight }}
         contentContainerStyle={{
-          paddingTop: headerHeight,
           paddingBottom: insets.bottom + 40,
           flexGrow: 1,
         }}
