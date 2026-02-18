@@ -16,6 +16,7 @@ import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { FollowProvider } from '../src/context/FollowContext';
 import { LikeProvider } from '../src/context/LikeContext';
 import { ToastProvider } from '../src/context/ToastContext';
+import { NotificationProvider } from '../src/context/NotificationContext';
 import { ExplorationProvider } from '../src/context/ExplorationContext';
 import { LocationProvider } from '../src/context/LocationContext';
 import { ZoomOverlayProvider } from '../src/context/ZoomOverlayContext';
@@ -162,6 +163,7 @@ export default function RootLayout() {
             <LocationProvider>
               <FollowProvider>
                 <LikeProvider>
+                  <NotificationProvider>
                   <ToastProvider>
                     <ExplorationProvider>
                       <AuthGate>
@@ -170,6 +172,7 @@ export default function RootLayout() {
                       <StatusBar style="auto" />
                     </ExplorationProvider>
                   </ToastProvider>
+                  </NotificationProvider>
                 </LikeProvider>
               </FollowProvider>
             </LocationProvider>

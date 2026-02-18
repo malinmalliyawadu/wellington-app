@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { getFollowingIds, followUser, unfollowUser } from '../services/follows';
+import { createFollowNotification, deleteNotificationForFollow } from '../services/notifications';
 
 interface FollowContextType {
   followingIds: string[];
@@ -46,14 +47,22 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
         ? unfollowUser(currentUserId, userId)
         : followUser(currentUserId, userId);
 
-      apiCall.catch(() => {
-        // Revert on error
-        setFollowingIds((current) =>
-          alreadyFollowing
-            ? [...current, userId]
-            : current.filter((id) => id !== userId)
-        );
-      });
+      apiCall
+        .then(() => {
+          if (alreadyFollowing) {
+            deleteNotificationForFollow(currentUserId, userId).catch(() => {});
+          } else {
+            createFollowNotification(currentUserId, userId).catch(() => {});
+          }
+        })
+        .catch(() => {
+          // Revert on error
+          setFollowingIds((current) =>
+            alreadyFollowing
+              ? [...current, userId]
+              : current.filter((id) => id !== userId)
+          );
+        });
 
       return next;
     });

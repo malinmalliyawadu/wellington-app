@@ -39,6 +39,18 @@ export async function getPostsByPlaceId(placeId: string): Promise<Post[]> {
   return (data ?? []).map(mapPost);
 }
 
+export async function getPostsByIds(ids: string[]): Promise<Post[]> {
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('posts')
+    .select(POST_SELECT)
+    .in('id', ids);
+
+  if (error) throw error;
+  return (data ?? []).map(mapPost);
+}
+
 export async function getPostsByUserId(userId: string): Promise<Post[]> {
   const { data, error } = await supabase
     .from('posts')

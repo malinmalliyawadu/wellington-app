@@ -40,6 +40,7 @@ import { colors } from "../theme/colors";
 import { fonts } from "../theme/fonts";
 import { sharePost } from "../utils/sharing";
 import { useToast } from "../context/ToastContext";
+import { createCommentNotification } from "../services/notifications";
 import { ContextMenu, Button as ExpoButton, Host } from "@expo/ui/swift-ui";
 import { HapticPressable } from "src/components/HapticPressable";
 
@@ -204,6 +205,7 @@ export function PostDetailScreen() {
           userId: profile.id,
           text: trimmed,
         });
+        createCommentNotification(profile.id, post.id).catch(() => {});
       }
       setEditingCommentId(null);
       setCommentText("");

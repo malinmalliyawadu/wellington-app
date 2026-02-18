@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { getLikedPostIds, likePost, unlikePost, getAllLikeCounts } from '../services/likes';
+import { createLikeNotification, deleteNotificationForLike } from '../services/notifications';
 
 interface LikeContextType {
   isLiked: (postId: string) => boolean;
@@ -52,7 +53,13 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
         ? unlikePost(currentUserId, postId)
         : likePost(currentUserId, postId);
 
-      apiCall.catch(() => {
+      apiCall.then(() => {
+        if (alreadyLiked) {
+          deleteNotificationForLike(currentUserId, postId).catch(() => {});
+        } else {
+          createLikeNotification(currentUserId, postId).catch((e) => console.error('like notification failed:', e));
+        }
+      }).catch(() => {
         // Revert on error
         setLikedPostIds((current) =>
           alreadyLiked

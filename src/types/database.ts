@@ -429,6 +429,52 @@ export type Database = {
           },
         ];
       };
+      notifications: {
+        Row: {
+          id: string;
+          recipient_id: string;
+          actor_id: string;
+          type: NotificationType;
+          post_id: string | null;
+          read: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          recipient_id: string;
+          actor_id: string;
+          type: NotificationType;
+          post_id?: string | null;
+          read?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          read?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'notifications_recipient_id_fkey';
+            columns: ['recipient_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+          {
+            foreignKeyName: 'notifications_actor_id_fkey';
+            columns: ['actor_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+          {
+            foreignKeyName: 'notifications_post_id_fkey';
+            columns: ['post_id'];
+            referencedRelation: 'posts';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+        ];
+      };
     };
     Views: {};
     Functions: {};
@@ -437,6 +483,7 @@ export type Database = {
       post_type: PostType;
       event_category: EventCategory;
       exploration_method: ExplorationMethod;
+      notification_type: NotificationType;
     };
     CompositeTypes: {};
   };
@@ -447,6 +494,7 @@ export type PostType = 'photo' | 'video' | 'text';
 export type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community';
 export type ExplorationMethod = 'viewed' | 'posted';
 export type AchievementType = 'category' | 'milestone' | 'neighborhood' | 'social';
+export type NotificationType = 'like' | 'comment' | 'follow';
 
 export type Tables<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Row'];
