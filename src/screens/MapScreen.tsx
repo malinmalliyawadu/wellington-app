@@ -14,8 +14,8 @@ import {
   Animated,
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
-import * as Location from "expo-location";
 import { SFIcon } from "../components/SFIcon";
+import { useLocation } from "../context/LocationContext";
 import { useNavigation, useFocusEffect } from "expo-router";
 import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -108,10 +108,7 @@ const MapMarkerItem = React.memo(function MapMarkerItem({
 
 export function MapScreen() {
   const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold });
-  const [location, setLocation] = useState<Location.LocationObject | null>(
-    null
-  );
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const { location: userCoords, error: locationError } = useLocation();
   const [showExplorationOverlay, setShowExplorationOverlay] = useState(false);
   const [showNeighborhoods, setShowNeighborhoods] = useState(false);
   const mapRef = useRef<MapView>(null);
@@ -355,37 +352,28 @@ export function MapScreen() {
   }, []);
 
   useEffect(() => {
-    (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        setLocationError("Location permission denied");
-        return;
-      }
-
-      const currentLocation = await Location.getCurrentPositionAsync({});
-      setLocation(currentLocation);
-      mapRef.current?.animateToRegion({
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      });
-      mapRef.current?.animateCamera({
-        pitch: 40,
-        heading: 90,
-      });
-    })();
-  }, []);
+    if (!userCoords) return;
+    mapRef.current?.animateToRegion({
+      latitude: userCoords.latitude,
+      longitude: userCoords.longitude,
+      latitudeDelta: 0.005,
+      longitudeDelta: 0.005,
+    });
+    mapRef.current?.animateCamera({
+      pitch: 40,
+      heading: 90,
+    });
+  }, [userCoords]);
 
   // Location-based exploration tracking (only when overlay is visible for performance)
   useEffect(() => {
-    if (!location || !places || !showExplorationOverlay) return;
+    if (!userCoords || !places || !showExplorationOverlay) return;
 
     const EXPLORATION_RADIUS = 50; // meters - must be within 50m to explore
 
     // Check for nearby unexplored places
     const checkNearbyPlaces = async () => {
-      const { latitude, longitude } = location.coords;
+      const { latitude, longitude } = userCoords;
 
       for (const place of places) {
         if (isExplored(place.id)) continue;
@@ -419,7 +407,7 @@ export function MapScreen() {
     const interval = setInterval(checkNearbyPlaces, 30000);
     return () => clearInterval(interval);
   }, [
-    location,
+    userCoords,
     places,
     showExplorationOverlay,
     isExplored,
@@ -428,10 +416,10 @@ export function MapScreen() {
   ]);
 
   const centerOnUser = () => {
-    if (location && mapRef.current) {
+    if (userCoords && mapRef.current) {
       mapRef.current.animateToRegion({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
+        latitude: userCoords.latitude,
+        longitude: userCoords.longitude,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
       });
@@ -556,10 +544,10 @@ export function MapScreen() {
               onPress={centerOnUser}
             >
               <SFIcon
-                name={location ? "location.fill" : "location"}
-                fallback={location ? "navigate" : "navigate-outline"}
+                name={userCoords ? "location.fill" : "location"}
+                fallback={userCoords ? "navigate" : "navigate-outline"}
                 size={22}
-                color={location ? colors.primary : colors.text}
+                color={userCoords ? colors.primary : colors.text}
               />
             </HapticPressable>
           </GlassView>
@@ -624,10 +612,10 @@ export function MapScreen() {
                 onPress={centerOnUser}
               >
                 <SFIcon
-                  name={location ? "location.fill" : "location"}
-                  fallback={location ? "navigate" : "navigate-outline"}
+                  name={userCoords ? "location.fill" : "location"}
+                  fallback={userCoords ? "navigate" : "navigate-outline"}
                   size={22}
-                  color={location ? colors.primary : colors.text}
+                  color={userCoords ? colors.primary : colors.text}
                 />
               </HapticPressable>
             </View>

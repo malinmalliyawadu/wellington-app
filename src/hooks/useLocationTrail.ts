@@ -167,15 +167,9 @@ export function useLocationTrail({
     let subscription: Location.LocationSubscription | null = null;
 
     (async () => {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== "granted") {
-        console.warn("[useLocationTrail] Location permission denied");
-        return;
-      }
-
       subscription = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High,
+          accuracy: Location.Accuracy.Balanced,
           distanceInterval: minDistance, // OS-level filter to reduce callbacks
           timeInterval: 5_000,
         },

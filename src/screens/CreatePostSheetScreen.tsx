@@ -32,6 +32,7 @@ import { createAchievementToast } from "../utils/achievementHelpers";
 import { PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { HapticPressable } from "src/components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
+import { VideoPlayer } from "../components/VideoPlayer";
 
 const POST_TYPES: { type: PostType; icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }; label: string }[] = [
   { type: "photo", icon: { sf: "photo.fill", fallback: "image" }, label: "Photo" },
@@ -47,6 +48,8 @@ const EVENT_CATEGORIES: { type: EventCategory; label: string }[] = [
   { type: "market", label: "Market" },
   { type: "community", label: "Community" },
 ];
+
+const MAX_CONTENT_LENGTH = 500;
 
 type CreateType = "post" | "event";
 
@@ -121,9 +124,7 @@ export function CreatePostSheetScreen() {
   // Scroll to bottom when keyboard appears and padding is applied
   useEffect(() => {
     if (keyboardVisible) {
-      // setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
-      // }, 0);
     }
   }, [keyboardVisible]);
 
@@ -371,6 +372,7 @@ export function CreatePostSheetScreen() {
             paddingBottom: keyboardVisible ? 350 : insets.bottom + 20,
           }}
         >
+          {/* Header */}
           <View style={[styles.header, isScrolled && styles.headerScrolled]}>
             <View
               style={{
@@ -440,14 +442,140 @@ export function CreatePostSheetScreen() {
           <View style={styles.content}>
             {createType === "post" ? (
               <>
-                <Text style={styles.label}>Post Type</Text>
-                <View style={styles.typeRow}>
+                {/* Composer: Avatar + Text Input */}
+                <View style={styles.composerRow}>
+                  {profile?.avatarUrl ? (
+                    <Image
+                      source={{ uri: profile.avatarUrl }}
+                      style={styles.composerAvatar}
+                    />
+                  ) : (
+                    <View style={[styles.composerAvatar, styles.composerAvatarPlaceholder]}>
+                      <SFIcon name="person.fill" fallback="person" size={20} color={colors.gray400} />
+                    </View>
+                  )}
+                  <View style={styles.composerInputWrapper}>
+                    <TextInput
+                      style={styles.composerInput}
+                      placeholder="What do you recommend?"
+                      placeholderTextColor={colors.gray400}
+                      multiline
+                      value={content}
+                      onChangeText={(text) => setContent(text.slice(0, MAX_CONTENT_LENGTH))}
+                      textAlignVertical="top"
+                      maxLength={MAX_CONTENT_LENGTH}
+                    />
+                    <Text style={styles.charCount}>
+                      {content.length}/{MAX_CONTENT_LENGTH}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Place Tag */}
+                {selectedPlace ? (
+                  <View style={styles.placePillRow}>
+                    <HapticPressable
+                      style={styles.placePill}
+                      onPress={() => router.push("./place-search")}
+                    >
+                      <SFIcon name="mappin" fallback="location" size={14} color={colors.primary} />
+                      <Text style={styles.placePillText}>{selectedPlace.name}</Text>
+                      <HapticPressable
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          setSelectedPlace(null);
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <SFIcon name="xmark" fallback="close" size={12} color={colors.primary} />
+                      </HapticPressable>
+                    </HapticPressable>
+                    <Text style={styles.placePillAddress}>{selectedPlace.address}</Text>
+                  </View>
+                ) : (
+                  <HapticPressable
+                    style={styles.placeAddRow}
+                    onPress={() => router.push("./place-search")}
+                  >
+                    <SFIcon name="mappin" fallback="location" size={16} color={colors.gray400} />
+                    <Text style={styles.placeAddText}>Add a place</Text>
+                  </HapticPressable>
+                )}
+
+                {/* Map Preview */}
+                {selectedPlace && (
+                  <View style={styles.mapPreview}>
+                    <MapView
+                      style={styles.map}
+                      initialRegion={{
+                        latitude: selectedPlace.latitude,
+                        longitude: selectedPlace.longitude,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                      }}
+                      scrollEnabled={false}
+                      zoomEnabled={false}
+                      pitchEnabled={false}
+                      rotateEnabled={false}
+                    >
+                      <Marker
+                        coordinate={{
+                          latitude: selectedPlace.latitude,
+                          longitude: selectedPlace.longitude,
+                        }}
+                        title={selectedPlace.name}
+                      />
+                    </MapView>
+                  </View>
+                )}
+
+                {/* Media Section */}
+                {postType !== "text" && (
+                  mediaUri ? (
+                    <View style={styles.mediaPreviewContainer}>
+                      {postType === "video" ? (
+                        <VideoPlayer
+                          uri={mediaUri}
+                          style={styles.mediaPreview}
+                          useNativeControls
+                          isMuted
+                        />
+                      ) : (
+                        <HapticPressable onPress={pickMedia}>
+                          <Image
+                            source={{ uri: mediaUri }}
+                            style={styles.mediaPreview}
+                          />
+                        </HapticPressable>
+                      )}
+                      <HapticPressable style={styles.mediaChangeButton} onPress={pickMedia}>
+                        <SFIcon name="arrow.triangle.2.circlepath" fallback="refresh" size={14} color={colors.primary} />
+                        <Text style={styles.mediaChangeText}>Change</Text>
+                      </HapticPressable>
+                    </View>
+                  ) : (
+                    <HapticPressable style={styles.mediaButton} onPress={pickMedia}>
+                      <SFIcon
+                        name={postType === "photo" ? "camera.fill" : "video.fill"}
+                        fallback={postType === "photo" ? "camera" : "videocam"}
+                        size={28}
+                        color={colors.gray400}
+                      />
+                      <Text style={styles.mediaButtonText}>
+                        Add a {postType === "photo" ? "photo" : "video"}
+                      </Text>
+                    </HapticPressable>
+                  )
+                )}
+
+                {/* Post Type Selector - compact pills */}
+                <View style={styles.typePillRow}>
                   {POST_TYPES.map((item) => (
                     <HapticPressable
                       key={item.type}
                       style={[
-                        styles.typeButton,
-                        postType === item.type && styles.typeButtonActive,
+                        styles.typePill,
+                        postType === item.type && styles.typePillActive,
                       ]}
                       onPress={() => {
                         setPostType(item.type);
@@ -458,17 +586,17 @@ export function CreatePostSheetScreen() {
                       <SFIcon
                         name={item.icon.sf}
                         fallback={item.icon.fallback}
-                        size={24}
+                        size={16}
                         color={
                           postType === item.type
                             ? colors.primary
-                            : colors.gray400
+                            : colors.gray500
                         }
                       />
                       <Text
                         style={[
-                          styles.typeLabel,
-                          postType === item.type && styles.typeLabelActive,
+                          styles.typePillLabel,
+                          postType === item.type && styles.typePillLabelActive,
                         ]}
                       >
                         {item.label}
@@ -476,59 +604,33 @@ export function CreatePostSheetScreen() {
                     </HapticPressable>
                   ))}
                 </View>
-
-                {postType !== "text" && (
-                  <HapticPressable
-                    style={styles.mediaButton}
-                    onPress={pickMedia}
-                  >
-                    {mediaUri ? (
-                      <Image
-                        source={{ uri: mediaUri }}
-                        style={styles.mediaPreview}
-                      />
-                    ) : (
-                      <>
-                        <SFIcon
-                          name={postType === "photo" ? "camera.fill" : "video.fill"}
-                          fallback={postType === "photo" ? "camera" : "videocam"}
-                          size={32}
-                          color={colors.gray400}
-                        />
-                        <Text style={styles.mediaButtonText}>
-                          Tap to add {postType}
-                        </Text>
-                      </>
-                    )}
-                  </HapticPressable>
-                )}
               </>
             ) : (
               <>
-                <Text style={styles.label}>Event Title</Text>
+                {/* Event Title - borderless */}
                 <TextInput
-                  style={styles.textInput}
-                  placeholder="e.g. Live Jazz Night"
+                  style={styles.eventTitleInput}
+                  placeholder="Event title..."
                   placeholderTextColor={colors.gray400}
                   value={eventTitle}
                   onChangeText={setEventTitle}
                 />
 
-                <Text style={styles.label}>Category</Text>
-                <View style={styles.typeRow}>
+                {/* Category pills */}
+                <View style={styles.typePillRow}>
                   {EVENT_CATEGORIES.slice(0, 3).map((item) => (
                     <HapticPressable
                       key={item.type}
                       style={[
-                        styles.typeButton,
-                        eventCategory === item.type && styles.typeButtonActive,
+                        styles.typePill,
+                        eventCategory === item.type && styles.typePillActive,
                       ]}
                       onPress={() => setEventCategory(item.type)}
                     >
                       <Text
                         style={[
-                          styles.typeLabel,
-                          eventCategory === item.type && styles.typeLabelActive,
+                          styles.typePillLabel,
+                          eventCategory === item.type && styles.typePillLabelActive,
                         ]}
                       >
                         {item.label}
@@ -536,20 +638,20 @@ export function CreatePostSheetScreen() {
                     </HapticPressable>
                   ))}
                 </View>
-                <View style={[styles.typeRow, { marginTop: 8 }]}>
+                <View style={[styles.typePillRow, { marginTop: 8 }]}>
                   {EVENT_CATEGORIES.slice(3).map((item) => (
                     <HapticPressable
                       key={item.type}
                       style={[
-                        styles.typeButton,
-                        eventCategory === item.type && styles.typeButtonActive,
+                        styles.typePill,
+                        eventCategory === item.type && styles.typePillActive,
                       ]}
                       onPress={() => setEventCategory(item.type)}
                     >
                       <Text
                         style={[
-                          styles.typeLabel,
-                          eventCategory === item.type && styles.typeLabelActive,
+                          styles.typePillLabel,
+                          eventCategory === item.type && styles.typePillLabelActive,
                         ]}
                       >
                         {item.label}
@@ -558,6 +660,7 @@ export function CreatePostSheetScreen() {
                   ))}
                 </View>
 
+                {/* Date & Time */}
                 <Text style={styles.label}>Date & Time</Text>
                 <View style={styles.dateTimeRow}>
                   <TextInput
@@ -584,111 +687,77 @@ export function CreatePostSheetScreen() {
                     onChangeText={setEventEndTime}
                   />
                 </View>
+
+                {/* Place Tag */}
+                {selectedPlace ? (
+                  <View style={[styles.placePillRow, { marginTop: 16 }]}>
+                    <HapticPressable
+                      style={styles.placePill}
+                      onPress={() => router.push("./place-search")}
+                    >
+                      <SFIcon name="mappin" fallback="location" size={14} color={colors.primary} />
+                      <Text style={styles.placePillText}>{selectedPlace.name}</Text>
+                      <HapticPressable
+                        onPress={(e) => {
+                          e.stopPropagation();
+                          setSelectedPlace(null);
+                        }}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <SFIcon name="xmark" fallback="close" size={12} color={colors.primary} />
+                      </HapticPressable>
+                    </HapticPressable>
+                    <Text style={styles.placePillAddress}>{selectedPlace.address}</Text>
+                  </View>
+                ) : (
+                  <HapticPressable
+                    style={[styles.placeAddRow, { marginTop: 16 }]}
+                    onPress={() => router.push("./place-search")}
+                  >
+                    <SFIcon name="mappin" fallback="location" size={16} color={colors.gray400} />
+                    <Text style={styles.placeAddText}>Add a place</Text>
+                  </HapticPressable>
+                )}
+
+                {/* Map Preview */}
+                {selectedPlace && (
+                  <View style={styles.mapPreview}>
+                    <MapView
+                      style={styles.map}
+                      initialRegion={{
+                        latitude: selectedPlace.latitude,
+                        longitude: selectedPlace.longitude,
+                        latitudeDelta: 0.01,
+                        longitudeDelta: 0.01,
+                      }}
+                      scrollEnabled={false}
+                      zoomEnabled={false}
+                      pitchEnabled={false}
+                      rotateEnabled={false}
+                    >
+                      <Marker
+                        coordinate={{
+                          latitude: selectedPlace.latitude,
+                          longitude: selectedPlace.longitude,
+                        }}
+                        title={selectedPlace.name}
+                      />
+                    </MapView>
+                  </View>
+                )}
+
+                {/* Description - borderless */}
+                <TextInput
+                  style={styles.eventDescriptionInput}
+                  placeholder="Tell people about this event..."
+                  placeholderTextColor={colors.gray400}
+                  multiline
+                  value={eventDescription}
+                  onChangeText={setEventDescription}
+                  textAlignVertical="top"
+                />
               </>
             )}
-
-            <Text style={styles.label}>Place</Text>
-            <HapticPressable
-              style={styles.placeSelector}
-              onPress={() => router.push("./place-search")}
-            >
-              {selectedPlace ? (
-                <>
-                  <View style={styles.selectedPlace}>
-                    <SFIcon
-                      name="mappin"
-                      fallback="location"
-                      size={20}
-                      color={colors.primary}
-                    />
-                    <View style={styles.placeInfo}>
-                      <Text style={styles.selectedPlaceText}>
-                        {selectedPlace.name}
-                      </Text>
-                      <Text style={styles.selectedPlaceAddress}>
-                        {selectedPlace.address}
-                      </Text>
-                    </View>
-                  </View>
-                  <HapticPressable
-                    onPress={(e) => {
-                      e.stopPropagation();
-                      setSelectedPlace(null);
-                    }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <SFIcon
-                      name="xmark.circle.fill"
-                      fallback="close-circle"
-                      size={20}
-                      color={colors.gray400}
-                    />
-                  </HapticPressable>
-                </>
-              ) : (
-                <>
-                  <View style={styles.selectedPlace}>
-                    <SFIcon name="magnifyingglass" fallback="search" size={20} color={colors.gray400} />
-                    <Text style={styles.placeholderText}>
-                      Search for a place...
-                    </Text>
-                  </View>
-                  <SFIcon
-                    name="chevron.right"
-                    fallback="chevron-forward"
-                    size={20}
-                    color={colors.gray400}
-                  />
-                </>
-              )}
-            </HapticPressable>
-
-            {selectedPlace && (
-              <View style={styles.mapPreview}>
-                <MapView
-                  style={styles.map}
-                  initialRegion={{
-                    latitude: selectedPlace.latitude,
-                    longitude: selectedPlace.longitude,
-                    latitudeDelta: 0.01,
-                    longitudeDelta: 0.01,
-                  }}
-                  scrollEnabled={false}
-                  zoomEnabled={false}
-                  pitchEnabled={false}
-                  rotateEnabled={false}
-                >
-                  <Marker
-                    coordinate={{
-                      latitude: selectedPlace.latitude,
-                      longitude: selectedPlace.longitude,
-                    }}
-                    title={selectedPlace.name}
-                  />
-                </MapView>
-              </View>
-            )}
-
-            <Text style={styles.label}>
-              {createType === "post"
-                ? "What do you want to share?"
-                : "Description"}
-            </Text>
-            <TextInput
-              style={[styles.textInput, { height: 120 }]}
-              placeholder={
-                createType === "post"
-                  ? "Write about this place..."
-                  : "Tell people about this event..."
-              }
-              placeholderTextColor={colors.gray400}
-              multiline
-              value={createType === "post" ? content : eventDescription}
-              onChangeText={
-                createType === "post" ? setContent : setEventDescription
-              }
-              textAlignVertical="top"
-            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -743,11 +812,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  headerTitle: {
-    fontSize: 18,
-    fontFamily: "PlusJakartaSans_600SemiBold",
-    color: colors.text,
-  },
   segmentControl: {
     flexDirection: "row",
     backgroundColor: colors.gray100,
@@ -775,98 +839,85 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
   },
-  label: {
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans_600SemiBold",
-    color: colors.text,
-    marginBottom: 10,
-    marginTop: 16,
-  },
-  typeRow: {
+
+  // --- Composer (post flow) ---
+  composerRow: {
     flexDirection: "row",
+    alignItems: "flex-start",
     gap: 12,
+    paddingTop: 4,
   },
-  typeButton: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.gray200,
-    backgroundColor: colors.gray100,
-  },
-  typeButtonActive: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary + "10",
-  },
-  typeLabel: {
-    marginTop: 6,
-    fontSize: 13,
-    fontWeight: "500",
-    fontFamily: "PlusJakartaSans_500Medium",
-    color: colors.gray500,
-  },
-  typeLabelActive: {
-    color: colors.primary,
-  },
-  mediaButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 160,
-    marginTop: 16,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: colors.gray200,
-    borderStyle: "dashed",
-    backgroundColor: colors.gray100,
-    overflow: "hidden",
-  },
-  mediaPreview: {
-    width: "100%",
-    height: "100%",
-  },
-  mediaButtonText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: colors.gray500,
-  },
-  placeSelector: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.gray200,
-    backgroundColor: colors.gray100,
-  },
-  selectedPlace: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    flex: 1,
-  },
-  placeInfo: {
-    flex: 1,
-  },
-  selectedPlaceText: {
-    fontSize: 15,
-    fontWeight: "500",
-    fontFamily: "PlusJakartaSans_500Medium",
-    color: colors.text,
-  },
-  selectedPlaceAddress: {
-    fontSize: 13,
-    color: colors.textMuted,
+  composerAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     marginTop: 2,
   },
-  placeholderText: {
+  composerAvatarPlaceholder: {
+    backgroundColor: colors.gray200,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  composerInputWrapper: {
+    flex: 1,
+  },
+  composerInput: {
+    fontSize: 16,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans_500Medium",
+    minHeight: 80,
+    paddingTop: 0,
+    paddingBottom: 4,
+  },
+  charCount: {
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: "right",
+    marginTop: 2,
+  },
+
+  // --- Place tag ---
+  placePillRow: {
+    marginTop: 16,
+  },
+  placePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 6,
+    backgroundColor: colors.primary + "10",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  placePillText: {
+    fontSize: 14,
+    fontFamily: "PlusJakartaSans_500Medium",
+    color: colors.primary,
+  },
+  placePillAddress: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 4,
+    marginLeft: 4,
+  },
+  placeAddRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 16,
+    paddingVertical: 10,
+  },
+  placeAddText: {
     fontSize: 15,
     color: colors.gray400,
+    fontFamily: "PlusJakartaSans_500Medium",
   },
+
+  // --- Map preview ---
   mapPreview: {
     marginTop: 12,
-    height: 180,
+    height: 100,
     borderRadius: 12,
     overflow: "hidden",
     borderWidth: 1,
@@ -874,6 +925,101 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+
+  // --- Media section ---
+  mediaButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: 140,
+    marginTop: 16,
+    borderRadius: 12,
+    backgroundColor: colors.gray100,
+    overflow: "hidden",
+  },
+  mediaPreviewContainer: {
+    marginTop: 16,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  mediaPreview: {
+    width: "100%",
+    height: 200,
+    borderRadius: 12,
+  },
+  mediaChangeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    alignSelf: "flex-start",
+    gap: 4,
+    marginTop: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: colors.primary + "10",
+  },
+  mediaChangeText: {
+    fontSize: 13,
+    fontFamily: "PlusJakartaSans_500Medium",
+    color: colors.primary,
+  },
+  mediaButtonText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: colors.gray500,
+    fontFamily: "PlusJakartaSans_500Medium",
+  },
+
+  // --- Post type pills ---
+  typePillRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 20,
+  },
+  typePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  typePillActive: {
+    backgroundColor: colors.primary + "12",
+  },
+  typePillLabel: {
+    fontSize: 14,
+    fontFamily: "PlusJakartaSans_500Medium",
+    color: colors.gray500,
+  },
+  typePillLabelActive: {
+    color: colors.primary,
+  },
+
+  // --- Event flow ---
+  eventTitleInput: {
+    fontSize: 20,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans_600SemiBold",
+    paddingTop: 4,
+    paddingBottom: 12,
+  },
+  eventDescriptionInput: {
+    fontSize: 15,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans_500Medium",
+    minHeight: 100,
+    marginTop: 16,
+    paddingTop: 0,
+  },
+
+  // --- Event date/time (kept structured) ---
+  label: {
+    fontSize: 14,
+    fontFamily: "PlusJakartaSans_600SemiBold",
+    color: colors.text,
+    marginBottom: 10,
+    marginTop: 20,
   },
   textInput: {
     padding: 14,
@@ -888,6 +1034,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
   },
+
+  // --- Progress overlay ---
   progressOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.7)",

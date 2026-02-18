@@ -35,6 +35,14 @@ const WELLINGTON_COORDS = {
 const GOOGLE_PLACES_API_KEY =
   process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || "";
 
+const FETCH_TIMEOUT = 10000; // 10 seconds
+
+function fetchWithTimeout(url: string, timeout = FETCH_TIMEOUT): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(id));
+}
+
 // Calculate distance between two coordinates in meters
 function calculateDistance(
   lat1: number,
@@ -140,7 +148,7 @@ export async function searchNearbyPlaces(
       url.replace(GOOGLE_PLACES_API_KEY, "API_KEY")
     );
 
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url);
     const data = await response.json();
 
     console.log("Nearby search response:", {
@@ -241,7 +249,7 @@ export async function searchGooglePlaces(
       autocompleteUrl.replace(GOOGLE_PLACES_API_KEY, "API_KEY")
     );
 
-    const autocompleteResponse = await fetch(autocompleteUrl);
+    const autocompleteResponse = await fetchWithTimeout(autocompleteUrl);
     const autocompleteData = await autocompleteResponse.json();
 
     console.log("Autocomplete response:", {
@@ -275,7 +283,7 @@ export async function searchGooglePlaces(
       async (prediction: AutocompletePrediction) => {
         const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=name,formatted_address,geometry,types,rating,user_ratings_total&key=${GOOGLE_PLACES_API_KEY}`;
 
-        const detailsResponse = await fetch(detailsUrl);
+        const detailsResponse = await fetchWithTimeout(detailsUrl);
         const detailsData = await detailsResponse.json();
 
         if (detailsData.status === "OK" && detailsData.result) {

@@ -8,6 +8,7 @@ import { FollowProvider } from '../src/context/FollowContext';
 import { LikeProvider } from '../src/context/LikeContext';
 import { ToastProvider } from '../src/context/ToastContext';
 import { ExplorationProvider } from '../src/context/ExplorationContext';
+import { LocationProvider } from '../src/context/LocationContext';
 import { StatusBar } from 'expo-status-bar';
 
 function parseShareIntentRoute(url: string): string | null {
@@ -107,18 +108,20 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <AuthProvider>
-          <FollowProvider>
-            <LikeProvider>
-              <ToastProvider>
-                <ExplorationProvider>
-                  <AuthGate>
-                    <Slot />
-                  </AuthGate>
-                  <StatusBar style="auto" />
-                </ExplorationProvider>
-              </ToastProvider>
-            </LikeProvider>
-          </FollowProvider>
+          <LocationProvider>
+            <FollowProvider>
+              <LikeProvider>
+                <ToastProvider>
+                  <ExplorationProvider>
+                    <AuthGate>
+                      <Slot />
+                    </AuthGate>
+                    <StatusBar style="auto" />
+                  </ExplorationProvider>
+                </ToastProvider>
+              </LikeProvider>
+            </FollowProvider>
+          </LocationProvider>
         </AuthProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

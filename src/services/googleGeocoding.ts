@@ -1,5 +1,13 @@
 const GOOGLE_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || '';
 
+const FETCH_TIMEOUT = 10000;
+
+function fetchWithTimeout(url: string, timeout = FETCH_TIMEOUT): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(id));
+}
+
 export interface GeocodeGeometry {
   bounds?: {
     northeast: { lat: number; lng: number };
@@ -34,7 +42,7 @@ export async function geocodeLocation(address: string): Promise<GeocodeResult | 
     const encodedAddress = encodeURIComponent(address);
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${GOOGLE_API_KEY}`;
 
-    const response = await fetch(url);
+    const response = await fetchWithTimeout(url);
     const data = await response.json();
 
     if (data.status !== 'OK' || !data.results || data.results.length === 0) {

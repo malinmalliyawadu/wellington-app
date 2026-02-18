@@ -1,6 +1,14 @@
 const GOOGLE_PLACES_API_KEY =
   process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || "";
 
+const FETCH_TIMEOUT = 10000;
+
+function fetchWithTimeout(url: string, timeout = FETCH_TIMEOUT): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(id));
+}
+
 interface PlaceDetails {
   rating?: number;
   userRatingsTotal?: number;
@@ -37,7 +45,7 @@ export async function fetchPlaceDetails(
     // Step 1: Use Nearby Search to find the place and get its place_id
     const searchUrl = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=100&key=${GOOGLE_PLACES_API_KEY}`;
 
-    const searchResponse = await fetch(searchUrl);
+    const searchResponse = await fetchWithTimeout(searchUrl);
     const searchData = await searchResponse.json();
 
     if (searchData.status !== "OK" && searchData.status !== "ZERO_RESULTS") {
@@ -95,7 +103,7 @@ export async function fetchPlaceDetails(
     // Step 2: Use Place Details API to get complete information
     const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${matchedPlace.place_id}&fields=rating,user_ratings_total&key=${GOOGLE_PLACES_API_KEY}`;
 
-    const detailsResponse = await fetch(detailsUrl);
+    const detailsResponse = await fetchWithTimeout(detailsUrl);
     const detailsData = await detailsResponse.json();
 
     if (detailsData.status !== "OK") {

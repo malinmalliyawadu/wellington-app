@@ -13,8 +13,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { SFSymbol } from "expo-symbols";
 import { SFIcon } from "../components/SFIcon";
 import { useRouter, useLocalSearchParams } from "expo-router";
-import * as Location from "expo-location";
 import { Place } from "../types";
+import { useLocation } from "../context/LocationContext";
 import { colors } from "../theme/colors";
 import {
   searchGooglePlaces,
@@ -29,53 +29,37 @@ export function PlaceSearchSheet() {
   const router = useRouter();
   const params = useLocalSearchParams<{ returnRoute?: string }>();
 
+  const { location: userLocation } = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
   const [nearbyPlaces, setNearbyPlaces] = useState<any[]>([]);
-  const [userLocation, setUserLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
 
-  // Get user location and fetch nearby places on mount
+  // Fetch nearby places when location is available
   useEffect(() => {
+    if (!userLocation) return;
+
+    let cancelled = false;
     (async () => {
       try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          console.warn("Location permission denied");
-          return;
-        }
-
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.High,
-        });
-        const coords = {
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-        };
-        setUserLocation(coords);
-
-        console.log("User location:", coords);
-        console.log("Location accuracy:", location.coords.accuracy);
-
-        // Fetch nearby places with smaller radius (1km)
         setSearching(true);
         const nearby = await searchNearbyPlaces(
-          coords.latitude,
-          coords.longitude,
+          userLocation.latitude,
+          userLocation.longitude,
           100
         );
-        console.log("Nearby places found:", nearby.length);
-        setNearbyPlaces(nearby);
-        setSearching(false);
+        if (!cancelled) {
+          setNearbyPlaces(nearby);
+          setSearching(false);
+        }
       } catch (error) {
-        console.error("Error getting location:", error);
-        setSearching(false);
+        console.error("Error fetching nearby places:", error);
+        if (!cancelled) setSearching(false);
       }
     })();
-  }, []);
+
+    return () => { cancelled = true; };
+  }, [userLocation]);
 
   const handleSearch = useCallback(
     async (query: string) => {
