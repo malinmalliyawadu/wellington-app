@@ -23,6 +23,7 @@ import { useToast } from "../context/ToastContext";
 import { findOrCreatePlace, getPlaceById } from "../services/places";
 import { createPost } from "../services/posts";
 import { uploadMedia } from "../services/storage";
+import { createEvent } from "../services/events";
 import { createAchievementToast } from "../utils/achievementHelpers";
 import {
   PlusJakartaSans_500Medium,
@@ -82,6 +83,7 @@ export function CreatePostSheetScreen() {
   const [eventDate, setEventDate] = useState<Date | null>(null);
   const [eventStartTime, setEventStartTime] = useState<Date | null>(null);
   const [eventEndTime, setEventEndTime] = useState<Date | null>(null);
+  const [eventImageUri, setEventImageUri] = useState<string | null>(null);
 
   // Shared state
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
@@ -199,6 +201,19 @@ export function CreatePostSheetScreen() {
     }
   };
 
+  const pickEventImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setEventImageUri(result.assets[0].uri);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!profile) {
       Alert.alert(
@@ -289,10 +304,35 @@ export function CreatePostSheetScreen() {
           ]
         );
       } else {
-        // TODO: Implement event creation
+        let imageUrl: string | undefined;
+
+        if (eventImageUri) {
+          const fileName = `${profile.id}-event-${Date.now()}.jpg`;
+          imageUrl = await uploadMedia(eventImageUri, fileName, "image/jpeg");
+        }
+
+        const dateStr = eventDate!.toISOString().split("T")[0];
+        const pad = (n: number) => n.toString().padStart(2, "0");
+        const startTimeStr = `${pad(eventStartTime!.getHours())}:${pad(eventStartTime!.getMinutes())}`;
+        const endTimeStr = eventEndTime
+          ? `${pad(eventEndTime.getHours())}:${pad(eventEndTime.getMinutes())}`
+          : undefined;
+
+        await createEvent({
+          title: eventTitle.trim(),
+          description: eventDescription.trim(),
+          placeId: placeId,
+          date: dateStr,
+          startTime: startTimeStr,
+          endTime: endTimeStr,
+          imageUrl,
+          category: eventCategory,
+          creatorId: profile.id,
+        });
+
         Alert.alert(
-          "Success!",
-          `Event "${eventTitle}" at ${selectedPlace.name} has been created.`,
+          "Event Created!",
+          `"${eventTitle}" at ${selectedPlace.name} has been created.`,
           [
             {
               text: "OK",
@@ -302,6 +342,7 @@ export function CreatePostSheetScreen() {
                 setEventDate(null);
                 setEventStartTime(null);
                 setEventEndTime(null);
+                setEventImageUri(null);
                 setSelectedPlace(null);
                 router.dismiss();
               },
@@ -438,6 +479,8 @@ export function CreatePostSheetScreen() {
                 onTitleChange={setEventTitle}
                 category={eventCategory}
                 onCategoryChange={setEventCategory}
+                imageUri={eventImageUri}
+                onPickImage={pickEventImage}
                 date={eventDate}
                 onDateChange={setEventDate}
                 startTime={eventStartTime}

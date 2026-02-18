@@ -1,6 +1,7 @@
 import React from "react";
-import { View, Text, TextInput, StyleSheet } from "react-native";
+import { View, Text, TextInput, Image, StyleSheet } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { SFIcon } from "../SFIcon";
 import { HapticPressable } from "../HapticPressable";
 import { EventCategory } from "../../types";
 import { colors } from "../../theme/colors";
@@ -19,6 +20,8 @@ interface EventFormProps {
   onTitleChange: (text: string) => void;
   category: EventCategory;
   onCategoryChange: (cat: EventCategory) => void;
+  imageUri: string | null;
+  onPickImage: () => void;
   date: Date | null;
   onDateChange: (date: Date) => void;
   startTime: Date | null;
@@ -34,6 +37,8 @@ export function EventForm({
   onTitleChange,
   category,
   onCategoryChange,
+  imageUri,
+  onPickImage,
   date,
   onDateChange,
   startTime,
@@ -45,6 +50,27 @@ export function EventForm({
 }: EventFormProps) {
   return (
     <>
+      {/* Cover Image */}
+      <HapticPressable
+        style={[styles.coverImageButton, imageUri && styles.coverImageButtonFilled]}
+        onPress={onPickImage}
+      >
+        {imageUri ? (
+          <>
+            <Image source={{ uri: imageUri }} style={styles.coverImagePreview} />
+            <View style={styles.coverImageOverlay}>
+              <SFIcon name="camera.fill" fallback="camera" size={20} color="#FFFFFF" />
+              <Text style={styles.coverImageOverlayText}>Change cover</Text>
+            </View>
+          </>
+        ) : (
+          <>
+            <SFIcon name="photo.fill" fallback="image" size={28} color={colors.gray400} />
+            <Text style={styles.coverImageText}>Add a cover photo</Text>
+          </>
+        )}
+      </HapticPressable>
+
       {/* Event Title */}
       <TextInput
         style={styles.eventTitleInput}
@@ -155,6 +181,40 @@ export function EventForm({
 }
 
 const styles = StyleSheet.create({
+  coverImageButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    height: 160,
+    marginTop: 8,
+    borderRadius: 12,
+    backgroundColor: colors.gray100,
+    overflow: "hidden",
+  },
+  coverImageButtonFilled: {
+    height: 180,
+  },
+  coverImagePreview: {
+    width: "100%",
+    height: "100%",
+  },
+  coverImageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+  },
+  coverImageOverlayText: {
+    marginTop: 4,
+    fontSize: 13,
+    fontFamily: "PlusJakartaSans_500Medium",
+    color: "#FFFFFF",
+  },
+  coverImageText: {
+    marginTop: 8,
+    fontSize: 14,
+    color: colors.gray500,
+    fontFamily: "PlusJakartaSans_500Medium",
+  },
   eventTitleInput: {
     fontSize: 20,
     color: colors.text,

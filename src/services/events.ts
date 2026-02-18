@@ -115,6 +115,42 @@ export async function toggleAttendance(eventId: string, userId: string): Promise
   }
 }
 
+export async function createEvent(params: {
+  title: string;
+  description: string;
+  placeId: string;
+  date: string;
+  startTime: string;
+  endTime?: string;
+  imageUrl?: string;
+  category: Event['category'];
+  creatorId: string;
+}): Promise<Event> {
+  const { data, error } = await supabase
+    .from('events')
+    .insert({
+      title: params.title,
+      description: params.description,
+      place_id: params.placeId,
+      date: params.date,
+      start_time: params.startTime,
+      end_time: params.endTime ?? null,
+      image_url: params.imageUrl ?? null,
+      category: params.category,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+
+  // Auto-attend as creator
+  await supabase
+    .from('event_attendees')
+    .insert({ event_id: data.id, user_id: params.creatorId });
+
+  return mapEvent(data);
+}
+
 function mapEvent(row: {
   id: string;
   title: string;
