@@ -8,6 +8,7 @@ import {
   ViewToken,
 } from "react-native";
 import { VideoPlayer } from "./VideoPlayer";
+import { ZoomableImage } from "./ZoomableImage";
 import { colors } from "../theme/colors";
 import type { MediaItem } from "../types";
 
@@ -81,7 +82,7 @@ export function MediaCarousel({
       }
 
       return (
-        <Image
+        <ZoomableImage
           source={{ uri: item.mediaUrl }}
           style={[styles.media, { width: SCREEN_WIDTH, aspectRatio }]}
           onLoad={index === 0 ? handleImageLoad : undefined}

@@ -18,6 +18,7 @@ import { LikeProvider } from '../src/context/LikeContext';
 import { ToastProvider } from '../src/context/ToastContext';
 import { ExplorationProvider } from '../src/context/ExplorationContext';
 import { LocationProvider } from '../src/context/LocationContext';
+import { ZoomOverlayProvider } from '../src/context/ZoomOverlayContext';
 import { StatusBar } from 'expo-status-bar';
 
 SplashScreen.preventAutoHideAsync();
@@ -155,24 +156,26 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <LocationProvider>
-            <FollowProvider>
-              <LikeProvider>
-                <ToastProvider>
-                  <ExplorationProvider>
-                    <AuthGate>
-                      <Slot />
-                    </AuthGate>
-                    <StatusBar style="auto" />
-                  </ExplorationProvider>
-                </ToastProvider>
-              </LikeProvider>
-            </FollowProvider>
-          </LocationProvider>
-        </AuthProvider>
-      </SafeAreaProvider>
+      <ZoomOverlayProvider>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <LocationProvider>
+              <FollowProvider>
+                <LikeProvider>
+                  <ToastProvider>
+                    <ExplorationProvider>
+                      <AuthGate>
+                        <Slot />
+                      </AuthGate>
+                      <StatusBar style="auto" />
+                    </ExplorationProvider>
+                  </ToastProvider>
+                </LikeProvider>
+              </FollowProvider>
+            </LocationProvider>
+          </AuthProvider>
+        </SafeAreaProvider>
+      </ZoomOverlayProvider>
     </GestureHandlerRootView>
   );
 }

@@ -35,6 +35,7 @@ import { useAuth } from "../context/AuthContext";
 import { getPostMediaItems } from "../utils/postMedia";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { MediaCarousel } from "../components/MediaCarousel";
+import { ZoomableImage } from "../components/ZoomableImage";
 import { colors } from "../theme/colors";
 import { fonts } from "../theme/fonts";
 import { sharePost } from "../utils/sharing";
@@ -329,7 +330,7 @@ export function PostDetailScreen() {
                   onLoad={handleVideoLoad}
                 />
               ) : (
-                <Image
+                <ZoomableImage
                   source={{ uri: mediaItems[0].mediaUrl }}
                   style={[styles.media, { aspectRatio }]}
                   onLoad={handleImageLoad}

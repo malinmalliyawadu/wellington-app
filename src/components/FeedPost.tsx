@@ -12,6 +12,7 @@ import { getCommentsByPostId } from "../services/comments";
 import { getPostMediaItems } from "../utils/postMedia";
 import { VideoPlayer } from "./VideoPlayer";
 import { MediaCarousel } from "./MediaCarousel";
+import { ZoomableImage } from "./ZoomableImage";
 import { SFIcon } from "./SFIcon";
 import { colors } from "../theme/colors";
 import { sharePost } from "../utils/sharing";
@@ -161,7 +162,7 @@ export function FeedPost({
                   onLoad={handleVideoLoad}
                 />
               ) : (
-                <Image
+                <ZoomableImage
                   source={{ uri: mediaItems[0].mediaUrl }}
                   style={[styles.media, { aspectRatio }]}
                   onLoad={handleImageLoad}
