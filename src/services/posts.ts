@@ -13,6 +13,17 @@ export async function getPosts(): Promise<Post[]> {
   return (data ?? []).map(mapPost);
 }
 
+export async function getRecentPosts(limit: number): Promise<Post[]> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select(POST_SELECT)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return (data ?? []).map(mapPost);
+}
+
 export async function getPostById(postId: string): Promise<Post | null> {
   const { data, error } = await supabase
     .from('posts')

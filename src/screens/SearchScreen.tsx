@@ -78,10 +78,10 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const { data: places } = useQuery(getPlaces);
-  const { data: posts } = useQuery(getPosts);
-  const { data: users } = useQuery(getProfiles);
-  const { data: events } = useQuery(getUpcomingEvents);
+  const { data: places } = useQuery(getPlaces, 'places');
+  const { data: posts } = useQuery(getPosts, 'posts');
+  const { data: users } = useQuery(getProfiles, 'profiles');
+  const { data: events } = useQuery(getUpcomingEvents, 'events');
 
   // Google Places search state
   const [googleResults, setGoogleResults] = useState<Array<Omit<Place, "id">>>(

@@ -27,7 +27,7 @@ export function LikesListScreen() {
   const { profile } = useAuth();
 
   const fetchLikerIds = useCallback(() => getLikerIds(postId), [postId]);
-  const { data: likerIds, loading: loadingIds } = useQuery(fetchLikerIds);
+  const { data: likerIds, loading: loadingIds } = useQuery(fetchLikerIds, ['likes', postId]);
 
   const fetchProfiles = useCallback(
     () => getProfilesByIds(likerIds ?? []),

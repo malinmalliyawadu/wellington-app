@@ -72,7 +72,7 @@ export function PostDetailScreen() {
   const [editContent, setEditContent] = useState("");
   const { showToast } = useToast();
   const fetchPost = useCallback(() => getPostByIdAsync(postId), [postId]);
-  const { data: post, loading, refetch: refetchPost } = useQuery(fetchPost);
+  const { data: post, loading, refetch: refetchPost } = useQuery(fetchPost, ['post', postId]);
   const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
 
   // Use stored dimensions when available to avoid layout shift

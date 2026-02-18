@@ -50,12 +50,12 @@ export function PlacePostsSheetScreen() {
     data: place,
     loading: placeLoading,
     refetch: refetchPlace,
-  } = useQuery(fetchPlace, placeId);
+  } = useQuery(fetchPlace, ['place', placeId]);
   const {
     data: posts,
     loading: postsLoading,
     refetch: refetchPosts,
-  } = useQuery(fetchPosts, placeId);
+  } = useQuery(fetchPosts, ['posts', 'place', placeId]);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
@@ -307,7 +307,7 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
     () => getProfileById(post.userId),
     [post.userId]
   );
-  const { data: user } = useQuery(fetchUser);
+  const { data: user } = useQuery(fetchUser, ['user', post.userId]);
   const { isLiked, toggleLike, getLikeCount } = useLike();
   const liked = isLiked(post.id);
 

@@ -1,40 +1,44 @@
-import { useEffect, useCallback } from 'react';
-import { Slot, useRouter, useSegments } from 'expo-router';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useShareIntent } from 'expo-share-intent';
-import * as SplashScreen from 'expo-splash-screen';
+import { useEffect, useCallback } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { Slot, useRouter, useSegments } from "expo-router";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useShareIntent } from "expo-share-intent";
+import * as SplashScreen from "expo-splash-screen";
 import {
   useFonts,
   PlusJakartaSans_500Medium,
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
   PlusJakartaSans_800ExtraBold,
-} from '@expo-google-fonts/plus-jakarta-sans';
-import { Pacifico_400Regular } from '@expo-google-fonts/pacifico';
-import { AuthProvider, useAuth } from '../src/context/AuthContext';
-import { FollowProvider } from '../src/context/FollowContext';
-import { LikeProvider } from '../src/context/LikeContext';
-import { ToastProvider } from '../src/context/ToastContext';
-import { NotificationProvider } from '../src/context/NotificationContext';
-import { ExplorationProvider } from '../src/context/ExplorationContext';
-import { LocationProvider } from '../src/context/LocationContext';
-import { ZoomOverlayProvider } from '../src/context/ZoomOverlayContext';
-import { StatusBar } from 'expo-status-bar';
+} from "@expo-google-fonts/plus-jakarta-sans";
+import { Pacifico_400Regular } from "@expo-google-fonts/pacifico";
+import { AuthProvider, useAuth } from "../src/context/AuthContext";
+import { prefetchAppImages } from "../src/utils/imagePrefetch";
+import { FollowProvider } from "../src/context/FollowContext";
+import { LikeProvider } from "../src/context/LikeContext";
+import { ToastProvider } from "../src/context/ToastContext";
+import { NotificationProvider } from "../src/context/NotificationContext";
+import { ExplorationProvider } from "../src/context/ExplorationContext";
+import { LocationProvider } from "../src/context/LocationContext";
+import { ZoomOverlayProvider } from "../src/context/ZoomOverlayContext";
+import { StatusBar } from "expo-status-bar";
 
 SplashScreen.preventAutoHideAsync();
+
+const queryClient = new QueryClient();
 
 function parseShareIntentRoute(url: string): string | null {
   // Match wellington:// deep links shared into the app
   const match = url.match(/wellington:\/\/\/?(.+)/);
   if (!match) return null;
-  const path = '/' + match[1];
+  const path = "/" + match[1];
   // Only navigate to known routes
   if (
-    path.startsWith('/feed/post/') ||
-    path.startsWith('/feed/place/') ||
-    path.startsWith('/feed/user/') ||
-    path.startsWith('/events/')
+    path.startsWith("/feed/post/") ||
+    path.startsWith("/feed/place/") ||
+    path.startsWith("/feed/user/") ||
+    path.startsWith("/events/")
   ) {
     return path;
   }
@@ -50,18 +54,27 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading) return;
 
-    const onLoginPage = segments[0] === 'login';
-    const onOnboardingPage = segments[0] === 'onboarding';
+    const onLoginPage = segments[0] === "login";
+    const onOnboardingPage = segments[0] === "onboarding";
 
     if (!session && !onLoginPage) {
-      router.replace('/login');
-    } else if (session && !profile?.onboardingCompleted && !onOnboardingPage && !onLoginPage) {
-      router.replace('/onboarding');
-    } else if (session && profile?.onboardingCompleted && (onLoginPage || onOnboardingPage)) {
-      router.replace('/(tabs)/map');
+      router.replace("/login");
+    } else if (
+      session &&
+      !profile?.onboardingCompleted &&
+      !onOnboardingPage &&
+      !onLoginPage
+    ) {
+      router.replace("/onboarding");
+    } else if (
+      session &&
+      profile?.onboardingCompleted &&
+      (onLoginPage || onOnboardingPage)
+    ) {
+      router.replace("/(tabs)/map");
     } else if (session && onLoginPage) {
       // Session exists, on login page, but onboarding status not yet loaded — go to onboarding
-      router.replace('/onboarding');
+      router.replace("/onboarding");
     }
   }, [session, profile?.onboardingCompleted, loading, segments]);
 
@@ -72,9 +85,9 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     // Check for wellington:// deep links first
     let route: string | null = null;
 
-    if (shareIntent.type === 'weburl' && shareIntent.webUrl) {
+    if (shareIntent.type === "weburl" && shareIntent.webUrl) {
       route = parseShareIntentRoute(shareIntent.webUrl);
-    } else if (shareIntent.type === 'text' && shareIntent.text) {
+    } else if (shareIntent.type === "text" && shareIntent.text) {
       const urlMatch = shareIntent.text.match(/(wellington:\/\/\S+)/);
       if (urlMatch) {
         route = parseShareIntentRoute(urlMatch[1]);
@@ -93,30 +106,36 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         mediaHeight?: number;
         mediaFiles?: Array<{
           uri: string;
-          type: 'photo' | 'video';
+          type: "photo" | "video";
           width?: number;
           height?: number;
         }>;
       } = {};
 
-      if (shareIntent.type === 'weburl' && shareIntent.webUrl) {
+      if (shareIntent.type === "weburl" && shareIntent.webUrl) {
         sharedData.text = shareIntent.webUrl;
-      } else if (shareIntent.type === 'text' && shareIntent.text) {
+      } else if (shareIntent.type === "text" && shareIntent.text) {
         sharedData.text = shareIntent.text;
       }
 
-      if (shareIntent.type === 'media' && shareIntent.files && shareIntent.files.length > 0) {
+      if (
+        shareIntent.type === "media" &&
+        shareIntent.files &&
+        shareIntent.files.length > 0
+      ) {
         if (shareIntent.files.length > 1) {
           // Multi-file share: pass all files as array
           sharedData.mediaFiles = shareIntent.files.map((file: any) => ({
             uri: file.path,
-            type: file.mimeType?.startsWith('video/') ? 'video' as const : 'photo' as const,
+            type: file.mimeType?.startsWith("video/")
+              ? ("video" as const)
+              : ("photo" as const),
             width: file.width || undefined,
             height: file.height || undefined,
           }));
         } else {
           const file = shareIntent.files[0];
-          if (file.mimeType?.startsWith('video/')) {
+          if (file.mimeType?.startsWith("video/")) {
             sharedData.videoUri = file.path;
           } else {
             sharedData.imageUri = file.path;
@@ -126,9 +145,14 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         }
       }
 
-      if (sharedData.text || sharedData.imageUri || sharedData.videoUri || sharedData.mediaFiles) {
+      if (
+        sharedData.text ||
+        sharedData.imageUri ||
+        sharedData.videoUri ||
+        sharedData.mediaFiles
+      ) {
         (global as any).__sharedIntent = sharedData;
-        router.push('/feed/create-post' as any);
+        router.push("/feed/create-post" as any);
       }
     }
 
@@ -156,29 +180,31 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <ZoomOverlayProvider>
-        <SafeAreaProvider>
-          <AuthProvider>
-            <LocationProvider>
-              <FollowProvider>
-                <LikeProvider>
-                  <NotificationProvider>
-                  <ToastProvider>
-                    <ExplorationProvider>
-                      <AuthGate>
-                        <Slot />
-                      </AuthGate>
-                      <StatusBar style="auto" />
-                    </ExplorationProvider>
-                  </ToastProvider>
-                  </NotificationProvider>
-                </LikeProvider>
-              </FollowProvider>
-            </LocationProvider>
-          </AuthProvider>
-        </SafeAreaProvider>
-      </ZoomOverlayProvider>
-    </GestureHandlerRootView>
+    <QueryClientProvider client={queryClient}>
+      <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
+        <ZoomOverlayProvider>
+          <SafeAreaProvider>
+            <AuthProvider>
+              <LocationProvider>
+                <FollowProvider>
+                  <LikeProvider>
+                    <NotificationProvider>
+                      <ToastProvider>
+                        <ExplorationProvider>
+                          <AuthGate>
+                            <Slot />
+                          </AuthGate>
+                          <StatusBar style="auto" />
+                        </ExplorationProvider>
+                      </ToastProvider>
+                    </NotificationProvider>
+                  </LikeProvider>
+                </FollowProvider>
+              </LocationProvider>
+            </AuthProvider>
+          </SafeAreaProvider>
+        </ZoomOverlayProvider>
+      </GestureHandlerRootView>
+    </QueryClientProvider>
   );
 }

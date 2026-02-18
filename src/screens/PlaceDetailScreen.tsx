@@ -39,10 +39,10 @@ export function PlaceDetailScreen() {
   const { followingIds } = useFollow();
 
   const fetchPlace = useCallback(() => getPlaceById(placeId), [placeId]);
-  const { data: place, loading: loadingPlace, refetch: refetchPlace } = useQuery(fetchPlace);
+  const { data: place, loading: loadingPlace, refetch: refetchPlace } = useQuery(fetchPlace, ['place', placeId]);
 
   const fetchPosts = useCallback(() => getPostsByPlaceIdAsync(placeId), [placeId]);
-  const { data: posts, loading: loadingPosts, refetch: refetchPosts } = useQuery(fetchPosts);
+  const { data: posts, loading: loadingPosts, refetch: refetchPosts } = useQuery(fetchPosts, ['posts', 'place', placeId]);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(

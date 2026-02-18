@@ -77,7 +77,7 @@ export function FeedPost({
     () => getCommentsByPostId(post.id),
     [post.id]
   );
-  const { data: comments } = useQuery(fetchComments);
+  const { data: comments } = useQuery(fetchComments, ['comments', post.id]);
   const commentCount = comments?.length ?? 0;
   const storedAspectRatio =
     post.mediaWidth && post.mediaHeight

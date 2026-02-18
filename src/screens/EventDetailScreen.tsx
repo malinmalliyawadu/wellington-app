@@ -99,7 +99,7 @@ export function EventDetailScreen() {
   const [togglingAttendance, setTogglingAttendance] = useState(false);
 
   const fetchEvent = useCallback(() => getEventById(eventId), [eventId]);
-  const { data: event, loading } = useQuery(fetchEvent);
+  const { data: event, loading } = useQuery(fetchEvent, ['event', eventId]);
 
   const fetchPlace = useCallback(
     () => (event ? getPlaceById(event.placeId) : Promise.resolve(null)),

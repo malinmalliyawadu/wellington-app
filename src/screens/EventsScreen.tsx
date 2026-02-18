@@ -150,10 +150,10 @@ export function EventsScreen() {
     useEventFilters();
 
   const fetchEvents = useCallback(() => getUpcomingEvents(), []);
-  const { data: events, loading: loadingEvents, refetch: refetchEvents } = useQuery(fetchEvents);
+  const { data: events, loading: loadingEvents, refetch: refetchEvents } = useQuery(fetchEvents, 'events');
 
   const fetchPlaces = useCallback(() => getPlaces(), []);
-  const { data: places, refetch: refetchPlaces } = useQuery(fetchPlaces);
+  const { data: places, refetch: refetchPlaces } = useQuery(fetchPlaces, 'places');
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {

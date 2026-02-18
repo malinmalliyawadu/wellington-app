@@ -36,7 +36,7 @@ export function FollowListScreen() {
   const { profile } = useAuth();
 
   const fetchUser = useCallback(() => getProfileById(userId), [userId]);
-  const { data: user } = useQuery(fetchUser);
+  const { data: user } = useQuery(fetchUser, ['user', userId]);
 
   // Update header title when user data loads
   useEffect(() => {
@@ -54,12 +54,12 @@ export function FollowListScreen() {
     [userId]
   );
   const { data: followingUserIds, loading: loadingFollowingIds } =
-    useQuery(fetchFollowingIds);
+    useQuery(fetchFollowingIds, ['following', userId]);
 
   // Fetch follower IDs for this user
   const fetchFollowerIds = useCallback(() => getFollowerIds(userId), [userId]);
   const { data: followerUserIds, loading: loadingFollowerIds } =
-    useQuery(fetchFollowerIds);
+    useQuery(fetchFollowerIds, ['followers', userId]);
 
   // Fetch following profiles
   const fetchFollowing = useCallback(

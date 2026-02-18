@@ -231,7 +231,7 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
     () => getProfileById(post.userId),
     [post.userId]
   );
-  const { data: user } = useQuery(fetchUser);
+  const { data: user } = useQuery(fetchUser, ['user', post.userId]);
   const { isLiked, toggleLike, getLikeCount } = useLike();
   const liked = isLiked(post.id);
 

@@ -200,18 +200,18 @@ export function MapScreen() {
     data: places,
     loading: placesLoading,
     refetch: refetchPlaces,
-  } = useQuery(getPlaces);
+  } = useQuery(getPlaces, 'places');
   const allPlaces = places ?? [];
   const {
     data: allPosts,
     loading: postsLoading,
     refetch: refetchPosts,
-  } = useQuery(getPosts);
+  } = useQuery(getPosts, 'posts');
   const {
     data: allUsers,
     loading: usersLoading,
     refetch: refetchUsers,
-  } = useQuery(getProfiles);
+  } = useQuery(getProfiles, 'profiles');
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { View, Text, FlatList, StyleSheet, RefreshControl } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
@@ -8,6 +8,7 @@ import { useFollow } from "../context/FollowContext";
 import { useAuth } from "../context/AuthContext";
 import { colors } from "../theme/colors";
 import { useQuery } from "../hooks/useQuery";
+import { useQueryClient } from "@tanstack/react-query";
 import { getFeedPosts } from "../services/posts";
 import { getProfilesByIds } from "../services/users";
 import { getPlaces } from "../services/places";
@@ -21,6 +22,7 @@ export function FeedScreen() {
   const router = useRouter();
   const { followingIds } = useFollow();
   const { profile } = useAuth();
+  const queryClient = useQueryClient();
   const headerHeight = useHeaderHeight();
   const fetchFeedPosts = useCallback(
     () => getFeedPosts(followingIds, profile?.id),
@@ -56,7 +58,25 @@ export function FeedScreen() {
   );
   const fetchUsers = useCallback(() => getProfilesByIds(userIds), [userIds]);
   const { data: users } = useQuery(fetchUsers, userIds);
-  const { data: places } = useQuery(getPlaces);
+  const { data: places } = useQuery(getPlaces, 'places');
+
+  // Pre-populate per-post and per-user cache entries so navigating to
+  // PostDetailScreen or UserProfileScreen returns data instantly (no "Unknown" flash)
+  useEffect(() => {
+    if (feedPosts) {
+      for (const post of feedPosts) {
+        queryClient.setQueryData(['q', ['post', post.id]], post);
+      }
+    }
+  }, [feedPosts, queryClient]);
+
+  useEffect(() => {
+    if (users) {
+      for (const user of users) {
+        queryClient.setQueryData(['q', ['user', user.id]], user);
+      }
+    }
+  }, [users, queryClient]);
 
   const postsWithData = useMemo(() => {
     if (!feedPosts || !users || !places) return [];

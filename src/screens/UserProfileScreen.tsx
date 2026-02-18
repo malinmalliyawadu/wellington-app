@@ -56,17 +56,17 @@ export function UserProfileScreen() {
   }, [avatarAnim]);
 
   const fetchUser = useCallback(() => getProfileById(userId), [userId]);
-  const { data: user, loading: loadingUser, refetch: refetchUser } = useQuery(fetchUser);
+  const { data: user, loading: loadingUser, refetch: refetchUser } = useQuery(fetchUser, ['user', userId]);
 
   const fetchPosts = useCallback(() => getPostsByUserIdAsync(userId), [userId]);
-  const { data: posts, refetch: refetchPosts } = useQuery(fetchPosts);
-  const { data: allPlaces, refetch: refetchPlaces } = useQuery(getPlaces);
+  const { data: posts, refetch: refetchPosts } = useQuery(fetchPosts, ['posts', 'user', userId]);
+  const { data: allPlaces, refetch: refetchPlaces } = useQuery(getPlaces, 'places');
 
   const fetchCounts = useCallback(() => getFollowCounts(userId), [userId]);
-  const { data: counts, refetch: refetchCounts } = useQuery(fetchCounts);
+  const { data: counts, refetch: refetchCounts } = useQuery(fetchCounts, ['follow-counts', userId]);
 
   const fetchEvents = useCallback(() => getEventsByUserId(userId), [userId]);
-  const { data: events, refetch: refetchEvents } = useQuery(fetchEvents);
+  const { data: events, refetch: refetchEvents } = useQuery(fetchEvents, ['events', 'user', userId]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
