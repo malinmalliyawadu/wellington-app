@@ -2,9 +2,10 @@
 -- Run this in the Supabase SQL Editor
 
 -- Enums
-create type place_category as enum ('cafe', 'restaurant', 'bar', 'attraction', 'park', 'venue');
+create type place_category as enum ('cafe', 'restaurant', 'bar', 'attraction', 'park', 'venue', 'trail');
 create type post_type as enum ('photo', 'video', 'text');
 create type event_category as enum ('music', 'comedy', 'art', 'food', 'market', 'community', 'quiz', 'craft', 'kids', 'cultural');
+create type trail_difficulty as enum ('easy', 'moderate', 'hard');
 
 -- Profiles (linked to auth.users)
 create table profiles (
@@ -291,3 +292,25 @@ create policy "Users can delete own post media"
     bucket_id = 'post-media'
     and auth.uid()::text = (storage.foldername(name))[1]
   );
+
+-- Trails (linked to shadow place records for post/event support)
+create table trails (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  description text not null,
+  elevation text not null,
+  distance text not null,
+  duration text not null,
+  difficulty trail_difficulty not null,
+  highlights jsonb not null default '[]',
+  trailhead jsonb not null,
+  coordinates jsonb not null default '[]',
+  place_id uuid not null references places(id),
+  created_at timestamptz not null default now(),
+  constraint trails_place_id_unique unique (place_id)
+);
+
+alter table trails enable row level security;
+
+create policy "trails_public_read" on trails
+  for select using (true);

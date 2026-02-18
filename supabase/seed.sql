@@ -29,22 +29,23 @@
 -- ============================================================
 -- PROFILES (upsert to override auto-created profiles)
 -- ============================================================
-INSERT INTO profiles (id, username, display_name, avatar_url, bio) VALUES
-  ('00000000-0000-0000-0000-000000000001', 'you', 'You', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200', 'Wellington local. Coffee & gigs.'),
-  ('00000000-0000-0000-0000-000000000002', 'sarah_eats_welly', 'Sarah Chen', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200', 'Food blogger | Wellington eats & drinks'),
-  ('00000000-0000-0000-0000-000000000003', 'artsy_jordan', 'Jordan Taylor', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200', 'Photographer & art lover. Capturing Wellington.'),
-  ('00000000-0000-0000-0000-000000000004', 'gig_queen_mel', 'Mel Rodriguez', 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200', 'Live music addict. If there is a gig, I am there.'),
-  ('00000000-0000-0000-0000-000000000005', 'coffeesnob_nz', 'Alex Kim', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200', 'Hunting the perfect flat white across Wellington'),
-  ('00000000-0000-0000-0000-000000000006', 'welly_walks', 'Tane Mahuta', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200', 'Trail runner & outdoor enthusiast'),
-  ('00000000-0000-0000-0000-000000000007', 'craft_beer_sam', 'Sam O''Brien', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200', 'Craft beer nerd. Wellington is heaven.'),
-  ('00000000-0000-0000-0000-000000000008', 'market_maya', 'Maya Patel', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200', 'Market lover. Supporting local makers.'),
-  ('00000000-0000-0000-0000-000000000009', 'night_owl_pete', 'Pete Williams', 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=200', 'Night owl. Late-night Wellington is the best Wellington.'),
-  ('00000000-0000-0000-0000-000000000010', 'comedy_kate', 'Kate Nguyen', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200', 'Stand-up comedy obsessed. Wellington funny bone.')
+INSERT INTO profiles (id, username, display_name, avatar_url, bio, onboarding_completed) VALUES
+  ('00000000-0000-0000-0000-000000000001', 'you', 'You', 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200', 'Wellington local. Coffee & gigs.', true),
+  ('00000000-0000-0000-0000-000000000002', 'sarah_eats_welly', 'Sarah Chen', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200', 'Food blogger | Wellington eats & drinks', true),
+  ('00000000-0000-0000-0000-000000000003', 'artsy_jordan', 'Jordan Taylor', 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200', 'Photographer & art lover. Capturing Wellington.', true),
+  ('00000000-0000-0000-0000-000000000004', 'gig_queen_mel', 'Mel Rodriguez', 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200', 'Live music addict. If there is a gig, I am there.', true),
+  ('00000000-0000-0000-0000-000000000005', 'coffeesnob_nz', 'Alex Kim', 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200', 'Hunting the perfect flat white across Wellington', true),
+  ('00000000-0000-0000-0000-000000000006', 'welly_walks', 'Tane Mahuta', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200', 'Trail runner & outdoor enthusiast', true),
+  ('00000000-0000-0000-0000-000000000007', 'craft_beer_sam', 'Sam O''Brien', 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200', 'Craft beer nerd. Wellington is heaven.', true),
+  ('00000000-0000-0000-0000-000000000008', 'market_maya', 'Maya Patel', 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200', 'Market lover. Supporting local makers.', true),
+  ('00000000-0000-0000-0000-000000000009', 'night_owl_pete', 'Pete Williams', 'https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=200', 'Night owl. Late-night Wellington is the best Wellington.', true),
+  ('00000000-0000-0000-0000-000000000010', 'comedy_kate', 'Kate Nguyen', 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200', 'Stand-up comedy obsessed. Wellington funny bone.', true)
 ON CONFLICT (id) DO UPDATE SET
   username = EXCLUDED.username,
   display_name = EXCLUDED.display_name,
   avatar_url = EXCLUDED.avatar_url,
-  bio = EXCLUDED.bio;
+  bio = EXCLUDED.bio,
+  onboarding_completed = EXCLUDED.onboarding_completed;
 
 -- ============================================================
 -- Clear existing data (in dependency order) before re-seeding
@@ -54,6 +55,7 @@ DELETE FROM post_likes;
 DELETE FROM posts; -- cascades to post_media via ON DELETE CASCADE
 DELETE FROM event_attendees;
 DELETE FROM events;
+DELETE FROM trails;
 DELETE FROM places;
 
 -- ============================================================
@@ -116,7 +118,57 @@ INSERT INTO places (id, name, category, address, latitude, longitude) VALUES
   ('10000000-0000-0000-0000-000000000048', 'TSB Arena', 'venue', '4 Queens Wharf, Wellington', -41.2838, 174.7800),
   ('10000000-0000-0000-0000-000000000049', 'Wharewaka', 'venue', '2 Taranaki Street Wharf, Te Aro', -41.2895, 174.7815),
   ('10000000-0000-0000-0000-000000000050', 'Caroline', 'venue', '15 Tory Street, Te Aro', -41.2918, 174.7778),
-  ('10000000-0000-0000-0000-000000000051', 'Everybody Eats', 'restaurant', '60 Dixon Street, Te Aro', -41.2913, 174.7740);
+  ('10000000-0000-0000-0000-000000000051', 'Everybody Eats', 'restaurant', '60 Dixon Street, Te Aro', -41.2913, 174.7740),
+  -- Trail shadow places (linked to trails via trails.place_id)
+  ('10000000-0000-0000-0000-000000000101', 'Mt Kaukau', 'trail', 'Simla Crescent, Khandallah', -41.2478, 174.7692),
+  ('10000000-0000-0000-0000-000000000102', 'Mt Victoria Lookout', 'trail', 'Majoribanks Street, Mt Victoria', -41.2935, 174.7835),
+  ('10000000-0000-0000-0000-000000000103', 'Te Ahumairangi Hill', 'trail', 'Bolton Street, Thorndon', -41.277, 174.77),
+  ('10000000-0000-0000-0000-000000000104', 'Northern Walkway Loop', 'trail', 'Botanic Garden, Thorndon', -41.2845, 174.768);
+
+-- ============================================================
+-- TRAILS (4 Wellington hiking trails with shadow place references)
+-- ============================================================
+INSERT INTO trails (id, name, description, elevation, distance, duration, difficulty, highlights, trailhead, coordinates, place_id) VALUES
+(
+  'a1b2c3d4-0001-4000-8000-000000000001',
+  'Mt Kaukau',
+  'The highest point in the Wellington Town Belt, Mt Kaukau offers panoramic 360° views of Wellington Harbour, the Hutt Valley, and the Tararua Range. The well-maintained track climbs steadily through regenerating bush before opening up to tussock-covered slopes near the summit.',
+  '445m', '3.6km return', '1.5–2 hrs', 'moderate',
+  '["360° panoramic views from the summit", "Native bush and tussock grassland", "Views of Wellington Harbour and South Island", "Transmission tower landmark at summit"]',
+  '{"latitude": -41.2478, "longitude": 174.7692, "label": "Simla Crescent, Khandallah"}',
+  '[{"latitude": -41.2478, "longitude": 174.7692}, {"latitude": -41.247, "longitude": 174.7685}, {"latitude": -41.246, "longitude": 174.7675}, {"latitude": -41.2448, "longitude": 174.7668}, {"latitude": -41.2435, "longitude": 174.766}, {"latitude": -41.242, "longitude": 174.7652}, {"latitude": -41.2405, "longitude": 174.7647}, {"latitude": -41.239, "longitude": 174.764}, {"latitude": -41.2375, "longitude": 174.7633}, {"latitude": -41.236, "longitude": 174.7627}, {"latitude": -41.2345, "longitude": 174.7622}, {"latitude": -41.233, "longitude": 174.7618}, {"latitude": -41.2315, "longitude": 174.7615}, {"latitude": -41.23, "longitude": 174.7612}, {"latitude": -41.2287, "longitude": 174.7615}]',
+  '10000000-0000-0000-0000-000000000101'
+),
+(
+  'a1b2c3d4-0002-4000-8000-000000000002',
+  'Mt Victoria Lookout',
+  'A quick climb from the heart of the city to one of Wellington''s most iconic viewpoints. The track winds through mature pine forest and native bush before reaching the summit lookout with sweeping views over the city, harbour, and airport.',
+  '196m', '2km return', '45 min–1 hr', 'easy',
+  '["Iconic city and harbour panorama", "Lord of the Rings filming location", "Pine forest and native bush", "Close to Courtenay Place and Oriental Bay"]',
+  '{"latitude": -41.2935, "longitude": 174.7835, "label": "Majoribanks Street, Mt Victoria"}',
+  '[{"latitude": -41.2935, "longitude": 174.7835}, {"latitude": -41.2938, "longitude": 174.7848}, {"latitude": -41.2942, "longitude": 174.786}, {"latitude": -41.2948, "longitude": 174.787}, {"latitude": -41.2955, "longitude": 174.7878}, {"latitude": -41.296, "longitude": 174.7888}, {"latitude": -41.2962, "longitude": 174.79}]',
+  '10000000-0000-0000-0000-000000000102'
+),
+(
+  'a1b2c3d4-0003-4000-8000-000000000003',
+  'Te Ahumairangi Hill',
+  'Also known as Tinakori Hill, this peaceful bush walk starts from the Bolton Street Cemetery and climbs through regenerating native forest. The summit offers views across the city, harbour, and out to the Hutt Valley — without the crowds of Mt Victoria.',
+  '306m', '3km return', '1–1.5 hrs', 'easy',
+  '["Quiet native bush walk minutes from the CBD", "Views over Wellington and the Hutt Valley", "Historic Bolton Street Cemetery at the start", "Rich birdlife — tui, kereru, and fantail"]',
+  '{"latitude": -41.277, "longitude": 174.77, "label": "Bolton Street, Thorndon"}',
+  '[{"latitude": -41.277, "longitude": 174.77}, {"latitude": -41.2758, "longitude": 174.769}, {"latitude": -41.2745, "longitude": 174.768}, {"latitude": -41.2732, "longitude": 174.7672}, {"latitude": -41.2718, "longitude": 174.7665}, {"latitude": -41.2705, "longitude": 174.766}, {"latitude": -41.269, "longitude": 174.7658}]',
+  '10000000-0000-0000-0000-000000000103'
+),
+(
+  'a1b2c3d4-0004-4000-8000-000000000004',
+  'Northern Walkway Loop',
+  'A scenic loop from the Botanic Garden up and over Te Ahumairangi Hill, descending through Wadestown before looping back through Thorndon. The route passes through mature native bush, with views across the harbour and city from the ridgeline.',
+  '306m', '5.5km loop', '2–2.5 hrs', 'moderate',
+  '["Loop trail — no retracing steps", "Crosses Te Ahumairangi Hill summit", "Native bush with tui and kereru", "Harbour views from the ridgeline"]',
+  '{"latitude": -41.2845, "longitude": 174.768, "label": "Botanic Garden, Thorndon"}',
+  '[{"latitude": -41.2845, "longitude": 174.768}, {"latitude": -41.2822, "longitude": 174.7675}, {"latitude": -41.28, "longitude": 174.7688}, {"latitude": -41.2778, "longitude": 174.7695}, {"latitude": -41.2755, "longitude": 174.769}, {"latitude": -41.2732, "longitude": 174.7678}, {"latitude": -41.271, "longitude": 174.7665}, {"latitude": -41.269, "longitude": 174.7658}, {"latitude": -41.2672, "longitude": 174.7648}, {"latitude": -41.2655, "longitude": 174.764}, {"latitude": -41.264, "longitude": 174.7652}, {"latitude": -41.2658, "longitude": 174.767}, {"latitude": -41.2675, "longitude": 174.7688}, {"latitude": -41.2698, "longitude": 174.7702}, {"latitude": -41.272, "longitude": 174.771}, {"latitude": -41.2745, "longitude": 174.7715}, {"latitude": -41.277, "longitude": 174.7712}, {"latitude": -41.2795, "longitude": 174.7705}, {"latitude": -41.282, "longitude": 174.7695}, {"latitude": -41.2845, "longitude": 174.768}]',
+  '10000000-0000-0000-0000-000000000104'
+);
 
 -- ============================================================
 -- POSTS (65 posts for seed data — many places with multiple visitors)
@@ -403,7 +455,37 @@ INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, creat
    'https://images.unsplash.com/photo-1474487548417-781cb71495f3?w=600', 9, (CURRENT_DATE - 4) + TIME '11:00:00'),
   ('20000000-0000-0000-0000-000000000075', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000014', 'text',
    'Walked up the Cable Car track instead of riding. Great little workout with an amazing reward at the top.',
-   null, 6, (CURRENT_DATE - 2) + TIME '09:00:00');
+   null, 6, (CURRENT_DATE - 2) + TIME '09:00:00'),
+
+  -- Mt Kaukau trail (3 posters: u6, u3, u1)
+  ('20000000-0000-0000-0000-000000000076', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000101', 'photo',
+   'Mt Kaukau summit today. 360° views of the harbour, Hutt Valley, and the Tararuas. Absolutely worth the climb.',
+   'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=600', 16, (CURRENT_DATE - 4) + TIME '07:00:00'),
+  ('20000000-0000-0000-0000-000000000077', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000101', 'photo',
+   'The tussock near the summit of Kaukau catches the golden hour light beautifully.',
+   'https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600', 12, (CURRENT_DATE - 3) + TIME '18:00:00'),
+  ('20000000-0000-0000-0000-000000000078', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000101', 'text',
+   'First time doing Kaukau. Legs are sore but the view is unreal. Can see the South Island on a clear day.',
+   null, 7, (CURRENT_DATE - 1) + TIME '10:00:00'),
+
+  -- Mt Victoria Lookout trail (3 posters: u6, u1, u8)
+  ('20000000-0000-0000-0000-000000000079', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000102', 'photo',
+   'Quick lunch walk up Mt Vic. 20 minutes from the office to this view. Wellington is special.',
+   'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600', 14, (CURRENT_DATE - 5) + TIME '12:30:00'),
+  ('20000000-0000-0000-0000-000000000080', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000102', 'photo',
+   'Mt Vic at dusk. The city lights starting to flicker on below.',
+   'https://images.unsplash.com/photo-1519681393784-d120267933ba?w=600', 11, (CURRENT_DATE - 2) + TIME '19:00:00'),
+  ('20000000-0000-0000-0000-000000000081', '00000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000102', 'text',
+   'Took the kids up Mt Vic trail. Easy enough for the littles and they loved spotting the planes landing.',
+   null, 5, (CURRENT_DATE - 1) + TIME '14:00:00'),
+
+  -- Te Ahumairangi Hill trail (2 posters: u6, u3)
+  ('20000000-0000-0000-0000-000000000082', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000103', 'photo',
+   'Te Ahumairangi is so underrated. Quiet native bush walk with harbour views, minutes from the CBD.',
+   'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600', 9, (CURRENT_DATE - 3) + TIME '08:00:00'),
+  ('20000000-0000-0000-0000-000000000083', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000103', 'photo',
+   'Tui and kereru everywhere on Te Ahumairangi this morning. The birdsong is incredible.',
+   'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?w=600', 8, (CURRENT_DATE - 1) + TIME '07:30:00');
 
 -- ============================================================
 -- POST MEDIA (multi-media posts — up to 5 photos/videos per post)

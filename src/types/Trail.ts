@@ -11,4 +11,5 @@ export interface Trail {
   highlights: string[];
   trailhead: { latitude: number; longitude: number; label: string };
   coordinates: { latitude: number; longitude: number }[];
+  placeId: string;
 }

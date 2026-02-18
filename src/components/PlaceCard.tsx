@@ -17,6 +17,7 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   attraction: 'Attraction',
   park: 'Park',
   venue: 'Venue',
+  trail: 'Trail',
 };
 
 export function PlaceCard({ place, onClose }: PlaceCardProps) {

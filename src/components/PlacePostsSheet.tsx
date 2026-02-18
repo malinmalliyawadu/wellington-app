@@ -40,6 +40,7 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   attraction: "Attraction",
   park: "Park",
   venue: "Venue",
+  trail: "Trail",
 };
 
 const SCREEN_HEIGHT = Dimensions.get("window").height;

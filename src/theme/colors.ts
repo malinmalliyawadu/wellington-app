@@ -29,6 +29,7 @@ export const colors = {
     attraction: "#0077B6",
     park: "#2D6A4F",
     venue: "#D62828",
+    trail: "#0F766E",
   },
 
   // Interactive

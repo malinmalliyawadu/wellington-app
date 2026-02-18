@@ -38,6 +38,7 @@ function mapTrail(row: {
   highlights: any;
   trailhead: any;
   coordinates: any;
+  place_id: string;
 }): Trail {
   return {
     id: row.id,
@@ -50,5 +51,6 @@ function mapTrail(row: {
     highlights: row.highlights as string[],
     trailhead: row.trailhead as Trail['trailhead'],
     coordinates: row.coordinates as Trail['coordinates'],
+    placeId: row.place_id,
   };
 }

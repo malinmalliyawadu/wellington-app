@@ -122,6 +122,8 @@ export function useMapData({
 
   const filteredPlaces = useMemo(() => {
     return allPlaces.filter((place) => {
+      // Exclude trail shadow places — trails have their own polyline overlay
+      if (place.category === 'trail') return false;
       if (
         selectedCategories.length > 0 &&
         !selectedCategories.includes(place.category)

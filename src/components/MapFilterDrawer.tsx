@@ -27,6 +27,7 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   attraction: 'Attraction',
   park: 'Park',
   venue: 'Venue',
+  trail: 'Trail',
 };
 
 const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
@@ -36,6 +37,7 @@ const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof type
   attraction: { sf: 'safari', fallback: 'compass' },
   park: { sf: 'leaf.fill', fallback: 'leaf' },
   venue: { sf: 'music.note.list', fallback: 'musical-notes' },
+  trail: { sf: 'figure.hiking', fallback: 'walk' },
 };
 
 export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {

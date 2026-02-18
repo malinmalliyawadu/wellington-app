@@ -37,6 +37,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (session?.user) {
+        setLoading(true);
         fetchProfile(session.user.id);
       } else {
         setProfile(null);
@@ -64,10 +65,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         onboardingCompleted: data.onboarding_completed ?? false,
       });
     } else if (error?.code === 'PGRST116') {
-      // No profile row found (e.g. DB was reset) — sign out so user hits login
-      setProfile(null);
-      await supabase.auth.signOut();
-      return;
+      // No profile row found (e.g. trigger didn't fire or DB was reset)
+      // Create a default profile so the user can proceed to onboarding
+      const { data: authUser } = await supabase.auth.getUser();
+      const meta = authUser?.user?.user_metadata;
+      const defaultUsername = 'user_' + userId.substring(0, 8);
+      const defaultDisplayName = meta?.full_name || meta?.display_name || 'New User';
+      const defaultAvatar = meta?.avatar_url || '';
+
+      const { error: insertError } = await supabase.from('profiles').insert({
+        id: userId,
+        username: defaultUsername,
+        display_name: defaultDisplayName,
+        avatar_url: defaultAvatar,
+        onboarding_completed: false,
+      });
+
+      if (insertError) {
+        // Can't create profile — sign out as last resort
+        setProfile(null);
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+
+      setProfile({
+        id: userId,
+        username: defaultUsername,
+        displayName: defaultDisplayName,
+        avatarUrl: defaultAvatar,
+        onboardingCompleted: false,
+      });
     }
     setLoading(false);
   }

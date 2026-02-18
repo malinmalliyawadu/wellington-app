@@ -19,7 +19,7 @@
     "db:schema:remote": "dotenv -- node supabase/run-sql.mjs supabase/schema.sql",
     "db:seed:remote": "dotenv -- node supabase/run-sql.mjs supabase/seed.sql",
     "db:reset:remote": "dotenv -- node supabase/run-sql.mjs supabase/reset-remote.sql",
-    "db:setup:remote": "npm run db:reset:remote && npm run db:schema:remote && npm run db:create-users && npm run db:seed:remote && npm run db:migrate:remote",
+    "db:setup:remote": "npm run db:reset:remote && npm run db:schema:remote && npm run db:migrate:remote && npm run db:create-users && npm run db:seed:remote",
     "db:migrate": "supabase migration up --local",
     "db:migrate:remote": "supabase db push"
   },

@@ -1,8 +1,11 @@
 -- Trail difficulty enum
-CREATE TYPE trail_difficulty AS ENUM ('easy', 'moderate', 'hard');
+DO $$ BEGIN
+  CREATE TYPE trail_difficulty AS ENUM ('easy', 'moderate', 'hard');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Trails table
-CREATE TABLE trails (
+CREATE TABLE IF NOT EXISTS trails (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   description TEXT NOT NULL,
@@ -19,10 +22,10 @@ CREATE TABLE trails (
 -- RLS: public read
 ALTER TABLE trails ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "trails_public_read" ON trails
+CREATE POLICY IF NOT EXISTS "trails_public_read" ON trails
   FOR SELECT USING (true);
 
--- Seed data: 4 Wellington hiking trails
+-- Seed data: 4 Wellington hiking trails (skip if already seeded via seed.sql)
 INSERT INTO trails (id, name, description, elevation, distance, duration, difficulty, highlights, trailhead, coordinates) VALUES
 (
   'a1b2c3d4-0001-4000-8000-000000000001',
@@ -71,4 +74,5 @@ INSERT INTO trails (id, name, description, elevation, distance, duration, diffic
   '["Loop trail — no retracing steps", "Crosses Te Ahumairangi Hill summit", "Native bush with tui and kereru", "Harbour views from the ridgeline"]',
   '{"latitude": -41.2845, "longitude": 174.768, "label": "Botanic Garden, Thorndon"}',
   '[{"latitude": -41.2845, "longitude": 174.768}, {"latitude": -41.2822, "longitude": 174.7675}, {"latitude": -41.28, "longitude": 174.7688}, {"latitude": -41.2778, "longitude": 174.7695}, {"latitude": -41.2755, "longitude": 174.769}, {"latitude": -41.2732, "longitude": 174.7678}, {"latitude": -41.271, "longitude": 174.7665}, {"latitude": -41.269, "longitude": 174.7658}, {"latitude": -41.2672, "longitude": 174.7648}, {"latitude": -41.2655, "longitude": 174.764}, {"latitude": -41.264, "longitude": 174.7652}, {"latitude": -41.2658, "longitude": 174.767}, {"latitude": -41.2675, "longitude": 174.7688}, {"latitude": -41.2698, "longitude": 174.7702}, {"latitude": -41.272, "longitude": 174.771}, {"latitude": -41.2745, "longitude": 174.7715}, {"latitude": -41.277, "longitude": 174.7712}, {"latitude": -41.2795, "longitude": 174.7705}, {"latitude": -41.282, "longitude": 174.7695}, {"latitude": -41.2845, "longitude": 174.768}]'
-);
+)
+ON CONFLICT (id) DO NOTHING;

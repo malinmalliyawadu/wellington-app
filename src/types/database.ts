@@ -376,6 +376,7 @@ export type Database = {
           highlights: string[];
           trailhead: { latitude: number; longitude: number; label: string };
           coordinates: { latitude: number; longitude: number }[];
+          place_id: string;
           created_at: string;
         };
         Insert: {
@@ -389,6 +390,7 @@ export type Database = {
           highlights: string[];
           trailhead: Record<string, any>;
           coordinates: Record<string, any>[];
+          place_id: string;
           created_at?: string;
         };
         Update: {
@@ -401,8 +403,17 @@ export type Database = {
           highlights?: string[];
           trailhead?: Record<string, any>;
           coordinates?: Record<string, any>[];
+          place_id?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: 'trails_place_id_fkey';
+            columns: ['place_id'];
+            referencedRelation: 'places';
+            referencedColumns: ['id'];
+            isOneToOne: true;
+          },
+        ];
       };
       achievement_definitions: {
         Row: {
@@ -533,7 +544,7 @@ export type Database = {
   };
 };
 
-export type PlaceCategory = 'cafe' | 'restaurant' | 'bar' | 'attraction' | 'park' | 'venue';
+export type PlaceCategory = 'cafe' | 'restaurant' | 'bar' | 'attraction' | 'park' | 'venue' | 'trail';
 export type PostType = 'photo' | 'video' | 'text';
 export type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community' | 'quiz' | 'craft' | 'kids' | 'cultural';
 export type TrailDifficulty = 'easy' | 'moderate' | 'hard';

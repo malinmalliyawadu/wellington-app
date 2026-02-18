@@ -102,6 +102,8 @@ export function PlaceSearchSheet() {
         return { sf: "star.fill", fallback: "star" };
       case "venue":
         return { sf: "music.note.list", fallback: "musical-notes" };
+      case "trail":
+        return { sf: "figure.hiking", fallback: "walk" };
       default:
         return { sf: "mappin", fallback: "location" };
     }
