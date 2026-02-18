@@ -31,13 +31,7 @@ import type { Event } from "../types";
 import { shareEvent } from "../utils/sharing";
 import { HapticPressable } from "src/components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
-import {
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
-  PlusJakartaSans_800ExtraBold,
-  useFonts,
-} from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 
 const CATEGORY_COLORS: Record<Event["category"], string> = {
   music: "#7209B7",
@@ -96,13 +90,6 @@ function getDay(dateString: string): string {
 const glassEnabled = isLiquidGlassAvailable();
 
 export function EventDetailScreen() {
-  const [fontsLoaded] = useFonts({
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
-    PlusJakartaSans_800ExtraBold,
-  });
-
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -441,7 +428,7 @@ const styles = StyleSheet.create({
   heroDateMonth: {
     fontSize: 11,
     fontWeight: "700",
-    fontFamily: "PlusJakartaSans_700Bold",
+    fontFamily: fonts.bold,
     color: colors.primary,
     letterSpacing: 0.5,
   },
@@ -453,7 +440,7 @@ const styles = StyleSheet.create({
   },
   heroDateDay: {
     fontSize: 24,
-    fontFamily: "PlusJakartaSans_800ExtraBold",
+    fontFamily: fonts.extraBold,
     color: colors.text,
     lineHeight: 28,
   },
@@ -469,7 +456,7 @@ const styles = StyleSheet.create({
     left: 20,
     right: 20,
     fontSize: 26,
-    fontFamily: "PlusJakartaSans_700Bold",
+    fontFamily: fonts.bold,
     color: "#FFFFFF",
     textShadowColor: "rgba(0,0,0,0.5)",
     textShadowOffset: { width: 0, height: 1 },
@@ -540,14 +527,14 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 18,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
   },
   attendeeCount: {
     fontSize: 15,
     color: colors.textSecondary,
     fontWeight: "500",
-    fontFamily: "PlusJakartaSans_500Medium",
+    fontFamily: fonts.medium,
   },
   attendeeRow: {
     flexDirection: "row",
@@ -570,7 +557,7 @@ const styles = StyleSheet.create({
   attendeeName: {
     fontSize: 15,
     fontWeight: "500",
-    fontFamily: "PlusJakartaSans_500Medium",
+    fontFamily: fonts.medium,
     color: colors.text,
     flex: 1,
   },
@@ -583,7 +570,7 @@ const styles = StyleSheet.create({
   followBadgeText: {
     fontSize: 11,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.primary,
   },
   emptyState: {

@@ -21,7 +21,7 @@ import { getPosts } from "../services/posts";
 import { getProfiles } from "../services/users";
 import { getUpcomingEvents } from "../services/events";
 import { searchGooglePlaces } from "../services/googlePlaces";
-import { PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { EventCard } from "../components/EventCard";
 import { HapticPressable } from "../components/HapticPressable";
 import type { Place, Post, User, Event, PlaceCategory } from "../types";
@@ -75,7 +75,6 @@ interface SearchScreenProps {
 }
 
 export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold });
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -628,7 +627,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 17,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
     paddingHorizontal: 16,
     marginBottom: 12,
@@ -652,7 +651,7 @@ const styles = StyleSheet.create({
   activeFilterText: {
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.primary,
   },
 
@@ -672,7 +671,7 @@ const styles = StyleSheet.create({
   sectionHeaderText: {
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -680,7 +679,7 @@ const styles = StyleSheet.create({
   sectionHeaderCount: {
     fontSize: 13,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.textMuted,
   },
 
@@ -703,7 +702,7 @@ const styles = StyleSheet.create({
   trendingText: {
     fontSize: 14,
     fontWeight: "500",
-    fontFamily: "PlusJakartaSans_500Medium",
+    fontFamily: fonts.medium,
     color: colors.text,
   },
 
@@ -726,7 +725,7 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 13,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
     textAlign: "center",
   },
@@ -758,7 +757,7 @@ const styles = StyleSheet.create({
   },
   placeRowName: {
     fontSize: 15,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
     marginBottom: 2,
   },
@@ -775,7 +774,7 @@ const styles = StyleSheet.create({
   placeRowCount: {
     fontSize: 13,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.textMuted,
   },
 
@@ -819,7 +818,7 @@ const styles = StyleSheet.create({
   },
   resultTitle: {
     fontSize: 15,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
     marginBottom: 2,
   },
@@ -846,7 +845,7 @@ const styles = StyleSheet.create({
   googleBadgeText: {
     fontSize: 10,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.textMuted,
     letterSpacing: 0.3,
   },
@@ -874,7 +873,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 18,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
   },
   emptySubtext: {

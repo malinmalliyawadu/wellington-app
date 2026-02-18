@@ -13,7 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { Ionicons } from '@expo/vector-icons';
 import { SFSymbol } from 'expo-symbols';
 import { SFIcon } from '../components/SFIcon';
-import { PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../theme/colors';
 
@@ -40,7 +40,6 @@ export function useToast() {
 }
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold });
   const [visible, setVisible] = useState(false);
   const [config, setConfig] = useState<ToastConfig>({ message: '' });
   const translateY = useRef(new Animated.Value(-100)).current;
@@ -215,7 +214,7 @@ const styles = StyleSheet.create({
   },
   achievementMessage: {
     fontSize: 16,
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fonts.bold,
     textShadowColor: 'rgba(0, 0, 0, 0.2)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
@@ -229,7 +228,7 @@ const styles = StyleSheet.create({
   message: {
     flex: 1,
     fontSize: 15,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fonts.semiBold,
     color: '#fff',
   },
 });

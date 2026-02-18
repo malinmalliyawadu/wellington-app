@@ -1,10 +1,7 @@
 import React from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import {
-  PlusJakartaSans_600SemiBold,
-  useFonts,
-} from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { EventCard } from "./EventCard";
 import { colors } from "../theme/colors";
 import { Event, Place } from "../types";
@@ -14,7 +11,6 @@ interface UpcomingEventsProps {
 }
 
 export function UpcomingEvents({ events }: UpcomingEventsProps) {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
   const router = useRouter();
 
   const eventsWithPlace = events.filter(
@@ -50,7 +46,7 @@ export function UpcomingEvents({ events }: UpcomingEventsProps) {
 const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
     marginTop: 28,
     marginBottom: 12,

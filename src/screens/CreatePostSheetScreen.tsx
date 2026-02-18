@@ -27,11 +27,7 @@ import { uploadMedia } from "../services/storage";
 import { createEvent } from "../services/events";
 import { createAchievementToast } from "../utils/achievementHelpers";
 import { compressMedia, compressAvatar } from "../utils/compressMedia";
-import {
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-  useFonts,
-} from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { HapticPressable } from "src/components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
@@ -44,10 +40,6 @@ const glassEnabled = isLiquidGlassAvailable();
 type CreateType = "post" | "event";
 
 export function CreatePostSheetScreen() {
-  const [fontsLoaded] = useFonts({
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-  });
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const { markExplored } = useExploration();
@@ -623,12 +615,12 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 16,
     fontWeight: "500",
-    fontFamily: "PlusJakartaSans_500Medium",
+    fontFamily: fonts.medium,
     color: colors.textMuted,
   },
   segmentTextActive: {
     color: colors.text,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
   },
   content: {
     paddingHorizontal: 16,
@@ -654,7 +646,7 @@ const styles = StyleSheet.create({
   progressText: {
     marginTop: 16,
     fontSize: 17,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
   },
   progressSubtext: {

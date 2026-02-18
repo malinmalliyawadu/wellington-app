@@ -10,7 +10,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { HapticPressable } from "./HapticPressable";
 import { colors } from "../theme/colors";
@@ -62,7 +62,6 @@ export function LiquidGlassButton({
   style,
   fullWidth = false,
 }: LiquidGlassButtonProps) {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
   const sizeStyles = SIZE_STYLES[size];
   const iconSize = ICON_SIZES[size];
   const circleSize = CIRCLE_SIZES[size];
@@ -196,7 +195,7 @@ const SIZE_STYLES: Record<
     },
     text: {
       fontSize: 13,
-      fontFamily: "PlusJakartaSans_600SemiBold",
+      fontFamily: fonts.semiBold,
     },
   },
   medium: {
@@ -208,7 +207,7 @@ const SIZE_STYLES: Record<
     },
     text: {
       fontSize: 15,
-      fontFamily: "PlusJakartaSans_600SemiBold",
+      fontFamily: fonts.semiBold,
     },
   },
   large: {
@@ -220,7 +219,7 @@ const SIZE_STYLES: Record<
     },
     text: {
       fontSize: 15,
-      fontFamily: "PlusJakartaSans_600SemiBold",
+      fontFamily: fonts.semiBold,
     },
   },
 };

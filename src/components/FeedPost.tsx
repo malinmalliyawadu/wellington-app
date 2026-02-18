@@ -16,12 +16,7 @@ import { SFIcon } from "./SFIcon";
 import { colors } from "../theme/colors";
 import { sharePost } from "../utils/sharing";
 import { HapticPressable } from "./HapticPressable";
-import {
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
-  useFonts,
-} from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 
 const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
   cafe: { sf: "cup.and.saucer.fill", fallback: "cafe" },
@@ -65,12 +60,6 @@ export function FeedPost({
   onPressPlace,
   onPressPost,
 }: FeedPostProps) {
-  const [fontsLoaded] = useFonts({
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
-  });
-
   const categoryColor = colors.category[place.category];
   const {
     liked,
@@ -317,7 +306,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 15,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
   },
   username: {
@@ -355,7 +344,7 @@ const styles = StyleSheet.create({
   },
   overlaidDisplayName: {
     fontSize: 15,
-    fontFamily: "PlusJakartaSans_700Bold",
+    fontFamily: fonts.bold,
     color: "#FFFFFF",
     textShadowColor: "rgba(0,0,0,0.4)",
     textShadowOffset: { width: 0, height: 1 },
@@ -404,7 +393,7 @@ const styles = StyleSheet.create({
   },
   locationName: {
     fontSize: 14,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
     flex: 1,
   },
@@ -429,7 +418,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
     fontWeight: "500",
-    fontFamily: "PlusJakartaSans_500Medium",
+    fontFamily: fonts.medium,
   },
   divider: {
     height: 5,

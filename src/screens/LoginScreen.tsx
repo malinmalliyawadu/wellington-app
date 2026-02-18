@@ -40,15 +40,7 @@ import Reanimated, {
   runOnJS,
   cancelAnimation,
 } from "react-native-reanimated";
-import {
-  useFonts,
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
-} from "@expo-google-fonts/plus-jakarta-sans";
-import { SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
-import { Sacramento_400Regular } from "@expo-google-fonts/sacramento";
-import { Pacifico_400Regular } from "@expo-google-fonts/pacifico";
+import { fonts } from "../theme/fonts";
 import { signInWithGoogle, signInWithApple } from "../services/auth";
 import { supabase } from "../lib/supabase";
 import { colors } from "../theme/colors";
@@ -131,15 +123,6 @@ const SEED_USERS = [
 ];
 
 export function LoginScreen() {
-  const [fontsLoaded] = useFonts({
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
-    SpaceGrotesk_700Bold,
-    Sacramento_400Regular,
-    Pacifico_400Regular,
-  });
-
   const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [loading, setLoading] = useState<"google" | "apple" | string | null>(
@@ -224,21 +207,6 @@ export function LoginScreen() {
     ],
     zIndex: 0,
   }));
-
-  if (!fontsLoaded) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          backgroundColor: "#000",
-        }}
-      >
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
-  }
 
   async function handleGoogleSignIn() {
     setLoading("google");
@@ -581,7 +549,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 110,
-    fontFamily: "Pacifico_400Regular",
+    fontFamily: fonts.pacifico,
     color: "#fff",
     textAlign: "center",
     marginBottom: 20,
@@ -620,7 +588,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontSize: 17,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     letterSpacing: 0.3,
   },
   devTrigger: {
@@ -648,7 +616,7 @@ const styles = StyleSheet.create({
   },
   devTriggerText: {
     fontSize: 13,
-    fontFamily: "PlusJakartaSans_500Medium",
+    fontFamily: fonts.medium,
     color: "rgba(255, 255, 255, 0.7)",
     letterSpacing: 0.3,
   },
@@ -689,7 +657,7 @@ const styles = StyleSheet.create({
   },
   devTitle: {
     fontSize: 13,
-    fontFamily: "PlusJakartaSans_700Bold",
+    fontFamily: fonts.bold,
     color: "rgba(255, 255, 255, 0.9)",
     textAlign: "center",
     marginBottom: 24,
@@ -720,7 +688,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "rgba(255, 255, 255, 0.9)",
     textAlign: "center",
-    fontFamily: "PlusJakartaSans_500Medium",
+    fontFamily: fonts.medium,
     letterSpacing: 0.2,
   },
   seedSpinner: {

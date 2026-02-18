@@ -16,7 +16,7 @@ import { useLike } from '../context/LikeContext';
 import { VideoThumbnail } from '../components/VideoThumbnail';
 import { colors } from '../theme/colors';
 import type { PlaceCategory } from '../types';
-import { PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { HapticPressable } from 'src/components/HapticPressable';
 import { LiquidGlassButton } from '../components/LiquidGlassButton';
 
@@ -30,7 +30,6 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
 };
 
 export function PlaceDetailScreen() {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold });
   const { placeId } = useLocalSearchParams<{ placeId: string }>();
   const router = useRouter();
   const pathname = usePathname();
@@ -261,7 +260,7 @@ const styles = StyleSheet.create({
   },
   name: {
     fontSize: 24,
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fonts.bold,
     color: colors.text,
     marginBottom: 10,
   },
@@ -280,7 +279,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fonts.semiBold,
   },
   ratingContainer: {
     flexDirection: 'row',
@@ -291,7 +290,7 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fonts.semiBold,
     color: colors.text,
   },
   reviewCountText: {
@@ -328,7 +327,7 @@ const styles = StyleSheet.create({
   },
   directionsText: {
     fontSize: 14,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fonts.semiBold,
     color: colors.primary,
   },
   postRow: {
@@ -354,7 +353,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 15,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fonts.semiBold,
     color: colors.text,
     marginRight: 8,
   },
@@ -367,7 +366,7 @@ const styles = StyleSheet.create({
   followBadgeText: {
     fontSize: 11,
     fontWeight: '600',
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fonts.semiBold,
     color: colors.primary,
   },
   postText: {

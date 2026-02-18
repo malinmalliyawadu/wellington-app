@@ -17,12 +17,11 @@ import { useAuth } from "../context/AuthContext";
 import { uploadAvatar } from "../services/storage";
 import { compressAvatar } from "../utils/compressMedia";
 import { HapticPressable } from "../components/HapticPressable";
-import { PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { colors } from "../theme/colors";
 
 export function EditProfileScreen() {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold });
   const router = useRouter();
   const navigation = useNavigation();
   const headerHeight = useHeaderHeight();
@@ -250,7 +249,7 @@ const styles = StyleSheet.create({
   },
   saveButton: {
     fontSize: 16,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
   },
   saveButtonDisabled: {
     color: colors.textMuted,
@@ -296,7 +295,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
     marginBottom: 8,
   },
@@ -324,7 +323,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     paddingLeft: 16,
     fontWeight: "500",
-    fontFamily: "PlusJakartaSans_500Medium",
+    fontFamily: fonts.medium,
   },
   usernameInput: {
     flex: 1,

@@ -9,11 +9,7 @@ import { useEventFilters } from '../context/EventFilterContext';
 import { colors } from '../theme/colors';
 import { HapticPressable } from './HapticPressable';
 import { SFIcon } from './SFIcon';
-import {
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
-  useFonts,
-} from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 
 type DateRange = 'today' | 'tomorrow' | 'weekend' | 'month';
 type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community';
@@ -46,7 +42,6 @@ const CATEGORY_ICONS: Record<EventCategory, { sf: SFSymbol; fallback: keyof type
 };
 
 export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold });
   const insets = useSafeAreaInsets();
   const {
     selectedDateRange,
@@ -176,13 +171,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fonts.bold,
     color: colors.text,
   },
   clearAll: {
     fontSize: 14,
     fontWeight: '600',
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fonts.semiBold,
     color: colors.primary,
   },
   scroll: {
@@ -197,7 +192,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fonts.bold,
     color: colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -207,7 +202,7 @@ const styles = StyleSheet.create({
   clearText: {
     fontSize: 13,
     fontWeight: '600',
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fonts.semiBold,
     color: colors.primary,
     marginTop: 24,
     marginBottom: 8,
@@ -231,7 +226,7 @@ const styles = StyleSheet.create({
   },
   optionLabelActive: {
     fontWeight: '600',
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fonts.semiBold,
     color: colors.primary,
   },
   check: {
@@ -248,6 +243,6 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fonts.semiBold,
   },
 });

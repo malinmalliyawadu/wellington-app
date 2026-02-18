@@ -5,7 +5,7 @@ import { SFSymbol } from "expo-symbols";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
-import { PlusJakartaSans_500Medium, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { PlaceCategory } from "../types";
 import { SFIcon } from "./SFIcon";
 import { colors } from "../theme/colors";
@@ -39,7 +39,6 @@ function PopularityMarkerInner({
   posterAvatars = [],
   showLabel = false,
 }: PopularityMarkerProps) {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_500Medium });
   const color = colors.category[category];
   const iconSize = Math.round(size * 0.45);
   const iconName = CATEGORY_ICONS[category];
@@ -373,7 +372,7 @@ const styles = StyleSheet.create({
   labelName: {
     fontSize: 11,
     fontWeight: "500",
-    fontFamily: "PlusJakartaSans_500Medium",
+    fontFamily: fonts.medium,
     textAlign: "center",
   },
   avatarRow: {

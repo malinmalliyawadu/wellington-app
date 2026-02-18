@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useAuth } from "../context/AuthContext";
 import { FollowButton } from "../components/FollowButton";
-import { PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { colors } from "../theme/colors";
 import { useQuery } from "../hooks/useQuery";
 import { getProfileById, getProfilesByIds } from "../services/users";
@@ -20,7 +20,6 @@ import { getFollowerIds, getFollowingIds } from "../services/follows";
 import { HapticPressable } from "src/components/HapticPressable";
 
 export function FollowListScreen() {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold });
   const router = useRouter();
   const navigation = useNavigation();
   const { userId, tab: initialTab } = useLocalSearchParams<{
@@ -177,7 +176,7 @@ const styles = StyleSheet.create({
   headerName: {
     fontSize: 16,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
     textAlign: "center",
     paddingVertical: 4,
@@ -199,7 +198,7 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 15,
     fontWeight: "500",
-    fontFamily: "PlusJakartaSans_500Medium",
+    fontFamily: fonts.medium,
     color: colors.textMuted,
   },
   activeTabText: {
@@ -229,7 +228,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 15,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
   },
   username: {

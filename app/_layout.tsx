@@ -1,8 +1,17 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useShareIntent } from 'expo-share-intent';
+import * as SplashScreen from 'expo-splash-screen';
+import {
+  useFonts,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+} from '@expo-google-fonts/plus-jakarta-sans';
+import { Pacifico_400Regular } from '@expo-google-fonts/pacifico';
 import { AuthProvider, useAuth } from '../src/context/AuthContext';
 import { FollowProvider } from '../src/context/FollowContext';
 import { LikeProvider } from '../src/context/LikeContext';
@@ -10,6 +19,8 @@ import { ToastProvider } from '../src/context/ToastContext';
 import { ExplorationProvider } from '../src/context/ExplorationContext';
 import { LocationProvider } from '../src/context/LocationContext';
 import { StatusBar } from 'expo-status-bar';
+
+SplashScreen.preventAutoHideAsync();
 
 function parseShareIntentRoute(url: string): string | null {
   // Match wellington:// deep links shared into the app
@@ -120,8 +131,24 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+    Pacifico_400Regular,
+  });
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
       <SafeAreaProvider>
         <AuthProvider>
           <LocationProvider>

@@ -6,7 +6,7 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { useFollow } from '../context/FollowContext';
 import { useAuth } from '../context/AuthContext';
 import { FollowButton } from '../components/FollowButton';
-import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { colors } from '../theme/colors';
 import { Pressable } from 'react-native';
 import { useQuery } from '../hooks/useQuery';
@@ -14,7 +14,6 @@ import { getOtherProfiles } from '../services/users';
 import { HapticPressable } from 'src/components/HapticPressable';
 
 export function DiscoverUsersScreen() {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
   const router = useRouter();
   const pathname = usePathname();
   const tabBase = '/' + pathname.split('/')[1];
@@ -93,7 +92,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 15,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fonts.semiBold,
     color: colors.text,
   },
   username: {

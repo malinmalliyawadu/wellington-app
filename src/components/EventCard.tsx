@@ -9,13 +9,7 @@ import { getProfilesByIds } from "../services/users";
 import { useQuery } from "../hooks/useQuery";
 import { colors } from "../theme/colors";
 import { HapticPressable } from "./HapticPressable";
-import {
-  PlusJakartaSans_500Medium,
-  PlusJakartaSans_600SemiBold,
-  PlusJakartaSans_700Bold,
-  PlusJakartaSans_800ExtraBold,
-  useFonts,
-} from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 
 interface EventCardProps {
   event: Event;
@@ -79,13 +73,6 @@ export function EventCard({
   hasBorder,
   compact,
 }: EventCardProps) {
-  const [fontsLoaded] = useFonts({
-    PlusJakartaSans_500Medium,
-    PlusJakartaSans_600SemiBold,
-    PlusJakartaSans_700Bold,
-    PlusJakartaSans_800ExtraBold,
-  });
-
   const categoryColor = CATEGORY_COLORS[event.category];
   const { followingIds } = useFollow();
   const attendeeIds = event.attendeeIds ?? [];
@@ -287,7 +274,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 11,
     fontWeight: "700",
-    fontFamily: "PlusJakartaSans_700Bold",
+    fontFamily: fonts.bold,
     letterSpacing: 0.8,
     textTransform: "uppercase",
   },
@@ -309,7 +296,7 @@ const styles = StyleSheet.create({
   dateMonth: {
     fontSize: 10,
     fontWeight: "700",
-    fontFamily: "PlusJakartaSans_700Bold",
+    fontFamily: fonts.bold,
     color: colors.primary,
     letterSpacing: 0.5,
   },
@@ -321,7 +308,7 @@ const styles = StyleSheet.create({
   },
   dateDay: {
     fontSize: 20,
-    fontFamily: "PlusJakartaSans_800ExtraBold",
+    fontFamily: fonts.extraBold,
     color: colors.text,
     lineHeight: 24,
   },
@@ -338,7 +325,7 @@ const styles = StyleSheet.create({
     left: 14,
     right: 14,
     fontSize: 20,
-    fontFamily: "PlusJakartaSans_700Bold",
+    fontFamily: fonts.bold,
     color: "#FFFFFF",
     textShadowColor: "rgba(0,0,0,0.5)",
     textShadowOffset: { width: 0, height: 1 },
@@ -385,7 +372,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
     fontWeight: "500",
-    fontFamily: "PlusJakartaSans_500Medium",
+    fontFamily: fonts.medium,
   },
   attendeeSection: {
     flexDirection: "row",
@@ -408,14 +395,14 @@ const styles = StyleSheet.create({
   attendeeCount: {
     fontSize: 12,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.textSecondary,
     marginLeft: 4,
   },
   attendeeCountCompact: {
     fontSize: 11,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.textSecondary,
     marginTop: 3,
   },

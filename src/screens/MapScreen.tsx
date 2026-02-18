@@ -42,7 +42,7 @@ import {
 import { Place, User } from "../types";
 import { useRouter } from "expo-router";
 import { colors } from "../theme/colors";
-import { PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 import * as Haptics from "expo-haptics";
@@ -107,7 +107,6 @@ const MapMarkerItem = React.memo(function MapMarkerItem({
 });
 
 export function MapScreen() {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold });
   const { location: userCoords, error: locationError } = useLocation();
   const [showExplorationOverlay, setShowExplorationOverlay] = useState(false);
   const [showNeighborhoods, setShowNeighborhoods] = useState(false);
@@ -665,7 +664,7 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
   },
   controlsWrapper: {
@@ -739,7 +738,7 @@ const styles = StyleSheet.create({
   filterBadgeText: {
     fontSize: 10,
     fontWeight: "700",
-    fontFamily: "PlusJakartaSans_700Bold",
+    fontFamily: fonts.bold,
     color: colors.primary,
   },
 });

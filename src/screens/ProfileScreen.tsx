@@ -21,12 +21,11 @@ import { getEventsByUserId } from "../services/events";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { PostsGrid } from "../components/PostsGrid";
 import { UpcomingEvents } from "../components/UpcomingEvents";
-import { PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { colors } from "../theme/colors";
 import { HapticPressable } from "src/components/HapticPressable";
 
 export function ProfileScreen() {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold });
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { profile } = useAuth();
@@ -248,7 +247,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 22,
-    fontFamily: "PlusJakartaSans_700Bold",
+    fontFamily: fonts.bold,
     color: colors.text,
   },
   username: {
@@ -276,7 +275,7 @@ const styles = StyleSheet.create({
   },
   statNumber: {
     fontSize: 24,
-    fontFamily: "PlusJakartaSans_800ExtraBold",
+    fontFamily: fonts.extraBold,
     color: colors.text,
   },
   statLabel: {
@@ -286,7 +285,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
     letterSpacing: 0.5,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
   },
   statDivider: {
     width: 1,

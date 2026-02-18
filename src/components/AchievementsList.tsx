@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SFSymbol } from "expo-symbols";
 import { useQuery } from "../hooks/useQuery";
 import { getAchievementProgress } from "../services/achievements";
-import { PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { AchievementCard } from "./AchievementCard";
 import { SFIcon } from "./SFIcon";
 import { colors } from "../theme/colors";
@@ -34,7 +34,6 @@ const TYPE_CONFIG: Record<
 };
 
 export function AchievementsList({ userId }: AchievementsListProps) {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold });
   const { data: achievements, loading, error } = useQuery(
     () => getAchievementProgress(userId),
     [userId]
@@ -219,12 +218,12 @@ const styles = StyleSheet.create({
   summaryLeft: {},
   summaryCount: {
     fontSize: 28,
-    fontFamily: "PlusJakartaSans_700Bold",
+    fontFamily: fonts.bold,
     color: colors.text,
   },
   summaryTotal: {
     fontSize: 28,
-    fontFamily: "PlusJakartaSans_700Bold",
+    fontFamily: fonts.bold,
     color: colors.gray300,
   },
   summaryLabel: {
@@ -235,7 +234,7 @@ const styles = StyleSheet.create({
   summaryRight: {},
   summaryPercent: {
     fontSize: 32,
-    fontFamily: "PlusJakartaSans_700Bold",
+    fontFamily: fonts.bold,
     color: colors.primary,
   },
   overallProgressContainer: {
@@ -271,7 +270,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.textSecondary,
     marginLeft: 8,
     flex: 1,
@@ -281,7 +280,7 @@ const styles = StyleSheet.create({
   sectionCount: {
     fontSize: 13,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.textMuted,
   },
   sectionCards: {},
@@ -293,7 +292,7 @@ const styles = StyleSheet.create({
   },
   emptyTitle: {
     fontSize: 20,
-    fontFamily: "PlusJakartaSans_700Bold",
+    fontFamily: fonts.bold,
     color: colors.text,
   },
   emptyText: {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Polygon, Marker } from 'react-native-maps';
-import { PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { NEIGHBORHOODS, getNeighborhoodCenter } from '../utils/neighborhoods';
 
 interface NeighborhoodOverlayProps {
@@ -27,7 +27,6 @@ function getNeighborhoodLabelColor(index: number, total: number): string {
 }
 
 export function NeighborhoodOverlay({ visible, onNeighborhoodPress }: NeighborhoodOverlayProps) {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_700Bold });
   if (!visible) return null;
 
   const total = NEIGHBORHOODS.length;
@@ -87,7 +86,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 11,
     fontWeight: '700',
-    fontFamily: 'PlusJakartaSans_700Bold',
+    fontFamily: fonts.bold,
     letterSpacing: 0.5,
   },
 });

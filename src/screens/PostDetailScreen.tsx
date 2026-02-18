@@ -35,7 +35,7 @@ import { getPostMediaItems } from "../utils/postMedia";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { MediaCarousel } from "../components/MediaCarousel";
 import { colors } from "../theme/colors";
-import { PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { sharePost } from "../utils/sharing";
 import { HapticPressable } from "src/components/HapticPressable";
 
@@ -52,7 +52,6 @@ function formatTimeAgo(dateString: string): string {
 }
 
 export function PostDetailScreen() {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold });
   const { postId } = useLocalSearchParams<{ postId: string }>();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
@@ -521,7 +520,7 @@ const styles = StyleSheet.create({
   },
   displayName: {
     fontSize: 15,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
   },
   username: {
@@ -559,7 +558,7 @@ const styles = StyleSheet.create({
   },
   overlaidDisplayName: {
     fontSize: 15,
-    fontFamily: "PlusJakartaSans_700Bold",
+    fontFamily: fonts.bold,
     color: "#FFFFFF",
     textShadowColor: "rgba(0,0,0,0.4)",
     textShadowOffset: { width: 0, height: 1 },
@@ -606,7 +605,7 @@ const styles = StyleSheet.create({
   likeCount: {
     fontSize: 14,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
     paddingHorizontal: 14,
     marginBottom: 6,
@@ -622,7 +621,7 @@ const styles = StyleSheet.create({
   },
   captionAuthor: {
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
   },
   // Location row
   locationRow: {
@@ -635,7 +634,7 @@ const styles = StyleSheet.create({
   },
   locationName: {
     fontSize: 14,
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
     flex: 1,
   },
@@ -665,7 +664,7 @@ const styles = StyleSheet.create({
   },
   commentAuthor: {
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.text,
   },
   commentTime: {
@@ -686,7 +685,7 @@ const styles = StyleSheet.create({
   commentActionText: {
     fontSize: 12,
     fontWeight: "600",
-    fontFamily: "PlusJakartaSans_600SemiBold",
+    fontFamily: fonts.semiBold,
     color: colors.textMuted,
   },
   inputBar: {

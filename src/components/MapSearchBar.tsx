@@ -11,7 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SFSymbol } from 'expo-symbols';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { fonts } from "../theme/fonts";
 import { Place, PlaceCategory } from '../types';
 import { SFIcon } from './SFIcon';
 import { colors } from '../theme/colors';
@@ -61,7 +61,6 @@ export function MapSearchBar({
   onCategoriesChange,
   onFollowingToggle,
 }: MapSearchBarProps) {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
   const [query, setQuery] = useState('');
   const inputRef = useRef<TextInput>(null);
   const insets = useSafeAreaInsets();
@@ -290,7 +289,7 @@ const styles = StyleSheet.create({
   },
   resultName: {
     fontSize: 14,
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fonts.semiBold,
     color: colors.text,
   },
   resultAddress: {
@@ -324,7 +323,7 @@ const styles = StyleSheet.create({
   chipLabel: {
     fontSize: 13,
     fontWeight: '600',
-    fontFamily: 'PlusJakartaSans_600SemiBold',
+    fontFamily: fonts.semiBold,
   },
   chipLabelActive: {
     color: '#FFFFFF',
