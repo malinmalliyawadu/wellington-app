@@ -22,7 +22,7 @@ import { fetchPlaceDetails } from "../services/googlePlaceDetails";
 import { formatNumber } from "../utils/formatNumber";
 import { sortPosts } from "../utils/postSorting";
 import { VideoThumbnail } from "../components/VideoThumbnail";
-import { EventCard, CATEGORY_COLORS } from "../components/EventCard";
+import { EventCard } from "../components/EventCard";
 import { HapticPressable } from "../components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { fonts } from "../theme/fonts";
@@ -276,7 +276,6 @@ export function PlacePostsSheetScreen() {
                   compact
                   hasBorder
                   onPress={() => {
-                    router.dismiss();
                     router.push(`/map/event/${event.id}`);
                   }}
                 />

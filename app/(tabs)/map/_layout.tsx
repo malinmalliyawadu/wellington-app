@@ -34,15 +34,10 @@ export default function MapLayout() {
       <Stack.Screen
         name="event/[eventId]"
         options={{
-          presentation: "formSheet",
-          headerShown: false,
-          contentStyle: { backgroundColor: "transparent" },
-          sheetAllowedDetents: [0.5, 1],
-          sheetGrabberVisible: true,
-          sheetCornerRadius: 32,
-          sheetInitialDetentIndex: 0,
-          sheetLargestUndimmedDetentIndex: 0,
-          sheetExpandsWhenScrolledToEdge: true,
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Map",
+          headerTransparent: true,
         }}
       />
       <Stack.Screen
