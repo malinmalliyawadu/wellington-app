@@ -16,11 +16,13 @@ import { useLike } from "../context/LikeContext";
 import { useQuery } from "../hooks/useQuery";
 import { getPlaceById } from "../services/places";
 import { getPostsByPlaceId } from "../services/posts";
+import { getUpcomingEvents } from "../services/events";
 import { getProfileById } from "../services/users";
 import { fetchPlaceDetails } from "../services/googlePlaceDetails";
 import { formatNumber } from "../utils/formatNumber";
 import { sortPosts } from "../utils/postSorting";
 import { VideoThumbnail } from "../components/VideoThumbnail";
+import { EventCard, CATEGORY_COLORS } from "../components/EventCard";
 import { HapticPressable } from "../components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { fonts } from "../theme/fonts";
@@ -56,12 +58,31 @@ export function PlacePostsSheetScreen() {
     loading: postsLoading,
     refetch: refetchPosts,
   } = useQuery(fetchPosts, ['posts', 'place', placeId]);
+  const {
+    data: allUpcomingEvents,
+    refetch: refetchEvents,
+  } = useQuery(getUpcomingEvents, "upcoming-events");
+
+  const placeEvents = useMemo(() => {
+    if (!allUpcomingEvents) return [];
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+    const day = now.getDay();
+    const daysUntilSunday = day === 0 ? 0 : 7 - day;
+    const endDate = new Date(now);
+    endDate.setDate(endDate.getDate() + daysUntilSunday);
+    const end = endDate.toISOString().split("T")[0];
+    return allUpcomingEvents.filter(
+      (e) => e.placeId === placeId && e.date >= today && e.date <= end
+    );
+  }, [allUpcomingEvents, placeId]);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
     useCallback(() => {
       refetchPosts();
-    }, [refetchPosts])
+      refetchEvents();
+    }, [refetchPosts, refetchEvents])
   );
 
   const [placeDetails, setPlaceDetails] = useState<{
@@ -238,6 +259,30 @@ export function PlacePostsSheetScreen() {
               </View>
             </View>
           </View>
+
+          {placeEvents.length > 0 && (
+            <View style={styles.eventsSection}>
+              <View style={styles.eventsSectionHeader}>
+                <SFIcon name="calendar" fallback="calendar" size={16} color={colors.category.venue} />
+                <Text style={styles.eventsSectionTitle}>
+                  Events this week
+                </Text>
+              </View>
+              {placeEvents.map((event) => (
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  place={place}
+                  compact
+                  hasBorder
+                  onPress={() => {
+                    router.dismiss();
+                    router.push(`/map/event/${event.id}`);
+                  }}
+                />
+              ))}
+            </View>
+          )}
 
           {sortedPosts.length > 0 ? (
             <View style={styles.postList}>
@@ -480,6 +525,23 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     fontFamily: fonts.semiBold,
     color: colors.primary,
+  },
+  eventsSection: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  eventsSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 4,
+  },
+  eventsSectionTitle: {
+    fontSize: 15,
+    fontWeight: "600",
+    fontFamily: fonts.semiBold,
+    color: colors.text,
   },
   postList: {
     paddingHorizontal: 8,

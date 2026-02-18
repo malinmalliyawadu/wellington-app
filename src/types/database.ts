@@ -364,6 +364,46 @@ export type Database = {
           },
         ];
       };
+      trails: {
+        Row: {
+          id: string;
+          name: string;
+          description: string;
+          elevation: string;
+          distance: string;
+          duration: string;
+          difficulty: TrailDifficulty;
+          highlights: string[];
+          trailhead: { latitude: number; longitude: number; label: string };
+          coordinates: { latitude: number; longitude: number }[];
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          description: string;
+          elevation: string;
+          distance: string;
+          duration: string;
+          difficulty: TrailDifficulty;
+          highlights: string[];
+          trailhead: Record<string, any>;
+          coordinates: Record<string, any>[];
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          description?: string;
+          elevation?: string;
+          distance?: string;
+          duration?: string;
+          difficulty?: TrailDifficulty;
+          highlights?: string[];
+          trailhead?: Record<string, any>;
+          coordinates?: Record<string, any>[];
+        };
+        Relationships: [];
+      };
       achievement_definitions: {
         Row: {
           id: string;
@@ -485,6 +525,7 @@ export type Database = {
       place_category: PlaceCategory;
       post_type: PostType;
       event_category: EventCategory;
+      trail_difficulty: TrailDifficulty;
       exploration_method: ExplorationMethod;
       notification_type: NotificationType;
     };
@@ -495,6 +536,7 @@ export type Database = {
 export type PlaceCategory = 'cafe' | 'restaurant' | 'bar' | 'attraction' | 'park' | 'venue';
 export type PostType = 'photo' | 'video' | 'text';
 export type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community' | 'quiz' | 'craft' | 'kids' | 'cultural';
+export type TrailDifficulty = 'easy' | 'moderate' | 'hard';
 export type ExplorationMethod = 'viewed' | 'posted';
 export type AchievementType = 'category' | 'milestone' | 'neighborhood' | 'social';
 export type NotificationType = 'like' | 'comment' | 'follow';

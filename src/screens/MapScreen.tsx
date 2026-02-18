@@ -13,7 +13,7 @@ import {
   ActivityIndicator,
   Animated,
 } from "react-native";
-import MapView, { Marker, Region } from "react-native-maps";
+import MapView, { Marker, Polyline, Region } from "react-native-maps";
 import { SFIcon } from "../components/SFIcon";
 import { useLocation } from "../context/LocationContext";
 import { useNavigation, useFocusEffect } from "expo-router";
@@ -21,7 +21,7 @@ import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
-import { PopularityMarker } from "../components/PopularityMarker";
+import { PopularityMarker, MarkerEvent } from "../components/PopularityMarker";
 import { FogOfWarOverlay } from "../components/FogOfWarOverlay";
 import { NeighborhoodOverlay } from "../components/NeighborhoodOverlay";
 import { useFollow } from "../context/FollowContext";
@@ -33,6 +33,8 @@ import { useQuery } from "../hooks/useQuery";
 import { getPlaces } from "../services/places";
 import { getPosts } from "../services/posts";
 import { getProfiles } from "../services/users";
+import { getTrails } from "../services/trails";
+import { getUpcomingEvents } from "../services/events";
 import {
   computePlacePopularity,
   getMarkerSizeRange,
@@ -80,6 +82,7 @@ interface MapMarkerItemProps {
   isFollowed: boolean;
   posterAvatars: string[];
   showLabel: boolean;
+  events: MarkerEvent[];
   scale: Animated.Value;
   onPress: (placeId: string) => void;
 }
@@ -91,6 +94,7 @@ const MapMarkerItem = React.memo(function MapMarkerItem({
   isFollowed,
   posterAvatars,
   showLabel,
+  events,
   scale,
   onPress,
 }: MapMarkerItemProps) {
@@ -117,6 +121,7 @@ const MapMarkerItem = React.memo(function MapMarkerItem({
           placeName={place.name}
           posterAvatars={posterAvatars}
           showLabel={showLabel}
+          events={events}
         />
       </Animated.View>
     </Marker.Animated>
@@ -127,12 +132,13 @@ export function MapScreen() {
   const { location: userCoords, error: locationError } = useLocation();
   const [showExplorationOverlay, setShowExplorationOverlay] = useState(false);
   const [showNeighborhoods, setShowNeighborhoods] = useState(false);
+  const [activeTrailId, setActiveTrailId] = useState<string | null>(null);
   const mapRef = useRef<MapView>(null);
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { followingIds } = useFollow();
-  const { selectedCategories, showFollowingOnly } = useMapFilters();
+  const { selectedCategories, showFollowingOnly, showTrails, showEvents } = useMapFilters();
   const { markExplored, isExplored } = useExploration();
   const { showToast } = useToast();
 
@@ -174,13 +180,13 @@ export function MapScreen() {
   const openPlaceSheet = useCallback(
     (placeId: string) => {
       const path = `/map/place-posts/${placeId}` as const;
-      if (router.canDismiss()) {
-        router.setParams({ placeId });
-      } else {
-        router.push(path);
+      if (activeTrailId) {
+        setActiveTrailId(null);
+        router.dismiss();
       }
+      router.push(path);
     },
-    [router]
+    [router, activeTrailId]
   );
 
   const handleMarkerPress = useCallback(
@@ -200,26 +206,49 @@ export function MapScreen() {
     data: places,
     loading: placesLoading,
     refetch: refetchPlaces,
-  } = useQuery(getPlaces, 'places');
+  } = useQuery(getPlaces, "places");
   const allPlaces = places ?? [];
   const {
     data: allPosts,
     loading: postsLoading,
     refetch: refetchPosts,
-  } = useQuery(getPosts, 'posts');
+  } = useQuery(getPosts, "posts");
   const {
     data: allUsers,
     loading: usersLoading,
     refetch: refetchUsers,
-  } = useQuery(getProfiles, 'profiles');
+  } = useQuery(getProfiles, "profiles");
+  const {
+    data: trails,
+    refetch: refetchTrails,
+  } = useQuery(getTrails, "trails");
+  const {
+    data: upcomingEvents,
+    refetch: refetchEvents,
+  } = useQuery(getUpcomingEvents, "upcoming-events");
 
-  // Refetch data when screen comes into focus (e.g., after creating a new post)
+  const todayEvents = useMemo(() => {
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+    const day = now.getDay(); // 0=Sun, 6=Sat
+    // Include through this Sunday: days until end of weekend
+    const daysUntilSunday = day === 0 ? 0 : 7 - day;
+    const endDate = new Date(now);
+    endDate.setDate(endDate.getDate() + daysUntilSunday);
+    const end = endDate.toISOString().split("T")[0];
+    return (upcomingEvents ?? []).filter((e) => e.date >= today && e.date <= end);
+  }, [upcomingEvents]);
+
+  // Refetch data and clear active trail when screen comes into focus
   useFocusEffect(
     useCallback(() => {
       refetchPosts();
       refetchPlaces();
       refetchUsers();
-    }, [refetchPosts, refetchPlaces, refetchUsers])
+      refetchTrails();
+      refetchEvents();
+      setActiveTrailId(null);
+    }, [refetchPosts, refetchPlaces, refetchUsers, refetchTrails, refetchEvents])
   );
 
   const isDataLoaded = !placesLoading && !postsLoading && !usersLoading;
@@ -233,15 +262,27 @@ export function MapScreen() {
     return map;
   }, [allUsers]);
 
+  const placeEventsMap = useMemo(() => {
+    if (!showEvents) return new Map<string, MarkerEvent[]>();
+    const map = new Map<string, MarkerEvent[]>();
+    for (const event of todayEvents) {
+      const list = map.get(event.placeId) ?? [];
+      const attendeeAvatars = (event.attendeeIds ?? [])
+        .slice(0, 8)
+        .map((uid) => userMap.get(uid)?.avatarUrl)
+        .filter((url): url is string => !!url);
+      list.push({ date: event.date, attendeeAvatars });
+      map.set(event.placeId, list);
+    }
+    return map;
+  }, [todayEvents, showEvents, userMap]);
+
   const popularityMap = useMemo(
     () => computePlacePopularity(allPosts ?? []),
     [allPosts]
   );
 
-  const followingSet = useMemo(
-    () => new Set(followingIds),
-    [followingIds]
-  );
+  const followingSet = useMemo(() => new Set(followingIds), [followingIds]);
 
   const filteredPlaces = useMemo(() => {
     return allPlaces.filter((place) => {
@@ -448,7 +489,7 @@ export function MapScreen() {
   };
 
   const activeFilterCount =
-    (selectedCategories.length > 0 ? 1 : 0) + (showFollowingOnly ? 1 : 0);
+    (selectedCategories.length > 0 ? 1 : 0) + (showFollowingOnly ? 1 : 0) + (!showTrails ? 1 : 0) + (!showEvents ? 1 : 0);
 
   return (
     <View style={styles.container} onLayout={handleMapLayout}>
@@ -478,6 +519,68 @@ export function MapScreen() {
           places={filteredPlaces}
           visible={showExplorationOverlay}
         />
+        {showTrails && (trails ?? []).map((trail) => {
+          const isDimmed = activeTrailId !== null && activeTrailId !== trail.id;
+          return (
+            <React.Fragment key={trail.id}>
+              <Polyline
+                coordinates={trail.coordinates}
+                strokeColor={isDimmed ? "rgba(45, 106, 79, 0.08)" : "rgba(45, 106, 79, 0.3)"}
+                strokeWidth={8}
+                lineCap="round"
+                lineJoin="round"
+                tappable={false}
+              />
+              <Polyline
+                coordinates={trail.coordinates}
+                strokeColor={isDimmed ? "rgba(45, 106, 79, 0.15)" : colors.category.park}
+                strokeWidth={3}
+                lineDashPattern={[8, 5]}
+                lineCap="round"
+                lineJoin="round"
+                tappable={false}
+              />
+              <Marker
+                coordinate={trail.coordinates[0]}
+                anchor={{ x: 0.5, y: 0 }}
+                opacity={isDimmed ? 0.3 : 1}
+                tracksViewChanges={false}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setActiveTrailId(trail.id);
+                  if (router.canDismiss()) router.dismiss();
+                  router.push(`/map/trail/${trail.id}`);
+                }}
+              >
+                <View style={styles.trailMarker}>
+                  <View style={styles.trailMarkerPin}>
+                    <SFIcon name="figure.hiking" fallback="walk" size={16} color="#FFFFFF" />
+                  </View>
+                  <View style={styles.trailMarkerLabel}>
+                    <Text style={styles.trailMarkerName}>{trail.name}</Text>
+                    <Text style={styles.trailMarkerInfo}>{trail.elevation} · {trail.distance}</Text>
+                  </View>
+                </View>
+              </Marker>
+              <Marker
+                coordinate={trail.coordinates[trail.coordinates.length - 1]}
+                anchor={{ x: 0.5, y: 0.5 }}
+                opacity={isDimmed ? 0.3 : 1}
+                tracksViewChanges={false}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setActiveTrailId(trail.id);
+                  if (router.canDismiss()) router.dismiss();
+                  router.push(`/map/trail/${trail.id}`);
+                }}
+              >
+                <View style={styles.trailheadDot}>
+                  <View style={styles.trailheadDotInner} />
+                </View>
+              </Marker>
+            </React.Fragment>
+          );
+        })}
         {!isInitialLoad &&
           filteredPlaces.map((place) => {
             const data = baseMarkerDataMap.get(place.id);
@@ -491,6 +594,7 @@ export function MapScreen() {
                 isFollowed={data.isFollowed}
                 posterAvatars={data.posterAvatars}
                 showLabel={annotatedPlaceIds.has(place.id)}
+                events={placeEventsMap.get(place.id) ?? []}
                 scale={getMarkerScale(place.id)}
                 onPress={handleMarkerPress}
               />
@@ -739,6 +843,67 @@ const styles = StyleSheet.create({
   controlDivider: {
     height: 1,
     backgroundColor: "rgba(0, 0, 0, 0.08)",
+  },
+  trailMarker: {
+    alignItems: "center",
+    paddingBottom: 8,
+  },
+  trailMarkerPin: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.category.park,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+    marginBottom: 4,
+  },
+  trailMarkerLabel: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  trailMarkerName: {
+    fontSize: 12,
+    fontWeight: "700",
+    fontFamily: fonts.bold,
+    color: colors.category.park,
+  },
+  trailMarkerInfo: {
+    fontSize: 10,
+    fontWeight: "500",
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
+  },
+  trailheadDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  trailheadDotInner: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.category.park,
   },
   filterBadge: {
     position: "absolute",

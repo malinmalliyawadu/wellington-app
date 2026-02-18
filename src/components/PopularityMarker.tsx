@@ -21,6 +21,11 @@ const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof type
   venue: { sf: "music.note.list", fallback: "musical-notes" },
 };
 
+export interface MarkerEvent {
+  date: string;
+  attendeeAvatars: string[];
+}
+
 interface PopularityMarkerProps {
   size: number;
   category: PlaceCategory;
@@ -29,6 +34,7 @@ interface PopularityMarkerProps {
   placeName?: string;
   posterAvatars?: string[];
   showLabel?: boolean;
+  events?: MarkerEvent[];
 }
 
 function PopularityMarkerInner({
@@ -38,7 +44,10 @@ function PopularityMarkerInner({
   placeName,
   posterAvatars = [],
   showLabel = false,
+  events = [],
 }: PopularityMarkerProps) {
+  const hasEvents = events.length > 0;
+  const shouldShowLabel = showLabel || hasEvents;
   const color = colors.category[category];
   const iconSize = Math.round(size * 0.45);
   const iconName = CATEGORY_ICONS[category];
@@ -223,48 +232,77 @@ function PopularityMarkerInner({
     );
   };
 
+  const renderLabelContent = () => (
+    <>
+      {hasEvents ? (
+        <View style={styles.eventRow}>
+          <View style={styles.eventDateBadge}>
+            <Text style={styles.eventDateMonth}>
+              {new Date(events[0].date).toLocaleDateString("en-NZ", { month: "short" }).toUpperCase()}
+            </Text>
+            <Text style={styles.eventDateDay}>
+              {new Date(events[0].date).getDate()}
+            </Text>
+            {events.length > 1 && (
+              <Text style={styles.eventMore}>+{events.length - 1}</Text>
+            )}
+          </View>
+          <View style={styles.eventRight}>
+            {placeName && (
+              <Text style={styles.labelName} numberOfLines={1}>
+                {placeName}
+              </Text>
+            )}
+            {events[0].attendeeAvatars.length > 0 && (
+              <View style={styles.avatarStack}>
+                {events[0].attendeeAvatars.slice(0, 8).map((avatarUrl, i) => (
+                  <Image
+                    key={`${avatarUrl}-${i}`}
+                    source={{ uri: avatarUrl }}
+                    style={[styles.avatar, { left: i * 10 }]}
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+      ) : (
+        <>
+          {placeName && (
+            <Text style={styles.labelName} numberOfLines={1}>
+              {placeName}
+            </Text>
+          )}
+          {posterAvatars.length > 1 && (
+            <View style={styles.avatarRow}>
+              <View style={styles.avatarStack}>
+                {posterAvatars.slice(0, 8).map((avatarUrl, i) => (
+                  <Image
+                    key={`${avatarUrl}-${i}`}
+                    source={{ uri: avatarUrl }}
+                    style={[styles.avatar, { left: i * 10 }]}
+                  />
+                ))}
+              </View>
+            </View>
+          )}
+        </>
+      )}
+    </>
+  );
+
   return (
     <View style={styles.container}>
       {renderMarker()}
-      {showLabel && placeName && (
+      {shouldShowLabel && (
         <View style={styles.labelWrapper}>
           {glassEnabled ? (
             <GlassView style={styles.glassLabelContainer}>
-              <Text style={styles.labelName} numberOfLines={1}>
-                {placeName}
-              </Text>
-              {posterAvatars.length > 1 && (
-                <View style={styles.avatarRow}>
-                  <View style={styles.avatarStack}>
-                    {posterAvatars.slice(0, 8).map((avatarUrl, i) => (
-                      <Image
-                        key={`${avatarUrl}-${i}`}
-                        source={{ uri: avatarUrl }}
-                        style={[styles.avatar, { left: i * 10 }]}
-                      />
-                    ))}
-                  </View>
-                </View>
-              )}
+              {renderLabelContent()}
             </GlassView>
           ) : (
             <BlurView intensity={15} tint="light" style={styles.labelContainer}>
-              <Text style={styles.labelName} numberOfLines={1}>
-                {placeName}
-              </Text>
-              {posterAvatars.length > 1 && (
-                <View style={styles.avatarRow}>
-                  <View style={styles.avatarStack}>
-                    {posterAvatars.slice(0, 8).map((avatarUrl, i) => (
-                      <Image
-                        key={`${avatarUrl}-${i}`}
-                        source={{ uri: avatarUrl }}
-                        style={[styles.avatar, { left: i * 10 }]}
-                      />
-                    ))}
-                  </View>
-                </View>
-              )}
+              {renderLabelContent()}
             </BlurView>
           )}
         </View>
@@ -290,12 +328,45 @@ export const PopularityMarker = React.memo(
     prev.isFollowed === next.isFollowed &&
     prev.placeName === next.placeName &&
     prev.showLabel === next.showLabel &&
+    (prev.events?.length ?? 0) === (next.events?.length ?? 0) &&
+    (prev.events ?? []).every((e, i) => e.date === next.events?.[i]?.date && e.attendeeAvatars.length === next.events?.[i]?.attendeeAvatars.length) &&
     arraysEqual(prev.posterAvatars ?? [], next.posterAvatars ?? [])
 );
 
 const styles = StyleSheet.create({
   container: {
     alignItems: "center",
+  },
+  eventRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  eventRight: {
+    flexShrink: 1,
+  },
+  eventDateBadge: {
+    alignItems: "center",
+    minWidth: 22,
+  },
+  eventDateMonth: {
+    fontSize: 7,
+    fontWeight: "700",
+    fontFamily: fonts.bold,
+    color: colors.category.venue,
+    letterSpacing: 0.3,
+  },
+  eventDateDay: {
+    fontSize: 12,
+    fontFamily: fonts.extraBold,
+    color: colors.text,
+    lineHeight: 13,
+  },
+  eventMore: {
+    fontSize: 9,
+    fontWeight: "600",
+    fontFamily: fonts.semiBold,
+    color: colors.textMuted,
   },
   followedGlassMarker: {
     alignItems: "center",

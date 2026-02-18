@@ -3,3 +3,4 @@ export * from './Place';
 export * from './Post';
 export * from './Event';
 export * from './Exploration';
+export * from './Trail';

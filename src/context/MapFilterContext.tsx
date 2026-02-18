@@ -7,6 +7,10 @@ interface MapFilterContextType {
   clearCategories: () => void;
   showFollowingOnly: boolean;
   setShowFollowingOnly: (show: boolean) => void;
+  showTrails: boolean;
+  setShowTrails: (show: boolean) => void;
+  showEvents: boolean;
+  setShowEvents: (show: boolean) => void;
 }
 
 const MapFilterContext = createContext<MapFilterContextType | null>(null);
@@ -14,6 +18,8 @@ const MapFilterContext = createContext<MapFilterContextType | null>(null);
 export function MapFilterProvider({ children }: { children: React.ReactNode }) {
   const [selectedCategories, setSelectedCategories] = useState<PlaceCategory[]>([]);
   const [showFollowingOnly, setShowFollowingOnly] = useState(false);
+  const [showTrails, setShowTrails] = useState(true);
+  const [showEvents, setShowEvents] = useState(true);
 
   const toggleCategory = (category: PlaceCategory) => {
     setSelectedCategories((prev) =>
@@ -31,6 +37,10 @@ export function MapFilterProvider({ children }: { children: React.ReactNode }) {
         clearCategories,
         showFollowingOnly,
         setShowFollowingOnly,
+        showTrails,
+        setShowTrails,
+        showEvents,
+        setShowEvents,
       }}
     >
       {children}

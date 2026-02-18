@@ -64,37 +64,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         onboardingCompleted: data.onboarding_completed ?? false,
       });
     } else if (error?.code === 'PGRST116') {
-      // No profile row found — create one from auth user metadata
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const meta = user.user_metadata ?? {};
-        const username = meta.username || 'user_' + userId.substring(0, 8);
-        const displayName = meta.display_name || meta.full_name || meta.name || 'New User';
-        const avatarUrl = meta.avatar_url || meta.picture || '';
-
-        const { data: newProfile, error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: userId,
-            username,
-            display_name: displayName,
-            avatar_url: avatarUrl,
-            onboarding_completed: false,
-          })
-          .select()
-          .single();
-
-        if (newProfile && !insertError) {
-          setProfile({
-            id: newProfile.id,
-            username: newProfile.username,
-            displayName: newProfile.display_name,
-            avatarUrl: newProfile.avatar_url,
-            bio: newProfile.bio ?? undefined,
-            onboardingCompleted: newProfile.onboarding_completed ?? false,
-          });
-        }
-      }
+      // No profile row found (e.g. DB was reset) — sign out so user hits login
+      setProfile(null);
+      await supabase.auth.signOut();
+      return;
     }
     setLoading(false);
   }

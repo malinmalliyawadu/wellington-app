@@ -46,13 +46,19 @@ export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
     clearCategories,
     showFollowingOnly,
     setShowFollowingOnly,
+    showTrails,
+    setShowTrails,
+    showEvents,
+    setShowEvents,
   } = useMapFilters();
 
-  const hasAnyFilter = selectedCategories.length > 0 || showFollowingOnly;
+  const hasAnyFilter = selectedCategories.length > 0 || showFollowingOnly || !showTrails || !showEvents;
 
   const clearAll = () => {
     clearCategories();
     setShowFollowingOnly(false);
+    setShowTrails(true);
+    setShowEvents(true);
   };
 
   return (
@@ -106,6 +112,36 @@ export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
             Following only
           </Text>
           {showFollowingOnly && (
+            <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />
+          )}
+        </HapticPressable>
+
+        {/* Events Section */}
+        <Text style={styles.sectionTitle}>Events</Text>
+        <HapticPressable
+          style={[styles.option, showEvents && styles.optionActive]}
+          onPress={() => setShowEvents(!showEvents)}
+        >
+          <SFIcon name="calendar" fallback="calendar" size={20} color={showEvents ? colors.category.venue : colors.text} />
+          <Text style={[styles.optionLabel, showEvents && styles.optionLabelActive]}>
+            Show this week's events
+          </Text>
+          {showEvents && (
+            <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />
+          )}
+        </HapticPressable>
+
+        {/* Trails Section */}
+        <Text style={styles.sectionTitle}>Trails</Text>
+        <HapticPressable
+          style={[styles.option, showTrails && styles.optionActive]}
+          onPress={() => setShowTrails(!showTrails)}
+        >
+          <SFIcon name="figure.hiking" fallback="walk" size={20} color={showTrails ? colors.category.park : colors.text} />
+          <Text style={[styles.optionLabel, showTrails && styles.optionLabelActive]}>
+            Show hiking trails
+          </Text>
+          {showTrails && (
             <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />
           )}
         </HapticPressable>
