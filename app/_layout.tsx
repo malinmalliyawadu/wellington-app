@@ -40,7 +40,7 @@ function parseShareIntentRoute(url: string): string | null {
 }
 
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
+  const { session, profile, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntent();
@@ -49,13 +49,19 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (loading) return;
 
     const onLoginPage = segments[0] === 'login';
+    const onOnboardingPage = segments[0] === 'onboarding';
 
     if (!session && !onLoginPage) {
       router.replace('/login');
-    } else if (session && onLoginPage) {
+    } else if (session && !profile?.onboardingCompleted && !onOnboardingPage && !onLoginPage) {
+      router.replace('/onboarding');
+    } else if (session && profile?.onboardingCompleted && (onLoginPage || onOnboardingPage)) {
       router.replace('/(tabs)/map');
+    } else if (session && onLoginPage) {
+      // Session exists, on login page, but onboarding status not yet loaded — go to onboarding
+      router.replace('/onboarding');
     }
-  }, [session, loading, segments]);
+  }, [session, profile?.onboardingCompleted, loading, segments]);
 
   // Handle content shared into the app via the share extension
   useEffect(() => {

@@ -56,6 +56,23 @@ const WELLINGTON_REGION = {
   longitudeDelta: 0.006,
 };
 
+// Bounding box for greater Wellington area
+const WELLINGTON_BOUNDS = {
+  north: -41.05,
+  south: -41.38,
+  west: 174.6,
+  east: 174.95,
+};
+
+function isInWellington(lat: number, lng: number): boolean {
+  return (
+    lat >= WELLINGTON_BOUNDS.south &&
+    lat <= WELLINGTON_BOUNDS.north &&
+    lng >= WELLINGTON_BOUNDS.west &&
+    lng <= WELLINGTON_BOUNDS.east
+  );
+}
+
 interface MapMarkerItemProps {
   place: Place;
   size: number;
@@ -352,6 +369,7 @@ export function MapScreen() {
 
   useEffect(() => {
     if (!userCoords) return;
+    if (!isInWellington(userCoords.latitude, userCoords.longitude)) return;
     mapRef.current?.animateToRegion({
       latitude: userCoords.latitude,
       longitude: userCoords.longitude,

@@ -8,6 +8,7 @@ export type Database = {
           display_name: string;
           avatar_url: string;
           bio: string | null;
+          onboarding_completed: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -17,6 +18,7 @@ export type Database = {
           display_name: string;
           avatar_url?: string;
           bio?: string | null;
+          onboarding_completed?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -26,6 +28,7 @@ export type Database = {
           display_name?: string;
           avatar_url?: string;
           bio?: string | null;
+          onboarding_completed?: boolean;
           updated_at?: string;
         };
         Relationships: [];

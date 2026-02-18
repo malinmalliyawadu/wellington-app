@@ -14,6 +14,7 @@ interface AuthContextType {
     avatarUrl?: string;
     bio?: string;
   }) => Promise<void>;
+  completeOnboarding: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         displayName: data.display_name,
         avatarUrl: data.avatar_url,
         bio: data.bio ?? undefined,
+        onboardingCompleted: data.onboarding_completed ?? false,
       });
     } else if (error?.code === 'PGRST116') {
       // No profile row found — create one from auth user metadata
@@ -77,6 +79,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             username,
             display_name: displayName,
             avatar_url: avatarUrl,
+            onboarding_completed: false,
           })
           .select()
           .single();
@@ -88,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             displayName: newProfile.display_name,
             avatarUrl: newProfile.avatar_url,
             bio: newProfile.bio ?? undefined,
+            onboardingCompleted: newProfile.onboarding_completed ?? false,
           });
         }
       }
@@ -111,8 +115,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchProfile(profile.id);
   }
 
+  async function completeOnboarding() {
+    if (!profile) {
+      throw new Error('No profile to complete onboarding for');
+    }
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ onboarding_completed: true })
+      .eq('id', profile.id);
+
+    if (error) throw error;
+
+    setProfile((prev) =>
+      prev ? { ...prev, onboardingCompleted: true } : prev
+    );
+  }
+
   return (
-    <AuthContext.Provider value={{ session, profile, loading, updateProfile }}>
+    <AuthContext.Provider value={{ session, profile, loading, updateProfile, completeOnboarding }}>
       {children}
     </AuthContext.Provider>
   );
