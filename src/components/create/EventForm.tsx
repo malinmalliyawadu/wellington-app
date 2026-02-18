@@ -13,6 +13,10 @@ const EVENT_CATEGORIES: { type: EventCategory; label: string }[] = [
   { type: "food", label: "Food" },
   { type: "market", label: "Market" },
   { type: "community", label: "Community" },
+  { type: "quiz", label: "Quiz" },
+  { type: "craft", label: "Craft" },
+  { type: "kids", label: "Kids" },
+  { type: "cultural", label: "Cultural" },
 ];
 
 interface EventFormProps {
@@ -30,6 +34,8 @@ interface EventFormProps {
   onEndTimeChange: (date: Date) => void;
   description: string;
   onDescriptionChange: (text: string) => void;
+  price: string;
+  onPriceChange: (text: string) => void;
 }
 
 export function EventForm({
@@ -47,6 +53,8 @@ export function EventForm({
   onEndTimeChange,
   description,
   onDescriptionChange,
+  price,
+  onPriceChange,
 }: EventFormProps) {
   return (
     <>
@@ -81,29 +89,8 @@ export function EventForm({
       />
 
       {/* Category pills */}
-      <View style={styles.typePillRow}>
-        {EVENT_CATEGORIES.slice(0, 3).map((item) => (
-          <HapticPressable
-            key={item.type}
-            style={[
-              styles.typePill,
-              category === item.type && styles.typePillActive,
-            ]}
-            onPress={() => onCategoryChange(item.type)}
-          >
-            <Text
-              style={[
-                styles.typePillLabel,
-                category === item.type && styles.typePillLabelActive,
-              ]}
-            >
-              {item.label}
-            </Text>
-          </HapticPressable>
-        ))}
-      </View>
-      <View style={[styles.typePillRow, { marginTop: 8 }]}>
-        {EVENT_CATEGORIES.slice(3).map((item) => (
+      <View style={styles.typePillWrap}>
+        {EVENT_CATEGORIES.map((item) => (
           <HapticPressable
             key={item.type}
             style={[
@@ -166,6 +153,17 @@ export function EventForm({
         style={styles.timePicker}
       />
 
+      {/* Price */}
+      <Text style={styles.label}>Price (optional)</Text>
+      <TextInput
+        style={styles.priceInput}
+        placeholder="Leave empty for free"
+        placeholderTextColor={colors.gray400}
+        value={price}
+        onChangeText={onPriceChange}
+        keyboardType="decimal-pad"
+      />
+
       {/* Description */}
       <TextInput
         style={styles.eventDescriptionInput}
@@ -222,8 +220,9 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 12,
   },
-  typePillRow: {
+  typePillWrap: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 8,
     marginTop: 20,
   },
@@ -259,6 +258,15 @@ const styles = StyleSheet.create({
   timePicker: {
     alignSelf: "flex-start",
     marginLeft: -10,
+  },
+  priceInput: {
+    fontSize: 15,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans_500Medium",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    backgroundColor: colors.gray100,
   },
   eventDescriptionInput: {
     fontSize: 15,

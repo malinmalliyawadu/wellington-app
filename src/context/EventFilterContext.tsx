@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 
-type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community';
+type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community' | 'quiz' | 'craft' | 'kids' | 'cultural';
 type DateRange = 'today' | 'tomorrow' | 'weekend' | 'month';
 
 interface EventFilterContextType {
@@ -11,6 +11,8 @@ interface EventFilterContextType {
   clearCategories: () => void;
   showFollowingOnly: boolean;
   setShowFollowingOnly: (show: boolean) => void;
+  showFreeOnly: boolean;
+  setShowFreeOnly: (show: boolean) => void;
 }
 
 const EventFilterContext = createContext<EventFilterContextType | null>(null);
@@ -19,6 +21,7 @@ export function EventFilterProvider({ children }: { children: React.ReactNode })
   const [selectedDateRange, setSelectedDateRange] = useState<DateRange | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<EventCategory[]>([]);
   const [showFollowingOnly, setShowFollowingOnly] = useState(false);
+  const [showFreeOnly, setShowFreeOnly] = useState(false);
 
   const toggleCategory = (category: EventCategory) => {
     setSelectedCategories((prev) =>
@@ -38,6 +41,8 @@ export function EventFilterProvider({ children }: { children: React.ReactNode })
         clearCategories,
         showFollowingOnly,
         setShowFollowingOnly,
+        showFreeOnly,
+        setShowFreeOnly,
       }}
     >
       {children}

@@ -74,6 +74,7 @@ export function CreatePostSheetScreen() {
   const [eventStartTime, setEventStartTime] = useState<Date | null>(null);
   const [eventEndTime, setEventEndTime] = useState<Date | null>(null);
   const [eventImageUri, setEventImageUri] = useState<string | null>(null);
+  const [eventPrice, setEventPrice] = useState("");
 
   // Shared state
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
@@ -372,6 +373,7 @@ export function CreatePostSheetScreen() {
           imageUrl,
           category: eventCategory,
           creatorId: profile.id,
+          price: eventPrice.trim() ? parseFloat(eventPrice) || null : null,
         });
 
         Alert.alert(
@@ -387,6 +389,7 @@ export function CreatePostSheetScreen() {
                 setEventStartTime(null);
                 setEventEndTime(null);
                 setEventImageUri(null);
+                setEventPrice("");
                 setSelectedPlace(null);
                 router.dismiss();
               },
@@ -532,6 +535,8 @@ export function CreatePostSheetScreen() {
                 onEndTimeChange={setEventEndTime}
                 description={eventDescription}
                 onDescriptionChange={setEventDescription}
+                price={eventPrice}
+                onPriceChange={setEventPrice}
               />
             )}
           </View>

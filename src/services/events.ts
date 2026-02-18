@@ -149,6 +149,7 @@ export async function createEvent(params: {
   imageUrl?: string;
   category: Event['category'];
   creatorId: string;
+  price?: number | null;
 }): Promise<Event> {
   const { data, error } = await supabase
     .from('events')
@@ -161,6 +162,7 @@ export async function createEvent(params: {
       end_time: params.endTime ?? null,
       image_url: params.imageUrl ?? null,
       category: params.category,
+      price: params.price ?? null,
     })
     .select()
     .single();
@@ -186,6 +188,7 @@ function mapEvent(row: {
   image_url: string | null;
   category: string;
   ticket_url: string | null;
+  price: number | null;
   created_at: string;
 }): Event {
   return {
@@ -199,5 +202,6 @@ function mapEvent(row: {
     imageUrl: row.image_url ?? undefined,
     category: row.category as Event['category'],
     ticketUrl: row.ticket_url ?? undefined,
+    price: row.price,
   };
 }

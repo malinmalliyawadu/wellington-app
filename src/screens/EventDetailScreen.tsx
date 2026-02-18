@@ -40,6 +40,10 @@ const CATEGORY_COLORS: Record<Event["category"], string> = {
   food: "#E85D04",
   market: "#2D6A4F",
   community: "#0077B6",
+  quiz: "#6D28D9",
+  craft: "#D97706",
+  kids: "#059669",
+  cultural: "#B91C1C",
 };
 
 const CATEGORY_LABELS: Record<Event["category"], string> = {
@@ -49,6 +53,10 @@ const CATEGORY_LABELS: Record<Event["category"], string> = {
   food: "Food & Drink",
   market: "Market",
   community: "Community",
+  quiz: "Quiz",
+  craft: "Craft",
+  kids: "Kids",
+  cultural: "Cultural",
 };
 
 function formatDate(dateString: string): string {
@@ -275,6 +283,19 @@ export function EventDetailScreen() {
                   </View>
                 </View>
               )}
+              <View style={styles.infoRow}>
+                <SFIcon
+                  name="dollarsign.circle"
+                  fallback="cash-outline"
+                  size={18}
+                  color={colors.textSecondary}
+                />
+                <Text style={styles.infoText}>
+                  {event.price != null && event.price > 0
+                    ? `$${event.price.toFixed(2)}`
+                    : "Free"}
+                </Text>
+              </View>
             </View>
 
             <View style={styles.descriptionSection}>

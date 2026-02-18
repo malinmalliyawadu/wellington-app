@@ -12,7 +12,7 @@ import { SFIcon } from './SFIcon';
 import { fonts } from "../theme/fonts";
 
 type DateRange = 'today' | 'tomorrow' | 'weekend' | 'month';
-type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community';
+type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community' | 'quiz' | 'craft' | 'kids' | 'cultural';
 
 const DATE_RANGES: { key: DateRange; label: string; icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap } }[] = [
   { key: 'today', label: 'Today', icon: { sf: 'calendar.badge.clock', fallback: 'today' } },
@@ -21,7 +21,7 @@ const DATE_RANGES: { key: DateRange; label: string; icon: { sf: SFSymbol; fallba
   { key: 'month', label: 'This Month', icon: { sf: 'calendar', fallback: 'calendar' } },
 ];
 
-const ALL_CATEGORIES: EventCategory[] = ['music', 'comedy', 'art', 'food', 'market', 'community'];
+const ALL_CATEGORIES: EventCategory[] = ['music', 'comedy', 'art', 'food', 'market', 'community', 'quiz', 'craft', 'kids', 'cultural'];
 
 const CATEGORY_LABELS: Record<EventCategory, string> = {
   music: 'Music',
@@ -30,6 +30,10 @@ const CATEGORY_LABELS: Record<EventCategory, string> = {
   food: 'Food & Drink',
   market: 'Market',
   community: 'Community',
+  quiz: 'Quiz',
+  craft: 'Craft',
+  kids: 'Kids',
+  cultural: 'Cultural',
 };
 
 const CATEGORY_ICONS: Record<EventCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
@@ -39,6 +43,10 @@ const CATEGORY_ICONS: Record<EventCategory, { sf: SFSymbol; fallback: keyof type
   food: { sf: 'fork.knife', fallback: 'restaurant' },
   market: { sf: 'cart.fill', fallback: 'cart' },
   community: { sf: 'person.2', fallback: 'people' },
+  quiz: { sf: 'questionmark.circle', fallback: 'help-circle' },
+  craft: { sf: 'scissors', fallback: 'cut' },
+  kids: { sf: 'figure.and.child.holdinghands', fallback: 'happy' },
+  cultural: { sf: 'building.columns', fallback: 'globe' },
 };
 
 export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
@@ -51,14 +59,17 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
     clearCategories,
     showFollowingOnly,
     setShowFollowingOnly,
+    showFreeOnly,
+    setShowFreeOnly,
   } = useEventFilters();
 
-  const hasAnyFilter = selectedDateRange != null || selectedCategories.length > 0 || showFollowingOnly;
+  const hasAnyFilter = selectedDateRange != null || selectedCategories.length > 0 || showFollowingOnly || showFreeOnly;
 
   const clearAll = () => {
     setSelectedDateRange(null);
     clearCategories();
     setShowFollowingOnly(false);
+    setShowFreeOnly(false);
   };
 
   return (
@@ -130,6 +141,21 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
             </HapticPressable>
           );
         })}
+
+        {/* Price Section */}
+        <Text style={styles.sectionTitle}>Price</Text>
+        <HapticPressable
+          style={[styles.option, showFreeOnly && styles.optionActive]}
+          onPress={() => setShowFreeOnly(!showFreeOnly)}
+        >
+          <SFIcon name="dollarsign.circle" fallback="cash-outline" size={20} color={showFreeOnly ? colors.primary : colors.text} />
+          <Text style={[styles.optionLabel, showFreeOnly && styles.optionLabelActive]}>
+            Free events only
+          </Text>
+          {showFreeOnly && (
+            <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />
+          )}
+        </HapticPressable>
 
         {/* Following Section */}
         <Text style={styles.sectionTitle}>People</Text>

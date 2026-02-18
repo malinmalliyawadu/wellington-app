@@ -26,6 +26,10 @@ export const CATEGORY_COLORS: Record<Event["category"], string> = {
   food: "#E85D04",
   market: "#2D6A4F",
   community: "#0077B6",
+  quiz: "#6D28D9",
+  craft: "#D97706",
+  kids: "#059669",
+  cultural: "#B91C1C",
 };
 
 const CATEGORY_LABELS: Record<Event["category"], string> = {
@@ -35,6 +39,10 @@ const CATEGORY_LABELS: Record<Event["category"], string> = {
   food: "Food & Drink",
   market: "Market",
   community: "Community",
+  quiz: "Quiz",
+  craft: "Craft",
+  kids: "Kids",
+  cultural: "Cultural",
 };
 
 function formatTime(time: string, endTime?: string): string {
@@ -136,6 +144,17 @@ export function EventCard({
             {CATEGORY_LABELS[event.category]}
           </Text>
         </View>
+
+        {/* Price badge (below category) */}
+        {event.price != null && event.price > 0 ? (
+          <View style={styles.priceBadge}>
+            <Text style={styles.priceText}>${event.price.toFixed(0)}</Text>
+          </View>
+        ) : (
+          <View style={[styles.priceBadge, styles.freeBadge]}>
+            <Text style={[styles.priceText, styles.freeText]}>Free</Text>
+          </View>
+        )}
 
         {/* Date badge (top-right) */}
         {glassEnabled ? (
@@ -277,6 +296,27 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     letterSpacing: 0.8,
     textTransform: "uppercase",
+  },
+  priceBadge: {
+    position: "absolute",
+    top: 42,
+    left: 12,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  freeBadge: {
+    backgroundColor: "#059669",
+  },
+  priceText: {
+    color: "#FFFFFF",
+    fontSize: 11,
+    fontWeight: "700",
+    fontFamily: fonts.bold,
+  },
+  freeText: {
+    color: "#FFFFFF",
   },
   // Date badge (top-right)
   dateBadge: {

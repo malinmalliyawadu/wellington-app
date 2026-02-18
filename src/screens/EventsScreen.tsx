@@ -146,7 +146,7 @@ export function EventsScreen() {
   const navigation = useNavigation();
   const { isFollowing } = useFollow();
   const headerHeight = useHeaderHeight();
-  const { selectedDateRange, selectedCategories, showFollowingOnly } =
+  const { selectedDateRange, selectedCategories, showFollowingOnly, showFreeOnly } =
     useEventFilters();
 
   const fetchEvents = useCallback(() => getUpcomingEvents(), []);
@@ -200,6 +200,9 @@ export function EventsScreen() {
       ) {
         return false;
       }
+      if (showFreeOnly && event.price != null && event.price > 0) {
+        return false;
+      }
       return true;
     });
   }, [
@@ -207,6 +210,7 @@ export function EventsScreen() {
     selectedDateRange,
     selectedCategories,
     showFollowingOnly,
+    showFreeOnly,
     isFollowing,
   ]);
 
@@ -230,7 +234,8 @@ export function EventsScreen() {
   const activeFilterCount =
     (selectedDateRange ? 1 : 0) +
     (selectedCategories.length > 0 ? 1 : 0) +
-    (showFollowingOnly ? 1 : 0);
+    (showFollowingOnly ? 1 : 0) +
+    (showFreeOnly ? 1 : 0);
 
   const filterSummary = [
     selectedDateRange ? DATE_RANGE_LABELS[selectedDateRange] : null,
@@ -239,6 +244,7 @@ export function EventsScreen() {
       : selectedCategories.length > 1
       ? `${selectedCategories.length} categories`
       : null,
+    showFreeOnly ? "Free" : null,
     showFollowingOnly ? "Following" : null,
   ]
     .filter(Boolean)

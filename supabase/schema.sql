@@ -4,7 +4,7 @@
 -- Enums
 create type place_category as enum ('cafe', 'restaurant', 'bar', 'attraction', 'park', 'venue');
 create type post_type as enum ('photo', 'video', 'text');
-create type event_category as enum ('music', 'comedy', 'art', 'food', 'market', 'community');
+create type event_category as enum ('music', 'comedy', 'art', 'food', 'market', 'community', 'quiz', 'craft', 'kids', 'cultural');
 
 -- Profiles (linked to auth.users)
 create table profiles (
@@ -97,6 +97,7 @@ create table events (
   image_url text,
   category event_category not null,
   ticket_url text,
+  price numeric(8,2),
   created_at timestamptz not null default now()
 );
 

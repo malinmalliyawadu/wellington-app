@@ -119,6 +119,7 @@ export type Database = {
           image_url: string | null;
           category: EventCategory;
           ticket_url: string | null;
+          price: number | null;
           created_at: string;
         };
         Insert: {
@@ -132,6 +133,7 @@ export type Database = {
           image_url?: string | null;
           category: EventCategory;
           ticket_url?: string | null;
+          price?: number | null;
           created_at?: string;
         };
         Update: {
@@ -144,6 +146,7 @@ export type Database = {
           image_url?: string | null;
           category?: EventCategory;
           ticket_url?: string | null;
+          price?: number | null;
         };
         Relationships: [
           {
@@ -491,7 +494,7 @@ export type Database = {
 
 export type PlaceCategory = 'cafe' | 'restaurant' | 'bar' | 'attraction' | 'park' | 'venue';
 export type PostType = 'photo' | 'video' | 'text';
-export type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community';
+export type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community' | 'quiz' | 'craft' | 'kids' | 'cultural';
 export type ExplorationMethod = 'viewed' | 'posted';
 export type AchievementType = 'category' | 'milestone' | 'neighborhood' | 'social';
 export type NotificationType = 'like' | 'comment' | 'follow';
