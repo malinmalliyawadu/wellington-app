@@ -594,6 +594,7 @@ const styles = StyleSheet.create({
   likeCount: {
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
     paddingHorizontal: 14,
     marginBottom: 6,
@@ -609,6 +610,7 @@ const styles = StyleSheet.create({
   },
   captionAuthor: {
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
   // Location row
   locationRow: {
@@ -651,6 +653,7 @@ const styles = StyleSheet.create({
   },
   commentAuthor: {
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
   },
   commentTime: {
@@ -671,6 +674,7 @@ const styles = StyleSheet.create({
   commentActionText: {
     fontSize: 12,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.textMuted,
   },
   inputBar: {

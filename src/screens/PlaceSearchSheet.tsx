@@ -20,9 +20,11 @@ import {
   searchGooglePlaces,
   searchNearbyPlaces,
 } from "../services/googlePlaces";
+import { PlusJakartaSans_500Medium, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { HapticPressable } from "../components/HapticPressable";
 
 export function PlaceSearchSheet() {
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_500Medium });
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ returnRoute?: string }>();
@@ -281,6 +283,7 @@ const styles = StyleSheet.create({
   placeName: {
     fontSize: 16,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
     color: colors.text,
     marginBottom: 4,
   },

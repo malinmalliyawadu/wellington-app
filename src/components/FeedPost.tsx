@@ -15,6 +15,7 @@ import { colors } from "../theme/colors";
 import { sharePost } from "../utils/sharing";
 import { HapticPressable } from "./HapticPressable";
 import {
+  PlusJakartaSans_500Medium,
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
   useFonts,
@@ -63,6 +64,7 @@ export function FeedPost({
   onPressPost,
 }: FeedPostProps) {
   const [fontsLoaded] = useFonts({
+    PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
   });
@@ -416,6 +418,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
   },
   divider: {
     height: 5,

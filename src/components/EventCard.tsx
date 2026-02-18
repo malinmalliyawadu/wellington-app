@@ -10,6 +10,8 @@ import { useQuery } from "../hooks/useQuery";
 import { colors } from "../theme/colors";
 import { HapticPressable } from "./HapticPressable";
 import {
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
   PlusJakartaSans_800ExtraBold,
   useFonts,
@@ -76,6 +78,8 @@ export function EventCard({
   hasBorder,
 }: EventCardProps) {
   const [fontsLoaded] = useFonts({
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
   });
@@ -242,6 +246,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 11,
     fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
     letterSpacing: 0.8,
     textTransform: "uppercase",
   },
@@ -263,6 +268,7 @@ const styles = StyleSheet.create({
   dateMonth: {
     fontSize: 10,
     fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
     color: colors.primary,
     letterSpacing: 0.5,
   },
@@ -327,6 +333,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textSecondary,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
   },
   attendeeSection: {
     flexDirection: "row",
@@ -346,6 +353,7 @@ const styles = StyleSheet.create({
   attendeeCount: {
     fontSize: 12,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.textSecondary,
     marginLeft: 4,
   },

@@ -324,6 +324,7 @@ const styles = StyleSheet.create({
   chipLabel: {
     fontSize: 13,
     fontWeight: '600',
+    fontFamily: 'PlusJakartaSans_600SemiBold',
   },
   chipLabelActive: {
     color: '#FFFFFF',

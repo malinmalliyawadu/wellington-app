@@ -3,7 +3,7 @@ import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoThumbnail } from "./VideoThumbnail";
 import { SFIcon } from "./SFIcon";
-import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { HapticPressable } from "./HapticPressable";
 import { colors } from "../theme/colors";
 import type { Post, Place } from "../types";
@@ -29,7 +29,7 @@ export function PostsGrid({
   title,
   emptyText = "No posts yet",
 }: PostsGridProps) {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold });
   if (posts.length === 0) {
     return (
       <View style={styles.emptyState}>
@@ -150,6 +150,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     lineHeight: 16,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
   placeTag: {
     position: "absolute",
@@ -168,6 +169,7 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: "rgba(255,255,255,1)",
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
   },
   emptyState: {
     alignItems: "center",

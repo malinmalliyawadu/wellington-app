@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { AchievementProgress } from "../types/Exploration";
 import { colors } from "../theme/colors";
 
@@ -9,7 +9,7 @@ interface AchievementCardProps {
 }
 
 export function AchievementCard({ achievement }: AchievementCardProps) {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold });
   const {
     title,
     description,
@@ -127,6 +127,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
   },
   description: {
     fontSize: 14,
@@ -154,6 +155,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     minWidth: 32,
     textAlign: "right",
   },

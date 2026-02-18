@@ -16,12 +16,12 @@ import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
 import { uploadAvatar } from "../services/storage";
 import { HapticPressable } from "../components/HapticPressable";
-import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { colors } from "../theme/colors";
 
 export function EditProfileScreen() {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold });
   const router = useRouter();
   const navigation = useNavigation();
   const headerHeight = useHeaderHeight();
@@ -322,6 +322,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     paddingLeft: 16,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
   },
   usernameInput: {
     flex: 1,

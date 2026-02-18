@@ -29,7 +29,7 @@ import { findOrCreatePlace, getPlaceById } from "../services/places";
 import { createPost } from "../services/posts";
 import { uploadMedia } from "../services/storage";
 import { createAchievementToast } from "../utils/achievementHelpers";
-import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { HapticPressable } from "src/components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 
@@ -51,7 +51,7 @@ const EVENT_CATEGORIES: { type: EventCategory; label: string }[] = [
 type CreateType = "post" | "event";
 
 export function CreatePostSheetScreen() {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold });
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const { markExplored } = useExploration();
@@ -765,6 +765,7 @@ const styles = StyleSheet.create({
   segmentText: {
     fontSize: 16,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
     color: colors.textMuted,
   },
   segmentTextActive: {
@@ -802,6 +803,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 13,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
     color: colors.gray500,
   },
   typeLabelActive: {
@@ -850,6 +852,7 @@ const styles = StyleSheet.create({
   selectedPlaceText: {
     fontSize: 15,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
     color: colors.text,
   },
   selectedPlaceAddress: {

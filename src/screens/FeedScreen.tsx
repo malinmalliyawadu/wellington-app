@@ -15,12 +15,13 @@ import { sortPosts } from "../utils/postSorting";
 import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 import {
+  PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
   useFonts,
 } from "@expo-google-fonts/plus-jakarta-sans";
 
 export function FeedScreen() {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_700Bold });
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold });
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { followingIds } = useFollow();
@@ -169,5 +170,6 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 15,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
 });

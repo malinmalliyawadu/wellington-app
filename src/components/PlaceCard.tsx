@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { Place, PlaceCategory } from '../types';
 import { colors } from '../theme/colors';
 import { HapticPressable } from './HapticPressable';
@@ -20,7 +20,7 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
 };
 
 export function PlaceCard({ place, onClose }: PlaceCardProps) {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold });
   const categoryColor = colors.category[place.category];
 
   return (
@@ -89,6 +89,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '500',
+    fontFamily: 'PlusJakartaSans_500Medium',
   },
   address: {
     fontSize: 14,

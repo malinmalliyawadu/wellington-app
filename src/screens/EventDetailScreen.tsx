@@ -32,6 +32,7 @@ import { shareEvent } from "../utils/sharing";
 import { HapticPressable } from "src/components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import {
+  PlusJakartaSans_500Medium,
   PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
   PlusJakartaSans_800ExtraBold,
@@ -96,6 +97,7 @@ const glassEnabled = isLiquidGlassAvailable();
 
 export function EventDetailScreen() {
   const [fontsLoaded] = useFonts({
+    PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
@@ -439,6 +441,7 @@ const styles = StyleSheet.create({
   heroDateMonth: {
     fontSize: 11,
     fontWeight: "700",
+    fontFamily: "PlusJakartaSans_700Bold",
     color: colors.primary,
     letterSpacing: 0.5,
   },
@@ -544,6 +547,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: colors.textSecondary,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
   },
   attendeeRow: {
     flexDirection: "row",
@@ -566,6 +570,7 @@ const styles = StyleSheet.create({
   attendeeName: {
     fontSize: 15,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
     color: colors.text,
     flex: 1,
   },
@@ -578,6 +583,7 @@ const styles = StyleSheet.create({
   followBadgeText: {
     fontSize: 11,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.primary,
   },
   emptyState: {

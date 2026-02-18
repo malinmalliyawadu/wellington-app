@@ -4,7 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { SFSymbol } from "expo-symbols";
 import { useQuery } from "../hooks/useQuery";
 import { getAchievementProgress } from "../services/achievements";
-import { PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { AchievementCard } from "./AchievementCard";
 import { SFIcon } from "./SFIcon";
 import { colors } from "../theme/colors";
@@ -34,7 +34,7 @@ const TYPE_CONFIG: Record<
 };
 
 export function AchievementsList({ userId }: AchievementsListProps) {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_700Bold });
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold });
   const { data: achievements, loading, error } = useQuery(
     () => getAchievementProgress(userId),
     [userId]
@@ -271,6 +271,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.textSecondary,
     marginLeft: 8,
     flex: 1,
@@ -280,6 +281,7 @@ const styles = StyleSheet.create({
   sectionCount: {
     fontSize: 13,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.textMuted,
   },
   sectionCards: {},

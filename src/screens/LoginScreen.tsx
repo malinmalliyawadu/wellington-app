@@ -42,11 +42,10 @@ import Reanimated, {
 } from "react-native-reanimated";
 import {
   useFonts,
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from "@expo-google-fonts/inter";
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+} from "@expo-google-fonts/plus-jakarta-sans";
 import { SpaceGrotesk_700Bold } from "@expo-google-fonts/space-grotesk";
 import { Sacramento_400Regular } from "@expo-google-fonts/sacramento";
 import { Pacifico_400Regular } from "@expo-google-fonts/pacifico";
@@ -133,10 +132,9 @@ const SEED_USERS = [
 
 export function LoginScreen() {
   const [fontsLoaded] = useFonts({
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
     SpaceGrotesk_700Bold,
     Sacramento_400Regular,
     Pacifico_400Regular,
@@ -622,7 +620,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#fff",
     fontSize: 17,
-    fontFamily: "Inter_600SemiBold",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     letterSpacing: 0.3,
   },
   devTrigger: {
@@ -650,7 +648,7 @@ const styles = StyleSheet.create({
   },
   devTriggerText: {
     fontSize: 13,
-    fontFamily: "Inter_500Medium",
+    fontFamily: "PlusJakartaSans_500Medium",
     color: "rgba(255, 255, 255, 0.7)",
     letterSpacing: 0.3,
   },
@@ -691,7 +689,7 @@ const styles = StyleSheet.create({
   },
   devTitle: {
     fontSize: 13,
-    fontFamily: "Inter_700Bold",
+    fontFamily: "PlusJakartaSans_700Bold",
     color: "rgba(255, 255, 255, 0.9)",
     textAlign: "center",
     marginBottom: 24,
@@ -722,7 +720,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: "rgba(255, 255, 255, 0.9)",
     textAlign: "center",
-    fontFamily: "Inter_500Medium",
+    fontFamily: "PlusJakartaSans_500Medium",
     letterSpacing: 0.2,
   },
   seedSpinner: {

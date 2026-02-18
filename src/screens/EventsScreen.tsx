@@ -24,6 +24,8 @@ import { colors } from "../theme/colors";
 import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 import {
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
   PlusJakartaSans_700Bold,
   useFonts,
 } from "@expo-google-fonts/plus-jakarta-sans";
@@ -144,6 +146,8 @@ function getEventSection(eventDate: string, startTime: string): TimeSection {
 
 export function EventsScreen() {
   const [fontsLoaded] = useFonts({
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
   });
 
@@ -367,6 +371,7 @@ const styles = StyleSheet.create({
   sectionCountText: {
     fontSize: 13,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.textSecondary,
   },
   filterSummaryRow: {
@@ -377,6 +382,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.primary,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
   },
   list: {
     paddingTop: 8,
@@ -395,6 +401,7 @@ const styles = StyleSheet.create({
   emptyAction: {
     fontSize: 15,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.primary,
   },
 });

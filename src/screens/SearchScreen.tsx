@@ -21,7 +21,7 @@ import { getPosts } from "../services/posts";
 import { getProfiles } from "../services/users";
 import { getUpcomingEvents } from "../services/events";
 import { searchGooglePlaces } from "../services/googlePlaces";
-import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import { PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { EventCard } from "../components/EventCard";
 import { HapticPressable } from "../components/HapticPressable";
 import type { Place, Post, User, Event, PlaceCategory } from "../types";
@@ -75,7 +75,7 @@ interface SearchScreenProps {
 }
 
 export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_600SemiBold });
+  const [fontsLoaded] = useFonts({ PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold });
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -652,6 +652,7 @@ const styles = StyleSheet.create({
   activeFilterText: {
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.primary,
   },
 
@@ -671,6 +672,7 @@ const styles = StyleSheet.create({
   sectionHeaderText: {
     fontSize: 14,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -678,6 +680,7 @@ const styles = StyleSheet.create({
   sectionHeaderCount: {
     fontSize: 13,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.textMuted,
   },
 
@@ -700,6 +703,7 @@ const styles = StyleSheet.create({
   trendingText: {
     fontSize: 14,
     fontWeight: "500",
+    fontFamily: "PlusJakartaSans_500Medium",
     color: colors.text,
   },
 
@@ -771,6 +775,7 @@ const styles = StyleSheet.create({
   placeRowCount: {
     fontSize: 13,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.textMuted,
   },
 
@@ -841,6 +846,7 @@ const styles = StyleSheet.create({
   googleBadgeText: {
     fontSize: 10,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.textMuted,
     letterSpacing: 0.3,
   },

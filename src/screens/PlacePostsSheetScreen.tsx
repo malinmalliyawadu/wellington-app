@@ -432,6 +432,7 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 11,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
   ratingContainer: {
     flexDirection: "row",
@@ -442,6 +443,7 @@ const styles = StyleSheet.create({
   ratingText: {
     fontSize: 13,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.text,
   },
   reviewCountText: {
@@ -476,6 +478,7 @@ const styles = StyleSheet.create({
   directionsText: {
     fontSize: 13,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.primary,
   },
   postList: {
@@ -530,6 +533,7 @@ const styles = StyleSheet.create({
   followBadgeText: {
     fontSize: 10,
     fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.primary,
   },
   postText: {
