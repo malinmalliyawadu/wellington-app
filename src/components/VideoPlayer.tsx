@@ -31,6 +31,15 @@ export function VideoPlayer({
   });
 
   useEffect(() => {
+    if (!player) return;
+    if (shouldPlay) {
+      player.play();
+    } else {
+      player.pause();
+    }
+  }, [player, shouldPlay]);
+
+  useEffect(() => {
     if (!onLoad || !player) return;
 
     const subscription = player.addListener('statusChange', (status) => {

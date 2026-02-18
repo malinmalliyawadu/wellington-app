@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Image,
@@ -6,12 +6,12 @@ import {
   StyleSheet,
   Dimensions,
   ViewToken,
-} from 'react-native';
-import { VideoPlayer } from './VideoPlayer';
-import { colors } from '../theme/colors';
-import type { MediaItem } from '../types';
+} from "react-native";
+import { VideoPlayer } from "./VideoPlayer";
+import { colors } from "../theme/colors";
+import type { MediaItem } from "../types";
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_WIDTH = Dimensions.get("window").width;
 
 interface MediaCarouselProps {
   mediaItems: MediaItem[];
@@ -66,7 +66,7 @@ export function MediaCarousel({
     ({ item, index }: { item: MediaItem; index: number }) => {
       const isActive = index === activeIndex;
 
-      if (item.mediaType === 'video') {
+      if (item.mediaType === "video") {
         return (
           <VideoPlayer
             uri={item.mediaUrl}
@@ -88,7 +88,14 @@ export function MediaCarousel({
         />
       );
     },
-    [activeIndex, aspectRatio, videoMuted, videoControls, handleImageLoad, handleVideoLoad]
+    [
+      activeIndex,
+      aspectRatio,
+      videoMuted,
+      videoControls,
+      handleImageLoad,
+      handleVideoLoad,
+    ]
   );
 
   const showDots = mediaItems.length > 1;
@@ -99,6 +106,7 @@ export function MediaCarousel({
         data={mediaItems}
         renderItem={renderItem}
         keyExtractor={(item) => item.id}
+        extraData={activeIndex}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
@@ -116,10 +124,7 @@ export function MediaCarousel({
           {mediaItems.map((item, index) => (
             <View
               key={item.id}
-              style={[
-                styles.dot,
-                index === activeIndex && styles.dotActive,
-              ]}
+              style={[styles.dot, index === activeIndex && styles.dotActive]}
             />
           ))}
         </View>
@@ -133,9 +138,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray200,
   },
   dotsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 8,
     gap: 6,
   },

@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,9 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
+  Pressable,
+  Animated,
 } from "react-native";
 import { useRouter, useLocalSearchParams, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -31,18 +34,45 @@ export function UserProfileScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
 
+  const [refreshing, setRefreshing] = useState(false);
+  const [avatarVisible, setAvatarVisible] = useState(false);
+  const avatarAnim = useRef(new Animated.Value(0)).current;
+
+  const showAvatar = useCallback(() => {
+    setAvatarVisible(true);
+    Animated.timing(avatarAnim, {
+      toValue: 1,
+      duration: 150,
+      useNativeDriver: true,
+    }).start();
+  }, [avatarAnim]);
+
+  const hideAvatar = useCallback(() => {
+    Animated.timing(avatarAnim, {
+      toValue: 0,
+      duration: 120,
+      useNativeDriver: true,
+    }).start(() => setAvatarVisible(false));
+  }, [avatarAnim]);
+
   const fetchUser = useCallback(() => getProfileById(userId), [userId]);
-  const { data: user, loading: loadingUser } = useQuery(fetchUser);
+  const { data: user, loading: loadingUser, refetch: refetchUser } = useQuery(fetchUser);
 
   const fetchPosts = useCallback(() => getPostsByUserIdAsync(userId), [userId]);
-  const { data: posts } = useQuery(fetchPosts);
-  const { data: allPlaces } = useQuery(getPlaces);
+  const { data: posts, refetch: refetchPosts } = useQuery(fetchPosts);
+  const { data: allPlaces, refetch: refetchPlaces } = useQuery(getPlaces);
 
   const fetchCounts = useCallback(() => getFollowCounts(userId), [userId]);
-  const { data: counts } = useQuery(fetchCounts);
+  const { data: counts, refetch: refetchCounts } = useQuery(fetchCounts);
 
   const fetchEvents = useCallback(() => getEventsByUserId(userId), [userId]);
-  const { data: events } = useQuery(fetchEvents);
+  const { data: events, refetch: refetchEvents } = useQuery(fetchEvents);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await Promise.all([refetchUser(), refetchPosts(), refetchPlaces(), refetchCounts(), refetchEvents()]);
+    setRefreshing(false);
+  }, [refetchUser, refetchPosts, refetchPlaces, refetchCounts, refetchEvents]);
 
   const userPosts = useMemo(() => {
     if (!posts || !allPlaces) return [];
@@ -81,16 +111,27 @@ export function UserProfileScreen() {
   const followingCount = counts?.following ?? 0;
 
   return (
+    <>
     <ScrollView
       style={styles.container}
       showsVerticalScrollIndicator={false}
+      contentInset={{ top: headerHeight - 30 }}
+      contentOffset={{ x: 0, y: -(headerHeight - 30) }}
       contentContainerStyle={{
-        paddingTop: headerHeight - 30,
         paddingBottom: 60 + insets.bottom,
       }}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={colors.primary}
+        />
+      }
     >
       <View style={styles.profileSection}>
-        <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+        <Pressable onPress={showAvatar}>
+          <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+        </Pressable>
         <Text style={styles.displayName}>{user.displayName}</Text>
         <Text style={styles.username}>@{user.username}</Text>
         {user.bio && <Text style={styles.bio}>{user.bio}</Text>}
@@ -143,6 +184,26 @@ export function UserProfileScreen() {
         onPostPress={(postId) => router.push(`${tabBase}/post/${postId}`)}
       />
     </ScrollView>
+
+      {avatarVisible && (
+        <Animated.View
+          style={[StyleSheet.absoluteFill, styles.avatarModalBackdrop, { opacity: avatarAnim }]}
+        >
+          <Pressable style={StyleSheet.absoluteFill} onPress={hideAvatar}>
+            <View style={styles.avatarFullscreenContainer}>
+              <Animated.Image
+                source={{ uri: user.avatarUrl }}
+                style={[
+                  styles.avatarFullscreen,
+                  { transform: [{ scale: avatarAnim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1] }) }] },
+                ]}
+                resizeMode="contain"
+              />
+            </View>
+          </Pressable>
+        </Animated.View>
+      )}
+    </>
   );
 }
 
@@ -223,5 +284,18 @@ const styles = StyleSheet.create({
     height: 1,
     // backgroundColor: colors.gray200,
     marginTop: 8,
+  },
+  avatarModalBackdrop: {
+    backgroundColor: "rgba(0, 0, 0, 0.9)",
+    zIndex: 100,
+  },
+  avatarFullscreenContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  avatarFullscreen: {
+    width: "85%",
+    aspectRatio: 1,
   },
 });
