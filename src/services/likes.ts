@@ -28,6 +28,16 @@ export async function unlikePost(userId: string, postId: string): Promise<void> 
   if (error) throw error;
 }
 
+export async function getLikerIds(postId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('post_likes')
+    .select('user_id')
+    .eq('post_id', postId);
+
+  if (error) throw error;
+  return (data ?? []).map((row) => row.user_id);
+}
+
 export async function getAllLikeCounts(): Promise<Record<string, number>> {
   const { data, error } = await supabase
     .from('post_likes')

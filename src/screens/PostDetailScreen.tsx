@@ -341,9 +341,18 @@ export function PostDetailScreen() {
         </View>
 
         {/* Like count */}
-        <Text style={styles.likeCount}>
-          {likeCount} {likeCount === 1 ? "like" : "likes"}
-        </Text>
+        <HapticPressable
+          onPress={() =>
+            router.push({
+              pathname: `${currentTab}/likes` as any,
+              params: { postId: post.id },
+            })
+          }
+        >
+          <Text style={styles.likeCount}>
+            {likeCount} {likeCount === 1 ? "like" : "likes"}
+          </Text>
+        </HapticPressable>
 
         {/* Caption */}
         <View style={styles.captionRow}>

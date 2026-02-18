@@ -1,0 +1,152 @@
+import React, { useCallback } from "react";
+import {
+  View,
+  Text,
+  Image,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
+import { useRouter, useLocalSearchParams, usePathname } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useAuth } from "../context/AuthContext";
+import { FollowButton } from "../components/FollowButton";
+import { fonts } from "../theme/fonts";
+import { colors } from "../theme/colors";
+import { useQuery } from "../hooks/useQuery";
+import { getProfilesByIds } from "../services/users";
+import { getLikerIds } from "../services/likes";
+import { HapticPressable } from "src/components/HapticPressable";
+
+export function LikesListScreen() {
+  const router = useRouter();
+  const { postId } = useLocalSearchParams<{ postId: string }>();
+  const pathname = usePathname();
+  const tabBase = "/" + pathname.split("/")[1];
+  const insets = useSafeAreaInsets();
+  const { profile } = useAuth();
+
+  const fetchLikerIds = useCallback(() => getLikerIds(postId), [postId]);
+  const { data: likerIds, loading: loadingIds } = useQuery(fetchLikerIds);
+
+  const fetchProfiles = useCallback(
+    () => getProfilesByIds(likerIds ?? []),
+    [likerIds]
+  );
+  const { data: likers, loading: loadingProfiles } = useQuery(
+    fetchProfiles,
+    likerIds && likerIds.length > 0
+  );
+
+  const isLoading = loadingIds || loadingProfiles;
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Likes</Text>
+      </View>
+
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+        </View>
+      ) : (
+        <FlatList
+          data={likers ?? []}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item }) => {
+            const isCurrentUser = item.id === profile?.id;
+            return (
+              <HapticPressable
+                style={styles.userRow}
+                onPress={() => {
+                  if (!isCurrentUser) {
+                    router.dismiss();
+                    router.push(`${tabBase}/user/${item.id}` as any);
+                  }
+                }}
+              >
+                <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+                <View style={styles.userInfo}>
+                  <Text style={styles.displayName}>{item.displayName}</Text>
+                  <Text style={styles.username}>@{item.username}</Text>
+                </View>
+                {!isCurrentUser && <FollowButton userId={item.id} compact />}
+              </HapticPressable>
+            );
+          }}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>No likes yet</Text>
+            </View>
+          }
+          contentContainerStyle={[
+            styles.list,
+            { paddingBottom: 8 + insets.bottom },
+          ]}
+        />
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    alignItems: "center",
+    paddingTop: 24,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    zIndex: 1,
+  },
+  headerTitle: {
+    fontSize: 17,
+    fontFamily: fonts.semiBold,
+    color: colors.text,
+  },
+  list: {
+    paddingVertical: 8,
+  },
+  userRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  avatar: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: colors.gray200,
+  },
+  userInfo: {
+    flex: 1,
+    marginLeft: 12,
+    marginRight: 12,
+  },
+  displayName: {
+    fontSize: 15,
+    fontFamily: fonts.semiBold,
+    color: colors.text,
+  },
+  username: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  loadingContainer: {
+    alignItems: "center",
+    paddingTop: 40,
+  },
+  emptyState: {
+    alignItems: "center",
+    paddingVertical: 40,
+  },
+  emptyText: {
+    fontSize: 15,
+    color: colors.textMuted,
+  },
+});

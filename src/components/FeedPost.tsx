@@ -34,6 +34,7 @@ interface FeedPostProps {
   onPressUser?: (userId: string) => void;
   onPressPlace?: (placeId: string) => void;
   onPressPost?: (postId: string) => void;
+  onPressLikes?: (postId: string) => void;
 }
 
 function formatTimeAgo(dateString: string): string {
@@ -59,6 +60,7 @@ export function FeedPost({
   onPressUser,
   onPressPlace,
   onPressPost,
+  onPressLikes,
 }: FeedPostProps) {
   const categoryColor = colors.category[place.category];
   const {
@@ -229,25 +231,32 @@ export function FeedPost({
       {/* Action bar */}
       <View style={styles.actions}>
         <View style={styles.actionsLeft}>
-          <HapticPressable
-            style={styles.actionButton}
-            onPress={handleLike}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Animated.View style={likeAnimatedStyle}>
-              <SFIcon
-                name={liked ? "heart.fill" : "heart"}
-                fallback={liked ? "heart" : "heart-outline"}
-                size={24}
-                color={liked ? colors.liked : colors.text}
-              />
-            </Animated.View>
-            <Text
-              style={[styles.actionCount, liked && { color: colors.liked }]}
+          <View style={styles.actionButton}>
+            <HapticPressable
+              onPress={handleLike}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              {likeCount}
-            </Text>
-          </HapticPressable>
+              <Animated.View style={likeAnimatedStyle}>
+                <SFIcon
+                  name={liked ? "heart.fill" : "heart"}
+                  fallback={liked ? "heart" : "heart-outline"}
+                  size={24}
+                  color={liked ? colors.liked : colors.text}
+                />
+              </Animated.View>
+            </HapticPressable>
+            <HapticPressable
+              onPress={() => onPressLikes?.(post.id)}
+              disabled={!onPressLikes}
+              hitSlop={{ top: 8, bottom: 8, left: 4, right: 8 }}
+            >
+              <Text
+                style={[styles.actionCount, liked && { color: colors.liked }]}
+              >
+                {likeCount}
+              </Text>
+            </HapticPressable>
+          </View>
           <HapticPressable
             style={styles.actionButton}
             onPress={() => onPressPost?.(post.id)}

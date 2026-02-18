@@ -46,6 +46,20 @@ export default function MapLayout() {
         }}
       />
       <Stack.Screen
+        name="likes"
+        options={{
+          presentation: "formSheet",
+          headerShown: false,
+          contentStyle: { backgroundColor: "transparent" },
+          sheetAllowedDetents: [0.5, 1],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 32,
+          sheetInitialDetentIndex: 0,
+          sheetLargestUndimmedDetentIndex: 0,
+          sheetExpandsWhenScrolledToEdge: true,
+        }}
+      />
+      <Stack.Screen
         name="create-post"
         options={{
           presentation: "formSheet",

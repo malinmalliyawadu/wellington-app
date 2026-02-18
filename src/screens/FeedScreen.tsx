@@ -86,6 +86,10 @@ export function FeedScreen() {
     router.push(`/feed/post/${postId}`);
   };
 
+  const handlePressLikes = (postId: string) => {
+    router.push({ pathname: "/feed/likes", params: { postId } });
+  };
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -99,6 +103,7 @@ export function FeedScreen() {
             onPressUser={handlePressUser}
             onPressPlace={handlePressPlace}
             onPressPost={handlePressPost}
+            onPressLikes={handlePressLikes}
           />
         )}
         refreshControl={
