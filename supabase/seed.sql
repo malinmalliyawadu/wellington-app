@@ -505,45 +505,64 @@ INSERT INTO follows (follower_id, following_id) VALUES
 -- ============================================================
 -- EVENTS (10 upcoming events — dates relative to CURRENT_DATE)
 -- ============================================================
-INSERT INTO events (id, title, description, place_id, date, start_time, end_time, image_url, category, ticket_url) VALUES
+INSERT INTO events (id, title, description, place_id, date, start_time, end_time, image_url, category, ticket_url, price) VALUES
   ('40000000-0000-0000-0000-000000000001', 'Friday Night Jazz', 'Live jazz trio performing standards and originals. Perfect way to kick off the weekend.',
    '10000000-0000-0000-0000-000000000019', CURRENT_DATE + INTERVAL '3 days', '20:00', '23:00',
    'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f?w=600', 'music',
-   'https://www.eventfinda.co.nz/friday-night-jazz-wellington'),
+   'https://www.eventfinda.co.nz/friday-night-jazz-wellington', 15),
   ('40000000-0000-0000-0000-000000000002', 'Wellington Comedy Night', 'Five of Wellington''s best comedians battle it out. Hosted by Kate Nguyen.',
    '10000000-0000-0000-0000-000000000019', CURRENT_DATE + INTERVAL '5 days', '19:30', '22:00',
    'https://images.unsplash.com/photo-1527224857830-43a7acc85260?w=600', 'comedy',
-   'https://www.eventfinda.co.nz/wellington-comedy-night'),
+   'https://www.eventfinda.co.nz/wellington-comedy-night', 20),
   ('40000000-0000-0000-0000-000000000003', 'Harbourside Market', 'Fresh produce, artisan goods, street food. Every Sunday morning.',
    '10000000-0000-0000-0000-000000000018', CURRENT_DATE + INTERVAL '7 days', '07:30', '14:00',
-   'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=600', 'market', null),
+   'https://images.unsplash.com/photo-1488459716781-31db52582fe9?w=600', 'market', null, null),
   ('40000000-0000-0000-0000-000000000004', 'Garage Project Tap Takeover', 'Garage Project takes over all 24 taps at Hashigo Zake. Special releases and one-offs.',
    '10000000-0000-0000-0000-000000000009', CURRENT_DATE + INTERVAL '10 days', '17:00', '23:00',
-   'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=600', 'food', null),
+   'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=600', 'food', null, null),
   ('40000000-0000-0000-0000-000000000005', 'Mt Vic Moonlight Walk', 'Guided night walk up Mt Victoria. Bring a torch and warm layers.',
    '10000000-0000-0000-0000-000000000017', CURRENT_DATE + INTERVAL '12 days', '20:00', '22:00',
-   'https://images.unsplash.com/photo-1507400492013-162706c8c05e?w=600', 'community', null),
+   'https://images.unsplash.com/photo-1507400492013-162706c8c05e?w=600', 'community', null, null),
   ('40000000-0000-0000-0000-000000000006', 'Punk Showcase', 'Four local punk bands. $10 door. All ages.',
    '10000000-0000-0000-0000-000000000021', CURRENT_DATE + INTERVAL '4 days', '19:00', '23:30',
    'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600', 'music',
-   'https://www.eventfinda.co.nz/punk-showcase-valhalla'),
+   'https://www.eventfinda.co.nz/punk-showcase-valhalla', 10),
   ('40000000-0000-0000-0000-000000000007', 'New Zealand Art Exhibition', 'Contemporary NZ artists explore identity and place. Free entry.',
    '10000000-0000-0000-0000-000000000013', CURRENT_DATE + INTERVAL '14 days', '10:00', '17:00',
-   'https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=600', 'art', null),
+   'https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=600', 'art', null, null),
   ('40000000-0000-0000-0000-000000000008', 'Electronic Night at Meow', 'DJs spinning house, techno, and drum & bass until late.',
    '10000000-0000-0000-0000-000000000020', CURRENT_DATE + INTERVAL '6 days', '22:00', null,
    'https://images.unsplash.com/photo-1571266028243-d220d067bacc?w=600', 'music',
-   'https://www.eventfinda.co.nz/electronic-night-meow'),
+   'https://www.eventfinda.co.nz/electronic-night-meow', 15),
   ('40000000-0000-0000-0000-000000000009', 'BATS Theatre: One-Act Festival', 'Short plays from emerging Wellington playwrights. Three nights only.',
    '10000000-0000-0000-0000-000000000022', CURRENT_DATE + INTERVAL '8 days', '19:00', '21:30',
    'https://images.unsplash.com/photo-1503095396549-807759245b35?w=600', 'art',
-   'https://bfringe.co.nz/one-act-festival'),
+   'https://bfringe.co.nz/one-act-festival', 25),
   ('40000000-0000-0000-0000-000000000010', 'Botanic Garden Guided Tour', 'Expert-led tour of the heritage rose garden and native bush.',
    '10000000-0000-0000-0000-000000000016', CURRENT_DATE + INTERVAL '9 days', '10:00', '12:00',
-   'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=600', 'community', null),
+   'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=600', 'community', null, null),
   ('40000000-0000-0000-0000-000000000011', 'Everybody Eats Wellington', 'Pay-what-you-can community dinner. Rescued food transformed into quality 3-course meals, reducing food waste and social isolation.',
    '10000000-0000-0000-0000-000000000051', CURRENT_DATE + INTERVAL '2 days', '18:00', '21:00',
-   'https://volunteers.everybodyeats.nz/_next/image?url=%2Fhero.jpg&w=2048&q=75&dpl=dpl_GSgpFADndVcyRRuCjggKurYj9KZX', 'community', null);
+   'https://volunteers.everybodyeats.nz/_next/image?url=%2Fhero.jpg&w=2048&q=75&dpl=dpl_GSgpFADndVcyRRuCjggKurYj9KZX', 'community', null, null),
+  -- New category events
+  ('40000000-0000-0000-0000-000000000012', 'Wednesday Pub Quiz', 'Weekly pub quiz at Rogue & Vagabond. Teams of up to 6. Prizes for top 3.',
+   '10000000-0000-0000-0000-000000000012', CURRENT_DATE + INTERVAL '5 days', '19:00', '21:00',
+   null, 'quiz', null, null),
+  ('40000000-0000-0000-0000-000000000013', 'Pottery Workshop', 'Hands-on pottery class for beginners. All materials provided. Make your own mug.',
+   '10000000-0000-0000-0000-000000000049', CURRENT_DATE + INTERVAL '8 days', '10:00', '13:00',
+   null, 'craft', null, 45),
+  ('40000000-0000-0000-0000-000000000014', 'Kids Nature Walk', 'Guided nature walk through Zealandia for kids aged 5-12. Spot native birds and learn about conservation.',
+   '10000000-0000-0000-0000-000000000015', CURRENT_DATE + INTERVAL '6 days', '10:00', '12:00',
+   null, 'kids', null, null),
+  ('40000000-0000-0000-0000-000000000015', 'Matariki Celebration', 'Celebrate Matariki with traditional Maori performances, storytelling, and kai. A cultural experience for the whole whanau.',
+   '10000000-0000-0000-0000-000000000013', CURRENT_DATE + INTERVAL '11 days', '17:00', '21:00',
+   null, 'cultural', null, null),
+  ('40000000-0000-0000-0000-000000000016', 'Family Craft Market', 'Local makers and artisans with activities for kids. Face painting, craft tables, and live music.',
+   '10000000-0000-0000-0000-000000000044', CURRENT_DATE + INTERVAL '7 days', '09:00', '15:00',
+   null, 'kids', null, null),
+  ('40000000-0000-0000-0000-000000000017', 'Trivia Championship', 'Monthly trivia showdown. Solo or teams. Winner takes the trophy and bar tab.',
+   '10000000-0000-0000-0000-000000000010', CURRENT_DATE + INTERVAL '13 days', '19:30', '22:00',
+   null, 'quiz', null, 5);
 
 -- ============================================================
 -- EVENT ATTENDEES
@@ -584,4 +603,27 @@ INSERT INTO event_attendees (event_id, user_id) VALUES
   ('40000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000008'),
   ('40000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000002'),
   ('40000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000001'),
-  ('40000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000006');
+  ('40000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000006'),
+  -- Wednesday Pub Quiz
+  ('40000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000007'),
+  ('40000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000009'),
+  ('40000000-0000-0000-0000-000000000012', '00000000-0000-0000-0000-000000000010'),
+  -- Pottery Workshop
+  ('40000000-0000-0000-0000-000000000013', '00000000-0000-0000-0000-000000000008'),
+  ('40000000-0000-0000-0000-000000000013', '00000000-0000-0000-0000-000000000003'),
+  -- Kids Nature Walk
+  ('40000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000006'),
+  ('40000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000008'),
+  ('40000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000001'),
+  -- Matariki Celebration
+  ('40000000-0000-0000-0000-000000000015', '00000000-0000-0000-0000-000000000006'),
+  ('40000000-0000-0000-0000-000000000015', '00000000-0000-0000-0000-000000000003'),
+  ('40000000-0000-0000-0000-000000000015', '00000000-0000-0000-0000-000000000008'),
+  ('40000000-0000-0000-0000-000000000015', '00000000-0000-0000-0000-000000000001'),
+  -- Family Craft Market
+  ('40000000-0000-0000-0000-000000000016', '00000000-0000-0000-0000-000000000008'),
+  ('40000000-0000-0000-0000-000000000016', '00000000-0000-0000-0000-000000000002'),
+  -- Trivia Championship
+  ('40000000-0000-0000-0000-000000000017', '00000000-0000-0000-0000-000000000007'),
+  ('40000000-0000-0000-0000-000000000017', '00000000-0000-0000-0000-000000000010'),
+  ('40000000-0000-0000-0000-000000000017', '00000000-0000-0000-0000-000000000009');
