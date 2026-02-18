@@ -42,6 +42,7 @@ export function PlacePostsSheetScreen() {
   const { placeId } = useLocalSearchParams<{ placeId: string }>();
   const router = useRouter();
   const { followingIds } = useFollow();
+  const { getLikeCount } = useLike();
 
   const fetchPlace = useCallback(() => getPlaceById(placeId!), [placeId]);
   const fetchPosts = useCallback(() => getPostsByPlaceId(placeId!), [placeId]);
@@ -101,8 +102,8 @@ export function PlacePostsSheetScreen() {
   }, [posts]);
 
   const totalLikes = useMemo(
-    () => (posts ?? []).reduce((sum, p) => sum + p.likes, 0),
-    [posts]
+    () => (posts ?? []).reduce((sum, p) => sum + getLikeCount(p.id), 0),
+    [posts, getLikeCount]
   );
 
   const handleOpenDirections = useCallback(() => {
