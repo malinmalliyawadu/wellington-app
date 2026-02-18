@@ -1,7 +1,10 @@
 import React from "react";
 import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
-import { PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import {
+  PlusJakartaSans_600SemiBold,
+  useFonts,
+} from "@expo-google-fonts/plus-jakarta-sans";
 import { EventCard } from "./EventCard";
 import { colors } from "../theme/colors";
 import { Event, Place } from "../types";
@@ -35,6 +38,7 @@ export function UpcomingEvents({ events }: UpcomingEventsProps) {
               place={event.place}
               onPress={() => router.push(`/events/${event.id}`)}
               hasBorder
+              compact
             />
           </View>
         ))}
@@ -56,7 +60,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   cardWrapper: {
-    width: 280,
+    width: 300,
     marginRight: 12,
+    overflow: "hidden",
   },
 });

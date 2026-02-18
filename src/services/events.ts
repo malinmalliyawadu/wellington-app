@@ -86,7 +86,31 @@ export async function getEventsByUserId(userId: string): Promise<Event[]> {
     .order('date', { ascending: true });
 
   if (error) throw error;
-  return (data ?? []).map(mapEvent);
+
+  const events = (data ?? []).map(mapEvent);
+
+  // Batch-fetch all attendees for these events
+  if (events.length > 0) {
+    const fetchedEventIds = events.map((e) => e.id);
+    const { data: allAttendeeRows } = await supabase
+      .from('event_attendees')
+      .select('event_id, user_id')
+      .in('event_id', fetchedEventIds);
+
+    if (allAttendeeRows) {
+      const attendeeMap = new Map<string, string[]>();
+      for (const row of allAttendeeRows) {
+        const list = attendeeMap.get(row.event_id) ?? [];
+        list.push(row.user_id);
+        attendeeMap.set(row.event_id, list);
+      }
+      for (const event of events) {
+        event.attendeeIds = attendeeMap.get(event.id) ?? [];
+      }
+    }
+  }
+
+  return events;
 }
 
 export async function toggleAttendance(eventId: string, userId: string): Promise<boolean> {

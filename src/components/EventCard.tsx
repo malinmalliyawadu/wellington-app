@@ -22,6 +22,7 @@ interface EventCardProps {
   place: Place;
   onPress?: () => void;
   hasBorder?: boolean;
+  compact?: boolean;
 }
 
 export const CATEGORY_COLORS: Record<Event["category"], string> = {
@@ -76,6 +77,7 @@ export function EventCard({
   place,
   onPress,
   hasBorder,
+  compact,
 }: EventCardProps) {
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_500Medium,
@@ -171,44 +173,83 @@ export function EventCard({
         </Text>
       </View>
 
-      {/* Compact footer */}
-      <View style={styles.footer}>
-        <View style={styles.footerInfo}>
-          <View style={styles.footerItem}>
-            <SFIcon name="mappin" fallback="location" size={14} color={colors.textSecondary} />
-            <Text style={styles.footerText} numberOfLines={1}>
-              {place.name}
-            </Text>
-          </View>
-          <View style={styles.footerDot} />
-          <View style={styles.footerItem}>
-            <SFIcon name="clock" fallback="time" size={14} color={colors.textSecondary} />
-            <Text style={styles.footerText}>
-              {formatTime(event.startTime, event.endTime)}
-            </Text>
-          </View>
-        </View>
-        {totalCount > 0 && (
-          <View style={styles.attendeeSection}>
-            <View style={styles.avatarStack}>
-              {displayAttendees.map((user, index) => (
-                <Image
-                  key={user.id}
-                  source={{ uri: user.avatarUrl }}
-                  style={[
-                    styles.attendeeAvatar,
-                    { marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP },
-                    { zIndex: displayAttendees.length - index },
-                  ]}
-                />
-              ))}
+      {/* Footer */}
+      {compact ? (
+        <View style={styles.footerCompact}>
+          <View style={styles.footerInfoStacked}>
+            <View style={styles.footerItem}>
+              <SFIcon name="mappin" fallback="location" size={14} color={colors.textSecondary} />
+              <Text style={styles.footerText} numberOfLines={1}>
+                {place.name}
+              </Text>
             </View>
-            {remainingCount > 0 && (
-              <Text style={styles.attendeeCount}>+{remainingCount}</Text>
-            )}
+            <View style={styles.footerItem}>
+              <SFIcon name="clock" fallback="time" size={14} color={colors.textSecondary} />
+              <Text style={styles.footerText}>
+                {formatTime(event.startTime, event.endTime)}
+              </Text>
+            </View>
           </View>
-        )}
-      </View>
+          {totalCount > 0 && (
+            <View style={styles.attendeeSectionCompact}>
+              <View style={styles.avatarStack}>
+                {displayAttendees.map((user, index) => (
+                  <Image
+                    key={user.id}
+                    source={{ uri: user.avatarUrl }}
+                    style={[
+                      styles.attendeeAvatar,
+                      { marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP },
+                      { zIndex: displayAttendees.length - index },
+                    ]}
+                  />
+                ))}
+              </View>
+              <Text style={styles.attendeeCountCompact}>
+                {totalCount} going
+              </Text>
+            </View>
+          )}
+        </View>
+      ) : (
+        <View style={styles.footer}>
+          <View style={styles.footerInfo}>
+            <View style={styles.footerItem}>
+              <SFIcon name="mappin" fallback="location" size={14} color={colors.textSecondary} />
+              <Text style={styles.footerText} numberOfLines={1}>
+                {place.name}
+              </Text>
+            </View>
+            <View style={styles.footerDot} />
+            <View style={styles.footerItem}>
+              <SFIcon name="clock" fallback="time" size={14} color={colors.textSecondary} />
+              <Text style={styles.footerText}>
+                {formatTime(event.startTime, event.endTime)}
+              </Text>
+            </View>
+          </View>
+          {totalCount > 0 && (
+            <View style={styles.attendeeSection}>
+              <View style={styles.avatarStack}>
+                {displayAttendees.map((user, index) => (
+                  <Image
+                    key={user.id}
+                    source={{ uri: user.avatarUrl }}
+                    style={[
+                      styles.attendeeAvatar,
+                      { marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP },
+                      { zIndex: displayAttendees.length - index },
+                    ]}
+                  />
+                ))}
+              </View>
+              {remainingCount > 0 && (
+                <Text style={styles.attendeeCount}>+{remainingCount}</Text>
+              )}
+            </View>
+          )}
+        </View>
+      )}
     </HapticPressable>
   );
 }
@@ -303,8 +344,14 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
-  // Compact footer
   footer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  footerCompact: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
@@ -315,6 +362,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     flex: 1,
+    marginRight: 8,
+  },
+  footerInfoStacked: {
+    flex: 1,
+    gap: 4,
     marginRight: 8,
   },
   footerItem: {
@@ -339,6 +391,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
   },
+  attendeeSectionCompact: {
+    alignItems: "center",
+  },
   avatarStack: {
     flexDirection: "row",
   },
@@ -356,5 +411,12 @@ const styles = StyleSheet.create({
     fontFamily: "PlusJakartaSans_600SemiBold",
     color: colors.textSecondary,
     marginLeft: 4,
+  },
+  attendeeCountCompact: {
+    fontSize: 11,
+    fontWeight: "600",
+    fontFamily: "PlusJakartaSans_600SemiBold",
+    color: colors.textSecondary,
+    marginTop: 3,
   },
 });
