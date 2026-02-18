@@ -45,10 +45,13 @@ export function FeedScreen() {
     }, [refetchPosts])
   );
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    refetchPosts();
-    setTimeout(() => setRefreshing(false), 600);
+    try {
+      await refetchPosts();
+    } finally {
+      setRefreshing(false);
+    }
   }, [refetchPosts]);
 
   // Fetch all users and places for the feed

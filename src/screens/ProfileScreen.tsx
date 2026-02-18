@@ -84,13 +84,17 @@ export function ProfileScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    refetchPosts();
-    refetchPlaces();
-    refetchCounts();
-    refetchAchievementCount();
-    refetchEvents();
-    // Give a small delay to ensure queries complete
-    setTimeout(() => setRefreshing(false), 1000);
+    try {
+      await Promise.all([
+        refetchPosts(),
+        refetchPlaces(),
+        refetchCounts(),
+        refetchAchievementCount(),
+        refetchEvents(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
   }, [
     refetchPosts,
     refetchPlaces,

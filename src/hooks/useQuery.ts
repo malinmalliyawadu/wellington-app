@@ -4,7 +4,7 @@ interface QueryResult<T> {
   data: T | null;
   loading: boolean;
   error: string | null;
-  refetch: () => void;
+  refetch: () => Promise<T>;
 }
 
 export function useQuery<T>(queryFn: () => Promise<T>, key?: unknown): QueryResult<T> {
@@ -14,9 +14,15 @@ export function useQuery<T>(queryFn: () => Promise<T>, key?: unknown): QueryResu
   const [trigger, setTrigger] = useState(0);
   const queryFnRef = useRef(queryFn);
   queryFnRef.current = queryFn;
+  const resolveRef = useRef<((value: T) => void) | null>(null);
+  const rejectRef = useRef<((reason: unknown) => void) | null>(null);
 
   const refetch = useCallback(() => {
-    setTrigger((t) => t + 1);
+    return new Promise<T>((resolve, reject) => {
+      resolveRef.current = resolve;
+      rejectRef.current = reject;
+      setTrigger((t) => t + 1);
+    });
   }, []);
 
   const stableKey = key !== undefined ? JSON.stringify(key) : undefined;
@@ -37,17 +43,24 @@ export function useQuery<T>(queryFn: () => Promise<T>, key?: unknown): QueryResu
     }
     setError(null);
 
+    const pendingResolve = resolveRef.current;
+    const pendingReject = rejectRef.current;
+    resolveRef.current = null;
+    rejectRef.current = null;
+
     queryFnRef.current()
       .then((result) => {
         if (!cancelled) {
           setData(result);
           setLoading(false);
+          pendingResolve?.(result);
         }
       })
       .catch((err) => {
         if (!cancelled) {
           setError(err.message ?? 'An error occurred');
           setLoading(false);
+          pendingReject?.(err);
         }
       });
 

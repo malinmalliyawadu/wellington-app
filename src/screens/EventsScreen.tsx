@@ -167,11 +167,13 @@ export function EventsScreen() {
   const { data: places, refetch: refetchPlaces } = useQuery(fetchPlaces);
 
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    refetchEvents();
-    refetchPlaces();
-    setTimeout(() => setRefreshing(false), 600);
+    try {
+      await Promise.all([refetchEvents(), refetchPlaces()]);
+    } finally {
+      setRefreshing(false);
+    }
   }, [refetchEvents, refetchPlaces]);
 
   const placeMap = useMemo(

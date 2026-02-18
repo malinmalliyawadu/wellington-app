@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
 import { uploadAvatar } from "../services/storage";
+import { compressAvatar } from "../utils/compressMedia";
 import { HapticPressable } from "../components/HapticPressable";
 import { PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
@@ -64,7 +65,7 @@ export function EditProfileScreen() {
         </HapticPressable>
       ),
     });
-  }, [navigation, hasChanges, saving]);
+  }, [navigation, hasChanges, saving, displayName, username, bio, avatarUrl]);
 
   const handleChangePhoto = async () => {
     if (!profile) return;
@@ -95,7 +96,8 @@ export function EditProfileScreen() {
       console.log("Selected image:", result.assets[0].uri);
       setUploadingPhoto(true);
 
-      const newAvatarUrl = await uploadAvatar(result.assets[0].uri, profile.id);
+      const compressedUri = await compressAvatar(result.assets[0].uri);
+      const newAvatarUrl = await uploadAvatar(compressedUri, profile.id);
       console.log("Upload successful, new URL:", newAvatarUrl);
       setAvatarUrl(newAvatarUrl);
     } catch (error) {
