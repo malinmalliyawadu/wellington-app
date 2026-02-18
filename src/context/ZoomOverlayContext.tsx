@@ -18,12 +18,12 @@ interface ZoomOverlayContextType {
   scale: SharedValue<number>;
   translateX: SharedValue<number>;
   translateY: SharedValue<number>;
+  active: SharedValue<number>;
   originX: SharedValue<number>;
   originY: SharedValue<number>;
   originWidth: SharedValue<number>;
   originHeight: SharedValue<number>;
-  showImage: (source: ImageSourcePropType) => void;
-  hideImage: () => void;
+  setSource: (source: ImageSourcePropType) => void;
 }
 
 const ZoomOverlayContext = createContext<ZoomOverlayContextType | null>(null);
@@ -34,32 +34,31 @@ export function useZoomOverlay() {
   return ctx;
 }
 
-interface OverlayRendererHandle {
-  show: (source: ImageSourcePropType) => void;
-  hide: () => void;
-}
-
 interface OverlayRendererProps {
   scale: SharedValue<number>;
   translateX: SharedValue<number>;
   translateY: SharedValue<number>;
+  active: SharedValue<number>;
   originX: SharedValue<number>;
   originY: SharedValue<number>;
   originWidth: SharedValue<number>;
   originHeight: SharedValue<number>;
 }
 
-/** Isolated component — its state changes don't re-render the provider or consumers */
+interface OverlayRendererHandle {
+  setSource: (source: ImageSourcePropType) => void;
+}
+
+/** Always mounted — avoids mount/unmount delay. Visibility driven by shared value. */
 const OverlayRenderer = forwardRef<OverlayRendererHandle, OverlayRendererProps>(
   function OverlayRenderer(
-    { scale, translateX, translateY, originX, originY, originWidth, originHeight },
+    { scale, translateX, translateY, active, originX, originY, originWidth, originHeight },
     ref
   ) {
-    const [imageSource, setImageSource] = useState<ImageSourcePropType | null>(null);
+    const [imageSource, setImageSource] = useState<ImageSourcePropType>({ uri: "" });
 
     useImperativeHandle(ref, () => ({
-      show: (src: ImageSourcePropType) => setImageSource(src),
-      hide: () => setImageSource(null),
+      setSource: (src: ImageSourcePropType) => setImageSource(src),
     }));
 
     const imageStyle = useAnimatedStyle(() => ({
@@ -68,14 +67,13 @@ const OverlayRenderer = forwardRef<OverlayRendererHandle, OverlayRendererProps>(
       top: originY.value,
       width: originWidth.value,
       height: originHeight.value,
+      opacity: active.value,
       transform: [
         { translateX: translateX.value },
         { translateY: translateY.value },
         { scale: scale.value },
       ],
     }));
-
-    if (!imageSource) return null;
 
     return (
       <Animated.View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -93,6 +91,7 @@ export function ZoomOverlayProvider({ children }: { children: React.ReactNode })
   const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
+  const active = useSharedValue(0);
   const originX = useSharedValue(0);
   const originY = useSharedValue(0);
   const originWidth = useSharedValue(0);
@@ -100,18 +99,17 @@ export function ZoomOverlayProvider({ children }: { children: React.ReactNode })
 
   const overlayRef = useRef<OverlayRendererHandle>(null);
 
-  // Stable context value — never changes, so consumers never re-render from context
   const contextValue = useMemo<ZoomOverlayContextType>(
     () => ({
       scale,
       translateX,
       translateY,
+      active,
       originX,
       originY,
       originWidth,
       originHeight,
-      showImage: (src) => overlayRef.current?.show(src),
-      hideImage: () => overlayRef.current?.hide(),
+      setSource: (src) => overlayRef.current?.setSource(src),
     }),
     []
   );
@@ -124,6 +122,7 @@ export function ZoomOverlayProvider({ children }: { children: React.ReactNode })
         scale={scale}
         translateX={translateX}
         translateY={translateY}
+        active={active}
         originX={originX}
         originY={originY}
         originWidth={originWidth}

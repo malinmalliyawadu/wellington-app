@@ -8,8 +8,8 @@ import Animated, {
   measure,
   withTiming,
   Easing,
-  runOnJS,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 import { useZoomOverlay } from "../context/ZoomOverlayContext";
 
 const RESET_CONFIG = { duration: 200, easing: Easing.out(Easing.quad) };
@@ -18,16 +18,18 @@ const MAX_SCALE = 5;
 export function ZoomableImage({ style, source, ...props }: ImageProps) {
   const overlay = useZoomOverlay();
   const wrapperRef = useAnimatedRef<Animated.View>();
-  const active = useSharedValue(false);
+  const localActive = useSharedValue(false);
   const sourceRef = useRef<ImageSourcePropType | undefined>(source);
   sourceRef.current = source;
 
-  const showOverlayImage = () => overlay.showImage(sourceRef.current!);
-  const hideOverlayImage = () => overlay.hideImage();
+  const updateSource = () => {
+    overlay.setSource(sourceRef.current!);
+    overlay.active.value = 1;
+  };
 
   const pinchGesture = Gesture.Pinch()
     .onStart(() => {
-      active.value = true;
+      localActive.value = true;
       const layout = measure(wrapperRef);
       if (layout) {
         overlay.originX.value = layout.pageX;
@@ -38,7 +40,8 @@ export function ZoomableImage({ style, source, ...props }: ImageProps) {
       overlay.scale.value = 1;
       overlay.translateX.value = 0;
       overlay.translateY.value = 0;
-      runOnJS(showOverlayImage)();
+      // Source + visibility update together on JS thread
+      scheduleOnRN(updateSource);
     })
     .onUpdate((e) => {
       overlay.scale.value = Math.min(Math.max(e.scale, 1), MAX_SCALE);
@@ -47,8 +50,8 @@ export function ZoomableImage({ style, source, ...props }: ImageProps) {
       overlay.scale.value = withTiming(1, RESET_CONFIG);
       overlay.translateX.value = withTiming(0, RESET_CONFIG);
       overlay.translateY.value = withTiming(0, RESET_CONFIG, () => {
-        active.value = false;
-        runOnJS(hideOverlayImage)();
+        overlay.active.value = 0;
+        localActive.value = false;
       });
     });
 
@@ -61,9 +64,9 @@ export function ZoomableImage({ style, source, ...props }: ImageProps) {
 
   const composed = Gesture.Simultaneous(pinchGesture, panGesture);
 
-  // Original image transforms for instant feedback while overlay catches up
+  // Original image also transforms for instant feedback
   const animatedStyle = useAnimatedStyle(() => {
-    if (!active.value) {
+    if (!localActive.value) {
       return { transform: [{ scale: 1 }] };
     }
     return {
