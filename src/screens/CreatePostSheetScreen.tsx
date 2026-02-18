@@ -2,8 +2,6 @@ import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
-  TextInput,
-  Image,
   StyleSheet,
   ScrollView,
   Alert,
@@ -14,12 +12,9 @@ import {
   Keyboard,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
-import { SFSymbol } from "expo-symbols";
 import { SFIcon } from "../components/SFIcon";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
-import MapView, { Marker } from "react-native-maps";
 import { Place, PostType, EventCategory } from "../types";
 import { colors } from "../theme/colors";
 import { useAuth } from "../context/AuthContext";
@@ -29,32 +24,27 @@ import { findOrCreatePlace, getPlaceById } from "../services/places";
 import { createPost } from "../services/posts";
 import { uploadMedia } from "../services/storage";
 import { createAchievementToast } from "../utils/achievementHelpers";
-import { PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, useFonts } from "@expo-google-fonts/plus-jakarta-sans";
+import {
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  useFonts,
+} from "@expo-google-fonts/plus-jakarta-sans";
 import { HapticPressable } from "src/components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
-import { VideoPlayer } from "../components/VideoPlayer";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
+import { PlacePicker } from "../components/create/PlacePicker";
+import { PostForm } from "../components/create/PostForm";
+import { EventForm } from "../components/create/EventForm";
 
-const POST_TYPES: { type: PostType; icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }; label: string }[] = [
-  { type: "photo", icon: { sf: "photo.fill", fallback: "image" }, label: "Photo" },
-  { type: "video", icon: { sf: "video.fill", fallback: "videocam" }, label: "Video" },
-  { type: "text", icon: { sf: "doc.text.fill", fallback: "document-text" }, label: "Text" },
-];
-
-const EVENT_CATEGORIES: { type: EventCategory; label: string }[] = [
-  { type: "music", label: "Music" },
-  { type: "comedy", label: "Comedy" },
-  { type: "art", label: "Art" },
-  { type: "food", label: "Food" },
-  { type: "market", label: "Market" },
-  { type: "community", label: "Community" },
-];
-
-const MAX_CONTENT_LENGTH = 500;
+const glassEnabled = isLiquidGlassAvailable();
 
 type CreateType = "post" | "event";
 
 export function CreatePostSheetScreen() {
-  const [fontsLoaded] = useFonts({ PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold });
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+  });
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const { markExplored } = useExploration();
@@ -89,9 +79,9 @@ export function CreatePostSheetScreen() {
   const [eventTitle, setEventTitle] = useState("");
   const [eventDescription, setEventDescription] = useState("");
   const [eventCategory, setEventCategory] = useState<EventCategory>("music");
-  const [eventDate, setEventDate] = useState("");
-  const [eventStartTime, setEventStartTime] = useState("");
-  const [eventEndTime, setEventEndTime] = useState("");
+  const [eventDate, setEventDate] = useState<Date | null>(null);
+  const [eventStartTime, setEventStartTime] = useState<Date | null>(null);
+  const [eventEndTime, setEventEndTime] = useState<Date | null>(null);
 
   // Shared state
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
@@ -131,7 +121,6 @@ export function CreatePostSheetScreen() {
   // Handle place selection from search sheet
   useFocusEffect(
     useCallback(() => {
-      // Check for global selected place when screen comes into focus
       if ((global as any).__selectedPlace) {
         setSelectedPlace((global as any).__selectedPlace);
         delete (global as any).__selectedPlace;
@@ -172,7 +161,6 @@ export function CreatePostSheetScreen() {
   }, []);
 
   useEffect(() => {
-    // Also handle place from params (alternative method)
     if (selectedPlaceData) {
       try {
         const place = JSON.parse(selectedPlaceData);
@@ -196,13 +184,8 @@ export function CreatePostSheetScreen() {
   }, [placeIdParam]);
 
   const pickMedia = async () => {
-    const mediaType =
-      postType === "video"
-        ? ImagePicker.MediaTypeOptions.Videos
-        : ImagePicker.MediaTypeOptions.Images;
-
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: mediaType,
+      mediaTypes: postType === "video" ? ["videos"] : ["images"],
       allowsEditing: false,
       quality: 0.8,
     });
@@ -220,17 +203,12 @@ export function CreatePostSheetScreen() {
     if (!profile) {
       Alert.alert(
         "Not signed in",
-        `Please sign in to create ${
-          createType === "post" ? "a post" : "an event"
-        }`
+        `Please sign in to create ${createType === "post" ? "a post" : "an event"}`
       );
       return;
     }
     if (!selectedPlace) {
-      Alert.alert(
-        "Select a place",
-        `Please select a place for your ${createType}`
-      );
+      Alert.alert("Select a place", `Please select a place for your ${createType}`);
       return;
     }
 
@@ -256,7 +234,6 @@ export function CreatePostSheetScreen() {
 
     setPosting(true);
     try {
-      // If the place doesn't have an ID (came from Google Places), find or create it
       let placeId = selectedPlace.id;
       if (!placeId) {
         const place = await findOrCreatePlace({
@@ -290,8 +267,7 @@ export function CreatePostSheetScreen() {
           mediaHeight: mediaDimensions?.height,
         });
 
-        // Mark place as explored via posting
-        const newAchievements = await markExplored(placeId, 'posted');
+        const newAchievements = await markExplored(placeId, "posted");
         if (newAchievements.length > 0) {
           showToast(createAchievementToast(newAchievements[0]));
         }
@@ -323,9 +299,9 @@ export function CreatePostSheetScreen() {
               onPress: () => {
                 setEventTitle("");
                 setEventDescription("");
-                setEventDate("");
-                setEventStartTime("");
-                setEventEndTime("");
+                setEventDate(null);
+                setEventStartTime(null);
+                setEventEndTime(null);
                 setSelectedPlace(null);
                 router.dismiss();
               },
@@ -347,8 +323,8 @@ export function CreatePostSheetScreen() {
     } else {
       return (
         eventTitle.trim().length > 0 &&
-        eventDate.length > 0 &&
-        eventStartTime.length > 0
+        eventDate !== null &&
+        eventStartTime !== null
       );
     }
   };
@@ -374,16 +350,7 @@ export function CreatePostSheetScreen() {
         >
           {/* Header */}
           <View style={[styles.header, isScrolled && styles.headerScrolled]}>
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                paddingVertical: 24,
-                alignContent: "center",
-                alignItems: "center",
-                gap: 16,
-              }}
-            >
+            <View style={styles.headerRow}>
               <View style={styles.headerLeft}>
                 <HapticPressable
                   onPress={() => router.dismiss()}
@@ -393,44 +360,49 @@ export function CreatePostSheetScreen() {
                 </HapticPressable>
               </View>
               <View style={styles.headerCenter}>
-                <View style={styles.segmentControl}>
-                  <HapticPressable
-                    style={[
-                      styles.segment,
-                      createType === "post" && styles.segmentActive,
-                    ]}
-                    onPress={() => setCreateType("post")}
-                  >
-                    <Text
-                      style={[
-                        styles.segmentText,
-                        createType === "post" && styles.segmentTextActive,
-                      ]}
+                {glassEnabled ? (
+                  <GlassView style={styles.segmentControlGlass} glassEffectStyle="regular">
+                    <HapticPressable
+                      style={[styles.segment, createType === "post" && styles.segmentActiveGlass]}
+                      onPress={() => setCreateType("post")}
                     >
-                      Post
-                    </Text>
-                  </HapticPressable>
-                  <HapticPressable
-                    style={[
-                      styles.segment,
-                      createType === "event" && styles.segmentActive,
-                    ]}
-                    onPress={() => setCreateType("event")}
-                  >
-                    <Text
-                      style={[
-                        styles.segmentText,
-                        createType === "event" && styles.segmentTextActive,
-                      ]}
+                      <Text style={[styles.segmentText, createType === "post" && styles.segmentTextActive]}>
+                        Post
+                      </Text>
+                    </HapticPressable>
+                    <HapticPressable
+                      style={[styles.segment, createType === "event" && styles.segmentActiveGlass]}
+                      onPress={() => setCreateType("event")}
                     >
-                      Event
-                    </Text>
-                  </HapticPressable>
-                </View>
+                      <Text style={[styles.segmentText, createType === "event" && styles.segmentTextActive]}>
+                        Event
+                      </Text>
+                    </HapticPressable>
+                  </GlassView>
+                ) : (
+                  <View style={styles.segmentControl}>
+                    <HapticPressable
+                      style={[styles.segment, createType === "post" && styles.segmentActive]}
+                      onPress={() => setCreateType("post")}
+                    >
+                      <Text style={[styles.segmentText, createType === "post" && styles.segmentTextActive]}>
+                        Post
+                      </Text>
+                    </HapticPressable>
+                    <HapticPressable
+                      style={[styles.segment, createType === "event" && styles.segmentActive]}
+                      onPress={() => setCreateType("event")}
+                    >
+                      <Text style={[styles.segmentText, createType === "event" && styles.segmentTextActive]}>
+                        Event
+                      </Text>
+                    </HapticPressable>
+                  </View>
+                )}
               </View>
               <View style={styles.headerRight}>
                 <LiquidGlassButton
-                  title={"Create"}
+                  title="Create"
                   onPress={handleSubmit}
                   disabled={!isFormValid() || posting}
                   size="medium"
@@ -440,335 +412,48 @@ export function CreatePostSheetScreen() {
           </View>
 
           <View style={styles.content}>
+            <PlacePicker
+              selectedPlace={selectedPlace}
+              onPress={() => router.push("./place-search")}
+              onClear={() => setSelectedPlace(null)}
+            />
+
             {createType === "post" ? (
-              <>
-                {/* Composer: Avatar + Text Input */}
-                <View style={styles.composerRow}>
-                  {profile?.avatarUrl ? (
-                    <Image
-                      source={{ uri: profile.avatarUrl }}
-                      style={styles.composerAvatar}
-                    />
-                  ) : (
-                    <View style={[styles.composerAvatar, styles.composerAvatarPlaceholder]}>
-                      <SFIcon name="person.fill" fallback="person" size={20} color={colors.gray400} />
-                    </View>
-                  )}
-                  <View style={styles.composerInputWrapper}>
-                    <TextInput
-                      style={styles.composerInput}
-                      placeholder="What do you recommend?"
-                      placeholderTextColor={colors.gray400}
-                      multiline
-                      value={content}
-                      onChangeText={(text) => setContent(text.slice(0, MAX_CONTENT_LENGTH))}
-                      textAlignVertical="top"
-                      maxLength={MAX_CONTENT_LENGTH}
-                    />
-                    <Text style={styles.charCount}>
-                      {content.length}/{MAX_CONTENT_LENGTH}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Place Tag */}
-                {selectedPlace ? (
-                  <View style={styles.placePillRow}>
-                    <HapticPressable
-                      style={styles.placePill}
-                      onPress={() => router.push("./place-search")}
-                    >
-                      <SFIcon name="mappin" fallback="location" size={14} color={colors.primary} />
-                      <Text style={styles.placePillText}>{selectedPlace.name}</Text>
-                      <HapticPressable
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          setSelectedPlace(null);
-                        }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <SFIcon name="xmark" fallback="close" size={12} color={colors.primary} />
-                      </HapticPressable>
-                    </HapticPressable>
-                    <Text style={styles.placePillAddress}>{selectedPlace.address}</Text>
-                  </View>
-                ) : (
-                  <HapticPressable
-                    style={styles.placeAddRow}
-                    onPress={() => router.push("./place-search")}
-                  >
-                    <SFIcon name="mappin" fallback="location" size={16} color={colors.gray400} />
-                    <Text style={styles.placeAddText}>Add a place</Text>
-                  </HapticPressable>
-                )}
-
-                {/* Map Preview */}
-                {selectedPlace && (
-                  <View style={styles.mapPreview}>
-                    <MapView
-                      style={styles.map}
-                      initialRegion={{
-                        latitude: selectedPlace.latitude,
-                        longitude: selectedPlace.longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                      }}
-                      scrollEnabled={false}
-                      zoomEnabled={false}
-                      pitchEnabled={false}
-                      rotateEnabled={false}
-                    >
-                      <Marker
-                        coordinate={{
-                          latitude: selectedPlace.latitude,
-                          longitude: selectedPlace.longitude,
-                        }}
-                        title={selectedPlace.name}
-                      />
-                    </MapView>
-                  </View>
-                )}
-
-                {/* Media Section */}
-                {postType !== "text" && (
-                  mediaUri ? (
-                    <View style={styles.mediaPreviewContainer}>
-                      {postType === "video" ? (
-                        <VideoPlayer
-                          uri={mediaUri}
-                          style={styles.mediaPreview}
-                          useNativeControls
-                          isMuted
-                        />
-                      ) : (
-                        <HapticPressable onPress={pickMedia}>
-                          <Image
-                            source={{ uri: mediaUri }}
-                            style={styles.mediaPreview}
-                          />
-                        </HapticPressable>
-                      )}
-                      <HapticPressable style={styles.mediaChangeButton} onPress={pickMedia}>
-                        <SFIcon name="arrow.triangle.2.circlepath" fallback="refresh" size={14} color={colors.primary} />
-                        <Text style={styles.mediaChangeText}>Change</Text>
-                      </HapticPressable>
-                    </View>
-                  ) : (
-                    <HapticPressable style={styles.mediaButton} onPress={pickMedia}>
-                      <SFIcon
-                        name={postType === "photo" ? "camera.fill" : "video.fill"}
-                        fallback={postType === "photo" ? "camera" : "videocam"}
-                        size={28}
-                        color={colors.gray400}
-                      />
-                      <Text style={styles.mediaButtonText}>
-                        Add a {postType === "photo" ? "photo" : "video"}
-                      </Text>
-                    </HapticPressable>
-                  )
-                )}
-
-                {/* Post Type Selector - compact pills */}
-                <View style={styles.typePillRow}>
-                  {POST_TYPES.map((item) => (
-                    <HapticPressable
-                      key={item.type}
-                      style={[
-                        styles.typePill,
-                        postType === item.type && styles.typePillActive,
-                      ]}
-                      onPress={() => {
-                        setPostType(item.type);
-                        setMediaUri(null);
-                        setMediaDimensions(null);
-                      }}
-                    >
-                      <SFIcon
-                        name={item.icon.sf}
-                        fallback={item.icon.fallback}
-                        size={16}
-                        color={
-                          postType === item.type
-                            ? colors.primary
-                            : colors.gray500
-                        }
-                      />
-                      <Text
-                        style={[
-                          styles.typePillLabel,
-                          postType === item.type && styles.typePillLabelActive,
-                        ]}
-                      >
-                        {item.label}
-                      </Text>
-                    </HapticPressable>
-                  ))}
-                </View>
-              </>
+              <PostForm
+                avatarUrl={profile?.avatarUrl}
+                content={content}
+                onContentChange={setContent}
+                postType={postType}
+                onPostTypeChange={setPostType}
+                mediaUri={mediaUri}
+                onPickMedia={pickMedia}
+                onClearMedia={() => {
+                  setMediaUri(null);
+                  setMediaDimensions(null);
+                }}
+              />
             ) : (
-              <>
-                {/* Event Title - borderless */}
-                <TextInput
-                  style={styles.eventTitleInput}
-                  placeholder="Event title..."
-                  placeholderTextColor={colors.gray400}
-                  value={eventTitle}
-                  onChangeText={setEventTitle}
-                />
-
-                {/* Category pills */}
-                <View style={styles.typePillRow}>
-                  {EVENT_CATEGORIES.slice(0, 3).map((item) => (
-                    <HapticPressable
-                      key={item.type}
-                      style={[
-                        styles.typePill,
-                        eventCategory === item.type && styles.typePillActive,
-                      ]}
-                      onPress={() => setEventCategory(item.type)}
-                    >
-                      <Text
-                        style={[
-                          styles.typePillLabel,
-                          eventCategory === item.type && styles.typePillLabelActive,
-                        ]}
-                      >
-                        {item.label}
-                      </Text>
-                    </HapticPressable>
-                  ))}
-                </View>
-                <View style={[styles.typePillRow, { marginTop: 8 }]}>
-                  {EVENT_CATEGORIES.slice(3).map((item) => (
-                    <HapticPressable
-                      key={item.type}
-                      style={[
-                        styles.typePill,
-                        eventCategory === item.type && styles.typePillActive,
-                      ]}
-                      onPress={() => setEventCategory(item.type)}
-                    >
-                      <Text
-                        style={[
-                          styles.typePillLabel,
-                          eventCategory === item.type && styles.typePillLabelActive,
-                        ]}
-                      >
-                        {item.label}
-                      </Text>
-                    </HapticPressable>
-                  ))}
-                </View>
-
-                {/* Date & Time */}
-                <Text style={styles.label}>Date & Time</Text>
-                <View style={styles.dateTimeRow}>
-                  <TextInput
-                    style={[styles.textInput, { flex: 1 }]}
-                    placeholder="YYYY-MM-DD"
-                    placeholderTextColor={colors.gray400}
-                    value={eventDate}
-                    onChangeText={setEventDate}
-                  />
-                </View>
-                <View style={[styles.dateTimeRow, { marginTop: 8 }]}>
-                  <TextInput
-                    style={[styles.textInput, { flex: 1 }]}
-                    placeholder="Start (e.g. 19:00)"
-                    placeholderTextColor={colors.gray400}
-                    value={eventStartTime}
-                    onChangeText={setEventStartTime}
-                  />
-                  <TextInput
-                    style={[styles.textInput, { flex: 1 }]}
-                    placeholder="End (optional)"
-                    placeholderTextColor={colors.gray400}
-                    value={eventEndTime}
-                    onChangeText={setEventEndTime}
-                  />
-                </View>
-
-                {/* Place Tag */}
-                {selectedPlace ? (
-                  <View style={[styles.placePillRow, { marginTop: 16 }]}>
-                    <HapticPressable
-                      style={styles.placePill}
-                      onPress={() => router.push("./place-search")}
-                    >
-                      <SFIcon name="mappin" fallback="location" size={14} color={colors.primary} />
-                      <Text style={styles.placePillText}>{selectedPlace.name}</Text>
-                      <HapticPressable
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          setSelectedPlace(null);
-                        }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <SFIcon name="xmark" fallback="close" size={12} color={colors.primary} />
-                      </HapticPressable>
-                    </HapticPressable>
-                    <Text style={styles.placePillAddress}>{selectedPlace.address}</Text>
-                  </View>
-                ) : (
-                  <HapticPressable
-                    style={[styles.placeAddRow, { marginTop: 16 }]}
-                    onPress={() => router.push("./place-search")}
-                  >
-                    <SFIcon name="mappin" fallback="location" size={16} color={colors.gray400} />
-                    <Text style={styles.placeAddText}>Add a place</Text>
-                  </HapticPressable>
-                )}
-
-                {/* Map Preview */}
-                {selectedPlace && (
-                  <View style={styles.mapPreview}>
-                    <MapView
-                      style={styles.map}
-                      initialRegion={{
-                        latitude: selectedPlace.latitude,
-                        longitude: selectedPlace.longitude,
-                        latitudeDelta: 0.01,
-                        longitudeDelta: 0.01,
-                      }}
-                      scrollEnabled={false}
-                      zoomEnabled={false}
-                      pitchEnabled={false}
-                      rotateEnabled={false}
-                    >
-                      <Marker
-                        coordinate={{
-                          latitude: selectedPlace.latitude,
-                          longitude: selectedPlace.longitude,
-                        }}
-                        title={selectedPlace.name}
-                      />
-                    </MapView>
-                  </View>
-                )}
-
-                {/* Description - borderless */}
-                <TextInput
-                  style={styles.eventDescriptionInput}
-                  placeholder="Tell people about this event..."
-                  placeholderTextColor={colors.gray400}
-                  multiline
-                  value={eventDescription}
-                  onChangeText={setEventDescription}
-                  textAlignVertical="top"
-                />
-              </>
+              <EventForm
+                title={eventTitle}
+                onTitleChange={setEventTitle}
+                category={eventCategory}
+                onCategoryChange={setEventCategory}
+                date={eventDate}
+                onDateChange={setEventDate}
+                startTime={eventStartTime}
+                onStartTimeChange={setEventStartTime}
+                endTime={eventEndTime}
+                onEndTimeChange={setEventEndTime}
+                description={eventDescription}
+                onDescriptionChange={setEventDescription}
+              />
             )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Full screen progress overlay */}
-      <Modal
-        visible={posting}
-        transparent
-        animationType="fade"
-        statusBarTranslucent
-      >
+      <Modal visible={posting} transparent animationType="fade" statusBarTranslucent>
         <View style={styles.progressOverlay}>
           <View style={styles.progressContent}>
             <ActivityIndicator size="large" color={colors.primary} />
@@ -795,6 +480,13 @@ const styles = StyleSheet.create({
   headerScrolled: {
     backgroundColor: "#FFFFFF",
   },
+  headerRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 24,
+    alignItems: "center",
+    gap: 16,
+  },
   headerLeft: {
     flex: 1,
     alignItems: "flex-start",
@@ -818,6 +510,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 4,
   },
+  segmentControlGlass: {
+    flexDirection: "row",
+    borderRadius: 10,
+    padding: 4,
+  },
   segment: {
     paddingHorizontal: 12,
     paddingVertical: 6,
@@ -825,6 +522,9 @@ const styles = StyleSheet.create({
   },
   segmentActive: {
     backgroundColor: colors.background,
+  },
+  segmentActiveGlass: {
+    backgroundColor: "rgba(255, 255, 255, 0.4)",
   },
   segmentText: {
     fontSize: 16,
@@ -839,203 +539,6 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 16,
   },
-
-  // --- Composer (post flow) ---
-  composerRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    paddingTop: 4,
-  },
-  composerAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginTop: 2,
-  },
-  composerAvatarPlaceholder: {
-    backgroundColor: colors.gray200,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  composerInputWrapper: {
-    flex: 1,
-  },
-  composerInput: {
-    fontSize: 16,
-    color: colors.text,
-    fontFamily: "PlusJakartaSans_500Medium",
-    minHeight: 80,
-    paddingTop: 0,
-    paddingBottom: 4,
-  },
-  charCount: {
-    fontSize: 12,
-    color: colors.textMuted,
-    textAlign: "right",
-    marginTop: 2,
-  },
-
-  // --- Place tag ---
-  placePillRow: {
-    marginTop: 16,
-  },
-  placePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 6,
-    backgroundColor: colors.primary + "10",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  placePillText: {
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans_500Medium",
-    color: colors.primary,
-  },
-  placePillAddress: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 4,
-    marginLeft: 4,
-  },
-  placeAddRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 16,
-    paddingVertical: 10,
-  },
-  placeAddText: {
-    fontSize: 15,
-    color: colors.gray400,
-    fontFamily: "PlusJakartaSans_500Medium",
-  },
-
-  // --- Map preview ---
-  mapPreview: {
-    marginTop: 12,
-    height: 100,
-    borderRadius: 12,
-    overflow: "hidden",
-    borderWidth: 1,
-    borderColor: colors.gray200,
-  },
-  map: {
-    flex: 1,
-  },
-
-  // --- Media section ---
-  mediaButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    height: 140,
-    marginTop: 16,
-    borderRadius: 12,
-    backgroundColor: colors.gray100,
-    overflow: "hidden",
-  },
-  mediaPreviewContainer: {
-    marginTop: 16,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  mediaPreview: {
-    width: "100%",
-    height: 200,
-    borderRadius: 12,
-  },
-  mediaChangeButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 4,
-    marginTop: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: colors.primary + "10",
-  },
-  mediaChangeText: {
-    fontSize: 13,
-    fontFamily: "PlusJakartaSans_500Medium",
-    color: colors.primary,
-  },
-  mediaButtonText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: colors.gray500,
-    fontFamily: "PlusJakartaSans_500Medium",
-  },
-
-  // --- Post type pills ---
-  typePillRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 20,
-  },
-  typePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  typePillActive: {
-    backgroundColor: colors.primary + "12",
-  },
-  typePillLabel: {
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans_500Medium",
-    color: colors.gray500,
-  },
-  typePillLabelActive: {
-    color: colors.primary,
-  },
-
-  // --- Event flow ---
-  eventTitleInput: {
-    fontSize: 20,
-    color: colors.text,
-    fontFamily: "PlusJakartaSans_600SemiBold",
-    paddingTop: 4,
-    paddingBottom: 12,
-  },
-  eventDescriptionInput: {
-    fontSize: 15,
-    color: colors.text,
-    fontFamily: "PlusJakartaSans_500Medium",
-    minHeight: 100,
-    marginTop: 16,
-    paddingTop: 0,
-  },
-
-  // --- Event date/time (kept structured) ---
-  label: {
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans_600SemiBold",
-    color: colors.text,
-    marginBottom: 10,
-    marginTop: 20,
-  },
-  textInput: {
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.gray200,
-    backgroundColor: colors.gray100,
-    fontSize: 15,
-    color: colors.text,
-  },
-  dateTimeRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-
-  // --- Progress overlay ---
   progressOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
