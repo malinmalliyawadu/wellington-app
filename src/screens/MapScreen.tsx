@@ -2,7 +2,6 @@ import React, {
   useState,
   useEffect,
   useRef,
-  useMemo,
   useCallback,
 } from "react";
 import {
@@ -13,67 +12,29 @@ import {
   ActivityIndicator,
   Animated,
 } from "react-native";
-import MapView, { Marker, Polyline, Region } from "react-native-maps";
-import { SFIcon } from "../components/SFIcon";
+import MapView, { Marker, Region } from "react-native-maps";
 import { useLocation } from "../context/LocationContext";
-import { useNavigation, useFocusEffect } from "expo-router";
+import { useNavigation } from "expo-router";
 import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
-import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { PopularityMarker, MarkerEvent } from "../components/PopularityMarker";
 import { FogOfWarOverlay } from "../components/FogOfWarOverlay";
 import { NeighborhoodOverlay } from "../components/NeighborhoodOverlay";
+import { TrailOverlay } from "../components/TrailOverlay";
+import { MapControls } from "../components/MapControls";
 import { useFollow } from "../context/FollowContext";
-import { useExploration } from "../context/ExplorationContext";
-import { useToast } from "../context/ToastContext";
-import { createAchievementToast } from "../utils/achievementHelpers";
 import { useMapFilters } from "../context/MapFilterContext";
-import { useQuery } from "../hooks/useQuery";
-import { getPlaces } from "../services/places";
-import { getPosts } from "../services/posts";
-import { getProfiles } from "../services/users";
-import { getTrails } from "../services/trails";
-import { getUpcomingEvents } from "../services/events";
-import {
-  computePlacePopularity,
-  getMarkerSizeRange,
-  getMarkerSizeWithRange,
-  isFollowedPlaceSet,
-} from "../utils/placePopularity";
-import { Place, User } from "../types";
+import { useMapData } from "../hooks/useMapData";
+import { useMarkerAnimation } from "../hooks/useMarkerAnimation";
+import { useExplorationTracking } from "../hooks/useExplorationTracking";
+import { WELLINGTON_REGION, isInWellington } from "../constants/wellington";
+import { Place } from "../types";
 import { useRouter } from "expo-router";
 import { colors } from "../theme/colors";
 import { fonts } from "../theme/fonts";
-import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 import * as Haptics from "expo-haptics";
-
-const glassEnabled = isLiquidGlassAvailable();
-
-const WELLINGTON_REGION = {
-  latitude: -41.2865,
-  longitude: 174.7762,
-  latitudeDelta: 0.006,
-  longitudeDelta: 0.006,
-};
-
-// Bounding box for greater Wellington area
-const WELLINGTON_BOUNDS = {
-  north: -41.05,
-  south: -41.38,
-  west: 174.6,
-  east: 174.95,
-};
-
-function isInWellington(lat: number, lng: number): boolean {
-  return (
-    lat >= WELLINGTON_BOUNDS.south &&
-    lat <= WELLINGTON_BOUNDS.north &&
-    lng >= WELLINGTON_BOUNDS.west &&
-    lng <= WELLINGTON_BOUNDS.east
-  );
-}
 
 interface MapMarkerItemProps {
   place: Place;
@@ -129,7 +90,7 @@ const MapMarkerItem = React.memo(function MapMarkerItem({
 });
 
 export function MapScreen() {
-  const { location: userCoords, error: locationError } = useLocation();
+  const { location: userCoords } = useLocation();
   const [showExplorationOverlay, setShowExplorationOverlay] = useState(false);
   const [showNeighborhoods, setShowNeighborhoods] = useState(false);
   const [activeTrailId, setActiveTrailId] = useState<string | null>(null);
@@ -138,44 +99,34 @@ export function MapScreen() {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { followingIds } = useFollow();
-  const { selectedCategories, showFollowingOnly, showTrails, showEvents } = useMapFilters();
-  const { markExplored, isExplored } = useExploration();
-  const { showToast } = useToast();
+  const { selectedCategories, showFollowingOnly, showTrails, showEvents } =
+    useMapFilters();
 
-  // Track animated scale values for each marker
-  const markerScales = useRef(new Map<string, Animated.Value>()).current;
-
-  const getMarkerScale = useCallback(
-    (placeId: string) => {
-      if (!markerScales.has(placeId)) {
-        markerScales.set(placeId, new Animated.Value(1));
-      }
-      return markerScales.get(placeId)!;
-    },
-    [markerScales]
+  const [visibleRegion, setVisibleRegion] = useState<Region>(WELLINGTON_REGION);
+  const [mapLayout, setMapLayout] = useState<{ width: number; height: number }>(
+    { width: 0, height: 0 }
   );
 
-  const animateMarkerPress = useCallback(
-    (placeId: string) => {
-      const scale = getMarkerScale(placeId);
+  const {
+    places,
+    trails,
+    isInitialLoad,
+    filteredPlaces,
+    annotatedPlaceIds,
+    baseMarkerDataMap,
+    placeEventsMap,
+  } = useMapData({
+    followingIds,
+    selectedCategories,
+    showFollowingOnly,
+    showEvents,
+    visibleRegion,
+    mapLayout,
+  });
 
-      Animated.sequence([
-        Animated.spring(scale, {
-          toValue: 0.85,
-          useNativeDriver: true,
-          speed: 5000,
-          bounciness: 0,
-        }),
-        Animated.spring(scale, {
-          toValue: 1,
-          useNativeDriver: true,
-          speed: 3000,
-          bounciness: 8,
-        }),
-      ]).start();
-    },
-    [getMarkerScale]
-  );
+  const { getMarkerScale, animateMarkerPress } = useMarkerAnimation();
+
+  useExplorationTracking(userCoords, places, showExplorationOverlay);
 
   const openPlaceSheet = useCallback(
     (placeId: string) => {
@@ -196,204 +147,6 @@ export function MapScreen() {
     },
     [animateMarkerPress, openPlaceSheet]
   );
-
-  const [visibleRegion, setVisibleRegion] = useState<Region>(WELLINGTON_REGION);
-  const [mapLayout, setMapLayout] = useState<{ width: number; height: number }>(
-    { width: 0, height: 0 }
-  );
-
-  const {
-    data: places,
-    loading: placesLoading,
-    refetch: refetchPlaces,
-  } = useQuery(getPlaces, "places");
-  const allPlaces = places ?? [];
-  const {
-    data: allPosts,
-    loading: postsLoading,
-    refetch: refetchPosts,
-  } = useQuery(getPosts, "posts");
-  const {
-    data: allUsers,
-    loading: usersLoading,
-    refetch: refetchUsers,
-  } = useQuery(getProfiles, "profiles");
-  const {
-    data: trails,
-    refetch: refetchTrails,
-  } = useQuery(getTrails, "trails");
-  const {
-    data: upcomingEvents,
-    refetch: refetchEvents,
-  } = useQuery(getUpcomingEvents, "upcoming-events");
-
-  const todayEvents = useMemo(() => {
-    const now = new Date();
-    const today = now.toISOString().split("T")[0];
-    const day = now.getDay(); // 0=Sun, 6=Sat
-    // Include through this Sunday: days until end of weekend
-    const daysUntilSunday = day === 0 ? 0 : 7 - day;
-    const endDate = new Date(now);
-    endDate.setDate(endDate.getDate() + daysUntilSunday);
-    const end = endDate.toISOString().split("T")[0];
-    return (upcomingEvents ?? []).filter((e) => e.date >= today && e.date <= end);
-  }, [upcomingEvents]);
-
-  // Refetch data and clear active trail when screen comes into focus
-  useFocusEffect(
-    useCallback(() => {
-      refetchPosts();
-      refetchPlaces();
-      refetchUsers();
-      refetchTrails();
-      refetchEvents();
-      setActiveTrailId(null);
-    }, [refetchPosts, refetchPlaces, refetchUsers, refetchTrails, refetchEvents])
-  );
-
-  const isDataLoaded = !placesLoading && !postsLoading && !usersLoading;
-  const isInitialLoad = placesLoading && allPlaces.length === 0;
-
-  const userMap = useMemo(() => {
-    const map = new Map<string, User>();
-    for (const user of allUsers ?? []) {
-      map.set(user.id, user);
-    }
-    return map;
-  }, [allUsers]);
-
-  const placeEventsMap = useMemo(() => {
-    if (!showEvents) return new Map<string, MarkerEvent[]>();
-    const map = new Map<string, MarkerEvent[]>();
-    for (const event of todayEvents) {
-      const list = map.get(event.placeId) ?? [];
-      const attendeeAvatars = (event.attendeeIds ?? [])
-        .slice(0, 8)
-        .map((uid) => userMap.get(uid)?.avatarUrl)
-        .filter((url): url is string => !!url);
-      list.push({ date: event.date, attendeeAvatars });
-      map.set(event.placeId, list);
-    }
-    return map;
-  }, [todayEvents, showEvents, userMap]);
-
-  const popularityMap = useMemo(
-    () => computePlacePopularity(allPosts ?? []),
-    [allPosts]
-  );
-
-  const followingSet = useMemo(() => new Set(followingIds), [followingIds]);
-
-  const filteredPlaces = useMemo(() => {
-    return allPlaces.filter((place) => {
-      if (
-        selectedCategories.length > 0 &&
-        !selectedCategories.includes(place.category)
-      ) {
-        return false;
-      }
-      if (showFollowingOnly) {
-        const posterIds = popularityMap.get(place.id)?.posterIds ?? [];
-        if (!isFollowedPlaceSet(posterIds, followingSet)) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }, [
-    allPlaces,
-    selectedCategories,
-    showFollowingOnly,
-    popularityMap,
-    followingSet,
-  ]);
-
-  const annotatedPlaceIds = useMemo(() => {
-    const { latitude, longitude, latitudeDelta, longitudeDelta } =
-      visibleRegion;
-    const { width: mw, height: mh } = mapLayout;
-    if (mw === 0 || mh === 0) return new Set<string>();
-
-    const north = latitude + latitudeDelta / 2;
-    const south = latitude - latitudeDelta / 2;
-    const east = longitude + longitudeDelta / 2;
-    const west = longitude - longitudeDelta / 2;
-
-    const visible = filteredPlaces.filter(
-      (p) =>
-        p.latitude >= south &&
-        p.latitude <= north &&
-        p.longitude >= west &&
-        p.longitude <= east
-    );
-
-    const targetCount = Math.max(3, Math.round(visible.length * 0.35));
-
-    // Sort by popularity (highest first)
-    const sorted = [...visible].sort((a, b) => {
-      const sa = popularityMap.get(a.id)?.score ?? 0;
-      const sb = popularityMap.get(b.id)?.score ?? 0;
-      return sb - sa;
-    });
-
-    // Convert to screen positions and greedily pick non-overlapping labels
-    const toScreen = (p: Place) => ({
-      x: ((p.longitude - west) / longitudeDelta) * mw,
-      y: ((north - p.latitude) / latitudeDelta) * mh,
-    });
-
-    // Approximate label footprint in pixels (marker + label below)
-    const LABEL_W = 120;
-    const LABEL_H = 60;
-
-    const selected: { id: string; x: number; y: number }[] = [];
-
-    for (const place of sorted) {
-      if (selected.length >= targetCount) break;
-
-      const { x, y } = toScreen(place);
-
-      // Check overlap with already-selected labels
-      const overlaps = selected.some(
-        (s) => Math.abs(s.x - x) < LABEL_W && Math.abs(s.y - y) < LABEL_H
-      );
-
-      if (!overlaps) {
-        selected.push({ id: place.id, x, y });
-      }
-    }
-
-    return new Set(selected.map((s) => s.id));
-  }, [filteredPlaces, visibleRegion, popularityMap, mapLayout]);
-
-  const baseMarkerDataMap = useMemo(() => {
-    const sizeRange = getMarkerSizeRange(popularityMap);
-    const map = new Map<
-      string,
-      {
-        size: number;
-        isFollowed: boolean;
-        postCount: number;
-        posterAvatars: string[];
-      }
-    >();
-    for (const place of filteredPlaces) {
-      const popularity = popularityMap.get(place.id);
-      const score = popularity?.score ?? 1;
-      const posterIds = popularity?.posterIds ?? [];
-      const posterAvatars = posterIds
-        .slice(0, 8)
-        .map((uid) => userMap.get(uid)?.avatarUrl)
-        .filter((url): url is string => !!url);
-      map.set(place.id, {
-        size: getMarkerSizeWithRange(score, sizeRange),
-        isFollowed: isFollowedPlaceSet(posterIds, followingSet),
-        postCount: popularity?.postCount ?? 0,
-        posterAvatars,
-      });
-    }
-    return map;
-  }, [filteredPlaces, popularityMap, followingSet, userMap]);
 
   const regionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleRegionChangeComplete = useCallback((region: Region) => {
@@ -423,56 +176,6 @@ export function MapScreen() {
     });
   }, [userCoords]);
 
-  // Location-based exploration tracking (only when overlay is visible for performance)
-  useEffect(() => {
-    if (!userCoords || !places || !showExplorationOverlay) return;
-
-    const EXPLORATION_RADIUS = 50; // meters - must be within 50m to explore
-
-    // Check for nearby unexplored places
-    const checkNearbyPlaces = async () => {
-      const { latitude, longitude } = userCoords;
-
-      for (const place of places) {
-        if (isExplored(place.id)) continue;
-
-        // Calculate distance to place
-        const R = 6371000; // Earth's radius in meters
-        const dLat = ((place.latitude - latitude) * Math.PI) / 180;
-        const dLng = ((place.longitude - longitude) * Math.PI) / 180;
-        const a =
-          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-          Math.cos((latitude * Math.PI) / 180) *
-            Math.cos((place.latitude * Math.PI) / 180) *
-            Math.sin(dLng / 2) *
-            Math.sin(dLng / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const distance = R * c;
-
-        // If within exploration radius, mark as explored
-        if (distance <= EXPLORATION_RADIUS) {
-          const newAchievements = await markExplored(place.id, "viewed");
-          if (newAchievements.length > 0) {
-            showToast(createAchievementToast(newAchievements[0]));
-          }
-        }
-      }
-    };
-
-    checkNearbyPlaces();
-
-    // Set up interval to check periodically (every 30 seconds - throttled for performance)
-    const interval = setInterval(checkNearbyPlaces, 30000);
-    return () => clearInterval(interval);
-  }, [
-    userCoords,
-    places,
-    showExplorationOverlay,
-    isExplored,
-    markExplored,
-    showToast,
-  ]);
-
   const centerOnUser = () => {
     if (userCoords && mapRef.current) {
       mapRef.current.animateToRegion({
@@ -488,8 +191,20 @@ export function MapScreen() {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
+  const handleTrailPress = useCallback(
+    (trailId: string) => {
+      setActiveTrailId(trailId);
+      if (router.canDismiss()) router.dismiss();
+      router.push(`/map/trail/${trailId}`);
+    },
+    [router]
+  );
+
   const activeFilterCount =
-    (selectedCategories.length > 0 ? 1 : 0) + (showFollowingOnly ? 1 : 0) + (!showTrails ? 1 : 0) + (!showEvents ? 1 : 0);
+    (selectedCategories.length > 0 ? 1 : 0) +
+    (showFollowingOnly ? 1 : 0) +
+    (!showTrails ? 1 : 0) +
+    (!showEvents ? 1 : 0);
 
   return (
     <View style={styles.container} onLayout={handleMapLayout}>
@@ -519,68 +234,13 @@ export function MapScreen() {
           places={filteredPlaces}
           visible={showExplorationOverlay}
         />
-        {showTrails && (trails ?? []).map((trail) => {
-          const isDimmed = activeTrailId !== null && activeTrailId !== trail.id;
-          return (
-            <React.Fragment key={trail.id}>
-              <Polyline
-                coordinates={trail.coordinates}
-                strokeColor={isDimmed ? "rgba(45, 106, 79, 0.08)" : "rgba(45, 106, 79, 0.3)"}
-                strokeWidth={8}
-                lineCap="round"
-                lineJoin="round"
-                tappable={false}
-              />
-              <Polyline
-                coordinates={trail.coordinates}
-                strokeColor={isDimmed ? "rgba(45, 106, 79, 0.15)" : colors.category.park}
-                strokeWidth={3}
-                lineDashPattern={[8, 5]}
-                lineCap="round"
-                lineJoin="round"
-                tappable={false}
-              />
-              <Marker
-                coordinate={trail.coordinates[0]}
-                anchor={{ x: 0.5, y: 0 }}
-                opacity={isDimmed ? 0.3 : 1}
-                tracksViewChanges={false}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setActiveTrailId(trail.id);
-                  if (router.canDismiss()) router.dismiss();
-                  router.push(`/map/trail/${trail.id}`);
-                }}
-              >
-                <View style={styles.trailMarker}>
-                  <View style={styles.trailMarkerPin}>
-                    <SFIcon name="figure.hiking" fallback="walk" size={16} color="#FFFFFF" />
-                  </View>
-                  <View style={styles.trailMarkerLabel}>
-                    <Text style={styles.trailMarkerName}>{trail.name}</Text>
-                    <Text style={styles.trailMarkerInfo}>{trail.elevation} · {trail.distance}</Text>
-                  </View>
-                </View>
-              </Marker>
-              <Marker
-                coordinate={trail.coordinates[trail.coordinates.length - 1]}
-                anchor={{ x: 0.5, y: 0.5 }}
-                opacity={isDimmed ? 0.3 : 1}
-                tracksViewChanges={false}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  setActiveTrailId(trail.id);
-                  if (router.canDismiss()) router.dismiss();
-                  router.push(`/map/trail/${trail.id}`);
-                }}
-              >
-                <View style={styles.trailheadDot}>
-                  <View style={styles.trailheadDotInner} />
-                </View>
-              </Marker>
-            </React.Fragment>
-          );
-        })}
+        {showTrails && (
+          <TrailOverlay
+            trails={trails ?? []}
+            activeTrailId={activeTrailId}
+            onTrailPress={handleTrailPress}
+          />
+        )}
         {!isInitialLoad &&
           filteredPlaces.map((place) => {
             const data = baseMarkerDataMap.get(place.id);
@@ -612,141 +272,18 @@ export function MapScreen() {
       )}
 
       <View style={[styles.controlsWrapper, { top: insets.top + 8 }]}>
-        {glassEnabled ? (
-          <GlassView style={styles.controlsGlass}>
-            <HapticPressable
-              style={[
-                styles.controlButton,
-                styles.controlButtonTop,
-                activeFilterCount > 0 && styles.controlButtonActive,
-              ]}
-              onPress={openFilters}
-            >
-              <SFIcon
-                name="slider.horizontal.3"
-                fallback="options"
-                size={22}
-                color={activeFilterCount > 0 ? "#FFFFFF" : colors.text}
-              />
-            </HapticPressable>
-
-            <View style={styles.controlDivider} />
-
-            <HapticPressable
-              style={[styles.controlButton]}
-              onPress={() => setShowNeighborhoods(!showNeighborhoods)}
-            >
-              <SFIcon
-                name={showNeighborhoods ? "map.fill" : "map"}
-                fallback={showNeighborhoods ? "map" : "map-outline"}
-                size={22}
-                color={showNeighborhoods ? colors.primary : colors.text}
-              />
-            </HapticPressable>
-
-            <View style={styles.controlDivider} />
-
-            <HapticPressable
-              style={[styles.controlButton]}
-              onPress={() => setShowExplorationOverlay(!showExplorationOverlay)}
-            >
-              <SFIcon
-                name={showExplorationOverlay ? "eye.fill" : "eye"}
-                fallback={showExplorationOverlay ? "eye" : "eye-outline"}
-                size={22}
-                color={showExplorationOverlay ? colors.primary : colors.text}
-              />
-            </HapticPressable>
-
-            <View style={styles.controlDivider} />
-
-            <HapticPressable
-              style={[styles.controlButton, styles.controlButtonBottom]}
-              onPress={centerOnUser}
-            >
-              <SFIcon
-                name={userCoords ? "location.fill" : "location"}
-                fallback={userCoords ? "navigate" : "navigate-outline"}
-                size={22}
-                color={userCoords ? colors.primary : colors.text}
-              />
-            </HapticPressable>
-          </GlassView>
-        ) : (
-          <View style={styles.controlsContainer}>
-            <BlurView
-              intensity={10}
-              tint="light"
-              style={styles.controlsBlurBg}
-            />
-            <View style={styles.controlsInner}>
-              <HapticPressable
-                style={[
-                  styles.controlButton,
-                  styles.controlButtonTop,
-                  activeFilterCount > 0 && styles.controlButtonActive,
-                ]}
-                onPress={openFilters}
-              >
-                <SFIcon
-                  name="slider.horizontal.3"
-                  fallback="options"
-                  size={22}
-                  color={activeFilterCount > 0 ? "#FFFFFF" : colors.text}
-                />
-              </HapticPressable>
-
-              <View style={styles.controlDivider} />
-
-              <HapticPressable
-                style={[styles.controlButton]}
-                onPress={() => setShowNeighborhoods(!showNeighborhoods)}
-              >
-                <SFIcon
-                  name={showNeighborhoods ? "map.fill" : "map"}
-                  fallback={showNeighborhoods ? "map" : "map-outline"}
-                  size={22}
-                  color={showNeighborhoods ? colors.primary : colors.text}
-                />
-              </HapticPressable>
-
-              <View style={styles.controlDivider} />
-
-              <HapticPressable
-                style={[styles.controlButton]}
-                onPress={() =>
-                  setShowExplorationOverlay(!showExplorationOverlay)
-                }
-              >
-                <SFIcon
-                  name={showExplorationOverlay ? "eye.fill" : "eye"}
-                  fallback={showExplorationOverlay ? "eye" : "eye-outline"}
-                  size={22}
-                  color={showExplorationOverlay ? colors.primary : colors.text}
-                />
-              </HapticPressable>
-
-              <View style={styles.controlDivider} />
-
-              <HapticPressable
-                style={[styles.controlButton, styles.controlButtonBottom]}
-                onPress={centerOnUser}
-              >
-                <SFIcon
-                  name={userCoords ? "location.fill" : "location"}
-                  fallback={userCoords ? "navigate" : "navigate-outline"}
-                  size={22}
-                  color={userCoords ? colors.primary : colors.text}
-                />
-              </HapticPressable>
-            </View>
-          </View>
-        )}
-        {activeFilterCount > 0 && (
-          <View style={styles.filterBadge}>
-            <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
-          </View>
-        )}
+        <MapControls
+          activeFilterCount={activeFilterCount}
+          showNeighborhoods={showNeighborhoods}
+          showExplorationOverlay={showExplorationOverlay}
+          hasUserLocation={!!userCoords}
+          onOpenFilters={openFilters}
+          onToggleNeighborhoods={() => setShowNeighborhoods(!showNeighborhoods)}
+          onToggleExploration={() =>
+            setShowExplorationOverlay(!showExplorationOverlay)
+          }
+          onCenterOnUser={centerOnUser}
+        />
       </View>
 
       <FloatingCreateButton />
@@ -793,135 +330,5 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 16,
     width: 52,
-  },
-  controlsContainer: {
-    width: 44,
-    borderRadius: 18,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  controlsGlass: {
-    width: 44,
-    borderRadius: 18,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  controlsBlurBg: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.4)",
-  },
-  controlsInner: {
-    width: "100%",
-  },
-  controlButton: {
-    width: "100%",
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  controlButtonTop: {
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-  },
-  controlButtonBottom: {
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 18,
-  },
-  controlButtonActive: {
-    backgroundColor: colors.primary,
-  },
-  controlDivider: {
-    height: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.08)",
-  },
-  trailMarker: {
-    alignItems: "center",
-    paddingBottom: 8,
-  },
-  trailMarkerPin: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.category.park,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
-    marginBottom: 4,
-  },
-  trailMarkerLabel: {
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  trailMarkerName: {
-    fontSize: 12,
-    fontWeight: "700",
-    fontFamily: fonts.bold,
-    color: colors.category.park,
-  },
-  trailMarkerInfo: {
-    fontSize: 10,
-    fontWeight: "500",
-    fontFamily: fonts.medium,
-    color: colors.textSecondary,
-  },
-  trailheadDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  trailheadDotInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.category.park,
-  },
-  filterBadge: {
-    position: "absolute",
-    top: -4,
-    right: -4,
-    backgroundColor: "#FFFFFF",
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: colors.primary,
-  },
-  filterBadgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-    fontFamily: fonts.bold,
-    color: colors.primary,
   },
 });

@@ -57,7 +57,7 @@ export function DiscoverUsersScreen() {
             <FollowButton userId={item.id} compact />
           </HapticPressable>
         )}
-        contentContainerStyle={[styles.list, { paddingTop: headerHeight, paddingBottom: 8 + insets.bottom }]}
+        contentContainerStyle={[styles.list, { paddingTop: headerHeight, paddingBottom: insets.bottom + 60 }]}
       />
     </View>
   );
