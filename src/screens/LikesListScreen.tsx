@@ -42,50 +42,50 @@ export function LikesListScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      <View style={styles.header} collapsable={false}>
         <Text style={styles.headerTitle}>Likes</Text>
       </View>
 
-      {isLoading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-        </View>
-      ) : (
-        <FlatList
-          data={likers ?? []}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => {
-            const isCurrentUser = item.id === profile?.id;
-            return (
-              <HapticPressable
-                style={styles.userRow}
-                onPress={() => {
-                  if (!isCurrentUser) {
-                    router.dismiss();
-                    router.push(`${tabBase}/user/${item.id}` as any);
-                  }
-                }}
-              >
-                <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
-                <View style={styles.userInfo}>
-                  <Text style={styles.displayName}>{item.displayName}</Text>
-                  <Text style={styles.username}>@{item.username}</Text>
-                </View>
-                {!isCurrentUser && <FollowButton userId={item.id} compact />}
-              </HapticPressable>
-            );
-          }}
-          ListEmptyComponent={
+      <FlatList
+        data={isLoading ? [] : (likers ?? [])}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => {
+          const isCurrentUser = item.id === profile?.id;
+          return (
+            <HapticPressable
+              style={styles.userRow}
+              onPress={() => {
+                if (!isCurrentUser) {
+                  router.dismiss();
+                  router.push(`${tabBase}/user/${item.id}` as any);
+                }
+              }}
+            >
+              <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+              <View style={styles.userInfo}>
+                <Text style={styles.displayName}>{item.displayName}</Text>
+                <Text style={styles.username}>@{item.username}</Text>
+              </View>
+              {!isCurrentUser && <FollowButton userId={item.id} compact />}
+            </HapticPressable>
+          );
+        }}
+        ListEmptyComponent={
+          isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={colors.primary} />
+            </View>
+          ) : (
             <View style={styles.emptyState}>
               <Text style={styles.emptyText}>No likes yet</Text>
             </View>
-          }
-          contentContainerStyle={[
-            styles.list,
-            { paddingBottom: 8 + insets.bottom },
-          ]}
-        />
-      )}
+          )
+        }
+        contentContainerStyle={[
+          styles.list,
+          { paddingBottom: 8 + insets.bottom },
+        ]}
+      />
     </View>
   );
 }
