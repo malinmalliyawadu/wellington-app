@@ -68,6 +68,24 @@ export async function getFeedPosts(followingIds: string[], currentUserId?: strin
   return (data ?? []).map(mapPost);
 }
 
+export async function updatePost(id: string, content: string): Promise<void> {
+  const { error } = await supabase
+    .from('posts')
+    .update({ content })
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
+export async function deletePost(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('posts')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw error;
+}
+
 export async function createPost(post: {
   userId: string;
   placeId: string;

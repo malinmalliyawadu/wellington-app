@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -11,15 +11,16 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Modal,
 } from "react-native";
-import { useLocalSearchParams, useRouter, usePathname } from "expo-router";
+import { useLocalSearchParams, useRouter, usePathname, useNavigation } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { SFIcon } from "../components/SFIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated from "react-native-reanimated";
 import { TapGestureHandler, State } from "react-native-gesture-handler";
-import { getPostById as getPostByIdAsync } from "../services/posts";
+import { getPostById as getPostByIdAsync, updatePost, deletePost } from "../services/posts";
 import { getProfileById, getProfilesByIds } from "../services/users";
 import { getPlaceById as getPlaceByIdAsync } from "../services/places";
 import {
@@ -37,6 +38,8 @@ import { MediaCarousel } from "../components/MediaCarousel";
 import { colors } from "../theme/colors";
 import { fonts } from "../theme/fonts";
 import { sharePost } from "../utils/sharing";
+import { useToast } from "../context/ToastContext";
+import { ContextMenu, Button as ExpoButton, Host } from "@expo/ui/swift-ui";
 import { HapticPressable } from "src/components/HapticPressable";
 
 function formatTimeAgo(dateString: string): string {
@@ -56,14 +59,18 @@ export function PostDetailScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const router = useRouter();
+  const navigation = useNavigation();
   const pathname = usePathname();
   const { profile } = useAuth();
   const inputRef = useRef<TextInput>(null);
   const [commentText, setCommentText] = useState("");
   const [inputFocused, setInputFocused] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editContent, setEditContent] = useState("");
+  const { showToast } = useToast();
   const fetchPost = useCallback(() => getPostByIdAsync(postId), [postId]);
-  const { data: post, loading } = useQuery(fetchPost);
+  const { data: post, loading, refetch: refetchPost } = useQuery(fetchPost);
   const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
 
   // Use stored dimensions when available to avoid layout shift
@@ -72,6 +79,35 @@ export function PostDetailScreen() {
       setAspectRatio(post.mediaWidth / post.mediaHeight);
     }
   }, [post?.mediaWidth, post?.mediaHeight]);
+
+  const isOwnPost = post?.userId === profile?.id;
+  const onEditRef = useRef<(() => void) | undefined>(undefined);
+  const onDeleteRef = useRef<(() => void) | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    if (!isOwnPost) return;
+    navigation.setOptions({
+      headerRight: () => (
+        <Host matchContents>
+          <ContextMenu activationMethod="singlePress">
+            <ContextMenu.Trigger>
+              <View style={{ alignItems: "center", justifyContent: "center", paddingHorizontal: 7 }}>
+                <SFIcon name="ellipsis" fallback="ellipsis-horizontal" size={22} color={colors.text} />
+              </View>
+            </ContextMenu.Trigger>
+            <ContextMenu.Items>
+              <ExpoButton systemImage="pencil" onPress={() => onEditRef.current?.()}>
+                Edit caption
+              </ExpoButton>
+              <ExpoButton systemImage="trash" role="destructive" onPress={() => onDeleteRef.current?.()}>
+                Delete post
+              </ExpoButton>
+            </ContextMenu.Items>
+          </ContextMenu>
+        </Host>
+      ),
+    });
+  }, [navigation, isOwnPost]);
 
   const {
     liked,
@@ -194,6 +230,43 @@ export function PostDetailScreen() {
     const { width, height } = event;
     if (width && height) {
       setAspectRatio(width / height);
+    }
+  };
+
+  onEditRef.current = () => {
+    setEditContent(post.content);
+    setEditModalVisible(true);
+  };
+
+  onDeleteRef.current = () => {
+    Alert.alert("Delete post?", "This cannot be undone.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deletePost(post.id);
+            showToast({ message: "Post deleted" });
+            router.back();
+          } catch (err: any) {
+            Alert.alert("Error", err?.message ?? "Failed to delete post");
+          }
+        },
+      },
+    ]);
+  };
+
+  const handleSaveEdit = async () => {
+    const trimmed = editContent.trim();
+    if (!trimmed) return;
+    try {
+      await updatePost(post.id, trimmed);
+      setEditModalVisible(false);
+      showToast({ message: "Post updated" });
+      refetchPost();
+    } catch (err: any) {
+      Alert.alert("Error", err?.message ?? "Failed to update post");
     }
   };
 
@@ -499,6 +572,45 @@ export function PostDetailScreen() {
           />
         </HapticPressable>
       </View>
+      {/* Edit caption modal */}
+      <Modal
+        visible={editModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setEditModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit caption</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={editContent}
+              onChangeText={setEditContent}
+              multiline
+              autoFocus
+              placeholderTextColor={colors.textMuted}
+            />
+            <View style={styles.modalButtons}>
+              <HapticPressable
+                style={styles.modalCancelButton}
+                onPress={() => setEditModalVisible(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </HapticPressable>
+              <HapticPressable
+                style={[
+                  styles.modalSaveButton,
+                  !editContent.trim() && { opacity: 0.5 },
+                ]}
+                onPress={handleSaveEdit}
+                disabled={!editContent.trim()}
+              >
+                <Text style={styles.modalSaveText}>Save</Text>
+              </HapticPressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -722,5 +834,61 @@ const styles = StyleSheet.create({
   sendButton: {
     marginLeft: 8,
     padding: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalContent: {
+    backgroundColor: colors.background,
+    borderRadius: 16,
+    padding: 20,
+    width: "100%",
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontFamily: fonts.semiBold,
+    color: colors.text,
+    marginBottom: 12,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: colors.gray200,
+    borderRadius: 10,
+    padding: 12,
+    fontSize: 15,
+    color: colors.text,
+    minHeight: 100,
+    textAlignVertical: "top",
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+    marginTop: 16,
+  },
+  modalCancelButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  modalCancelText: {
+    fontSize: 15,
+    fontFamily: fonts.semiBold,
+    color: colors.textMuted,
+  },
+  modalSaveButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  modalSaveText: {
+    fontSize: 15,
+    fontFamily: fonts.semiBold,
+    color: "#FFFFFF",
   },
 });
