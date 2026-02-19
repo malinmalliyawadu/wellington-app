@@ -25,6 +25,33 @@ export default function EventsLayout() {
           }}
         />
         <Stack.Screen
+          name="place/[placeId]"
+          options={{
+            headerShown: true,
+            headerTitle: "",
+            headerBackTitle: "Events",
+            headerTransparent: true,
+          }}
+        />
+        <Stack.Screen
+          name="post/[postId]"
+          options={{
+            headerShown: true,
+            headerTitle: "",
+            headerBackTitle: "Events",
+            headerTransparent: true,
+          }}
+        />
+        <Stack.Screen
+          name="ai-chat"
+          options={{
+            headerShown: true,
+            headerTitle: "Welly AI",
+            headerBackTitle: "Events",
+            headerTransparent: true,
+          }}
+        />
+        <Stack.Screen
           name="create-post"
           options={{
             presentation: "formSheet",

@@ -17,7 +17,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter, useNavigation } from "expo-router";
+import { useRouter, useNavigation, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
@@ -331,40 +331,47 @@ export function AIChatScreen() {
     handleAsk(q);
   }, [inputText, isLoading, handleAsk]);
 
+  const pathname = usePathname();
+  const tabPrefix = pathname.startsWith("/feed")
+    ? "/feed"
+    : pathname.startsWith("/events")
+      ? "/events"
+      : "/map";
+
   const handlePlacePress = useCallback(
     (placeId: string) => {
-      router.push(`/map/place/${placeId}`);
+      router.push(`${tabPrefix}/place/${placeId}`);
     },
-    [router]
+    [router, tabPrefix]
   );
 
   const handleEventPress = useCallback(
     (eventId: string) => {
-      router.push(`/map/event/${eventId}`);
+      router.push(`${tabPrefix}/event/${eventId}`);
     },
-    [router]
+    [router, tabPrefix]
   );
 
   const handleLinkPress = useCallback(
     (url: string) => {
       const placeMatch = url.match(/^place:(.+)$/);
       if (placeMatch) {
-        router.push(`/map/place/${placeMatch[1]}`);
+        router.push(`${tabPrefix}/place/${placeMatch[1]}`);
         return false;
       }
       const eventMatch = url.match(/^event:(.+)$/);
       if (eventMatch) {
-        router.push(`/map/event/${eventMatch[1]}`);
+        router.push(`${tabPrefix}/event/${eventMatch[1]}`);
         return false;
       }
       const userMatch = url.match(/^user:(.+)$/);
       if (userMatch) {
-        router.push(`/map/user/${userMatch[1]}`);
+        router.push(`${tabPrefix}/user/${userMatch[1]}`);
         return false;
       }
       return true;
     },
-    [router]
+    [router, tabPrefix]
   );
 
   const handleRetry = useCallback(

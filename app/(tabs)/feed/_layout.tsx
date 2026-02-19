@@ -91,6 +91,24 @@ export default function FeedLayout() {
         }}
       />
       <Stack.Screen
+        name="event/[eventId]"
+        options={{
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Feed",
+          headerTransparent: true,
+        }}
+      />
+      <Stack.Screen
+        name="ai-chat"
+        options={{
+          headerShown: true,
+          headerTitle: "Welly AI",
+          headerBackTitle: "Feed",
+          headerTransparent: true,
+        }}
+      />
+      <Stack.Screen
         name="create-post"
         options={{
           presentation: "formSheet",

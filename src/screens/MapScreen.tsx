@@ -283,7 +283,6 @@ export function MapScreen() {
             setShowExplorationOverlay(!showExplorationOverlay)
           }
           onCenterOnUser={centerOnUser}
-          onOpenAI={() => router.push('/map/ai-chat')}
         />
       </View>
 
