@@ -1,21 +1,23 @@
 import { Share } from "react-native";
-import { createURL } from "expo-linking";
 
-// URL generators
+const WEBSITE_URL =
+  process.env.EXPO_PUBLIC_WELLY_WEBSITE_URL || "https://welly.nz";
+
+// URL generators — produce HTTPS URLs for rich link previews
 export function getPostUrl(postId: string): string {
-  return createURL(`/feed/post/${postId}`);
+  return `${WEBSITE_URL}/post/${postId}`;
 }
 
 export function getPlaceUrl(placeId: string): string {
-  return createURL(`/feed/place/${placeId}`);
+  return `${WEBSITE_URL}/place/${placeId}`;
 }
 
 export function getEventUrl(eventId: string): string {
-  return createURL(`/events/${eventId}`);
+  return `${WEBSITE_URL}/event/${eventId}`;
 }
 
 export function getUserUrl(userId: string): string {
-  return createURL(`/feed/user/${userId}`);
+  return `${WEBSITE_URL}/user/${userId}`;
 }
 
 // Share helpers

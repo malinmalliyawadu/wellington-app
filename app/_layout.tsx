@@ -29,20 +29,46 @@ SplashScreen.preventAutoHideAsync();
 
 const queryClient = new QueryClient();
 
+const WEBSITE_HOST = (
+  process.env.EXPO_PUBLIC_WELLY_WEBSITE_URL || "https://welly.nz"
+)
+  .replace(/^https?:\/\//, "")
+  .replace(/\/$/, "");
+
+// Map website paths to in-app routes
+const WEBSITE_PATH_MAP: Record<string, (id: string) => string> = {
+  post: (id) => `/feed/post/${id}`,
+  place: (id) => `/feed/place/${id}`,
+  user: (id) => `/feed/user/${id}`,
+  event: (id) => `/events/${id}`,
+};
+
 function parseShareIntentRoute(url: string): string | null {
-  // Match wellington:// deep links shared into the app
-  const match = url.match(/wellington:\/\/\/?(.+)/);
-  if (!match) return null;
-  const path = "/" + match[1];
-  // Only navigate to known routes
-  if (
-    path.startsWith("/feed/post/") ||
-    path.startsWith("/feed/place/") ||
-    path.startsWith("/feed/user/") ||
-    path.startsWith("/events/")
-  ) {
-    return path;
+  // Match wellington:// deep links
+  const deepLinkMatch = url.match(/wellington:\/\/\/?(.+)/);
+  if (deepLinkMatch) {
+    const path = "/" + deepLinkMatch[1];
+    if (
+      path.startsWith("/feed/post/") ||
+      path.startsWith("/feed/place/") ||
+      path.startsWith("/feed/user/") ||
+      path.startsWith("/events/")
+    ) {
+      return path;
+    }
+    return null;
   }
+
+  // Match https://welly.nz/post/{id}, /event/{id}, /place/{id}, /user/{id}
+  const websiteMatch = url.match(
+    new RegExp(`https?://${WEBSITE_HOST.replace(/\./g, "\\.")}/(post|event|place|user)/([^/?#]+)`)
+  );
+  if (websiteMatch) {
+    const [, type, id] = websiteMatch;
+    const mapper = WEBSITE_PATH_MAP[type];
+    if (mapper) return mapper(id);
+  }
+
   return null;
 }
 
@@ -89,7 +115,10 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (shareIntent.type === "weburl" && shareIntent.webUrl) {
       route = parseShareIntentRoute(shareIntent.webUrl);
     } else if (shareIntent.type === "text" && shareIntent.text) {
-      const urlMatch = shareIntent.text.match(/(wellington:\/\/\S+)/);
+      // Match wellington:// deep links or https://welly.nz/... URLs
+      const urlMatch = shareIntent.text.match(
+        /(wellington:\/\/\S+|https?:\/\/[^\s]+)/
+      );
       if (urlMatch) {
         route = parseShareIntentRoute(urlMatch[1]);
       }
