@@ -557,6 +557,43 @@ export type Database = {
           },
         ];
       };
+      instagram_connections: {
+        Row: {
+          id: string;
+          user_id: string;
+          instagram_user_id: string;
+          instagram_username: string;
+          access_token: string;
+          token_expires_at: string;
+          connected_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          instagram_user_id: string;
+          instagram_username: string;
+          access_token: string;
+          token_expires_at: string;
+          connected_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          instagram_user_id?: string;
+          instagram_username?: string;
+          access_token?: string;
+          token_expires_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'instagram_connections_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+            isOneToOne: true;
+          },
+        ];
+      };
     };
     Views: {};
     Functions: {};

@@ -14,7 +14,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SFIcon } from "../components/SFIcon";
 import * as ImagePicker from "expo-image-picker";
-import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import { useLocalSearchParams, useRouter, usePathname, useFocusEffect } from "expo-router";
 import { Place, PostType, EventCategory } from "../types";
 import type { MediaPickerItem } from "../components/create/PostForm";
 import { colors } from "../theme/colors";
@@ -54,6 +54,8 @@ export function CreatePostSheetScreen() {
     selectedPlaceData?: string;
   }>();
   const router = useRouter();
+  const pathname = usePathname();
+  const tabBase = "/" + pathname.split("/")[1];
   const scrollViewRef = React.useRef<ScrollView>(null);
 
   // Determine initial create type based on defaultType param (events tab -> event, otherwise -> post)
@@ -316,7 +318,7 @@ export function CreatePostSheetScreen() {
           }
         }
 
-        await createPost({
+        const newPost = await createPost({
           userId: profile.id,
           placeId: placeId,
           type: postType,
@@ -332,21 +334,11 @@ export function CreatePostSheetScreen() {
           showToast(createAchievementToast(newAchievements[0]));
         }
 
-        Alert.alert(
-          "Posted!",
-          `Your ${postType} post about ${selectedPlace.name} has been shared.`,
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                setContent("");
-                setSelectedPlace(null);
-                setMediaItems([]);
-                router.dismiss();
-              },
-            },
-          ]
-        );
+        setContent("");
+        setSelectedPlace(null);
+        setMediaItems([]);
+        router.dismiss();
+        router.push(`${tabBase}/post/${newPost.id}` as any);
       } else {
         let imageUrl: string | undefined;
 

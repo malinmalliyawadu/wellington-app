@@ -214,6 +214,15 @@ export default function ProfileLayout() {
         }}
       />
       <Stack.Screen
+        name="instagram-import"
+        options={{
+          headerShown: true,
+          headerTitle: "Import from Instagram",
+          headerBackTitle: "Profile",
+          headerTransparent: true,
+        }}
+      />
+      <Stack.Screen
         name="create-post"
         options={{
           presentation: "formSheet",

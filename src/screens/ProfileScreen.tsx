@@ -23,12 +23,15 @@ import { PostsGrid } from "../components/PostsGrid";
 import { UpcomingEvents } from "../components/UpcomingEvents";
 import { fonts } from "../theme/fonts";
 import { colors } from "../theme/colors";
+import { useInstagramConnection } from "../hooks/useInstagramConnection";
 import { HapticPressable } from "src/components/HapticPressable";
 
 export function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { profile } = useAuth();
+
+  const { isConnected: igConnected } = useInstagramConnection();
 
   const currentUser = profile ?? {
     id: "",
@@ -208,6 +211,17 @@ export function ProfileScreen() {
           onPress={() => router.push("/profile/achievements")}
           style={{ marginTop: 10 }}
         />
+
+        {igConnected && (
+          <LiquidGlassButton
+            title="Import from Instagram"
+            variant="secondary"
+            size="medium"
+            icon="logo-instagram"
+            onPress={() => router.push("/profile/instagram-import")}
+            style={{ marginTop: 10 }}
+          />
+        )}
       </View>
 
       <UpcomingEvents events={userEvents} />

@@ -16,6 +16,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useAuth } from "../context/AuthContext";
 import { uploadAvatar } from "../services/storage";
 import { compressAvatar } from "../utils/compressMedia";
+import { useInstagramConnection } from "../hooks/useInstagramConnection";
 import { HapticPressable } from "../components/HapticPressable";
 import { fonts } from "../theme/fonts";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
@@ -33,6 +34,14 @@ export function EditProfileScreen() {
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl ?? "");
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const {
+    connection: igConnection,
+    isConnected: igConnected,
+    isExpired: igExpired,
+    connecting: igConnecting,
+    connect: igConnect,
+    disconnect: igDisconnect,
+  } = useInstagramConnection();
 
   const hasChanges =
     displayName !== (profile?.displayName ?? "") ||
@@ -112,6 +121,39 @@ export function EditProfileScreen() {
     }
   };
 
+  const handleInstagramConnect = async () => {
+    try {
+      await igConnect();
+    } catch (error) {
+      if (error instanceof Error && error.message.includes("cancelled")) return;
+      Alert.alert(
+        "Connection Failed",
+        "Failed to connect Instagram. Make sure you have a Professional (Business or Creator) account."
+      );
+    }
+  };
+
+  const handleInstagramDisconnect = () => {
+    Alert.alert(
+      "Disconnect Instagram",
+      "You won't be able to import posts until you reconnect.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Disconnect",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await igDisconnect();
+            } catch {
+              Alert.alert("Error", "Failed to disconnect Instagram.");
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleSave = async () => {
     if (!profile) return;
 
@@ -160,7 +202,7 @@ export function EditProfileScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: headerHeight }]}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
         <View style={styles.avatarSection}>
           <View style={styles.avatarContainer}>
             <Image source={{ uri: avatarUrl }} style={styles.avatar} />
@@ -232,6 +274,50 @@ export function EditProfileScreen() {
             />
             <Text style={styles.helperText}>{bio.length}/150</Text>
           </View>
+
+          <View style={styles.connectedSection}>
+            <Text style={styles.sectionTitle}>Connected Accounts</Text>
+            <View style={styles.connectedCard}>
+              <View style={styles.connectedRow}>
+                <Ionicons name="logo-instagram" size={24} color="#E1306C" />
+                <View style={styles.connectedInfo}>
+                  <Text style={styles.connectedLabel}>Instagram</Text>
+                  {igConnected && igConnection ? (
+                    <Text style={styles.connectedUsername}>
+                      @{igConnection.instagramUsername}
+                    </Text>
+                  ) : igExpired ? (
+                    <Text style={styles.connectedExpired}>
+                      Session expired
+                    </Text>
+                  ) : (
+                    <Text style={styles.connectedHint}>
+                      Import posts from Instagram
+                    </Text>
+                  )}
+                </View>
+                {igConnected ? (
+                  <HapticPressable onPress={handleInstagramDisconnect}>
+                    <Text style={styles.disconnectText}>Disconnect</Text>
+                  </HapticPressable>
+                ) : (
+                  <LiquidGlassButton
+                    title={igExpired ? "Reconnect" : "Connect"}
+                    onPress={handleInstagramConnect}
+                    loading={igConnecting}
+                    size="small"
+                    variant="primary"
+                  />
+                )}
+              </View>
+              {!igConnected && !igExpired && (
+                <Text style={styles.igNote}>
+                  Requires a Professional (Business or Creator) account.
+                  Switching is free in Instagram settings.
+                </Text>
+              )}
+            </View>
+          </View>
         </View>
       </ScrollView>
     </View>
@@ -256,6 +342,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  contentContainer: {
+    paddingBottom: 120,
   },
   avatarSection: {
     alignItems: "center",
@@ -339,5 +428,60 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     marginTop: 6,
+  },
+  connectedSection: {
+    marginTop: 8,
+  },
+  sectionTitle: {
+    fontSize: 14,
+    fontFamily: fonts.semiBold,
+    color: colors.text,
+    marginBottom: 12,
+  },
+  connectedCard: {
+    backgroundColor: colors.gray100,
+    borderRadius: 12,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  connectedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  connectedInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  connectedLabel: {
+    fontSize: 15,
+    fontFamily: fonts.semiBold,
+    color: colors.text,
+  },
+  connectedUsername: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginTop: 1,
+  },
+  connectedHint: {
+    fontSize: 13,
+    color: colors.textMuted,
+    marginTop: 1,
+  },
+  connectedExpired: {
+    fontSize: 13,
+    color: colors.error,
+    marginTop: 1,
+  },
+  disconnectText: {
+    fontSize: 14,
+    fontFamily: fonts.semiBold,
+    color: colors.error,
+  },
+  igNote: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 10,
+    lineHeight: 17,
   },
 });
