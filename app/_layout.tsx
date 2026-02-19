@@ -17,6 +17,7 @@ import { AuthProvider, useAuth } from "../src/context/AuthContext";
 import { prefetchAppImages } from "../src/utils/imagePrefetch";
 import { FollowProvider } from "../src/context/FollowContext";
 import { LikeProvider } from "../src/context/LikeContext";
+import { SaveProvider } from "../src/context/SaveContext";
 import { ToastProvider } from "../src/context/ToastContext";
 import { NotificationProvider } from "../src/context/NotificationContext";
 import { ExplorationProvider } from "../src/context/ExplorationContext";
@@ -188,6 +189,7 @@ export default function RootLayout() {
               <LocationProvider>
                 <FollowProvider>
                   <LikeProvider>
+                    <SaveProvider>
                     <NotificationProvider>
                       <ToastProvider>
                         <ExplorationProvider>
@@ -198,6 +200,7 @@ export default function RootLayout() {
                         </ExplorationProvider>
                       </ToastProvider>
                     </NotificationProvider>
+                    </SaveProvider>
                   </LikeProvider>
                 </FollowProvider>
               </LocationProvider>

@@ -483,6 +483,34 @@ export type Database = {
           },
         ];
       };
+      saved_items: {
+        Row: {
+          user_id: string;
+          item_type: SavedItemType;
+          item_id: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          item_type: SavedItemType;
+          item_id: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          item_type?: SavedItemType;
+          item_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'saved_items_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+        ];
+      };
       notifications: {
         Row: {
           id: string;
@@ -551,6 +579,7 @@ export type TrailDifficulty = 'easy' | 'moderate' | 'hard';
 export type ExplorationMethod = 'viewed' | 'posted';
 export type AchievementType = 'category' | 'milestone' | 'neighborhood' | 'social';
 export type NotificationType = 'like' | 'comment' | 'follow';
+export type SavedItemType = 'post' | 'place' | 'event';
 
 export type Tables<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Row'];

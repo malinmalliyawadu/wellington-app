@@ -13,6 +13,7 @@ import { formatNumber } from '../utils/formatNumber';
 import { sortPosts } from '../utils/postSorting';
 import { useFollow } from '../context/FollowContext';
 import { useLike } from '../context/LikeContext';
+import { useSave } from '../context/SaveContext';
 import { VideoThumbnail } from '../components/VideoThumbnail';
 import { colors } from '../theme/colors';
 import type { PlaceCategory } from '../types';
@@ -38,6 +39,7 @@ export function PlaceDetailScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { followingIds } = useFollow();
+  const { isSaved, toggleSave } = useSave();
 
   const fetchPlace = useCallback(() => getPlaceById(placeId), [placeId]);
   const { data: place, loading: loadingPlace, refetch: refetchPlace } = useQuery(fetchPlace, ['place', placeId]);
@@ -163,6 +165,19 @@ export function PlaceDetailScreen() {
                 <SFIcon name="heart" fallback="heart-outline" size={16} color={colors.textSecondary} />
                 <Text style={styles.statText}>{totalLikes} likes</Text>
               </View>
+              <HapticPressable
+                style={styles.saveButton}
+                onPress={() => toggleSave('place', place.id)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <SFIcon
+                  name={isSaved('place', place.id) ? 'bookmark.fill' : 'bookmark'}
+                  fallback={isSaved('place', place.id) ? 'bookmark' : 'bookmark-outline'}
+                  size={16}
+                  color={isSaved('place', place.id) ? colors.saved : colors.textSecondary}
+                />
+                <Text style={[styles.statText, isSaved('place', place.id) && { color: colors.saved }]}>Save</Text>
+              </HapticPressable>
               <HapticPressable style={styles.directionsButton} onPress={handleOpenDirections}>
                 <SFIcon name="location.fill" fallback="navigate" size={16} color={colors.primary} />
                 <Text style={styles.directionsText}>Directions</Text>
@@ -319,6 +334,11 @@ const styles = StyleSheet.create({
   statText: {
     fontSize: 14,
     color: colors.textSecondary,
+  },
+  saveButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
   },
   directionsButton: {
     flexDirection: 'row',

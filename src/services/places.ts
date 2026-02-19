@@ -46,6 +46,18 @@ export async function createPlace(place: Omit<Place, 'id'>): Promise<Place> {
   return mapPlace(data);
 }
 
+export async function getPlacesByIds(ids: string[]): Promise<Place[]> {
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('places')
+    .select('*')
+    .in('id', ids);
+
+  if (error) throw error;
+  return (data ?? []).map(mapPlace);
+}
+
 export async function findOrCreatePlace(place: Omit<Place, 'id'>): Promise<Place> {
   // First, check if we have a Google Place ID and if it already exists
   if (place.googlePlaceId) {

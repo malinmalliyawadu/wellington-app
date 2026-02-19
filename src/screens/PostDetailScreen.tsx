@@ -39,6 +39,7 @@ import { ZoomableImage } from "../components/ZoomableImage";
 import { colors } from "../theme/colors";
 import { fonts } from "../theme/fonts";
 import { sharePost } from "../utils/sharing";
+import { useSave } from "../context/SaveContext";
 import { useToast } from "../context/ToastContext";
 import { createCommentNotification } from "../services/notifications";
 import { ContextMenu, Button as ExpoButton, Host } from "@expo/ui/swift-ui";
@@ -71,6 +72,8 @@ export function PostDetailScreen() {
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editContent, setEditContent] = useState("");
   const { showToast } = useToast();
+  const { isSaved, toggleSave } = useSave();
+  const saved = isSaved('post', postId);
   const fetchPost = useCallback(() => getPostByIdAsync(postId), [postId]);
   const { data: post, loading, refetch: refetchPost } = useQuery(fetchPost, ['post', postId]);
   const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
@@ -413,7 +416,17 @@ export function PostDetailScreen() {
               />
             </HapticPressable>
           </View>
-          <SFIcon name="bookmark" fallback="bookmark-outline" size={24} color={colors.text} />
+          <HapticPressable
+            onPress={() => toggleSave('post', postId)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <SFIcon
+              name={saved ? "bookmark.fill" : "bookmark"}
+              fallback={saved ? "bookmark" : "bookmark-outline"}
+              size={24}
+              color={saved ? colors.saved : colors.text}
+            />
+          </HapticPressable>
         </View>
 
         {/* Like count */}

@@ -113,6 +113,18 @@ export async function getEventsByUserId(userId: string): Promise<Event[]> {
   return events;
 }
 
+export async function getEventsByIds(ids: string[]): Promise<Event[]> {
+  if (ids.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('events')
+    .select('*')
+    .in('id', ids);
+
+  if (error) throw error;
+  return (data ?? []).map(mapEvent);
+}
+
 export async function toggleAttendance(eventId: string, userId: string): Promise<boolean> {
   // Check if already attending
   const { data: existing } = await supabase

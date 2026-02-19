@@ -34,6 +34,7 @@ export const colors = {
 
   // Interactive
   liked: "#E0245E",
+  saved: "#F5A623",
 
   // Semantic
   error: "#DC2626",

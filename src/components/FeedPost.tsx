@@ -16,6 +16,7 @@ import { ZoomableImage } from "./ZoomableImage";
 import { SFIcon } from "./SFIcon";
 import { colors } from "../theme/colors";
 import { sharePost } from "../utils/sharing";
+import { useSave } from "../context/SaveContext";
 import { HapticPressable } from "./HapticPressable";
 import { fonts } from "../theme/fonts";
 
@@ -64,6 +65,8 @@ export function FeedPost({
   onPressPost,
   onPressLikes,
 }: FeedPostProps) {
+  const { isSaved, toggleSave } = useSave();
+  const saved = isSaved('post', post.id);
   const categoryColor = colors.category[place.category];
   const {
     liked,
@@ -281,7 +284,17 @@ export function FeedPost({
             />
           </HapticPressable>
         </View>
-        <SFIcon name="bookmark" fallback="bookmark-outline" size={22} color={colors.text} />
+        <HapticPressable
+          onPress={() => toggleSave('post', post.id)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <SFIcon
+            name={saved ? "bookmark.fill" : "bookmark"}
+            fallback={saved ? "bookmark" : "bookmark-outline"}
+            size={22}
+            color={saved ? colors.saved : colors.text}
+          />
+        </HapticPressable>
       </View>
 
       {/* Bottom divider */}

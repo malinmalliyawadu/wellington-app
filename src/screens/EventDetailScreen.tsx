@@ -29,6 +29,7 @@ import { addToCalendar } from "../utils/addToCalendar";
 import { colors } from "../theme/colors";
 import type { Event } from "../types";
 import { shareEvent } from "../utils/sharing";
+import { useSave } from "../context/SaveContext";
 import { HapticPressable } from "src/components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { fonts } from "../theme/fonts";
@@ -104,6 +105,7 @@ export function EventDetailScreen() {
   const headerHeight = useHeaderHeight();
   const { session } = useAuth();
   const { followingIds } = useFollow();
+  const { isSaved, toggleSave } = useSave();
   const [togglingAttendance, setTogglingAttendance] = useState(false);
 
   const fetchEvent = useCallback(() => getEventById(eventId), [eventId]);
@@ -242,6 +244,18 @@ export function EventDetailScreen() {
                   color={colors.textSecondary}
                 />
                 <Text style={styles.infoText}>{formatDate(event.date)}</Text>
+                <HapticPressable
+                  onPress={() => toggleSave('event', event.id)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  style={styles.shareButton}
+                >
+                  <SFIcon
+                    name={isSaved('event', event.id) ? "bookmark.fill" : "bookmark"}
+                    fallback={isSaved('event', event.id) ? "bookmark" : "bookmark-outline"}
+                    size={20}
+                    color={isSaved('event', event.id) ? colors.saved : colors.text}
+                  />
+                </HapticPressable>
                 <HapticPressable
                   onPress={() =>
                     shareEvent(

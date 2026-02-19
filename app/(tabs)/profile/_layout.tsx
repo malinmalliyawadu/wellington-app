@@ -4,6 +4,7 @@ import { SFIcon } from "../../../src/components/SFIcon";
 import { signOut } from "../../../src/services/auth";
 import { HapticPressable } from "../../../src/components/HapticPressable";
 import { useNotifications } from "../../../src/context/NotificationContext";
+import { useSave } from "../../../src/context/SaveContext";
 import { colors } from "../../../src/theme/colors";
 
 function NotificationBell() {
@@ -44,6 +45,31 @@ const bellStyles = StyleSheet.create({
   },
 });
 
+function SavedButton() {
+  const router = useRouter();
+  const { getSavedIds } = useSave();
+  const totalSaved =
+    getSavedIds("post").length +
+    getSavedIds("place").length +
+    getSavedIds("event").length;
+
+  return (
+    <HapticPressable
+      style={bellStyles.container}
+      onPress={() => router.push("/profile/saved" as any)}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <SFIcon
+        name="bookmark"
+        fallback="bookmark-outline"
+        size={22}
+        color={colors.text}
+      />
+      {totalSaved > 0 && <View style={bellStyles.dot} />}
+    </HapticPressable>
+  );
+}
+
 function LogoutButton() {
   return (
     <HapticPressable
@@ -83,7 +109,12 @@ export default function ProfileLayout() {
           headerShown: true,
           headerTitle: "Profile",
           headerTransparent: true,
-          headerLeft: () => <NotificationBell />,
+          headerLeft: () => (
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <NotificationBell />
+              <SavedButton />
+            </View>
+          ),
           headerRight: () => <LogoutButton />,
         }}
       />
@@ -110,6 +141,15 @@ export default function ProfileLayout() {
         options={{
           headerShown: true,
           headerTitle: "Notifications",
+          headerBackTitle: "Profile",
+          headerTransparent: true,
+        }}
+      />
+      <Stack.Screen
+        name="saved"
+        options={{
+          headerShown: true,
+          headerTitle: "Saved",
           headerBackTitle: "Profile",
           headerTransparent: true,
         }}
