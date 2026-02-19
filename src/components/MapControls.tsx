@@ -18,6 +18,7 @@ interface MapControlsProps {
   onToggleNeighborhoods: () => void;
   onToggleExploration: () => void;
   onCenterOnUser: () => void;
+  onOpenAI?: () => void;
 }
 
 function ControlButtons({
@@ -29,6 +30,7 @@ function ControlButtons({
   onToggleNeighborhoods,
   onToggleExploration,
   onCenterOnUser,
+  onOpenAI,
 }: MapControlsProps) {
   return (
     <>
@@ -79,7 +81,7 @@ function ControlButtons({
       <View style={styles.controlDivider} />
 
       <HapticPressable
-        style={[styles.controlButton, styles.controlButtonBottom]}
+        style={[styles.controlButton]}
         onPress={onCenterOnUser}
       >
         <SFIcon
@@ -87,6 +89,20 @@ function ControlButtons({
           fallback={hasUserLocation ? "navigate" : "navigate-outline"}
           size={22}
           color={hasUserLocation ? colors.primary : colors.text}
+        />
+      </HapticPressable>
+
+      <View style={styles.controlDivider} />
+
+      <HapticPressable
+        style={[styles.controlButton, styles.controlButtonBottom]}
+        onPress={onOpenAI}
+      >
+        <SFIcon
+          name="sparkles"
+          fallback="sparkles"
+          size={22}
+          color={colors.primary}
         />
       </HapticPressable>
     </>

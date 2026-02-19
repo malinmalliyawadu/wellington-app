@@ -15,6 +15,7 @@ create table profiles (
   avatar_url text not null default '',
   bio text,
   onboarding_completed boolean not null default false,
+  profile_visibility text not null default 'public' check (profile_visibility in ('public', 'private')),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

@@ -96,6 +96,15 @@ export default function MapLayout() {
           sheetExpandsWhenScrolledToEdge: false,
         }}
       />
+      <Stack.Screen
+        name="ai-chat"
+        options={{
+          headerShown: true,
+          headerTitle: "Welly AI",
+          headerBackTitle: "Map",
+          headerTransparent: true,
+        }}
+      />
     </Stack>
   );
 }

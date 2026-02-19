@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "--legacy-peer-deps": "^0.0.1-security.6",
+    "@anthropic-ai/sdk": "^0.77.0",
     "@expo-google-fonts/dm-sans": "^0.4.2",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/pacifico": "^0.4.1",
@@ -72,6 +73,7 @@
     "react-native": "0.81.5",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-maps": "1.20.1",
+    "react-native-markdown-display": "^7.0.2",
     "react-native-reanimated": "~4.1.1",
     "react-native-safe-area-context": "^5.6.2",
     "react-native-screens": "~4.16.0",

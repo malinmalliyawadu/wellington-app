@@ -13,6 +13,7 @@ interface AuthContextType {
     displayName?: string;
     avatarUrl?: string;
     bio?: string;
+    profileVisibility?: string;
   }) => Promise<void>;
   completeOnboarding: () => Promise<void>;
 }
@@ -63,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         avatarUrl: data.avatar_url,
         bio: data.bio ?? undefined,
         onboardingCompleted: data.onboarding_completed ?? false,
+        profileVisibility: (data as any).profile_visibility ?? 'public',
       });
     } else if (error?.code === 'PGRST116') {
       // No profile row found (e.g. trigger didn't fire or DB was reset)
@@ -105,6 +107,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     displayName?: string;
     avatarUrl?: string;
     bio?: string;
+    profileVisibility?: string;
   }) {
     if (!profile) {
       throw new Error('No profile to update');

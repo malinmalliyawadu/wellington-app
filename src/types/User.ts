@@ -1,3 +1,5 @@
+export type ProfileVisibility = 'public' | 'private';
+
 export interface User {
   id: string;
   username: string;
@@ -5,4 +7,5 @@ export interface User {
   avatarUrl: string;
   bio?: string;
   onboardingCompleted?: boolean;
+  profileVisibility?: ProfileVisibility;
 }

@@ -51,7 +51,7 @@ export async function getProfilesByIds(ids: string[]): Promise<User[]> {
 
 export async function updateProfile(
   id: string,
-  updates: { username?: string; displayName?: string; avatarUrl?: string; bio?: string }
+  updates: { username?: string; displayName?: string; avatarUrl?: string; bio?: string; profileVisibility?: string }
 ): Promise<void> {
   const { error } = await supabase
     .from('profiles')
@@ -60,6 +60,7 @@ export async function updateProfile(
       ...(updates.displayName !== undefined && { display_name: updates.displayName }),
       ...(updates.avatarUrl !== undefined && { avatar_url: updates.avatarUrl }),
       ...(updates.bio !== undefined && { bio: updates.bio }),
+      ...(updates.profileVisibility !== undefined && { profile_visibility: updates.profileVisibility }),
     })
     .eq('id', id);
 
@@ -72,6 +73,7 @@ function mapProfile(row: {
   display_name: string;
   avatar_url: string;
   bio: string | null;
+  profile_visibility?: string | null;
 }): User {
   return {
     id: row.id,
@@ -79,5 +81,6 @@ function mapProfile(row: {
     displayName: row.display_name,
     avatarUrl: row.avatar_url,
     bio: row.bio ?? undefined,
+    profileVisibility: (row.profile_visibility as User['profileVisibility']) ?? 'public',
   };
 }

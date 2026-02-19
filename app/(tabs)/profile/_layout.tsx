@@ -70,6 +70,25 @@ function SavedButton() {
   );
 }
 
+function PrivacyButton() {
+  const router = useRouter();
+
+  return (
+    <HapticPressable
+      style={bellStyles.container}
+      onPress={() => router.push("/profile/privacy" as any)}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <SFIcon
+        name="gearshape"
+        fallback="settings-outline"
+        size={22}
+        color={colors.text}
+      />
+    </HapticPressable>
+  );
+}
+
 function LogoutButton() {
   return (
     <HapticPressable
@@ -115,7 +134,12 @@ export default function ProfileLayout() {
               <SavedButton />
             </View>
           ),
-          headerRight: () => <LogoutButton />,
+          headerRight: () => (
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <PrivacyButton />
+              <LogoutButton />
+            </View>
+          ),
         }}
       />
       <Stack.Screen
@@ -211,6 +235,15 @@ export default function ProfileLayout() {
           sheetInitialDetentIndex: 0,
           sheetLargestUndimmedDetentIndex: 0,
           sheetExpandsWhenScrolledToEdge: true,
+        }}
+      />
+      <Stack.Screen
+        name="privacy"
+        options={{
+          headerShown: true,
+          headerTitle: "Privacy",
+          headerBackTitle: "Profile",
+          headerTransparent: true,
         }}
       />
       <Stack.Screen

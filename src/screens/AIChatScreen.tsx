@@ -1,0 +1,875 @@
+import React, {
+  useState,
+  useRef,
+  useMemo,
+  useCallback,
+  useEffect,
+} from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Keyboard,
+  ActivityIndicator,
+} from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter, useNavigation } from "expo-router";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../context/AuthContext";
+import { useFollow } from "../context/FollowContext";
+import { useLocation } from "../context/LocationContext";
+import { askAI } from "../services/ai";
+import { SFIcon } from "../components/SFIcon";
+import { HapticPressable } from "../components/HapticPressable";
+import Markdown from "react-native-markdown-display";
+import { colors } from "../theme/colors";
+import { fonts } from "../theme/fonts";
+import type {
+  Place,
+  Event,
+  Post,
+  User,
+  AIPlaceRecommendation,
+  AIEventRecommendation,
+  ChatMessage,
+} from "../types";
+
+const CATEGORY_ICONS: Record<string, { sf: any; fallback: any }> = {
+  cafe: { sf: "cup.and.saucer.fill", fallback: "cafe" },
+  restaurant: { sf: "fork.knife", fallback: "restaurant" },
+  bar: { sf: "wineglass.fill", fallback: "wine" },
+  attraction: { sf: "star.fill", fallback: "star" },
+  park: { sf: "leaf.fill", fallback: "leaf" },
+  venue: { sf: "music.note", fallback: "musical-notes" },
+  trail: { sf: "figure.hiking", fallback: "walk" },
+};
+
+function getSuggestionChips(): { label: string; question: string }[] {
+  const hour = new Date().getHours();
+
+  const chips: { label: string; question: string }[] = [];
+
+  chips.push({
+    label: "Weekend plans",
+    question: "What should I do this weekend?",
+  });
+
+  if (hour < 11) {
+    chips.push({
+      label: "Coffee spot",
+      question: "Where can I get a good coffee nearby?",
+    });
+    chips.push({
+      label: "Breakfast",
+      question: "What's a good breakfast spot?",
+    });
+  } else if (hour < 14) {
+    chips.push({ label: "Lunch", question: "Where's good for lunch?" });
+    chips.push({
+      label: "Coffee spot",
+      question: "Where can I get a good coffee nearby?",
+    });
+  } else if (hour < 17) {
+    chips.push({
+      label: "Afternoon out",
+      question: "What's good for an afternoon outing?",
+    });
+    chips.push({
+      label: "Coffee spot",
+      question: "Where can I get a good coffee nearby?",
+    });
+  } else {
+    chips.push({
+      label: "Dinner",
+      question: "Where's good for dinner tonight?",
+    });
+    chips.push({
+      label: "Drinks",
+      question: "What's a good bar for drinks tonight?",
+    });
+  }
+
+  chips.push({ label: "Events", question: "What events are happening soon?" });
+  chips.push({
+    label: "Hidden gems",
+    question: "Show me some hidden gems in Wellington",
+  });
+
+  return chips.slice(0, 4);
+}
+
+const CHAT_STORAGE_KEY = "ai_chat_history";
+let msgId = 0;
+
+export function AIChatScreen() {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
+  const { profile } = useAuth();
+  const { followingIds } = useFollow();
+  const { location: userLocation } = useLocation();
+
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [inputText, setInputText] = useState("");
+  const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+  const inputRef = useRef<TextInput>(null);
+  const lastResponseY = useRef(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardWillShow", () =>
+      setKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener("keyboardWillHide", () =>
+      setKeyboardVisible(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+  }, []);
+
+  const scrollToLastResponse = useCallback(() => {
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        y: lastResponseY.current - 200,
+        animated: true,
+      });
+    }, 150);
+  }, []);
+
+  // Load persisted chat history on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem(CHAT_STORAGE_KEY);
+        if (stored) {
+          const parsed: ChatMessage[] = JSON.parse(stored);
+          setMessages(parsed);
+          // Restore msgId counter to avoid collisions
+          const maxId = parsed.reduce(
+            (max, m) => Math.max(max, parseInt(m.id, 10) || 0),
+            0
+          );
+          msgId = maxId;
+        }
+      } catch (e) {
+        console.error("[AIChatScreen] Failed to load chat history:", e);
+      } finally {
+        setIsHistoryLoaded(true);
+      }
+    })();
+  }, []);
+
+  // Persist messages whenever they change (after initial load)
+  useEffect(() => {
+    if (!isHistoryLoaded) return;
+    AsyncStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages)).catch(
+      (e) => console.error("[AIChatScreen] Failed to save chat history:", e)
+    );
+  }, [messages, isHistoryLoaded]);
+
+  // Scroll to bottom when history is loaded with existing messages
+  useEffect(() => {
+    if (isHistoryLoaded && messages.length > 0) {
+      scrollToBottom();
+    }
+  }, [isHistoryLoaded]);
+
+  const navigation = useNavigation();
+  const hasMessages = messages.length > 0;
+
+  const handleNewChat = useCallback(() => {
+    setMessages([]);
+  }, []);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerRight: () =>
+        hasMessages ? (
+          <HapticPressable
+            onPress={handleNewChat}
+            disabled={isLoading}
+            style={styles.headerButton}
+          >
+            <SFIcon
+              name="plus.message"
+              fallback="chatbubble"
+              size={22}
+              color={isLoading ? colors.gray300 : colors.primary}
+            />
+          </HapticPressable>
+        ) : null,
+    });
+  }, [navigation, hasMessages, isLoading, handleNewChat]);
+
+  const suggestionChips = useMemo(() => getSuggestionChips(), []);
+
+  const placeMap = useMemo(() => {
+    const places: Place[] | undefined = queryClient.getQueryData([
+      "q",
+      "places",
+    ]);
+    const map = new Map<string, Place>();
+    for (const p of places ?? []) map.set(p.id, p);
+    return map;
+  }, [queryClient]);
+
+  const handleAsk = useCallback(
+    async (question: string) => {
+      const userMsg: ChatMessage = {
+        id: String(++msgId),
+        role: "user",
+        content: question,
+      };
+
+      setMessages((prev) => [...prev, userMsg]);
+      setIsLoading(true);
+      setInputText("");
+      scrollToBottom();
+
+      try {
+        const cachedPlaces: Place[] =
+          queryClient.getQueryData(["q", "places"]) ?? [];
+        const cachedEvents: Event[] =
+          queryClient.getQueryData(["q", "upcoming-events"]) ?? [];
+        const cachedPosts: Post[] =
+          queryClient.getQueryData(["q", "posts"]) ?? [];
+        const cachedProfiles: User[] =
+          queryClient.getQueryData(["q", "profiles"]) ?? [];
+
+        const profileMap = new Map<string, User>();
+        for (const u of cachedProfiles) profileMap.set(u.id, u);
+
+        const placeNameMap = new Map<string, string>();
+        for (const p of cachedPlaces) placeNameMap.set(p.id, p.name);
+
+        const followingSet = new Set(followingIds);
+        const followingUsers = cachedProfiles.filter((u) =>
+          followingSet.has(u.id)
+        );
+
+        const feedPosts = cachedPosts
+          .filter((p) => followingSet.has(p.userId) || p.userId === profile?.id)
+          .slice(0, 50)
+          .map((p) => ({
+            ...p,
+            userName: profileMap.get(p.userId)?.displayName,
+            placeName: placeNameMap.get(p.placeId),
+          }));
+
+        // Build full conversation history for Claude
+        const allMessages = [...messages, userMsg];
+        const conversationHistory = allMessages.map((m) => ({
+          role: m.role as "user" | "assistant",
+          content:
+            m.role === "assistant" && m.aiResponse
+              ? JSON.stringify(m.aiResponse)
+              : m.content,
+        }));
+
+        const aiResponse = await askAI(conversationHistory, {
+          places: cachedPlaces,
+          events: cachedEvents,
+          feedPosts,
+          followingUsers,
+          userLocation,
+        });
+
+        const assistantMsg: ChatMessage = {
+          id: String(++msgId),
+          role: "assistant",
+          content: aiResponse.message,
+          aiResponse,
+        };
+
+        setMessages((prev) => [...prev, assistantMsg]);
+      } catch (err: any) {
+        const errorMsg: ChatMessage = {
+          id: String(++msgId),
+          role: "assistant",
+          content: "",
+          error: err.message ?? "Something went wrong",
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+      } finally {
+        setIsLoading(false);
+        scrollToLastResponse();
+      }
+    },
+    [
+      queryClient,
+      followingIds,
+      profile?.id,
+      userLocation,
+      messages,
+      scrollToBottom,
+    ]
+  );
+
+  const handleChipPress = useCallback(
+    (question: string) => {
+      handleAsk(question);
+    },
+    [handleAsk]
+  );
+
+  const handleSend = useCallback(() => {
+    const q = inputText.trim();
+    if (!q || isLoading) return;
+    handleAsk(q);
+  }, [inputText, isLoading, handleAsk]);
+
+  const handlePlacePress = useCallback(
+    (placeId: string) => {
+      router.push(`/map/place/${placeId}`);
+    },
+    [router]
+  );
+
+  const handleEventPress = useCallback(
+    (eventId: string) => {
+      router.push(`/map/event/${eventId}`);
+    },
+    [router]
+  );
+
+  const handleLinkPress = useCallback(
+    (url: string) => {
+      const placeMatch = url.match(/^place:(.+)$/);
+      if (placeMatch) {
+        router.push(`/map/place/${placeMatch[1]}`);
+        return false;
+      }
+      const eventMatch = url.match(/^event:(.+)$/);
+      if (eventMatch) {
+        router.push(`/map/event/${eventMatch[1]}`);
+        return false;
+      }
+      const userMatch = url.match(/^user:(.+)$/);
+      if (userMatch) {
+        router.push(`/map/user/${userMatch[1]}`);
+        return false;
+      }
+      return true;
+    },
+    [router]
+  );
+
+  const handleRetry = useCallback(
+    (failedMsgId: string) => {
+      const idx = messages.findIndex((m) => m.id === failedMsgId);
+      if (idx < 1) return;
+      const userMsg = messages[idx - 1];
+      if (userMsg.role !== "user") return;
+
+      setMessages((prev) =>
+        prev.filter((m) => m.id !== failedMsgId && m.id !== userMsg.id)
+      );
+      handleAsk(userMsg.content);
+    },
+    [messages, handleAsk]
+  );
+
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
+    >
+      <ScrollView
+        ref={scrollRef}
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
+        {!hasMessages && (
+          <View style={styles.idleContainer}>
+            <Text style={styles.welcomeText}>
+              What would you like to do in Wellington?
+            </Text>
+            <View style={styles.chipsContainer}>
+              {suggestionChips.map((chip) => (
+                <HapticPressable
+                  key={chip.label}
+                  style={styles.chip}
+                  onPress={() => handleChipPress(chip.question)}
+                >
+                  <Text style={styles.chipText}>{chip.label}</Text>
+                </HapticPressable>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {messages.map((msg) => {
+          if (msg.role === "user") {
+            return (
+              <View key={msg.id} style={styles.questionBubble}>
+                <Text style={styles.questionText}>{msg.content}</Text>
+              </View>
+            );
+          }
+
+          if (msg.error) {
+            return (
+              <View
+                key={msg.id}
+                style={styles.errorBox}
+                onLayout={(e) => {
+                  lastResponseY.current = e.nativeEvent.layout.y;
+                }}
+              >
+                <SFIcon
+                  name="exclamationmark.triangle.fill"
+                  fallback="warning"
+                  size={24}
+                  color={colors.error}
+                />
+                <Text style={styles.errorText}>{msg.error}</Text>
+                <HapticPressable
+                  style={styles.retryButton}
+                  onPress={() => handleRetry(msg.id)}
+                >
+                  <Text style={styles.retryButtonText}>Try again</Text>
+                </HapticPressable>
+              </View>
+            );
+          }
+
+          return (
+            <View
+              key={msg.id}
+              style={styles.aiResponseSection}
+              onLayout={(e) => {
+                lastResponseY.current = e.nativeEvent.layout.y;
+              }}
+            >
+              <View style={styles.aiAvatarRow}>
+                <View style={styles.aiAvatar}>
+                  <SFIcon
+                    name="sparkles"
+                    fallback="sparkles"
+                    size={14}
+                    color="#FFFFFF"
+                  />
+                </View>
+                <Text style={styles.aiLabel}>Welly</Text>
+              </View>
+
+              <Markdown style={markdownStyles} onLinkPress={handleLinkPress}>{msg.content}</Markdown>
+
+              {msg.aiResponse && msg.aiResponse.places.length > 0 && (
+                <View style={styles.cardsSection}>
+                  {msg.aiResponse.places.map((place) => (
+                    <PlaceRecommendationCard
+                      key={place.placeId}
+                      recommendation={place}
+                      placeData={placeMap.get(place.placeId)}
+                      onPress={() => handlePlacePress(place.placeId)}
+                    />
+                  ))}
+                </View>
+              )}
+
+              {msg.aiResponse && msg.aiResponse.events.length > 0 && (
+                <View style={styles.cardsSection}>
+                  {msg.aiResponse.events.map((event) => (
+                    <EventRecommendationCard
+                      key={event.eventId}
+                      recommendation={event}
+                      onPress={() => handleEventPress(event.eventId)}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          );
+        })}
+
+        {isLoading && (
+          <View style={styles.aiLoadingRow}>
+            <ActivityIndicator size="small" color={colors.primary} />
+            <Text style={styles.loadingText}>Thinking...</Text>
+          </View>
+        )}
+      </ScrollView>
+
+      <View
+        style={[
+          styles.inputBar,
+          { paddingBottom: keyboardVisible ? 0 : insets.bottom + 49 + 8 },
+        ]}
+      >
+        <TextInput
+          ref={inputRef}
+          style={styles.textInput}
+          placeholder="Ask me anything about Wellington..."
+          placeholderTextColor={colors.textMuted}
+          value={inputText}
+          onChangeText={setInputText}
+          onSubmitEditing={handleSend}
+          returnKeyType="send"
+          multiline={false}
+          editable={!isLoading}
+        />
+        <HapticPressable
+          style={[
+            styles.sendButton,
+            (!inputText.trim() || isLoading) && styles.sendButtonDisabled,
+          ]}
+          onPress={handleSend}
+          disabled={!inputText.trim() || isLoading}
+        >
+          <SFIcon
+            name="arrow.up.circle.fill"
+            fallback="arrow-up-circle"
+            size={32}
+            color={
+              inputText.trim() && !isLoading ? colors.primary : colors.gray300
+            }
+          />
+        </HapticPressable>
+      </View>
+    </KeyboardAvoidingView>
+  );
+}
+
+function PlaceRecommendationCard({
+  recommendation,
+  placeData,
+  onPress,
+}: {
+  recommendation: AIPlaceRecommendation;
+  placeData?: Place;
+  onPress: () => void;
+}) {
+  const icon =
+    CATEGORY_ICONS[recommendation.category] ?? CATEGORY_ICONS.attraction;
+  const categoryColor =
+    (colors.category as Record<string, string>)[recommendation.category] ??
+    colors.primary;
+
+  return (
+    <HapticPressable style={styles.recCard} onPress={onPress}>
+      <View
+        style={[
+          styles.recIconCircle,
+          { backgroundColor: categoryColor + "15" },
+        ]}
+      >
+        <SFIcon
+          name={icon.sf}
+          fallback={icon.fallback}
+          size={18}
+          color={categoryColor}
+        />
+      </View>
+      <View style={styles.recCardContent}>
+        <Text style={styles.recCardTitle} numberOfLines={1}>
+          {recommendation.placeName}
+        </Text>
+        <Text style={styles.recCardReason} numberOfLines={2}>
+          {recommendation.reason}
+        </Text>
+      </View>
+      <SFIcon
+        name="chevron.right"
+        fallback="chevron-forward"
+        size={16}
+        color={colors.gray400}
+      />
+    </HapticPressable>
+  );
+}
+
+function EventRecommendationCard({
+  recommendation,
+  onPress,
+}: {
+  recommendation: AIEventRecommendation;
+  onPress: () => void;
+}) {
+  const eventDate = new Date(recommendation.date);
+  const dateLabel = eventDate.toLocaleDateString("en-NZ", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+  const timeLabel = recommendation.startTime
+    ? ` · ${recommendation.startTime}`
+    : "";
+
+  return (
+    <HapticPressable style={styles.recCard} onPress={onPress}>
+      <View
+        style={[
+          styles.recIconCircle,
+          { backgroundColor: colors.primary + "15" },
+        ]}
+      >
+        <SFIcon
+          name="calendar"
+          fallback="calendar"
+          size={18}
+          color={colors.primary}
+        />
+      </View>
+      <View style={styles.recCardContent}>
+        <Text style={styles.recCardTitle} numberOfLines={1}>
+          {recommendation.eventTitle}
+        </Text>
+        <Text style={styles.recCardDate}>{dateLabel}{timeLabel}</Text>
+        <Text style={styles.recCardReason} numberOfLines={2}>
+          {recommendation.reason}
+        </Text>
+      </View>
+      <SFIcon
+        name="chevron.right"
+        fallback="chevron-forward"
+        size={16}
+        color={colors.gray400}
+      />
+    </HapticPressable>
+  );
+}
+
+const markdownStyles = StyleSheet.create({
+  body: {
+    fontSize: 15,
+    fontFamily: fonts.medium,
+    color: colors.text,
+    lineHeight: 22,
+  },
+  strong: {
+    fontFamily: fonts.bold,
+  },
+  em: {
+    fontStyle: "italic",
+  },
+  bullet_list: {
+    marginVertical: 4,
+  },
+  ordered_list: {
+    marginVertical: 4,
+  },
+  list_item: {
+    marginVertical: 2,
+  },
+  paragraph: {
+    marginTop: 0,
+    marginBottom: 8,
+  },
+  link: {
+    color: colors.primary,
+  },
+});
+
+const styles = StyleSheet.create({
+  headerButton: {
+    width: 36,
+    height: 36,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 16,
+    gap: 16,
+  },
+  // Idle state
+  idleContainer: {
+    paddingBottom: 8,
+  },
+  welcomeText: {
+    fontSize: 24,
+    fontFamily: fonts.bold,
+    color: colors.text,
+    textAlign: "center",
+    marginBottom: 32,
+  },
+  chipsContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 10,
+  },
+  chip: {
+    backgroundColor: colors.primary + "12",
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: colors.primary + "30",
+  },
+  chipText: {
+    fontSize: 15,
+    fontFamily: fonts.semiBold,
+    color: colors.primary,
+  },
+  // Message bubbles
+  questionBubble: {
+    alignSelf: "flex-end",
+    backgroundColor: colors.primary,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 18,
+    borderBottomRightRadius: 4,
+    maxWidth: "80%",
+  },
+  questionText: {
+    fontSize: 15,
+    fontFamily: fonts.medium,
+    color: "#FFFFFF",
+  },
+  aiLoadingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 12,
+  },
+  loadingText: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
+  },
+  // AI response
+  aiResponseSection: {
+    gap: 12,
+  },
+  aiAvatarRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  aiAvatar: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  aiLabel: {
+    fontSize: 14,
+    fontFamily: fonts.semiBold,
+    color: colors.textSecondary,
+  },
+  aiMessage: {
+    fontSize: 15,
+    fontFamily: fonts.medium,
+    color: colors.text,
+    lineHeight: 22,
+  },
+  cardsSection: {
+    gap: 8,
+    marginTop: 4,
+  },
+  // Error state
+  errorBox: {
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 24,
+  },
+  errorText: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
+    textAlign: "center",
+  },
+  retryButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  retryButtonText: {
+    fontSize: 14,
+    fontFamily: fonts.semiBold,
+    color: "#FFFFFF",
+  },
+  // Input bar
+  inputBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    backgroundColor: colors.background,
+    gap: 8,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: fonts.medium,
+    color: colors.text,
+    backgroundColor: colors.gray100,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    maxHeight: 40,
+  },
+  sendButton: {
+    padding: 2,
+  },
+  sendButtonDisabled: {
+    opacity: 0.5,
+  },
+  // Recommendation cards
+  recCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: colors.gray100,
+    borderRadius: 14,
+    padding: 12,
+    gap: 12,
+  },
+  recIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  recCardContent: {
+    flex: 1,
+    gap: 2,
+  },
+  recCardTitle: {
+    fontSize: 15,
+    fontFamily: fonts.semiBold,
+    color: colors.text,
+  },
+  recCardDate: {
+    fontSize: 12,
+    fontFamily: fonts.medium,
+    color: colors.primary,
+  },
+  recCardReason: {
+    fontSize: 13,
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
+    lineHeight: 18,
+  },
+});
