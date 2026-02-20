@@ -1,24 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import { View, Text, TextInput, ScrollView, StyleSheet } from "react-native";
 import { Image } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
-import { SFSymbol } from "expo-symbols";
 import * as ExpoVideoThumbnails from "expo-video-thumbnails";
 import { SFIcon } from "../SFIcon";
 import { HapticPressable } from "../HapticPressable";
 import { VideoThumbnail } from "../VideoThumbnail";
-import { PostType } from "../../types";
 import { colors } from "../../theme/colors";
-
-const POST_TYPES: {
-  type: PostType;
-  icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap };
-  label: string;
-}[] = [
-  { type: "photo", icon: { sf: "photo.fill", fallback: "image" }, label: "Photo" },
-  { type: "video", icon: { sf: "video.fill", fallback: "videocam" }, label: "Video" },
-  { type: "text", icon: { sf: "doc.text.fill", fallback: "document-text" }, label: "Text" },
-];
 
 const MAX_CONTENT_LENGTH = 500;
 const MAX_MEDIA_ITEMS = 5;
@@ -34,8 +21,6 @@ interface PostFormProps {
   avatarUrl?: string;
   content: string;
   onContentChange: (text: string) => void;
-  postType: PostType;
-  onPostTypeChange: (type: PostType) => void;
   mediaItems: MediaPickerItem[];
   onPickMedia: () => void;
   onRemoveMedia: (index: number) => void;
@@ -45,8 +30,6 @@ export function PostForm({
   avatarUrl,
   content,
   onContentChange,
-  postType,
-  onPostTypeChange,
   mediaItems,
   onPickMedia,
   onRemoveMedia,
@@ -97,44 +80,8 @@ export function PostForm({
         </View>
       </View>
 
-      {/* Post Type Selector - compact pills */}
-      <View style={styles.typePillRow}>
-        {POST_TYPES.map((item) => (
-          <HapticPressable
-            key={item.type}
-            style={[
-              styles.typePill,
-              postType === item.type && styles.typePillActive,
-            ]}
-            onPress={() => {
-              onPostTypeChange(item.type);
-              // Clear all media when switching types
-              for (let i = mediaItems.length - 1; i >= 0; i--) {
-                onRemoveMedia(i);
-              }
-            }}
-          >
-            <SFIcon
-              name={item.icon.sf}
-              fallback={item.icon.fallback}
-              size={16}
-              color={postType === item.type ? colors.primary : colors.gray500}
-            />
-            <Text
-              style={[
-                styles.typePillLabel,
-                postType === item.type && styles.typePillLabelActive,
-              ]}
-            >
-              {item.label}
-            </Text>
-          </HapticPressable>
-        ))}
-      </View>
-
       {/* Media Section */}
-      {postType !== "text" &&
-        (hasMedia ? (
+      {hasMedia ? (
           <View style={styles.mediaStripContainer}>
             <ScrollView
               horizontal
@@ -184,7 +131,7 @@ export function PostForm({
               Add photos & videos
             </Text>
           </HapticPressable>
-        ))}
+        )}
     </>
   );
 }
@@ -227,30 +174,6 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: "right",
     marginTop: 2,
-  },
-  typePillRow: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 20,
-  },
-  typePill: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  typePillActive: {
-    backgroundColor: colors.primary + "12",
-  },
-  typePillLabel: {
-    fontSize: 14,
-    fontFamily: "PlusJakartaSans_500Medium",
-    color: colors.gray500,
-  },
-  typePillLabelActive: {
-    color: colors.primary,
   },
   mediaButton: {
     alignItems: "center",

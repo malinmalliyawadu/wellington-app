@@ -44,6 +44,7 @@ import { useToast } from "../context/ToastContext";
 import { createCommentNotification } from "../services/notifications";
 import { ContextMenu, Button as ExpoButton, Host } from "@expo/ui/swift-ui";
 import { HapticPressable } from "src/components/HapticPressable";
+import { HashtagText } from "../components/HashtagText";
 
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -447,10 +448,13 @@ export function PostDetailScreen() {
 
         {/* Caption */}
         <View style={styles.captionRow}>
-          <Text style={styles.captionText}>
-            <Text style={styles.captionAuthor}>{user?.displayName} </Text>
+          <Text style={styles.captionAuthor}>{user?.displayName}</Text>
+          <HashtagText
+            style={styles.captionText}
+            onPressHashtag={(tag) => router.push(`${currentTab}/hashtag/${tag}` as any)}
+          >
             {post.content}
-          </Text>
+          </HashtagText>
         </View>
 
         {/* Location row */}
@@ -498,7 +502,12 @@ export function PostDetailScreen() {
                         {formatTimeAgo(comment.createdAt)}
                       </Text>
                     </Text>
-                    <Text style={styles.commentBody}>{comment.text}</Text>
+                    <HashtagText
+                      style={styles.commentBody}
+                      onPressHashtag={(tag) => router.push(`${currentTab}/hashtag/${tag}` as any)}
+                    >
+                      {comment.text}
+                    </HashtagText>
                     {isOwn && (
                       <View style={styles.commentActions}>
                         <HapticPressable

@@ -5,3 +5,4 @@ export * from './Event';
 export * from './Exploration';
 export * from './Trail';
 export * from './AI';
+export * from './Hashtag';

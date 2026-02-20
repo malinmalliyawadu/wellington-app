@@ -65,9 +65,15 @@ export function CreatePostSheetScreen() {
   );
 
   // Post-specific state
-  const [postType, setPostType] = useState<PostType>("photo");
   const [content, setContent] = useState("");
   const [mediaItems, setMediaItems] = useState<MediaPickerItem[]>([]);
+
+  // Derive post type from attached media
+  const getPostType = (): PostType => {
+    if (mediaItems.length === 0) return "text";
+    if (mediaItems.some((item) => item.type === "video")) return "video";
+    return "photo";
+  };
 
   // Event-specific state
   const [eventTitle, setEventTitle] = useState("");
@@ -145,12 +151,8 @@ export function CreatePostSheetScreen() {
     delete (global as any).__sharedIntent;
 
     if (shared.mediaFiles && shared.mediaFiles.length > 0) {
-      // Multi-file share
-      const hasVideo = shared.mediaFiles.some((f) => f.type === 'video');
-      setPostType(hasVideo ? 'video' : 'photo');
       setMediaItems(shared.mediaFiles);
     } else if (shared.videoUri) {
-      setPostType("video");
       setMediaItems([{
         uri: shared.videoUri,
         type: 'video',
@@ -158,7 +160,6 @@ export function CreatePostSheetScreen() {
         height: shared.mediaHeight,
       }]);
     } else if (shared.imageUri) {
-      setPostType("photo");
       setMediaItems([{
         uri: shared.imageUri,
         type: 'photo',
@@ -290,6 +291,8 @@ export function CreatePostSheetScreen() {
           mediaHeight?: number;
           sortOrder: number;
         }> | undefined;
+
+        const postType = getPostType();
 
         if (mediaItems.length > 0 && postType !== "text") {
           // Compress and upload all media in parallel
@@ -522,8 +525,6 @@ export function CreatePostSheetScreen() {
                 avatarUrl={profile?.avatarUrl}
                 content={content}
                 onContentChange={setContent}
-                postType={postType}
-                onPostTypeChange={setPostType}
                 mediaItems={mediaItems}
                 onPickMedia={pickMedia}
                 onRemoveMedia={(index) => {
