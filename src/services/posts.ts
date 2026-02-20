@@ -3,7 +3,7 @@ import type { Post, PostType, MediaItem } from '../types';
 import { extractHashtags } from '../utils/hashtags';
 import { getOrCreateHashtags, linkHashtagsToPost, unlinkHashtagsFromPost } from './hashtags';
 
-const POST_SELECT = '*, post_media(*), post_hashtags(hashtags(name))';
+const POST_SELECT = '*, post_media(*)';
 
 export async function getPosts(): Promise<Post[]> {
   const { data, error } = await supabase
@@ -238,18 +238,13 @@ function mapPost(row: {
     media_height: number | null;
     sort_order: number;
   }>;
-  post_hashtags?: Array<{
-    hashtags: { name: string } | null;
-  }>;
 }): Post {
   const mediaRows = row.post_media ?? [];
   const media = mediaRows
     .sort((a, b) => a.sort_order - b.sort_order)
     .map(mapMediaItem);
 
-  const hashtagNames = (row.post_hashtags ?? [])
-    .map((ph) => ph.hashtags?.name)
-    .filter((n): n is string => !!n);
+  const hashtagNames = extractHashtags(row.content);
 
   return {
     id: row.id,
