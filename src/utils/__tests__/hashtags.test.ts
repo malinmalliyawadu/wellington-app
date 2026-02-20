@@ -1,4 +1,4 @@
-import { extractHashtags, parseTextWithHashtags } from '../hashtags';
+import { extractHashtags, parseTextWithHashtags, placeNameToHashtag, detectHashtagAtCursor } from '../hashtags';
 
 describe('extractHashtags', () => {
   it('returns empty array for text without hashtags', () => {
@@ -100,5 +100,78 @@ describe('parseTextWithHashtags', () => {
   it('preserves hashtag value without # prefix', () => {
     const result = parseTextWithHashtags('#Wellington');
     expect(result[0]).toEqual({ type: 'hashtag', value: 'Wellington' });
+  });
+});
+
+describe('placeNameToHashtag', () => {
+  it('converts simple name to lowercase', () => {
+    expect(placeNameToHashtag('Havana')).toBe('havana');
+  });
+
+  it('strips spaces and special characters', () => {
+    expect(placeNameToHashtag("Fidel's Cafe")).toBe('fidelscafe');
+  });
+
+  it('strips ampersands and punctuation', () => {
+    expect(placeNameToHashtag('Fork & Brewer')).toBe('forkbrewer');
+  });
+
+  it('truncates to 30 characters', () => {
+    const longName = 'A'.repeat(40);
+    expect(placeNameToHashtag(longName)).toBe('a'.repeat(30));
+  });
+
+  it('returns null for empty result', () => {
+    expect(placeNameToHashtag('!@#$%')).toBeNull();
+  });
+
+  it('handles numbers in name', () => {
+    expect(placeNameToHashtag('Cafe 42')).toBe('cafe42');
+  });
+
+  it('returns null for empty string', () => {
+    expect(placeNameToHashtag('')).toBeNull();
+  });
+});
+
+describe('detectHashtagAtCursor', () => {
+  it('detects partial hashtag at cursor', () => {
+    expect(detectHashtagAtCursor('Love this #cof', 14)).toBe('cof');
+  });
+
+  it('detects full word hashtag at cursor', () => {
+    expect(detectHashtagAtCursor('#coffee', 7)).toBe('coffee');
+  });
+
+  it('returns null when cursor is not in a hashtag', () => {
+    expect(detectHashtagAtCursor('no hashtag here', 5)).toBeNull();
+  });
+
+  it('returns null for cursor at position 0', () => {
+    expect(detectHashtagAtCursor('#test', 0)).toBeNull();
+  });
+
+  it('returns null when # has no following characters', () => {
+    expect(detectHashtagAtCursor('text #', 6)).toBeNull();
+  });
+
+  it('detects hashtag in middle of text', () => {
+    expect(detectHashtagAtCursor('Check out #flat white', 15)).toBe('flat');
+  });
+
+  it('returns null when cursor is after a space', () => {
+    expect(detectHashtagAtCursor('#coffee is great', 9)).toBeNull();
+  });
+
+  it('handles cursor beyond text length', () => {
+    expect(detectHashtagAtCursor('short', 100)).toBeNull();
+  });
+
+  it('detects hashtag with numbers', () => {
+    expect(detectHashtagAtCursor('#top1', 5)).toBe('top1');
+  });
+
+  it('detects hashtag with underscores', () => {
+    expect(detectHashtagAtCursor('#happy_h', 8)).toBe('happy_h');
   });
 });

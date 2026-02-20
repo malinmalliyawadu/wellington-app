@@ -10,6 +10,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  NativeSyntheticEvent,
+  TextInputSelectionChangeEventData,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SFIcon } from "../components/SFIcon";
@@ -35,6 +37,9 @@ import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { PlacePicker } from "../components/create/PlacePicker";
 import { PostForm } from "../components/create/PostForm";
 import { EventForm } from "../components/create/EventForm";
+import { HashtagKeyboardToolbar, HashtagInlineToolbar, HASHTAG_TOOLBAR_ID } from "../components/create/HashtagKeyboardToolbar";
+import { useHashtagRecommendations } from "../hooks/useHashtagRecommendations";
+import { detectHashtagAtCursor } from "../utils/hashtags";
 
 const glassEnabled = isLiquidGlassAvailable();
 
@@ -85,6 +90,9 @@ export function CreatePostSheetScreen() {
   const [eventImageUri, setEventImageUri] = useState<string | null>(null);
   const [eventPrice, setEventPrice] = useState("");
 
+  // Hashtag state
+  const [cursorPosition, setCursorPosition] = useState(0);
+
   // Shared state
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [posting, setPosting] = useState(false);
@@ -95,6 +103,59 @@ export function CreatePostSheetScreen() {
     const scrollY = event.nativeEvent.contentOffset.y;
     setIsScrolled(scrollY > 0);
   }, []);
+
+  const {
+    chipRecommendations,
+  } = useHashtagRecommendations({
+    content,
+    selectedPlace,
+    cursorPosition,
+  });
+
+  const handleSelectionChange = useCallback(
+    (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
+      setCursorPosition(e.nativeEvent.selection.end);
+    },
+    [],
+  );
+
+  const insertHashtag = useCallback(
+    (tagName: string) => {
+      const MAX = 500;
+      const partial = detectHashtagAtCursor(content, cursorPosition);
+
+      if (partial !== null) {
+        // Autocomplete mode: replace the partial #word
+        // Find the start of the #partial
+        const start = cursorPosition - partial.length - 1; // -1 for the #
+        const before = content.slice(0, start);
+        const after = content.slice(cursorPosition);
+        const insertion = `#${tagName} `;
+        const newContent = (before + insertion + after).slice(0, MAX);
+        setContent(newContent);
+        setCursorPosition(Math.min(before.length + insertion.length, MAX));
+      } else {
+        // Chip mode: append at end
+        const trimmed = content.trimEnd();
+        const separator = trimmed.length > 0 ? ' ' : '';
+        const insertion = `${separator}#${tagName}`;
+        const newContent = (trimmed + insertion).slice(0, MAX);
+        setContent(newContent);
+        setCursorPosition(newContent.length);
+      }
+    },
+    [content, cursorPosition],
+  );
+
+  const insertHash = useCallback(() => {
+    const MAX = 500;
+    if (content.length >= MAX) return;
+    const before = content.slice(0, cursorPosition);
+    const after = content.slice(cursorPosition);
+    const newContent = (before + '#' + after).slice(0, MAX);
+    setContent(newContent);
+    setCursorPosition(Math.min(cursorPosition + 1, MAX));
+  }, [content, cursorPosition]);
 
   // Keyboard visibility listeners
   useEffect(() => {
@@ -525,11 +586,24 @@ export function CreatePostSheetScreen() {
                 avatarUrl={profile?.avatarUrl}
                 content={content}
                 onContentChange={setContent}
+                onSelectionChange={handleSelectionChange}
+                inputAccessoryViewID={Platform.OS === 'ios' ? HASHTAG_TOOLBAR_ID : undefined}
                 mediaItems={mediaItems}
                 onPickMedia={pickMedia}
                 onRemoveMedia={(index) => {
                   setMediaItems((prev) => prev.filter((_, i) => i !== index));
                 }}
+                hashtagChips={
+                  Platform.OS !== 'ios' && chipRecommendations.length > 0 ? (
+                    <View style={styles.hashtagSection}>
+                      <HashtagInlineToolbar
+                        chipTags={chipRecommendations}
+                        onChipPress={insertHashtag}
+                        onHashPress={insertHash}
+                      />
+                    </View>
+                  ) : null
+                }
               />
             ) : (
               <EventForm
@@ -554,6 +628,15 @@ export function CreatePostSheetScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* iOS keyboard toolbar with # button and hashtag chips */}
+      {createType === "post" && (
+        <HashtagKeyboardToolbar
+          chipTags={chipRecommendations}
+          onChipPress={insertHashtag}
+          onHashPress={insertHash}
+        />
+      )}
 
       {/* Full screen progress overlay */}
       <Modal visible={posting} transparent animationType="fade" statusBarTranslucent>
@@ -641,6 +724,9 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 16,
+  },
+  hashtagSection: {
+    marginTop: 10,
   },
   progressOverlay: {
     flex: 1,
