@@ -275,6 +275,101 @@ create policy "Users can like posts"
 create policy "Users can unlike posts"
   on post_likes for delete using (auth.uid() = user_id);
 
+-- Explorations — track which places users have explored
+create type exploration_method as enum ('viewed', 'posted');
+
+create table user_explorations (
+  user_id uuid references profiles(id) on delete cascade not null,
+  place_id uuid references places(id) on delete cascade not null,
+  explored_at timestamptz not null default now(),
+  exploration_method exploration_method not null,
+  primary key (user_id, place_id)
+);
+
+create index idx_user_explorations_user_id on user_explorations(user_id);
+create index idx_user_explorations_place_id on user_explorations(place_id);
+
+-- Achievement definitions (seeded data)
+create table achievement_definitions (
+  id text primary key,
+  type text not null check (type in ('category', 'milestone', 'neighborhood', 'social')),
+  title text not null,
+  description text not null,
+  icon_name text not null,
+  requirement jsonb not null,
+  badge_color text not null,
+  sort_order integer not null,
+  created_at timestamptz not null default now()
+);
+
+create index idx_achievement_definitions_type on achievement_definitions(type);
+
+-- Track user's unlocked achievements
+create table user_achievements (
+  user_id uuid references profiles(id) on delete cascade not null,
+  achievement_id text references achievement_definitions(id) on delete cascade not null,
+  unlocked_at timestamptz not null default now(),
+  progress jsonb default '{}',
+  primary key (user_id, achievement_id)
+);
+
+create index idx_user_achievements_user_id on user_achievements(user_id);
+
+-- Notifications
+create table notifications (
+  id uuid default gen_random_uuid() primary key,
+  recipient_id uuid not null references profiles(id) on delete cascade,
+  actor_id uuid not null references profiles(id) on delete cascade,
+  type text not null check (type in ('like', 'comment', 'follow')),
+  post_id uuid references posts(id) on delete cascade,
+  read boolean not null default false,
+  created_at timestamptz not null default now()
+);
+
+create index idx_notifications_recipient on notifications(recipient_id, created_at desc);
+create index idx_notifications_unread on notifications(recipient_id, read) where read = false;
+create unique index idx_notifications_like_unique on notifications(actor_id, post_id, type) where type = 'like';
+create unique index idx_notifications_follow_unique on notifications(actor_id, recipient_id, type) where type = 'follow';
+
+-- Row Level Security: explorations
+alter table user_explorations enable row level security;
+
+create policy "Users can view own explorations"
+  on user_explorations for select using (auth.uid() = user_id);
+
+create policy "Users can create own explorations"
+  on user_explorations for insert with check (auth.uid() = user_id);
+
+-- Row Level Security: achievement definitions
+alter table achievement_definitions enable row level security;
+
+create policy "Achievement definitions are viewable by everyone"
+  on achievement_definitions for select using (true);
+
+-- Row Level Security: user achievements
+alter table user_achievements enable row level security;
+
+create policy "Users can view own achievements"
+  on user_achievements for select using (auth.uid() = user_id);
+
+create policy "Users can create own achievements"
+  on user_achievements for insert with check (auth.uid() = user_id);
+
+-- Row Level Security: notifications
+alter table notifications enable row level security;
+
+create policy "Users can view own notifications"
+  on notifications for select using (auth.uid() = recipient_id);
+
+create policy "Users can create notifications as actor"
+  on notifications for insert with check (auth.uid() = actor_id);
+
+create policy "Users can update own notifications"
+  on notifications for update using (auth.uid() = recipient_id);
+
+create policy "Users can delete own actor notifications"
+  on notifications for delete using (auth.uid() = actor_id);
+
 -- Storage bucket for post media
 insert into storage.buckets (id, name, public) values ('post-media', 'post-media', true)
 on conflict (id) do nothing;
