@@ -28,7 +28,7 @@
     "db:seed:production": "dotenv -e .env.production -- node supabase/run-sql.mjs supabase/seed-achievements.sql",
     "db:link:production": "supabase link --project-ref cxipwnwxvkguxtbzvnlz",
     "lint": "eslint . && deno lint --config supabase/functions/deno.json supabase/functions/",
-    "typecheck": "tsc --noEmit && deno check --config supabase/functions/deno.json supabase/functions/ai-chat/index.ts",
+    "typecheck": "tsc --noEmit && deno check --config supabase/functions/deno.json supabase/functions/*/index.ts",
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
