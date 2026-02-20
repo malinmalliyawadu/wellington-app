@@ -1,5 +1,6 @@
-import React from "react";
-import { View, Text, Image, StyleSheet, Dimensions } from "react-native";
+import React, { useCallback } from "react";
+import { View, Text, FlatList, StyleSheet, Dimensions, Platform } from "react-native";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoThumbnail } from "./VideoThumbnail";
 import { SFIcon } from "./SFIcon";
@@ -30,6 +31,90 @@ export function PostsGrid({
   title,
   emptyText = "No posts yet",
 }: PostsGridProps) {
+  const getItemLayout = useCallback(
+    (_: any, index: number) => ({
+      length: CELL_SIZE,
+      offset: (CELL_SIZE + GAP) * Math.floor(index / NUM_COLUMNS),
+      index,
+    }),
+    []
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: PostWithPlace }) => (
+      <HapticPressable
+        style={styles.postTile}
+        onPress={() => onPostPress(item.id)}
+      >
+        {item.mediaUrl ? (
+          <>
+            {item.type === "video" ? (
+              <VideoThumbnail
+                thumbnailUrl={item.thumbnailUrl}
+                style={styles.postImage}
+              />
+            ) : (
+              <Image
+                source={{ uri: item.mediaUrl }}
+                style={styles.postImage}
+                contentFit="cover"
+                transition={200}
+              />
+            )}
+            {isMultiMediaPost(item) ? (
+              <View style={styles.multiMediaIndicator}>
+                <SFIcon
+                  name="square.fill.on.square.fill"
+                  fallback="copy"
+                  size={16}
+                  color="rgba(255,255,255,0.9)"
+                />
+              </View>
+            ) : item.type === "video" ? (
+              <View style={styles.videoIndicator}>
+                <SFIcon
+                  name="play.circle.fill"
+                  fallback="play-circle"
+                  size={28}
+                  color="rgba(255,255,255,0.9)"
+                />
+              </View>
+            ) : null}
+          </>
+        ) : (
+          <LinearGradient
+            colors={[colors.primary, colors.primaryDark]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.textPostTile}
+          >
+            <Text style={styles.textPostContent} numberOfLines={4}>
+              {item.content}
+            </Text>
+          </LinearGradient>
+        )}
+        {item.place && (
+          <GlassView
+            style={styles.placeTag}
+            colorScheme="light"
+            glassEffectStyle="clear"
+          >
+            <SFIcon
+              name="mappin"
+              fallback="location"
+              size={9}
+              color="rgba(255,255,255,0.85)"
+            />
+            <Text style={styles.placeText} numberOfLines={1}>
+              {item.place.name}
+            </Text>
+          </GlassView>
+        )}
+      </HapticPressable>
+    ),
+    [onPostPress]
+  );
+
   if (posts.length === 0) {
     return (
       <View style={styles.emptyState}>
@@ -41,78 +126,17 @@ export function PostsGrid({
   return (
     <View>
       {title && <Text style={styles.title}>{title}</Text>}
-      <View style={styles.container}>
-        {posts.map((item) => (
-          <HapticPressable
-            key={item.id}
-            style={styles.postTile}
-            onPress={() => onPostPress(item.id)}
-          >
-            {item.mediaUrl ? (
-              <>
-                {item.type === "video" ? (
-                  <VideoThumbnail
-                    thumbnailUrl={item.thumbnailUrl}
-                    style={styles.postImage}
-                  />
-                ) : (
-                  <Image
-                    source={{ uri: item.mediaUrl }}
-                    style={styles.postImage}
-                  />
-                )}
-                {isMultiMediaPost(item) ? (
-                  <View style={styles.multiMediaIndicator}>
-                    <SFIcon
-                      name="square.fill.on.square.fill"
-                      fallback="copy"
-                      size={16}
-                      color="rgba(255,255,255,0.9)"
-                    />
-                  </View>
-                ) : item.type === "video" ? (
-                  <View style={styles.videoIndicator}>
-                    <SFIcon
-                      name="play.circle.fill"
-                      fallback="play-circle"
-                      size={28}
-                      color="rgba(255,255,255,0.9)"
-                    />
-                  </View>
-                ) : null}
-              </>
-            ) : (
-              <LinearGradient
-                colors={[colors.primary, colors.primaryDark]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.textPostTile}
-              >
-                <Text style={styles.textPostContent} numberOfLines={4}>
-                  {item.content}
-                </Text>
-              </LinearGradient>
-            )}
-            {item.place && (
-              <GlassView
-                style={styles.placeTag}
-                colorScheme="light"
-                glassEffectStyle="clear"
-              >
-                <SFIcon
-                  name="mappin"
-                  fallback="location"
-                  size={9}
-                  color="rgba(255,255,255,0.85)"
-                />
-                <Text style={styles.placeText} numberOfLines={1}>
-                  {item.place.name}
-                </Text>
-              </GlassView>
-            )}
-          </HapticPressable>
-        ))}
-      </View>
+      <FlatList
+        data={posts}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        numColumns={NUM_COLUMNS}
+        getItemLayout={getItemLayout}
+        windowSize={5}
+        removeClippedSubviews={Platform.OS === "android"}
+        scrollEnabled={false}
+        columnWrapperStyle={styles.columnWrapper}
+      />
     </View>
   );
 }
@@ -126,10 +150,9 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     paddingHorizontal: 16,
   },
-  container: {
-    flexDirection: "row",
-    flexWrap: "wrap",
+  columnWrapper: {
     gap: GAP,
+    marginBottom: GAP,
   },
   postTile: {
     width: CELL_SIZE,

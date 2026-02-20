@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   ActivityIndicator,
   Linking,
   Platform,
 } from "react-native";
+import { Image } from "expo-image";
 import { SFIcon } from "../components/SFIcon";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { useFollow } from "../context/FollowContext";
@@ -358,7 +358,7 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
 
   return (
     <View style={styles.postRow}>
-      <Image source={{ uri: user?.avatarUrl }} style={styles.avatar} />
+      <Image source={{ uri: user?.avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} />
       <View style={styles.postContent}>
         <View style={styles.postHeader}>
           <Text style={styles.displayName} numberOfLines={1}>
@@ -399,7 +399,7 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
             style={styles.thumbnail}
           />
         ) : (
-          <Image source={{ uri: post.mediaUrl }} style={styles.thumbnail} />
+          <Image source={{ uri: post.mediaUrl }} style={styles.thumbnail} contentFit="cover" transition={200} />
         ))}
     </View>
   );

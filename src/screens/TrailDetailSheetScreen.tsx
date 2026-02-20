@@ -4,11 +4,11 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   Linking,
   Platform,
   ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
@@ -418,7 +418,7 @@ function PostCardContent({
             style={styles.postCardImage}
           />
         ) : (
-          <Image source={{ uri: post.mediaUrl }} style={styles.postCardImage} />
+          <Image source={{ uri: post.mediaUrl }} style={styles.postCardImage} contentFit="cover" transition={200} />
         )
       ) : (
         <View style={[styles.postCardImage, styles.postCardTextPlaceholder]}>
@@ -435,6 +435,8 @@ function PostCardContent({
           <Image
             source={{ uri: user?.avatarUrl }}
             style={styles.postCardAvatar}
+            contentFit="cover"
+            transition={200}
           />
           <Text style={styles.postCardUsername} numberOfLines={1}>
             {user?.displayName ?? "Unknown"}

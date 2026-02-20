@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo } from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { SFIcon } from "./SFIcon";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
@@ -118,7 +119,7 @@ export function EventCard({
       {/* Image area with overlays */}
       <View style={styles.imageContainer}>
         {event.imageUrl ? (
-          <Image source={{ uri: event.imageUrl }} style={styles.image} />
+          <Image source={{ uri: event.imageUrl }} style={styles.image} contentFit="cover" transition={200} />
         ) : (
           <LinearGradient
             colors={[categoryColor, categoryColor + "88"]}
@@ -208,6 +209,8 @@ export function EventCard({
                       { marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP },
                       { zIndex: displayAttendees.length - index },
                     ]}
+                    contentFit="cover"
+                    transition={200}
                   />
                 ))}
               </View>
@@ -246,6 +249,8 @@ export function EventCard({
                       { marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP },
                       { zIndex: displayAttendees.length - index },
                     ]}
+                    contentFit="cover"
+                    transition={200}
                   />
                 ))}
               </View>

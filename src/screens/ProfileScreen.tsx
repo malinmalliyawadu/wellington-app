@@ -2,11 +2,11 @@ import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
-  Image,
   ScrollView,
   StyleSheet,
   RefreshControl,
 } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
@@ -169,7 +169,7 @@ export function ProfileScreen() {
             <Ionicons name="person" size={40} color={colors.textMuted} />
           </View>
         ) : (
-          <Image source={{ uri: currentUser.avatarUrl }} style={styles.avatar} onError={() => setAvatarError(true)} />
+          <Image source={{ uri: currentUser.avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} onError={() => setAvatarError(true)} />
         )}
         <Text style={styles.displayName}>{currentUser.displayName}</Text>
         <Text style={styles.username}>@{currentUser.username}</Text>
