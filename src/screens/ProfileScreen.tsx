@@ -149,6 +149,7 @@ export function ProfileScreen() {
 
   return (
     <ScrollView
+      testID="profile-screen"
       style={styles.container}
       showsVerticalScrollIndicator={false}
       refreshControl={
@@ -171,11 +172,11 @@ export function ProfileScreen() {
         ) : (
           <Image source={{ uri: currentUser.avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} onError={() => setAvatarError(true)} />
         )}
-        <Text style={styles.displayName}>{currentUser.displayName}</Text>
-        <Text style={styles.username}>@{currentUser.username}</Text>
+        <Text testID="profile-display-name" style={styles.displayName}>{currentUser.displayName}</Text>
+        <Text testID="profile-username" style={styles.username}>@{currentUser.username}</Text>
         {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
 
-        <View style={styles.statsRow}>
+        <View testID="profile-stats" style={styles.statsRow}>
           <View style={styles.stat}>
             <Text style={styles.statNumber}>{postCount}</Text>
             <Text style={styles.statLabel}>Posts</Text>

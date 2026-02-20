@@ -274,6 +274,7 @@ export function EventsScreen() {
   return (
     <View style={styles.container}>
       <SectionList
+        testID="events-list"
         sections={sections}
         keyExtractor={(item) => item.event.id}
         renderItem={({ item }) => (

@@ -41,6 +41,9 @@ supabase/.temp/
 # typescript
 *.tsbuildinfo
 
+# Maestro
+.maestro/screenshots/
+
 # generated native folders
 /ios
 /android
