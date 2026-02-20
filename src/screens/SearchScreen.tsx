@@ -26,9 +26,19 @@ import { EventCard } from "../components/EventCard";
 import { HapticPressable } from "../components/HapticPressable";
 import { getTrendingHashtags, searchHashtags } from "../services/hashtags";
 import { formatNumber } from "../utils/formatNumber";
-import type { Place, Post, User, Event, PlaceCategory, Hashtag } from "../types";
+import type {
+  Place,
+  Post,
+  User,
+  Event,
+  PlaceCategory,
+  Hashtag,
+} from "../types";
 
-const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
+const CATEGORY_ICONS: Record<
+  PlaceCategory,
+  { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }
+> = {
   cafe: { sf: "cup.and.saucer.fill", fallback: "cafe" },
   restaurant: { sf: "fork.knife", fallback: "restaurant" },
   bar: { sf: "wineglass.fill", fallback: "wine" },
@@ -74,11 +84,14 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const { data: places } = useQuery(getPlaces, 'places');
-  const { data: posts } = useQuery(getPosts, 'posts');
-  const { data: users } = useQuery(getProfiles, 'profiles');
-  const { data: events } = useQuery(getUpcomingEvents, 'events');
-  const { data: trendingHashtags } = useQuery(getTrendingHashtags, 'trending-hashtags');
+  const { data: places } = useQuery(getPlaces, "places");
+  const { data: posts } = useQuery(getPosts, "posts");
+  const { data: users } = useQuery(getProfiles, "profiles");
+  const { data: events } = useQuery(getUpcomingEvents, "events");
+  const { data: trendingHashtags } = useQuery(
+    getTrendingHashtags,
+    "trending-hashtags"
+  );
 
   // Hashtag search state
   const [hashtagResults, setHashtagResults] = useState<Hashtag[]>([]);
@@ -347,17 +360,31 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
             onPress={() => handleHashtagPress(hashtag.name)}
           >
             <View
-              style={[styles.resultIcon, { backgroundColor: colors.primary + "20" }]}
+              style={[
+                styles.resultIcon,
+                { backgroundColor: colors.primary + "20" },
+              ]}
             >
-              <SFIcon name="number" fallback="pricetag" size={18} color={colors.primary} />
+              <SFIcon
+                name="number"
+                fallback="pricetag"
+                size={18}
+                color={colors.primary}
+              />
             </View>
             <View style={styles.resultText}>
               <Text style={styles.resultTitle}>#{hashtag.name}</Text>
               <Text style={styles.resultSubtitle}>
-                {formatNumber(hashtag.postCount)} {hashtag.postCount === 1 ? "post" : "posts"}
+                {formatNumber(hashtag.postCount)}{" "}
+                {hashtag.postCount === 1 ? "post" : "posts"}
               </Text>
             </View>
-            <SFIcon name="chevron.right" fallback="chevron-forward" size={18} color={colors.gray300} />
+            <SFIcon
+              name="chevron.right"
+              fallback="chevron-forward"
+              size={18}
+              color={colors.gray300}
+            />
           </HapticPressable>
         );
       }
@@ -425,12 +452,22 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
             style={styles.resultItem}
             onPress={() => handleUserPress(user.id)}
           >
-            <Image source={{ uri: user.avatarUrl }} style={styles.userAvatar} contentFit="cover" transition={200} />
+            <Image
+              source={{ uri: user.avatarUrl }}
+              style={styles.userAvatar}
+              contentFit="cover"
+              transition={200}
+            />
             <View style={styles.resultText}>
               <Text style={styles.resultTitle}>{user.displayName}</Text>
               <Text style={styles.resultSubtitle}>@{user.username}</Text>
             </View>
-            <SFIcon name="chevron.right" fallback="chevron-forward" size={18} color={colors.gray300} />
+            <SFIcon
+              name="chevron.right"
+              fallback="chevron-forward"
+              size={18}
+              color={colors.gray300}
+            />
           </HapticPressable>
         );
       }
@@ -468,7 +505,12 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
               </Text>
               {place && <Text style={styles.resultSubtitle}>{place.name}</Text>}
             </View>
-            <SFIcon name="chevron.right" fallback="chevron-forward" size={18} color={colors.gray300} />
+            <SFIcon
+              name="chevron.right"
+              fallback="chevron-forward"
+              size={18}
+              color={colors.gray300}
+            />
           </HapticPressable>
         );
       }
@@ -535,14 +577,24 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
                   onPress={() => onQueryChange("")}
                 >
                   <Text style={styles.activeFilterText}>{query}</Text>
-                  <SFIcon name="xmark" fallback="close" size={16} color={colors.primary} />
+                  <SFIcon
+                    name="xmark"
+                    fallback="close"
+                    size={16}
+                    color={colors.primary}
+                  />
                 </HapticPressable>
               </View>
             ) : null
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <SFIcon name="magnifyingglass" fallback="search" size={48} color={colors.gray300} />
+              <SFIcon
+                name="magnifyingglass"
+                fallback="search"
+                size={48}
+                color={colors.gray300}
+              />
               <Text style={styles.emptyTitle}>No results found</Text>
               <Text style={styles.emptySubtext}>
                 Try searching for places, people, or events
@@ -572,8 +624,13 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
                 style={styles.trendingChip}
                 onPress={() => handleHashtagPress(hashtag.name)}
               >
-                <SFIcon name="number" fallback="pricetag" size={14} color={colors.primary} />
-                <Text style={styles.trendingText}>#{hashtag.name}</Text>
+                <SFIcon
+                  name="number"
+                  fallback="pricetag"
+                  size={14}
+                  color={colors.primary}
+                />
+                <Text style={styles.trendingText}>{hashtag.name}</Text>
               </HapticPressable>
             ))}
           </View>

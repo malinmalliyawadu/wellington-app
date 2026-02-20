@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, TextInput, ScrollView, StyleSheet } from "react-native";
+import { View, Text, TextInput, ScrollView, StyleSheet, NativeSyntheticEvent, TextInputSelectionChangeEventData } from "react-native";
 import { Image } from "expo-image";
 import * as ExpoVideoThumbnails from "expo-video-thumbnails";
 import { SFIcon } from "../SFIcon";
@@ -21,18 +21,24 @@ interface PostFormProps {
   avatarUrl?: string;
   content: string;
   onContentChange: (text: string) => void;
+  onSelectionChange?: (event: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => void;
+  inputAccessoryViewID?: string;
   mediaItems: MediaPickerItem[];
   onPickMedia: () => void;
   onRemoveMedia: (index: number) => void;
+  hashtagChips?: React.ReactNode;
 }
 
 export function PostForm({
   avatarUrl,
   content,
   onContentChange,
+  onSelectionChange,
+  inputAccessoryViewID,
   mediaItems,
   onPickMedia,
   onRemoveMedia,
+  hashtagChips,
 }: PostFormProps) {
   const hasMedia = mediaItems.length > 0;
   const canAddMore = mediaItems.length < MAX_MEDIA_ITEMS;
@@ -71,6 +77,8 @@ export function PostForm({
             multiline
             value={content}
             onChangeText={(text) => onContentChange(text.slice(0, MAX_CONTENT_LENGTH))}
+            onSelectionChange={onSelectionChange}
+            inputAccessoryViewID={inputAccessoryViewID}
             textAlignVertical="top"
             maxLength={MAX_CONTENT_LENGTH}
           />
@@ -79,6 +87,9 @@ export function PostForm({
           </Text>
         </View>
       </View>
+
+      {/* Hashtag Recommendations */}
+      {hashtagChips}
 
       {/* Media Section */}
       {hasMedia ? (

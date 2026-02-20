@@ -21,6 +21,40 @@ export function extractHashtags(text: string): string[] {
 /**
  * Splits text into segments of plain text and hashtags for rich rendering.
  */
+/**
+ * Converts a place name to a valid hashtag (lowercase, alphanumeric only, max 30 chars).
+ * Returns null if the result is empty.
+ */
+export function placeNameToHashtag(name: string): string | null {
+  const tag = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase().slice(0, 30);
+  return tag.length > 0 ? tag : null;
+}
+
+/**
+ * Detects if the cursor is inside a partially-typed hashtag.
+ * Scans backwards from cursorPosition to find `#word`.
+ * Returns the partial query (without `#`) or null.
+ */
+export function detectHashtagAtCursor(
+  text: string,
+  cursorPosition: number,
+): string | null {
+  if (cursorPosition <= 0 || cursorPosition > text.length) return null;
+
+  // Scan backwards from cursor to find the start of a #word
+  let i = cursorPosition - 1;
+  while (i >= 0 && /[a-zA-Z0-9_]/.test(text[i])) {
+    i--;
+  }
+
+  // Check if the character before the word is a #
+  if (i < 0 || text[i] !== '#') return null;
+
+  const partial = text.slice(i + 1, cursorPosition).toLowerCase();
+  // Only return if there's at least one character after #
+  return partial.length > 0 ? partial : null;
+}
+
 export function parseTextWithHashtags(text: string): TextSegment[] {
   const segments: TextSegment[] = [];
   let lastIndex = 0;
