@@ -173,14 +173,14 @@ export function PlaceSearchSheet() {
             <View
               style={[
                 styles.categoryIcon,
-                { backgroundColor: colors.category[item.category] + "20" },
+                { backgroundColor: (colors.category as Record<string, string>)[item.category] + "20" },
               ]}
             >
               <SFIcon
                 name={getCategoryIcon(item.category).sf}
                 fallback={getCategoryIcon(item.category).fallback}
                 size={18}
-                color={colors.category[item.category]}
+                color={(colors.category as Record<string, string>)[item.category]}
               />
             </View>
             <View style={styles.placeInfo}>
