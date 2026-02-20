@@ -1,7 +1,12 @@
 import { Stack, useRouter } from "expo-router";
 import { SFIcon } from "../../../src/components/SFIcon";
 import { HapticPressable } from "../../../src/components/HapticPressable";
+import { ErrorScreen } from "../../../src/components/ErrorScreen";
 import { colors } from "../../../src/theme/colors";
+
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
+  return <ErrorScreen error={error} retry={retry} />;
+}
 
 function DiscoverButton() {
   const router = useRouter();

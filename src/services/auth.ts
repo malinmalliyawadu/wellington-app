@@ -58,8 +58,9 @@ export async function signInWithApple() {
     throw new Error('Apple Sign In is only available on iOS');
   }
 
-  // Generate a random nonce for security
-  const nonce = Math.random().toString(36).substring(2, 10);
+  // Generate a cryptographically secure nonce
+  const nonceBytes = await Crypto.getRandomBytesAsync(32);
+  const nonce = Array.from(nonceBytes).map(b => b.toString(16).padStart(2, '0')).join('');
 
   // Hash the nonce using SHA-256
   const hashedNonce = await Crypto.digestStringAsync(

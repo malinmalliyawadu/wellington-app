@@ -3,9 +3,14 @@ import { Stack, useRouter } from "expo-router";
 import { SFIcon } from "../../../src/components/SFIcon";
 import { signOut } from "../../../src/services/auth";
 import { HapticPressable } from "../../../src/components/HapticPressable";
+import { ErrorScreen } from "../../../src/components/ErrorScreen";
 import { useNotifications } from "../../../src/context/NotificationContext";
 import { useSave } from "../../../src/context/SaveContext";
 import { colors } from "../../../src/theme/colors";
+
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
+  return <ErrorScreen error={error} retry={retry} />;
+}
 
 function NotificationBell() {
   const router = useRouter();

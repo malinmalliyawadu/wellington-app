@@ -5,6 +5,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useShareIntent } from "expo-share-intent";
 import * as SplashScreen from "expo-splash-screen";
+import { ErrorScreen } from "../src/components/ErrorScreen";
 import {
   useFonts,
   PlusJakartaSans_500Medium,
@@ -24,6 +25,10 @@ import { ExplorationProvider } from "../src/context/ExplorationContext";
 import { LocationProvider } from "../src/context/LocationContext";
 import { ZoomOverlayProvider } from "../src/context/ZoomOverlayContext";
 import { StatusBar } from "expo-status-bar";
+
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
+  return <ErrorScreen error={error} retry={retry} />;
+}
 
 SplashScreen.preventAutoHideAsync();
 
