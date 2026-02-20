@@ -439,7 +439,7 @@ export function OnboardingScreen() {
               </View>
               <Text style={styles.stepTitle}>Enable location</Text>
               <Text style={styles.stepSubtitle}>
-                See what's nearby and get personalised recommendations based on
+                See what&apos;s nearby and get personalised recommendations based on
                 where you are in Wellington
               </Text>
             </View>

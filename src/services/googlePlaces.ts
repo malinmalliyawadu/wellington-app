@@ -198,12 +198,12 @@ export async function searchNearbyPlaces(
           popularityScore,
         };
       })
-      .sort((a, b) => b.popularityScore - a.popularityScore) // Sort by popularity (highest first)
+      .sort((a: { popularityScore: number }, b: { popularityScore: number }) => b.popularityScore - a.popularityScore) // Sort by popularity (highest first)
       .slice(0, 20);
 
     console.log(
       "Nearby places by popularity:",
-      mappedResults.slice(0, 5).map((p) => ({
+      mappedResults.slice(0, 5).map((p: { name: string; distance: number; rating?: number; ratingsTotal?: number; popularityScore: number }) => ({
         name: p.name,
         distance: Math.round(p.distance) + "m",
         rating: p.rating?.toFixed(1),
@@ -213,7 +213,7 @@ export async function searchNearbyPlaces(
     );
 
     // Remove extra properties before returning (keep rating and ratingsTotal)
-    return mappedResults.map(({ distance, popularityScore, ...place }) => ({
+    return mappedResults.map(({ distance, popularityScore, ...place }: { distance: number; popularityScore: number; ratingsTotal?: number; [key: string]: unknown }) => ({
       ...place,
       userRatingsTotal: place.ratingsTotal,
     }));

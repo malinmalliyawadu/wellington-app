@@ -249,7 +249,7 @@ export function InstagramImportScreen() {
             </View>
 
             <Text style={styles.importHint}>
-              Media will be downloaded and you'll pick a Wellington place to tag
+              Media will be downloaded and you&apos;ll pick a Wellington place to tag
             </Text>
           </View>
         )}

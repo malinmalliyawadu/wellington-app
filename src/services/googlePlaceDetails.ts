@@ -92,7 +92,7 @@ export async function fetchPlaceDetails(
     });
 
     // Sort by score descending
-    scoredCandidates.sort((a, b) => b.score - a.score);
+    scoredCandidates.sort((a: { score: number }, b: { score: number }) => b.score - a.score);
 
     const matchedPlace = scoredCandidates[0];
 

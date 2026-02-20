@@ -382,7 +382,7 @@ export function EventDetailScreen() {
             </View>
 
             <View style={styles.attendeesHeader}>
-              <Text style={styles.sectionTitle}>Who's going</Text>
+              <Text style={styles.sectionTitle}>Who&apos;s going</Text>
               <Text style={styles.attendeeCount}>{allAttendeeIds.length}</Text>
             </View>
           </>

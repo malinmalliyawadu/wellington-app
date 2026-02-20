@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { TrailPoint } from "./fogRenderer";
+import { TrailPoint } from "../lib/fogRenderer";
 
 const STORAGE_KEY = "fog_trail_points";
 const MIN_DISTANCE_METERS = 30; // Only record a point if moved this far

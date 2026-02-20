@@ -448,7 +448,7 @@ export function LoginScreen() {
           >
             {/* Tagline anchored to top */}
             <Text style={styles.tagline}>
-              Discover what's happening in the{"\n"}coolest little capital
+              Discover what&apos;s happening in the{"\n"}coolest little capital
             </Text>
 
             {/* Spacer pushes everything below to bottom */}

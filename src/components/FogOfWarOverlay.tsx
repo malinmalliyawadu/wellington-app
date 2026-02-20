@@ -117,9 +117,7 @@ export const FogOfWarOverlay = React.memo(function FogOfWarOverlay({
         [FOG_BOUNDS.latMax, FOG_BOUNDS.lngMax], // NE
       ]}
       image={{ uri: fogImageUri }}
-      zIndex={100}
       bearing={0}
-      anchor={[0.5, 0.5]}
       opacity={1}
     />
   );
