@@ -59,6 +59,15 @@ export default function SearchLayout() {
           sheetExpandsWhenScrolledToEdge: false,
         }}
       />
+      <Stack.Screen
+        name="hashtag/[tag]"
+        options={{
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Search",
+          headerTransparent: true,
+        }}
+      />
     </Stack>
   );
 }

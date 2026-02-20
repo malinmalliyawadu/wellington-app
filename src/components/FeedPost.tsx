@@ -19,6 +19,7 @@ import { colors } from "../theme/colors";
 import { sharePost } from "../utils/sharing";
 import { useSave } from "../context/SaveContext";
 import { HapticPressable } from "./HapticPressable";
+import { HashtagText } from "./HashtagText";
 import { fonts } from "../theme/fonts";
 
 const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
@@ -39,6 +40,7 @@ interface FeedPostProps {
   onPressPlace?: (placeId: string) => void;
   onPressPost?: (postId: string) => void;
   onPressLikes?: (postId: string) => void;
+  onPressHashtag?: (tag: string) => void;
 }
 
 function formatTimeAgo(dateString: string): string {
@@ -65,6 +67,7 @@ export const FeedPost = React.memo(function FeedPost({
   onPressPlace,
   onPressPost,
   onPressLikes,
+  onPressHashtag,
 }: FeedPostProps) {
   const { isSaved, toggleSave } = useSave();
   const saved = isSaved('post', post.id);
@@ -232,7 +235,7 @@ export const FeedPost = React.memo(function FeedPost({
 
       {/* Content */}
       <View style={styles.content}>
-        <Text style={styles.caption}>{post.content}</Text>
+        <HashtagText style={styles.caption} onPressHashtag={onPressHashtag}>{post.content}</HashtagText>
       </View>
 
       {/* Location row */}

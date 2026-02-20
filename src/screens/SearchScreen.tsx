@@ -24,16 +24,9 @@ import { searchGooglePlaces } from "../services/googlePlaces";
 import { fonts } from "../theme/fonts";
 import { EventCard } from "../components/EventCard";
 import { HapticPressable } from "../components/HapticPressable";
-import type { Place, Post, User, Event, PlaceCategory } from "../types";
-
-const TRENDING_SEARCHES = [
-  "Coffee",
-  "Brunch",
-  "Craft beer",
-  "Live music",
-  "Waterfront",
-  "Cuba Street",
-];
+import { getTrendingHashtags, searchHashtags } from "../services/hashtags";
+import { formatNumber } from "../utils/formatNumber";
+import type { Place, Post, User, Event, PlaceCategory, Hashtag } from "../types";
 
 const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
   cafe: { sf: "cup.and.saucer.fill", fallback: "cafe" },
@@ -67,8 +60,8 @@ const ALL_CATEGORIES: PlaceCategory[] = [
 
 interface SearchResult {
   id: string;
-  type: "place" | "post" | "user" | "event";
-  data: Place | Post | User | Event | Omit<Place, "id">;
+  type: "place" | "post" | "user" | "event" | "hashtag";
+  data: Place | Post | User | Event | Omit<Place, "id"> | Hashtag;
   source?: "google";
 }
 
@@ -85,6 +78,10 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
   const { data: posts } = useQuery(getPosts, 'posts');
   const { data: users } = useQuery(getProfiles, 'profiles');
   const { data: events } = useQuery(getUpcomingEvents, 'events');
+  const { data: trendingHashtags } = useQuery(getTrendingHashtags, 'trending-hashtags');
+
+  // Hashtag search state
+  const [hashtagResults, setHashtagResults] = useState<Hashtag[]>([]);
 
   // Google Places search state
   const [googleResults, setGoogleResults] = useState<Array<Omit<Place, "id">>>(
@@ -121,6 +118,32 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
         }
       }
     }, 300);
+
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
+  }, [query]);
+
+  // Debounced hashtag search
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed.startsWith("#") || trimmed.length < 2) {
+      setHashtagResults([]);
+      return;
+    }
+
+    let stale = false;
+    const prefix = trimmed.slice(1);
+
+    const timer = setTimeout(async () => {
+      try {
+        const results = await searchHashtags(prefix);
+        if (!stale) setHashtagResults(results);
+      } catch {
+        if (!stale) setHashtagResults([]);
+      }
+    }, 200);
 
     return () => {
       stale = true;
@@ -249,6 +272,16 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
   const groupedResults = useMemo(() => {
     const sections = [];
 
+    // Hashtag results (from server search)
+    const hashtagSectionResults: SearchResult[] = hashtagResults.map((h) => ({
+      id: `hashtag-${h.id}`,
+      type: "hashtag" as const,
+      data: h,
+    }));
+
+    if (hashtagSectionResults.length > 0)
+      sections.push({ title: "Hashtags", data: hashtagSectionResults });
+
     const placeResults = searchResults.filter((r) => r.type === "place");
     const userResults = searchResults.filter((r) => r.type === "user");
     const postResults = searchResults.filter((r) => r.type === "post");
@@ -282,7 +315,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
       sections.push({ title: "Events", data: eventResults });
 
     return sections;
-  }, [searchResults, googleResults, googleLoading]);
+  }, [searchResults, googleResults, googleLoading, hashtagResults]);
 
   const handlePlacePress = (placeId: string) => {
     router.push(`/search/place/${placeId}`);
@@ -300,8 +333,35 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
     router.push(`/search/event/${eventId}`);
   };
 
+  const handleHashtagPress = (tagName: string) => {
+    router.push(`/search/hashtag/${tagName}` as any);
+  };
+
   const renderSearchResult = ({ item }: { item: SearchResult }) => {
     switch (item.type) {
+      case "hashtag": {
+        const hashtag = item.data as Hashtag;
+        return (
+          <HapticPressable
+            style={styles.resultItem}
+            onPress={() => handleHashtagPress(hashtag.name)}
+          >
+            <View
+              style={[styles.resultIcon, { backgroundColor: colors.primary + "20" }]}
+            >
+              <SFIcon name="number" fallback="pricetag" size={18} color={colors.primary} />
+            </View>
+            <View style={styles.resultText}>
+              <Text style={styles.resultTitle}>#{hashtag.name}</Text>
+              <Text style={styles.resultSubtitle}>
+                {formatNumber(hashtag.postCount)} {hashtag.postCount === 1 ? "post" : "posts"}
+              </Text>
+            </View>
+            <SFIcon name="chevron.right" fallback="chevron-forward" size={18} color={colors.gray300} />
+          </HapticPressable>
+        );
+      }
+
       case "place": {
         const isGoogle = item.source === "google";
         const place = item.data as Place & Omit<Place, "id">;
@@ -501,22 +561,24 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
       contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
       showsVerticalScrollIndicator={false}
     >
-      {/* Trending Searches */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Trending</Text>
-        <View style={styles.chipGrid}>
-          {TRENDING_SEARCHES.map((search) => (
-            <HapticPressable
-              key={search}
-              style={styles.trendingChip}
-              onPress={() => onQueryChange?.(search)}
-            >
-              <SFIcon name="chart.line.uptrend.xyaxis" fallback="trending-up" size={14} color={colors.primary} />
-              <Text style={styles.trendingText}>{search}</Text>
-            </HapticPressable>
-          ))}
+      {/* Trending Hashtags */}
+      {(trendingHashtags?.length ?? 0) > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Trending</Text>
+          <View style={styles.chipGrid}>
+            {(trendingHashtags ?? []).map((hashtag) => (
+              <HapticPressable
+                key={hashtag.id}
+                style={styles.trendingChip}
+                onPress={() => handleHashtagPress(hashtag.name)}
+              >
+                <SFIcon name="number" fallback="pricetag" size={14} color={colors.primary} />
+                <Text style={styles.trendingText}>#{hashtag.name}</Text>
+              </HapticPressable>
+            ))}
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Browse by Category */}
       <View style={styles.section}>

@@ -5,6 +5,12 @@ DROP POLICY IF EXISTS "Users can delete own post media" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can upload post media" ON storage.objects;
 DROP POLICY IF EXISTS "Anyone can view post media" ON storage.objects;
 
+DROP TABLE IF EXISTS instagram_connections CASCADE;
+DROP TABLE IF EXISTS saved_items CASCADE;
+DROP TABLE IF EXISTS notifications CASCADE;
+DROP TABLE IF EXISTS user_achievements CASCADE;
+DROP TABLE IF EXISTS achievement_definitions CASCADE;
+DROP TABLE IF EXISTS user_explorations CASCADE;
 DROP TABLE IF EXISTS trails CASCADE;
 DROP TABLE IF EXISTS post_media CASCADE;
 DROP TABLE IF EXISTS post_likes CASCADE;
@@ -23,3 +29,4 @@ DROP TYPE IF EXISTS place_category CASCADE;
 DROP TYPE IF EXISTS post_type CASCADE;
 DROP TYPE IF EXISTS event_category CASCADE;
 DROP TYPE IF EXISTS trail_difficulty CASCADE;
+DROP TYPE IF EXISTS exploration_method CASCADE;

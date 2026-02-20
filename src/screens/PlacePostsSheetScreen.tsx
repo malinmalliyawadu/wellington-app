@@ -28,6 +28,7 @@ import { HapticPressable } from "../components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { fonts } from "../theme/fonts";
 import { BlurView } from "expo-blur";
+import { HashtagText } from "../components/HashtagText";
 import { colors } from "../theme/colors";
 import type { Place, PlaceCategory, Post } from "../types";
 
@@ -380,9 +381,9 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
             </View>
           )}
         </View>
-        <Text style={styles.postText} numberOfLines={2}>
+        <HashtagText style={styles.postText} numberOfLines={2}>
           {post.content}
-        </Text>
+        </HashtagText>
         <HapticPressable
           style={styles.postMeta}
           onPress={(e) => {

@@ -594,6 +594,55 @@ export type Database = {
           },
         ];
       };
+      hashtags: {
+        Row: {
+          id: string;
+          name: string;
+          post_count: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          post_count?: number;
+          created_at?: string;
+        };
+        Update: {
+          name?: string;
+          post_count?: number;
+        };
+        Relationships: [];
+      };
+      post_hashtags: {
+        Row: {
+          post_id: string;
+          hashtag_id: string;
+        };
+        Insert: {
+          post_id: string;
+          hashtag_id: string;
+        };
+        Update: {
+          post_id?: string;
+          hashtag_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'post_hashtags_post_id_fkey';
+            columns: ['post_id'];
+            referencedRelation: 'posts';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+          {
+            foreignKeyName: 'post_hashtags_hashtag_id_fkey';
+            columns: ['hashtag_id'];
+            referencedRelation: 'hashtags';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+        ];
+      };
     };
     Views: {};
     Functions: {};

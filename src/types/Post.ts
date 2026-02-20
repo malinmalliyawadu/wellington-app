@@ -25,4 +25,5 @@ export interface Post {
   likes: number;
   createdAt: string;
   media?: MediaItem[];
+  hashtags?: string[];
 }

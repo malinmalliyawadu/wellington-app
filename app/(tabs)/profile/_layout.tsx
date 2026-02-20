@@ -274,6 +274,15 @@ export default function ProfileLayout() {
           sheetExpandsWhenScrolledToEdge: false,
         }}
       />
+      <Stack.Screen
+        name="hashtag/[tag]"
+        options={{
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Profile",
+          headerTransparent: true,
+        }}
+      />
     </Stack>
   );
 }

@@ -52,7 +52,9 @@ ON CONFLICT (id) DO UPDATE SET
 -- ============================================================
 DELETE FROM comments;
 DELETE FROM post_likes;
+DELETE FROM post_hashtags;
 DELETE FROM posts; -- cascades to post_media via ON DELETE CASCADE
+DELETE FROM hashtags;
 DELETE FROM event_attendees;
 DELETE FROM events;
 DELETE FROM trails;
@@ -178,10 +180,10 @@ INSERT INTO trails (id, name, description, elevation, distance, duration, diffic
 INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, created_at) VALUES
   -- Flight Coffee (3 posters: u2, u5, u1)
   ('20000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', 'photo',
-   'Flight Coffee never misses. Their single origin pour-over is consistently the best in town.',
+   'Flight Coffee never misses. Their single origin pour-over is consistently the best in town. #coffee #pourover',
    'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=600', 12, (CURRENT_DATE - 3) + TIME '09:00:00'),
   ('20000000-0000-0000-0000-000000000021', '00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000001', 'photo',
-   'Finally tried Flight Coffee. The hype is real — best espresso I''ve had in weeks.',
+   'Finally tried Flight Coffee. The hype is real — best espresso I''ve had in weeks. #coffee #flatwhite',
    'https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=600', 8, (CURRENT_DATE - 2) + TIME '08:30:00'),
   ('20000000-0000-0000-0000-000000000022', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', 'text',
    'Morning ritual at Flight. The baristas here genuinely care about the craft.',
@@ -189,7 +191,7 @@ INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, creat
 
   -- Hashigo Zake (3 posters: u7, u9, u4)
   ('20000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000009', 'photo',
-   'Hashigo Zake has the best craft beer selection in Wellington. 24 taps of pure happiness.',
+   'Hashigo Zake has the best craft beer selection in Wellington. 24 taps of pure happiness. #craftbeer #wellington',
    'https://images.unsplash.com/photo-1535958636474-b021ee887b13?w=600', 8, (CURRENT_DATE - 3) + TIME '18:00:00'),
   ('20000000-0000-0000-0000-000000000023', '00000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000009', 'photo',
    'Late night at Hashigo. They had a rare Belgian sour on tap. Heaven.',
@@ -200,7 +202,7 @@ INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, creat
 
   -- Te Papa (4 posters: u3, u6, u8, u1)
   ('20000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000013', 'photo',
-   'The new exhibition at Te Papa is absolutely stunning. Free entry and world-class art.',
+   'The new exhibition at Te Papa is absolutely stunning. Free entry and world-class art. #tepapa #art #freeentry',
    'https://images.unsplash.com/photo-1566127444979-b3d2b654e3d7?w=600', 15, (CURRENT_DATE - 4) + TIME '14:00:00'),
   ('20000000-0000-0000-0000-000000000025', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000013', 'photo',
    'Rainy day at Te Papa. The earthquake exhibit never gets old.',
@@ -214,7 +216,7 @@ INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, creat
 
   -- Mt Victoria Lookout (5 posters: u6, u3, u1, u8, u10)
   ('20000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000017', 'photo',
-   'Sunrise from Mt Vic this morning. Wellington at its best. Worth the early alarm!',
+   'Sunrise from Mt Vic this morning. Wellington at its best. Worth the early alarm! #sunrise #mtvic #views',
    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600', 22, (CURRENT_DATE - 5) + TIME '06:30:00'),
   ('20000000-0000-0000-0000-000000000011', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000017', 'photo',
    'Golden hour from Mt Vic never gets old. This city is beautiful.',
@@ -231,7 +233,7 @@ INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, creat
 
   -- Customs (2 posters: u5, u2)
   ('20000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000002', 'photo',
-   'Customs doing what Customs does best. This flat white is perfection.',
+   'Customs doing what Customs does best. This flat white is perfection. #coffee #flatwhite',
    'https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=600', 9, (CURRENT_DATE - 3) + TIME '08:00:00'),
   ('20000000-0000-0000-0000-000000000031', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002', 'photo',
    'Customs by Coffee Supreme. The name says it all. Supreme.',
@@ -239,7 +241,7 @@ INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, creat
 
   -- San Fran (4 posters: u4, u9, u10, u3)
   ('20000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000019', 'photo',
-   'San Fran last night was absolutely electric. What a lineup!',
+   'San Fran last night was absolutely electric. What a lineup! #livemusic #cubastreet',
    'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=600', 18, (CURRENT_DATE - 2) + TIME '00:00:00'),
   ('20000000-0000-0000-0000-000000000032', '00000000-0000-0000-0000-000000000009', '10000000-0000-0000-0000-000000000019', 'photo',
    'San Fran always delivers. Best sound system on Cuba Street.',
@@ -253,7 +255,7 @@ INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, creat
 
   -- Loretta (3 posters: u2, u5, u8)
   ('20000000-0000-0000-0000-000000000007', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000003', 'photo',
-   'Loretta brunch is always a vibe. The lamb shoulder is insane.',
+   'Loretta brunch is always a vibe. The lamb shoulder is insane. #brunch #wellington',
    'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600', 14, (CURRENT_DATE - 3) + TIME '11:00:00'),
   ('20000000-0000-0000-0000-000000000035', '00000000-0000-0000-0000-000000000005', '10000000-0000-0000-0000-000000000003', 'photo',
    'Loretta cold brew on a hot day. Perfect.',
@@ -264,7 +266,7 @@ INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, creat
 
   -- Botanic Garden (3 posters: u6, u3, u8)
   ('20000000-0000-0000-0000-000000000008', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000016', 'photo',
-   'The roses in the Botanic Garden are incredible this time of year.',
+   'The roses in the Botanic Garden are incredible this time of year. #botanicgarden #nature',
    'https://images.unsplash.com/photo-1490750967868-88aa4f44baee?w=600', 11, (CURRENT_DATE - 6) + TIME '15:00:00'),
   ('20000000-0000-0000-0000-000000000037', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000016', 'photo',
    'Shooting the fern house in the Botanic Garden. So lush.',
@@ -283,7 +285,7 @@ INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, creat
 
   -- Golding''s Free Dive (3 posters: u8, u7, u2)
   ('20000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000008', '10000000-0000-0000-0000-000000000010', 'photo',
-   'Golding''s Free Dive is such a hidden gem. Pizza and craft beer in a laneway.',
+   'Golding''s Free Dive is such a hidden gem. Pizza and craft beer in a laneway. #hiddengem #craftbeer #pizza',
    'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600', 10, (CURRENT_DATE - 4) + TIME '19:00:00'),
   ('20000000-0000-0000-0000-000000000040', '00000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000010', 'photo',
    'Leeds Street laneway is such a vibe. Golding''s pizza + Fortune Favours beer = perfect combo.',
@@ -313,7 +315,7 @@ INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, creat
 
   -- Hiakai (2 posters: u2, u1)
   ('20000000-0000-0000-0000-000000000014', '00000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000006', 'photo',
-   'Hiakai is doing incredible things with indigenous NZ ingredients. A must-try.',
+   'Hiakai is doing incredible things with indigenous NZ ingredients. A must-try. #finedining #nzfood',
    'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600', 16, (CURRENT_DATE - 6) + TIME '20:00:00'),
   ('20000000-0000-0000-0000-000000000045', '00000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000006', 'text',
    'Hiakai blew my mind. The kawakawa dessert is unlike anything else. Book ahead.',
@@ -329,7 +331,7 @@ INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, creat
 
   -- Oriental Bay (4 posters: u6, u3, u1, u5)
   ('20000000-0000-0000-0000-000000000016', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000018', 'photo',
-   'Evening swim at Oriental Bay. Summer in Wellington is perfection.',
+   'Evening swim at Oriental Bay. Summer in Wellington is perfection. #waterfront #summer',
    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600', 17, (CURRENT_DATE - 7) + TIME '18:00:00'),
   ('20000000-0000-0000-0000-000000000047', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000018', 'photo',
    'Oriental Bay golden hour. The colour of the water today was unreal.',
@@ -348,7 +350,7 @@ INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, creat
 
   -- Rogue & Vagabond (3 posters: u7, u4, u9)
   ('20000000-0000-0000-0000-000000000018', '00000000-0000-0000-0000-000000000007', '10000000-0000-0000-0000-000000000012', 'photo',
-   'Rogue & Vagabond garden sessions are so good in summer.',
+   'Rogue & Vagabond garden sessions are so good in summer. #craftbeer #beergarden',
    'https://images.unsplash.com/photo-1575037614876-c38a4b44571d?w=600', 11, (CURRENT_DATE - 5) + TIME '16:00:00'),
   ('20000000-0000-0000-0000-000000000050', '00000000-0000-0000-0000-000000000004', '10000000-0000-0000-0000-000000000012', 'photo',
    'Rogue & Vagabond before a show. Great vibes, great people.',
@@ -359,7 +361,7 @@ INSERT INTO posts (id, user_id, place_id, type, content, media_url, likes, creat
 
   -- Zealandia (2 posters: u3, u6)
   ('20000000-0000-0000-0000-000000000019', '00000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000015', 'photo',
-   'Zealandia at dawn. Heard a kiwi call for the first time!',
+   'Zealandia at dawn. Heard a kiwi call for the first time! #zealandia #wildlife #nature',
    'https://images.unsplash.com/photo-1518709766631-a6a7f45921c3?w=600', 19, (CURRENT_DATE - 8) + TIME '06:00:00'),
   ('20000000-0000-0000-0000-000000000052', '00000000-0000-0000-0000-000000000006', '10000000-0000-0000-0000-000000000015', 'photo',
    'Night tour at Zealandia. Saw tuatara and glow worms. Magical.',
@@ -709,3 +711,85 @@ INSERT INTO event_attendees (event_id, user_id) VALUES
   ('40000000-0000-0000-0000-000000000017', '00000000-0000-0000-0000-000000000007'),
   ('40000000-0000-0000-0000-000000000017', '00000000-0000-0000-0000-000000000010'),
   ('40000000-0000-0000-0000-000000000017', '00000000-0000-0000-0000-000000000009');
+
+-- ============================================================
+-- HASHTAGS
+-- ============================================================
+INSERT INTO hashtags (id, name) VALUES
+  ('50000000-0000-0000-0000-000000000001', 'coffee'),
+  ('50000000-0000-0000-0000-000000000002', 'pourover'),
+  ('50000000-0000-0000-0000-000000000003', 'flatwhite'),
+  ('50000000-0000-0000-0000-000000000004', 'craftbeer'),
+  ('50000000-0000-0000-0000-000000000005', 'wellington'),
+  ('50000000-0000-0000-0000-000000000006', 'tepapa'),
+  ('50000000-0000-0000-0000-000000000007', 'art'),
+  ('50000000-0000-0000-0000-000000000008', 'freeentry'),
+  ('50000000-0000-0000-0000-000000000009', 'sunrise'),
+  ('50000000-0000-0000-0000-000000000010', 'mtvic'),
+  ('50000000-0000-0000-0000-000000000011', 'views'),
+  ('50000000-0000-0000-0000-000000000012', 'livemusic'),
+  ('50000000-0000-0000-0000-000000000013', 'cubastreet'),
+  ('50000000-0000-0000-0000-000000000014', 'brunch'),
+  ('50000000-0000-0000-0000-000000000015', 'botanicgarden'),
+  ('50000000-0000-0000-0000-000000000016', 'nature'),
+  ('50000000-0000-0000-0000-000000000017', 'hiddengem'),
+  ('50000000-0000-0000-0000-000000000018', 'pizza'),
+  ('50000000-0000-0000-0000-000000000019', 'finedining'),
+  ('50000000-0000-0000-0000-000000000020', 'nzfood'),
+  ('50000000-0000-0000-0000-000000000021', 'waterfront'),
+  ('50000000-0000-0000-0000-000000000022', 'summer'),
+  ('50000000-0000-0000-0000-000000000023', 'zealandia'),
+  ('50000000-0000-0000-0000-000000000024', 'wildlife'),
+  ('50000000-0000-0000-0000-000000000025', 'beergarden');
+
+-- ============================================================
+-- POST_HASHTAGS (linking posts to hashtags)
+-- ============================================================
+INSERT INTO post_hashtags (post_id, hashtag_id) VALUES
+  -- Flight Coffee posts
+  ('20000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000001'), -- #coffee
+  ('20000000-0000-0000-0000-000000000001', '50000000-0000-0000-0000-000000000002'), -- #pourover
+  ('20000000-0000-0000-0000-000000000021', '50000000-0000-0000-0000-000000000001'), -- #coffee
+  ('20000000-0000-0000-0000-000000000021', '50000000-0000-0000-0000-000000000003'), -- #flatwhite
+  -- Hashigo Zake
+  ('20000000-0000-0000-0000-000000000002', '50000000-0000-0000-0000-000000000004'), -- #craftbeer
+  ('20000000-0000-0000-0000-000000000002', '50000000-0000-0000-0000-000000000005'), -- #wellington
+  -- Te Papa
+  ('20000000-0000-0000-0000-000000000003', '50000000-0000-0000-0000-000000000006'), -- #tepapa
+  ('20000000-0000-0000-0000-000000000003', '50000000-0000-0000-0000-000000000007'), -- #art
+  ('20000000-0000-0000-0000-000000000003', '50000000-0000-0000-0000-000000000008'), -- #freeentry
+  -- Mt Vic
+  ('20000000-0000-0000-0000-000000000004', '50000000-0000-0000-0000-000000000009'), -- #sunrise
+  ('20000000-0000-0000-0000-000000000004', '50000000-0000-0000-0000-000000000010'), -- #mtvic
+  ('20000000-0000-0000-0000-000000000004', '50000000-0000-0000-0000-000000000011'), -- #views
+  -- Customs
+  ('20000000-0000-0000-0000-000000000005', '50000000-0000-0000-0000-000000000001'), -- #coffee
+  ('20000000-0000-0000-0000-000000000005', '50000000-0000-0000-0000-000000000003'), -- #flatwhite
+  -- San Fran
+  ('20000000-0000-0000-0000-000000000006', '50000000-0000-0000-0000-000000000012'), -- #livemusic
+  ('20000000-0000-0000-0000-000000000006', '50000000-0000-0000-0000-000000000013'), -- #cubastreet
+  -- Loretta
+  ('20000000-0000-0000-0000-000000000007', '50000000-0000-0000-0000-000000000014'), -- #brunch
+  ('20000000-0000-0000-0000-000000000007', '50000000-0000-0000-0000-000000000005'), -- #wellington
+  -- Botanic Garden
+  ('20000000-0000-0000-0000-000000000008', '50000000-0000-0000-0000-000000000015'), -- #botanicgarden
+  ('20000000-0000-0000-0000-000000000008', '50000000-0000-0000-0000-000000000016'), -- #nature
+  -- Golding's Free Dive
+  ('20000000-0000-0000-0000-000000000010', '50000000-0000-0000-0000-000000000017'), -- #hiddengem
+  ('20000000-0000-0000-0000-000000000010', '50000000-0000-0000-0000-000000000004'), -- #craftbeer
+  ('20000000-0000-0000-0000-000000000010', '50000000-0000-0000-0000-000000000018'), -- #pizza
+  -- Hiakai
+  ('20000000-0000-0000-0000-000000000014', '50000000-0000-0000-0000-000000000019'), -- #finedining
+  ('20000000-0000-0000-0000-000000000014', '50000000-0000-0000-0000-000000000020'), -- #nzfood
+  -- Oriental Bay
+  ('20000000-0000-0000-0000-000000000016', '50000000-0000-0000-0000-000000000021'), -- #waterfront
+  ('20000000-0000-0000-0000-000000000016', '50000000-0000-0000-0000-000000000022'), -- #summer
+  -- Rogue & Vagabond
+  ('20000000-0000-0000-0000-000000000018', '50000000-0000-0000-0000-000000000004'), -- #craftbeer
+  ('20000000-0000-0000-0000-000000000018', '50000000-0000-0000-0000-000000000025'), -- #beergarden
+  -- Zealandia
+  ('20000000-0000-0000-0000-000000000019', '50000000-0000-0000-0000-000000000023'), -- #zealandia
+  ('20000000-0000-0000-0000-000000000019', '50000000-0000-0000-0000-000000000024'), -- #wildlife
+  ('20000000-0000-0000-0000-000000000019', '50000000-0000-0000-0000-000000000016'), -- #nature
+  -- Customs (u5)
+  ('20000000-0000-0000-0000-000000000031', '50000000-0000-0000-0000-000000000001'); -- #coffee
