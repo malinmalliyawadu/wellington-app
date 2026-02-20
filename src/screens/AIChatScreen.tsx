@@ -34,6 +34,7 @@ import type {
   Event,
   Post,
   User,
+  Hashtag,
   AIPlaceRecommendation,
   AIEventRecommendation,
   ChatMessage,
@@ -279,12 +280,17 @@ export function AIChatScreen() {
               : m.content,
         }));
 
+        const cachedHashtags: Hashtag[] =
+          queryClient.getQueryData(["q", "trending-hashtags"]) ?? [];
+        const trendingHashtags = cachedHashtags.map((h) => h.name);
+
         const aiResponse = await askAI(conversationHistory, {
           places: cachedPlaces,
           events: cachedEvents,
           feedPosts,
           followingUsers,
           userLocation,
+          trendingHashtags,
         });
 
         const assistantMsg: ChatMessage = {

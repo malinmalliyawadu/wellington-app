@@ -20,6 +20,7 @@ import { colors } from '../theme/colors';
 import type { PlaceCategory } from '../types';
 import { fonts } from "../theme/fonts";
 import { HapticPressable } from 'src/components/HapticPressable';
+import { HashtagText } from '../components/HashtagText';
 import { LiquidGlassButton } from '../components/LiquidGlassButton';
 
 const CATEGORY_LABELS: Record<PlaceCategory, string> = {
@@ -222,7 +223,12 @@ export function PlaceDetailScreen() {
                   </View>
                 )}
               </HapticPressable>
-              <Text style={styles.postText}>{item.post.content}</Text>
+              <HashtagText
+                style={styles.postText}
+                onPressHashtag={(tag) => router.push(`${tabBase}/hashtag/${tag}` as any)}
+              >
+                {item.post.content}
+              </HashtagText>
               {item.post.mediaUrl && (
                 item.post.type === 'video' ? (
                   <VideoThumbnail thumbnailUrl={item.post.thumbnailUrl} fallbackUrl={item.post.mediaUrl} style={styles.postMedia} />

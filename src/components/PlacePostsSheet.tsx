@@ -22,6 +22,7 @@ import { fetchPlaceDetails } from "../services/googlePlaceDetails";
 import { VideoThumbnail } from "./VideoThumbnail";
 import { colors } from "../theme/colors";
 import { HapticPressable } from "./HapticPressable";
+import { HashtagText } from "./HashtagText";
 
 interface PlacePostsSheetProps {
   place: Place;
@@ -250,9 +251,9 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
             </View>
           )}
         </View>
-        <Text style={styles.postText} numberOfLines={2}>
+        <HashtagText style={styles.postText} numberOfLines={2}>
           {post.content}
-        </Text>
+        </HashtagText>
         <HapticPressable
           style={styles.postMeta}
           onPress={(e) => {

@@ -112,6 +112,15 @@ export default function MapLayout() {
           headerTransparent: true,
         }}
       />
+      <Stack.Screen
+        name="hashtag/[tag]"
+        options={{
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Back",
+          headerTransparent: true,
+        }}
+      />
     </Stack>
     </MapPlaceSelectionProvider>
   );

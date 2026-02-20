@@ -41,6 +41,7 @@ interface AIContext {
   feedPosts: FeedPost[];
   followingUsers: FollowingUser[];
   userLocation: { latitude: number; longitude: number } | null;
+  trendingHashtags?: string[];
 }
 
 interface ConversationMessage {
@@ -174,6 +175,9 @@ ${followingStr || "Not following anyone yet."}
 RECENT POSTS FROM FOLLOWED USERS (user|place|content):
 ${postsStr || "No recent posts."}
 
+TRENDING HASHTAGS:
+${ctx.trendingHashtags?.length ? ctx.trendingHashtags.map((t) => `#${t}`).join(", ") : "None yet."}
+
 INSTRUCTIONS:
 - Use emojis naturally throughout your responses to keep things fun and friendly (e.g. ☕ for cafes, 🍕 for restaurants, 🎶 for music events, 🌿 for parks, etc.)
 - Give friendly, concise recommendations based on the data above
@@ -194,6 +198,7 @@ INSTRUCTIONS:
 }
 - Only include places/events that exist in the data above
 - Include 1-4 places and 0-3 events as relevant to the question
+- When suggesting activities, you may reference relevant trending hashtags to help users discover related content
 - If the question is unrelated to Wellington activities, respond helpfully but keep places/events arrays empty`;
 }
 

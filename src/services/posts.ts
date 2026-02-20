@@ -1,7 +1,9 @@
 import { supabase } from '../lib/supabase';
 import type { Post, PostType, MediaItem } from '../types';
+import { extractHashtags } from '../utils/hashtags';
+import { getOrCreateHashtags, linkHashtagsToPost, unlinkHashtagsFromPost } from './hashtags';
 
-const POST_SELECT = '*, post_media(*)';
+const POST_SELECT = '*, post_media(*), post_hashtags(hashtags(name))';
 
 export async function getPosts(): Promise<Post[]> {
   const { data, error } = await supabase
@@ -98,6 +100,18 @@ export async function updatePost(id: string, content: string): Promise<void> {
     .eq('id', id);
 
   if (error) throw error;
+
+  // Re-extract and re-link hashtags
+  try {
+    await unlinkHashtagsFromPost(id);
+    const tagNames = extractHashtags(content);
+    if (tagNames.length > 0) {
+      const hashtags = await getOrCreateHashtags(tagNames);
+      await linkHashtagsToPost(id, hashtags.map((h) => h.id));
+    }
+  } catch (e) {
+    console.warn('Failed to update hashtags:', e);
+  }
 }
 
 export async function deletePost(id: string): Promise<void> {
@@ -159,8 +173,22 @@ export async function createPost(post: {
     );
 
     if (mediaError) throw mediaError;
+  }
 
-    // Re-fetch to get the complete post with media
+  // Extract and link hashtags from content
+  const tagNames = extractHashtags(post.content);
+  if (tagNames.length > 0) {
+    try {
+      const hashtags = await getOrCreateHashtags(tagNames);
+      await linkHashtagsToPost(data.id, hashtags.map((h) => h.id));
+    } catch (e) {
+      // Non-critical: don't fail post creation if hashtag linking fails
+      console.warn('Failed to link hashtags:', e);
+    }
+  }
+
+  // Re-fetch to get the complete post with media and hashtags
+  if (post.mediaItems?.length || tagNames.length > 0) {
     const complete = await getPostById(data.id);
     if (!complete) throw new Error('Failed to fetch created post');
     return complete;
@@ -210,11 +238,18 @@ function mapPost(row: {
     media_height: number | null;
     sort_order: number;
   }>;
+  post_hashtags?: Array<{
+    hashtags: { name: string } | null;
+  }>;
 }): Post {
   const mediaRows = row.post_media ?? [];
   const media = mediaRows
     .sort((a, b) => a.sort_order - b.sort_order)
     .map(mapMediaItem);
+
+  const hashtagNames = (row.post_hashtags ?? [])
+    .map((ph) => ph.hashtags?.name)
+    .filter((n): n is string => !!n);
 
   return {
     id: row.id,
@@ -229,5 +264,6 @@ function mapPost(row: {
     likes: row.likes,
     createdAt: row.created_at,
     media: media.length > 0 ? media : undefined,
+    hashtags: hashtagNames.length > 0 ? hashtagNames : undefined,
   };
 }

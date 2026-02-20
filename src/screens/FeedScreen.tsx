@@ -115,6 +115,11 @@ export function FeedScreen() {
     [router]
   );
 
+  const handlePressHashtag = useCallback(
+    (tag: string) => router.push(`/feed/hashtag/${tag}` as any),
+    [router]
+  );
+
   const renderItem = useCallback(
     ({ item }: { item: (typeof postsWithData)[number] }) => (
       <FeedPost
@@ -125,9 +130,10 @@ export function FeedScreen() {
         onPressPlace={handlePressPlace}
         onPressPost={handlePressPost}
         onPressLikes={handlePressLikes}
+        onPressHashtag={handlePressHashtag}
       />
     ),
-    [handlePressUser, handlePressPlace, handlePressPost, handlePressLikes]
+    [handlePressUser, handlePressPlace, handlePressPost, handlePressLikes, handlePressHashtag]
   );
 
   return (

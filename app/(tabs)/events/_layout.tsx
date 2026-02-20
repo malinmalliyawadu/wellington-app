@@ -70,6 +70,15 @@ export default function EventsLayout() {
             sheetExpandsWhenScrolledToEdge: false,
           }}
         />
+        <Stack.Screen
+          name="hashtag/[tag]"
+          options={{
+            headerShown: true,
+            headerTitle: "",
+            headerBackTitle: "Events",
+            headerTransparent: true,
+          }}
+        />
       </Stack>
     </EventFilterProvider>
   );

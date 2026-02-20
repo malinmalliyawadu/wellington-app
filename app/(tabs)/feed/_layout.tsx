@@ -127,6 +127,15 @@ export default function FeedLayout() {
           sheetExpandsWhenScrolledToEdge: false,
         }}
       />
+      <Stack.Screen
+        name="hashtag/[tag]"
+        options={{
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Feed",
+          headerTransparent: true,
+        }}
+      />
     </Stack>
   );
 }
