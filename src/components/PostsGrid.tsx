@@ -48,9 +48,10 @@ export function PostsGrid({
       >
         {item.mediaUrl ? (
           <>
-            {item.type === "video" ? (
+            {item.type === "video" && !isMultiMediaPost(item) ? (
               <VideoThumbnail
                 thumbnailUrl={item.thumbnailUrl}
+                fallbackUrl={item.mediaUrl}
                 style={styles.postImage}
               />
             ) : (

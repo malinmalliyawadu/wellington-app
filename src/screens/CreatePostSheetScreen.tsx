@@ -27,6 +27,7 @@ import { uploadMedia } from "../services/storage";
 import { createEvent } from "../services/events";
 import { createAchievementToast } from "../utils/achievementHelpers";
 import { compressMedia, compressAvatar } from "../utils/compressMedia";
+import * as ExpoVideoThumbnails from "expo-video-thumbnails";
 import { fonts } from "../theme/fonts";
 import { HapticPressable } from "src/components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
@@ -278,10 +279,12 @@ export function CreatePostSheetScreen() {
 
       if (createType === "post") {
         let coverMediaUrl: string | undefined;
+        let coverThumbnailUrl: string | undefined;
         let coverWidth: number | undefined;
         let coverHeight: number | undefined;
         let uploadedMediaItems: Array<{
           mediaUrl: string;
+          thumbnailUrl?: string;
           mediaType: 'photo' | 'video';
           mediaWidth?: number;
           mediaHeight?: number;
@@ -297,8 +300,22 @@ export function CreatePostSheetScreen() {
               const mimeType = item.type === "video" ? "video/mp4" : "image/jpeg";
               const fileName = `${profile.id}-${Date.now()}-${index}.${extension}`;
               const url = await uploadMedia(profile.id, compressedUri, fileName, mimeType);
+
+              // Generate and upload thumbnail for video items
+              let thumbnailUrl: string | undefined;
+              if (item.type === "video") {
+                try {
+                  const { uri: thumbUri } = await ExpoVideoThumbnails.getThumbnailAsync(item.uri, { time: 500 });
+                  const thumbFileName = `${profile.id}-${Date.now()}-${index}-thumb.jpg`;
+                  thumbnailUrl = await uploadMedia(profile.id, thumbUri, thumbFileName, "image/jpeg");
+                } catch {
+                  // Thumbnail generation failed, will fall back to placeholder
+                }
+              }
+
               return {
                 mediaUrl: url,
+                thumbnailUrl,
                 mediaType: item.type,
                 mediaWidth: item.width,
                 mediaHeight: item.height,
@@ -309,6 +326,7 @@ export function CreatePostSheetScreen() {
 
           // Set cover to first item
           coverMediaUrl = uploadResults[0].mediaUrl;
+          coverThumbnailUrl = uploadResults[0].thumbnailUrl;
           coverWidth = uploadResults[0].mediaWidth;
           coverHeight = uploadResults[0].mediaHeight;
 
@@ -324,6 +342,7 @@ export function CreatePostSheetScreen() {
           type: postType,
           content: content.trim(),
           mediaUrl: coverMediaUrl,
+          thumbnailUrl: coverThumbnailUrl,
           mediaWidth: coverWidth,
           mediaHeight: coverHeight,
           mediaItems: uploadedMediaItems,

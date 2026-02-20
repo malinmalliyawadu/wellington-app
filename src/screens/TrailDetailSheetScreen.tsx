@@ -415,6 +415,7 @@ function PostCardContent({
         post.type === "video" ? (
           <VideoThumbnail
             thumbnailUrl={post.thumbnailUrl}
+            fallbackUrl={post.mediaUrl}
             style={styles.postCardImage}
           />
         ) : (
