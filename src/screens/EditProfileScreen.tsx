@@ -6,9 +6,9 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Image,
   Alert,
 } from "react-native";
+import { Image } from "expo-image";
 import { useRouter, useNavigation } from "expo-router";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Ionicons } from "@expo/vector-icons";
@@ -203,7 +203,7 @@ export function EditProfileScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
         <View style={styles.avatarSection}>
           <View style={styles.avatarContainer}>
-            <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+            <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} />
             {uploadingPhoto && (
               <View style={styles.avatarOverlay}>
                 <ActivityIndicator size="large" color="#FFFFFF" />

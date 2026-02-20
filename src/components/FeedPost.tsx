@@ -1,5 +1,6 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { SFSymbol } from "expo-symbols";
 import { LinearGradient } from "expo-linear-gradient";
@@ -56,7 +57,7 @@ function formatTimeAgo(dateString: string): string {
   return "Just now";
 }
 
-export function FeedPost({
+export const FeedPost = React.memo(function FeedPost({
   post,
   user,
   place,
@@ -126,7 +127,7 @@ export function FeedPost({
                 <Ionicons name="person" size={20} color={colors.textMuted} />
               </View>
             ) : (
-              <Image source={{ uri: user.avatarUrl }} style={styles.avatar} onError={() => setAvatarError(true)} />
+              <Image source={{ uri: user.avatarUrl }} style={styles.avatar} onError={() => setAvatarError(true)} contentFit="cover" transition={200} />
             )}
             <View style={styles.headerText}>
               <Text style={styles.displayName}>{user.displayName}</Text>
@@ -200,6 +201,8 @@ export function FeedPost({
                       source={{ uri: user.avatarUrl }}
                       style={styles.overlaidAvatar}
                       onError={() => setAvatarError(true)}
+                      contentFit="cover"
+                      transition={200}
                     />
                   )}
                   <View style={styles.headerText}>
@@ -316,7 +319,7 @@ export function FeedPost({
       <View style={styles.divider} />
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {

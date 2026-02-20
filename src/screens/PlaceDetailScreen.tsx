@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, Pressable, ActivityIndicator, Linking, Platform } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Pressable, ActivityIndicator, Linking, Platform } from 'react-native';
+import { Image } from 'expo-image';
 import { useLocalSearchParams, usePathname, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -203,6 +204,8 @@ export function PlaceDetailScreen() {
               <Image
                 source={{ uri: item.user?.avatarUrl }}
                 style={styles.avatar}
+                contentFit="cover"
+                transition={200}
               />
             </HapticPressable>
             <View style={styles.postContent}>
@@ -224,7 +227,7 @@ export function PlaceDetailScreen() {
                 item.post.type === 'video' ? (
                   <VideoThumbnail thumbnailUrl={item.post.thumbnailUrl} style={styles.postMedia} />
                 ) : (
-                  <Image source={{ uri: item.post.mediaUrl }} style={styles.postMedia} />
+                  <Image source={{ uri: item.post.mediaUrl }} style={styles.postMedia} contentFit="cover" transition={200} />
                 )
               )}
               <PostLikeButton postId={item.post.id} />

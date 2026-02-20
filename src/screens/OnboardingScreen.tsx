@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Dimensions,
   FlatList,
-  Image,
   TextInput,
   ActivityIndicator,
   Alert,
@@ -14,6 +13,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
@@ -301,6 +301,8 @@ export function OnboardingScreen() {
                   <Image
                     source={{ uri: avatarUrl }}
                     style={profileStyles.avatar}
+                    contentFit="cover"
+                    transition={200}
                   />
                 ) : (
                   <View
@@ -408,6 +410,8 @@ export function OnboardingScreen() {
                     <Image
                       source={{ uri: item.avatarUrl }}
                       style={followStyles.avatar}
+                      contentFit="cover"
+                      transition={200}
                     />
                     <View style={followStyles.userInfo}>
                       <Text style={followStyles.displayName}>

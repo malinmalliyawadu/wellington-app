@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, TextInput, Image, StyleSheet } from "react-native";
+import { View, Text, TextInput, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { SFIcon } from "../SFIcon";
 import { HapticPressable } from "../HapticPressable";
@@ -65,7 +66,7 @@ export function EventForm({
       >
         {imageUri ? (
           <>
-            <Image source={{ uri: imageUri }} style={styles.coverImagePreview} />
+            <Image source={{ uri: imageUri }} style={styles.coverImagePreview} contentFit="cover" transition={200} />
             <View style={styles.coverImageOverlay}>
               <SFIcon name="camera.fill" fallback="camera" size={20} color="#FFFFFF" />
               <Text style={styles.coverImageOverlayText}>Change cover</Text>

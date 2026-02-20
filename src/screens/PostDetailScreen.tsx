@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useSta
 import {
   View,
   Text,
-  Image,
   ScrollView,
   StyleSheet,
   ActivityIndicator,
@@ -13,6 +12,7 @@ import {
   Alert,
   Modal,
 } from "react-native";
+import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter, usePathname, useNavigation } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -293,7 +293,7 @@ export function PostDetailScreen() {
             style={styles.header}
             onPress={() => handlePressUser(post.userId)}
           >
-            <Image source={{ uri: user?.avatarUrl }} style={styles.avatar} />
+            <Image source={{ uri: user?.avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} />
             <View style={styles.headerText}>
               <Text style={styles.displayName}>
                 {user?.displayName ?? "Unknown"}
@@ -353,6 +353,8 @@ export function PostDetailScreen() {
                   <Image
                     source={{ uri: user?.avatarUrl }}
                     style={styles.overlaidAvatar}
+                    contentFit="cover"
+                    transition={200}
                   />
                   <View style={styles.headerText}>
                     <Text style={styles.overlaidDisplayName}>
@@ -482,6 +484,8 @@ export function PostDetailScreen() {
                     <Image
                       source={{ uri: commentUser?.avatarUrl }}
                       style={styles.commentAvatar}
+                      contentFit="cover"
+                      transition={200}
                     />
                   </HapticPressable>
                   <View style={styles.commentContent}>

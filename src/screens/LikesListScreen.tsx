@@ -2,11 +2,11 @@ import React, { useCallback } from "react";
 import {
   View,
   Text,
-  Image,
   FlatList,
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
 import { useRouter, useLocalSearchParams, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
@@ -61,7 +61,7 @@ export function LikesListScreen() {
                 }
               }}
             >
-              <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+              <Image source={{ uri: item.avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} />
               <View style={styles.userInfo}>
                 <Text style={styles.displayName}>{item.displayName}</Text>
                 <Text style={styles.username}>@{item.username}</Text>

@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, TextInput, Image, ScrollView, StyleSheet } from "react-native";
+import { View, Text, TextInput, ScrollView, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { SFSymbol } from "expo-symbols";
 import { SFIcon } from "../SFIcon";
@@ -57,7 +58,7 @@ export function PostForm({
       {/* Composer: Avatar + Text Input */}
       <View style={styles.composerRow}>
         {avatarUrl ? (
-          <Image source={{ uri: avatarUrl }} style={styles.composerAvatar} />
+          <Image source={{ uri: avatarUrl }} style={styles.composerAvatar} contentFit="cover" transition={200} />
         ) : (
           <View style={[styles.composerAvatar, styles.composerAvatarPlaceholder]}>
             <SFIcon name="person.fill" fallback="person" size={20} color={colors.gray400} />
@@ -129,7 +130,7 @@ export function PostForm({
                   {item.type === "video" ? (
                     <VideoThumbnail style={styles.mediaThumbnail} />
                   ) : (
-                    <Image source={{ uri: item.uri }} style={styles.mediaThumbnail} />
+                    <Image source={{ uri: item.uri }} style={styles.mediaThumbnail} contentFit="cover" transition={200} />
                   )}
                   <HapticPressable
                     style={styles.mediaRemoveButton}

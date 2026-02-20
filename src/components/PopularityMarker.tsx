@@ -1,5 +1,6 @@
 import React from "react";
-import { View, Text, Image, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { SFSymbol } from "expo-symbols";
 import { BlurView } from "expo-blur";
@@ -261,6 +262,8 @@ function PopularityMarkerInner({
                     key={`${avatarUrl}-${i}`}
                     source={{ uri: avatarUrl }}
                     style={[styles.avatar, { left: i * 10 }]}
+                    contentFit="cover"
+                    transition={200}
                   />
                 ))}
               </View>
@@ -282,6 +285,8 @@ function PopularityMarkerInner({
                     key={`${avatarUrl}-${i}`}
                     source={{ uri: avatarUrl }}
                     style={[styles.avatar, { left: i * 10 }]}
+                    contentFit="cover"
+                    transition={200}
                   />
                 ))}
               </View>

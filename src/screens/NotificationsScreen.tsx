@@ -2,12 +2,12 @@ import React, { useCallback, useLayoutEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
-  Image,
   FlatList,
   StyleSheet,
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { Image } from "expo-image";
 import { useNavigation } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -138,7 +138,7 @@ export function NotificationsScreen() {
           style={[styles.notificationRow, !item.read && styles.unreadRow]}
           onPress={() => handlePress(item)}
         >
-          <Image source={{ uri: actor?.avatarUrl }} style={styles.avatar} />
+          <Image source={{ uri: actor?.avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} />
           <View style={styles.notificationContent}>
             <Text style={styles.notificationText} numberOfLines={2}>
               <Text style={styles.actorName}>
@@ -151,7 +151,7 @@ export function NotificationsScreen() {
           {!item.read && <View style={styles.unreadDot} />}
           {item.type !== 'follow' && (
             thumbnail ? (
-              <Image source={{ uri: thumbnail }} style={styles.postThumbnail} />
+              <Image source={{ uri: thumbnail }} style={styles.postThumbnail} contentFit="cover" transition={200} />
             ) : (
               <View style={[styles.postThumbnail, styles.postThumbnailPlaceholder]}>
                 <SFIcon name="text.alignleft" fallback="reader-outline" size={16} color={colors.gray400} />

@@ -32,7 +32,17 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => voi
 
 SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error: any) => {
+        if (error?.status === 401 || error?.status === 403) return false;
+        return failureCount < 2;
+      },
+      staleTime: 5 * 60 * 1000,
+    },
+  },
+});
 
 const WEBSITE_HOST = (
   process.env.EXPO_PUBLIC_WELLY_WEBSITE_URL || "https://welly.nz"

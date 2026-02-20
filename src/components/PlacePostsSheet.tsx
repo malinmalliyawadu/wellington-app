@@ -5,11 +5,11 @@ import {
   StyleSheet,
   Pressable,
   ScrollView,
-  Image,
   Dimensions,
   Linking,
   Platform,
 } from "react-native";
+import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { SFIcon } from "./SFIcon";
 import { Place, Post, PlaceCategory } from "../types";
@@ -238,7 +238,7 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
 
   return (
     <View style={styles.postRow}>
-      <Image source={{ uri: user?.avatarUrl }} style={styles.avatar} />
+      <Image source={{ uri: user?.avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} />
       <View style={styles.postContent}>
         <View style={styles.postHeader}>
           <Text style={styles.displayName} numberOfLines={1}>
@@ -279,7 +279,7 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
             style={styles.thumbnail}
           />
         ) : (
-          <Image source={{ uri: post.mediaUrl }} style={styles.thumbnail} />
+          <Image source={{ uri: post.mediaUrl }} style={styles.thumbnail} contentFit="cover" transition={200} />
         ))}
     </View>
   );
