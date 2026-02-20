@@ -5,6 +5,7 @@ const POST_MEDIA_BUCKET = 'post-media';
 const AVATARS_BUCKET = 'avatars';
 
 export async function uploadMedia(
+  userId: string,
   uri: string,
   fileName: string,
   mimeType: string,
@@ -32,7 +33,7 @@ export async function uploadMedia(
       throw new Error('Media file is empty');
     }
 
-    const filePath = `${Date.now()}-${fileName}`;
+    const filePath = `${userId}/${Date.now()}-${fileName}`;
 
     const { data, error } = await supabase.storage
       .from(POST_MEDIA_BUCKET)
