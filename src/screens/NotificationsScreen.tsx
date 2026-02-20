@@ -197,7 +197,7 @@ export function NotificationsScreen() {
             />
             <Text style={styles.emptyTitle}>No notifications yet</Text>
             <Text style={styles.emptySubtitle}>
-              When someone likes or comments on your posts, you'll see it here.
+              When someone likes or comments on your posts, you&apos;ll see it here.
             </Text>
           </View>
         }

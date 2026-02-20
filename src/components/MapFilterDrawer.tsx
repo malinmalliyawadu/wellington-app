@@ -126,7 +126,7 @@ export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
         >
           <SFIcon name="calendar" fallback="calendar" size={20} color={showEvents ? colors.category.venue : colors.text} />
           <Text style={[styles.optionLabel, showEvents && styles.optionLabelActive]}>
-            Show this week's events
+            Show this week&apos;s events
           </Text>
           {showEvents && (
             <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />

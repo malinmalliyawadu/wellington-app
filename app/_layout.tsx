@@ -14,7 +14,7 @@ import {
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { Pacifico_400Regular } from "@expo-google-fonts/pacifico";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
-import { prefetchAppImages } from "../src/utils/imagePrefetch";
+
 import { FollowProvider } from "../src/context/FollowContext";
 import { LikeProvider } from "../src/context/LikeContext";
 import { SaveProvider } from "../src/context/SaveContext";
