@@ -83,6 +83,8 @@ export function FeedPost({
   );
   const { data: comments } = useQuery(fetchComments, ['comments', post.id]);
   const commentCount = comments?.length ?? 0;
+  const [avatarError, setAvatarError] = useState(!user.avatarUrl);
+
   const storedAspectRatio =
     post.mediaWidth && post.mediaHeight
       ? post.mediaWidth / post.mediaHeight
@@ -119,7 +121,13 @@ export function FeedPost({
             onPress={() => onPressUser?.(user.id)}
             disabled={!onPressUser}
           >
-            <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+            {avatarError ? (
+              <View style={[styles.avatar, styles.avatarFallback]}>
+                <Ionicons name="person" size={20} color={colors.textMuted} />
+              </View>
+            ) : (
+              <Image source={{ uri: user.avatarUrl }} style={styles.avatar} onError={() => setAvatarError(true)} />
+            )}
             <View style={styles.headerText}>
               <Text style={styles.displayName}>{user.displayName}</Text>
               <Text style={styles.username}>@{user.username}</Text>
@@ -183,10 +191,17 @@ export function FeedPost({
                   onPress={() => onPressUser?.(user.id)}
                   disabled={!onPressUser}
                 >
-                  <Image
-                    source={{ uri: user.avatarUrl }}
-                    style={styles.overlaidAvatar}
-                  />
+                  {avatarError ? (
+                    <View style={[styles.overlaidAvatar, styles.avatarFallback]}>
+                      <Ionicons name="person" size={18} color={colors.textMuted} />
+                    </View>
+                  ) : (
+                    <Image
+                      source={{ uri: user.avatarUrl }}
+                      style={styles.overlaidAvatar}
+                      onError={() => setAvatarError(true)}
+                    />
+                  )}
                   <View style={styles.headerText}>
                     <Text style={styles.overlaidDisplayName}>
                       {user.displayName}
@@ -323,6 +338,10 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: colors.gray200,
+  },
+  avatarFallback: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   headerText: {
     flex: 1,
