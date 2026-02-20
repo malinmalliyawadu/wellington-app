@@ -1,0 +1,12 @@
+{
+  "lock": false,
+  "imports": {
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "@anthropic-ai/sdk": "https://esm.sh/@anthropic-ai/sdk@0.39.0"
+  },
+  "lint": {
+    "rules": {
+      "exclude": ["no-explicit-any"]
+    }
+  }
+}
