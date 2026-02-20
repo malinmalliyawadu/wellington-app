@@ -1,0 +1,20 @@
+appId: com.malinmw.wellingtonapp
+name: "Search - Search interaction"
+tags:
+  - search
+
+---
+# Log in first
+- runFlow: flows/login.yaml
+
+# Navigate to Search tab
+- tapOn: "Search"
+
+# Wait for search screen to load — assert browse content is visible
+- assertVisible: "Trending"
+- assertVisible: "Browse by Category"
+
+# Tap on a trending search chip to trigger a search
+- tapOn: chart line, Coffee
+
+- assertVisible: cup.and.saucer.fill, Customs by Coffee Supreme, 39 Ghuznee Street, Te Aro, Forward

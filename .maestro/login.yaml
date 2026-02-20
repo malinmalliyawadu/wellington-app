@@ -1,0 +1,32 @@
+appId: com.malinmw.wellingtonapp
+name: "Login - Dev login with seed user"
+tags:
+  - auth
+  - smoke
+
+---
+- launchApp
+
+# Assert login screen is visible
+- assertVisible:
+    id: "login-screen"
+
+# Open dev login modal via testID
+- tapOn:
+    id: "dev-login-trigger"
+
+# Wait for seed users to appear
+- extendedWaitUntil:
+    visible:
+      id: "seed-user-you"
+    timeout: 5000
+
+# Tap "You" seed user via testID
+- tapOn:
+    id: "seed-user-you"
+
+# Assert we've left the login screen
+- extendedWaitUntil:
+    notVisible:
+      id: "login-screen"
+    timeout: 10000

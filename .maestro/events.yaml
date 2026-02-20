@@ -1,0 +1,21 @@
+appId: com.malinmw.wellingtonapp
+name: "Events - Browse events"
+tags:
+  - events
+
+---
+
+# Log in first
+- runFlow: flows/login.yaml
+
+# Navigate to Events tab
+- tapOn: "Events"
+
+# Wait for events content to load
+- extendedWaitUntil:
+    visible: "Today|Tonight|Tomorrow|This Weekend|This Month|Coming Up|No events match"
+    timeout: 10000
+
+# Scroll through events
+- scroll
+- scroll

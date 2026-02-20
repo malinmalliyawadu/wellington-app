@@ -6,14 +6,16 @@ import { colors } from '../theme/colors';
 
 interface VideoThumbnailProps {
   thumbnailUrl?: string;
+  fallbackUrl?: string;
   style?: StyleProp<ViewStyle>;
 }
 
-export function VideoThumbnail({ thumbnailUrl, style }: VideoThumbnailProps) {
+export function VideoThumbnail({ thumbnailUrl, fallbackUrl, style }: VideoThumbnailProps) {
+  const imageUrl = thumbnailUrl || fallbackUrl;
   return (
     <View style={[styles.container, style]}>
-      {thumbnailUrl ? (
-        <Image source={{ uri: thumbnailUrl }} style={styles.image} contentFit="cover" transition={200} />
+      {imageUrl ? (
+        <Image source={{ uri: imageUrl }} style={styles.image} contentFit="cover" transition={200} />
       ) : (
         <View style={styles.placeholder} />
       )}

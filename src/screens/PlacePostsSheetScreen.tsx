@@ -396,6 +396,7 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
         (post.type === "video" ? (
           <VideoThumbnail
             thumbnailUrl={post.thumbnailUrl}
+            fallbackUrl={post.mediaUrl}
             style={styles.thumbnail}
           />
         ) : (

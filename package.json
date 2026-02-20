@@ -29,7 +29,9 @@
     "db:link:production": "supabase link --project-ref cxipwnwxvkguxtbzvnlz",
     "lint": "eslint . && deno lint --config supabase/functions/deno.json supabase/functions/",
     "typecheck": "tsc --noEmit && deno check --config supabase/functions/deno.json supabase/functions/*/index.ts",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "e2e": "maestro test .maestro/",
+    "e2e:login": "maestro test .maestro/login.yaml"
   },
   "dependencies": {
     "@expo-google-fonts/pacifico": "^0.4.1",
@@ -66,6 +68,7 @@
     "expo-status-bar": "~3.0.9",
     "expo-symbols": "~1.0.8",
     "expo-video": "~3.0.15",
+    "expo-video-thumbnails": "~10.0.8",
     "expo-web-browser": "~15.0.10",
     "react": "19.1.0",
     "react-dom": "19.1.0",
