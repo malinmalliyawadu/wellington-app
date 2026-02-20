@@ -2,7 +2,6 @@ import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   ScrollView,
   ActivityIndicator,
@@ -10,6 +9,7 @@ import {
   Pressable,
   Animated,
 } from "react-native";
+import { Image } from "expo-image";
 import { useRouter, useLocalSearchParams, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -130,7 +130,7 @@ export function UserProfileScreen() {
     >
       <View style={styles.profileSection}>
         <Pressable onPress={showAvatar}>
-          <Image source={{ uri: user.avatarUrl }} style={styles.avatar} />
+          <Image source={{ uri: user.avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} />
         </Pressable>
         <Text style={styles.displayName}>{user.displayName}</Text>
         <Text style={styles.username}>@{user.username}</Text>

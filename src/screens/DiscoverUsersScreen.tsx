@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, Image, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
@@ -44,7 +45,7 @@ export function DiscoverUsersScreen() {
             style={styles.userRow}
             onPress={() => router.push(`${tabBase}/user/${item.id}`)}
           >
-            <Image source={{ uri: item.avatarUrl }} style={styles.avatar} />
+            <Image source={{ uri: item.avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} />
             <View style={styles.userInfo}>
               <Text style={styles.displayName}>{item.displayName}</Text>
               <Text style={styles.username}>@{item.username}</Text>

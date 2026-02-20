@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Image, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
+import { Image } from 'expo-image';
 import { SFIcon } from './SFIcon';
 import { colors } from '../theme/colors';
 
@@ -12,7 +13,7 @@ export function VideoThumbnail({ thumbnailUrl, style }: VideoThumbnailProps) {
   return (
     <View style={[styles.container, style]}>
       {thumbnailUrl ? (
-        <Image source={{ uri: thumbnailUrl }} style={styles.image} />
+        <Image source={{ uri: thumbnailUrl }} style={styles.image} contentFit="cover" transition={200} />
       ) : (
         <View style={styles.placeholder} />
       )}

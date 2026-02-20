@@ -5,9 +5,9 @@ import {
   StyleSheet,
   ScrollView,
   SectionList,
-  Image,
   ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SFSymbol } from "expo-symbols";
@@ -365,7 +365,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
             style={styles.resultItem}
             onPress={() => handleUserPress(user.id)}
           >
-            <Image source={{ uri: user.avatarUrl }} style={styles.userAvatar} />
+            <Image source={{ uri: user.avatarUrl }} style={styles.userAvatar} contentFit="cover" transition={200} />
             <View style={styles.resultText}>
               <Text style={styles.resultTitle}>{user.displayName}</Text>
               <Text style={styles.resultSubtitle}>@{user.username}</Text>
@@ -387,6 +387,8 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
               <Image
                 source={{ uri: post.mediaUrl }}
                 style={styles.postThumbnail}
+                contentFit="cover"
+                transition={200}
               />
             ) : (
               <View

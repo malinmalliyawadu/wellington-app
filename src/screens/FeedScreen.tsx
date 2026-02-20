@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View, Text, FlatList, StyleSheet, RefreshControl } from "react-native";
+import { View, Text, FlatList, StyleSheet, RefreshControl, Platform } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -94,38 +94,52 @@ export function FeedScreen() {
       .filter((item): item is NonNullable<typeof item> => item !== null);
   }, [feedPosts, users, places]);
 
-  const handlePressUser = (userId: string) => {
-    router.push(`/feed/user/${userId}`);
-  };
+  const handlePressUser = useCallback(
+    (userId: string) => router.push(`/feed/user/${userId}`),
+    [router]
+  );
 
-  const handlePressPlace = (placeId: string) => {
-    router.push(`/feed/place/${placeId}`);
-  };
+  const handlePressPlace = useCallback(
+    (placeId: string) => router.push(`/feed/place/${placeId}`),
+    [router]
+  );
 
-  const handlePressPost = (postId: string) => {
-    router.push(`/feed/post/${postId}`);
-  };
+  const handlePressPost = useCallback(
+    (postId: string) => router.push(`/feed/post/${postId}`),
+    [router]
+  );
 
-  const handlePressLikes = (postId: string) => {
-    router.push({ pathname: "/feed/likes", params: { postId } });
-  };
+  const handlePressLikes = useCallback(
+    (postId: string) =>
+      router.push({ pathname: "/feed/likes", params: { postId } }),
+    [router]
+  );
+
+  const renderItem = useCallback(
+    ({ item }: { item: (typeof postsWithData)[number] }) => (
+      <FeedPost
+        post={item.post}
+        user={item.user}
+        place={item.place}
+        onPressUser={handlePressUser}
+        onPressPlace={handlePressPlace}
+        onPressPost={handlePressPost}
+        onPressLikes={handlePressLikes}
+      />
+    ),
+    [handlePressUser, handlePressPlace, handlePressPost, handlePressLikes]
+  );
 
   return (
     <View style={styles.container}>
       <FlatList
         data={postsWithData}
         keyExtractor={(item) => item.post.id}
-        renderItem={({ item }) => (
-          <FeedPost
-            post={item.post}
-            user={item.user}
-            place={item.place}
-            onPressUser={handlePressUser}
-            onPressPlace={handlePressPlace}
-            onPressPost={handlePressPost}
-            onPressLikes={handlePressLikes}
-          />
-        )}
+        renderItem={renderItem}
+        windowSize={5}
+        maxToRenderPerBatch={5}
+        initialNumToRender={3}
+        removeClippedSubviews={Platform.OS === "android"}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

@@ -4,7 +4,6 @@ import {
   Text,
   Pressable,
   ScrollView,
-  Image,
   StyleSheet,
   Platform,
   ActivityIndicator,
@@ -12,6 +11,7 @@ import {
   Modal,
   useWindowDimensions,
 } from "react-native";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import {
@@ -375,7 +375,7 @@ export function LoginScreen() {
               }}
               disabled={loading !== null}
             >
-              <Image source={{ uri: user.avatar }} style={styles.seedAvatar} />
+              <Image source={{ uri: user.avatar }} style={styles.seedAvatar} contentFit="cover" transition={200} />
               {loading === user.email ? (
                 <ActivityIndicator
                   size="small"

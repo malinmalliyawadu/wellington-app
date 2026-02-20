@@ -2,7 +2,6 @@ import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
-  Image,
   StyleSheet,
   FlatList,
   Dimensions,
@@ -10,6 +9,7 @@ import {
   Modal,
   Alert,
 } from "react-native";
+import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -118,7 +118,7 @@ export function InstagramImportScreen() {
             { marginLeft: index % NUM_COLUMNS !== 0 ? GAP : 0 },
           ]}
         >
-          <Image source={{ uri: thumbnailUri }} style={styles.cellImage} />
+          <Image source={{ uri: thumbnailUri }} style={styles.cellImage} contentFit="cover" transition={200} />
           {isVideo && (
             <View style={styles.mediaIcon}>
               <Ionicons name="play" size={16} color="#FFFFFF" />
@@ -219,7 +219,8 @@ export function InstagramImportScreen() {
                   selectedPost.thumbnail_url ?? selectedPost.media_url,
               }}
               style={styles.previewImage}
-              resizeMode="contain"
+              contentFit="contain"
+              transition={200}
             />
 
             {selectedPost.caption ? (
