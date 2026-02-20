@@ -1,5 +1,6 @@
 import { Stack } from "expo-router";
 import { ErrorScreen } from "../../../src/components/ErrorScreen";
+import { MapPlaceSelectionProvider } from "../../../src/context/MapPlaceSelectionContext";
 
 export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
   return <ErrorScreen error={error} retry={retry} />;
@@ -7,6 +8,7 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => voi
 
 export default function MapLayout() {
   return (
+    <MapPlaceSelectionProvider>
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(drawer)" />
       <Stack.Screen
@@ -111,5 +113,6 @@ export default function MapLayout() {
         }}
       />
     </Stack>
+    </MapPlaceSelectionProvider>
   );
 }
