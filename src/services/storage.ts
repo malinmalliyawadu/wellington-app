@@ -82,8 +82,8 @@ export async function uploadAvatar(
       throw new Error('Image file is empty');
     }
 
-    // Use userId to make avatar path predictable (allows overwriting old avatar)
-    const filePath = `${userId}-${Date.now()}.jpg`;
+    // Use userId subfolder so RLS can enforce ownership via foldername
+    const filePath = `${userId}/${Date.now()}.jpg`;
     console.log('Uploading to path:', filePath);
 
     const { data, error } = await supabase.storage
