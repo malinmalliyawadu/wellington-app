@@ -45,26 +45,40 @@ export function ProfileScreen() {
     () => getPostsByUserId(currentUser.id),
     [currentUser.id]
   );
-  const { data: posts, refetch: refetchPosts } = useQuery(fetchPosts, ['posts', 'user', currentUser.id]);
-  const { data: allPlaces, refetch: refetchPlaces } = useQuery(getPlaces, 'places');
+  const { data: posts, refetch: refetchPosts } = useQuery(fetchPosts, [
+    "posts",
+    "user",
+    currentUser.id,
+  ]);
+  const { data: allPlaces, refetch: refetchPlaces } = useQuery(
+    getPlaces,
+    "places"
+  );
   const fetchCounts = useCallback(
     () => getFollowCounts(currentUser.id),
     [currentUser.id]
   );
-  const { data: counts, refetch: refetchCounts } = useQuery(fetchCounts, ['follow-counts', currentUser.id]);
+  const { data: counts, refetch: refetchCounts } = useQuery(fetchCounts, [
+    "follow-counts",
+    currentUser.id,
+  ]);
   const fetchAchievementCount = useCallback(
     () => getUnlockedAchievementCount(currentUser.id),
     [currentUser.id]
   );
   const { data: achievementCount, refetch: refetchAchievementCount } = useQuery(
     fetchAchievementCount,
-    ['achievement-count', currentUser.id]
+    ["achievement-count", currentUser.id]
   );
   const fetchEvents = useCallback(
     () => getEventsByUserId(currentUser.id),
     [currentUser.id]
   );
-  const { data: events, refetch: refetchEvents } = useQuery(fetchEvents, ['events', 'user', currentUser.id]);
+  const { data: events, refetch: refetchEvents } = useQuery(fetchEvents, [
+    "events",
+    "user",
+    currentUser.id,
+  ]);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
