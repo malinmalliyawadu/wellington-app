@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { View, Text, TextInput, ScrollView, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { SFSymbol } from "expo-symbols";
+import * as ExpoVideoThumbnails from "expo-video-thumbnails";
 import { SFIcon } from "../SFIcon";
 import { HapticPressable } from "../HapticPressable";
 import { VideoThumbnail } from "../VideoThumbnail";
@@ -52,6 +53,21 @@ export function PostForm({
 }: PostFormProps) {
   const hasMedia = mediaItems.length > 0;
   const canAddMore = mediaItems.length < MAX_MEDIA_ITEMS;
+
+  // Generate local thumbnails for video items
+  const [videoThumbs, setVideoThumbs] = useState<Record<string, string>>({});
+  const generatingRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    for (const item of mediaItems) {
+      if (item.type === "video" && !videoThumbs[item.uri] && !generatingRef.current.has(item.uri)) {
+        generatingRef.current.add(item.uri);
+        ExpoVideoThumbnails.getThumbnailAsync(item.uri, { time: 500 })
+          .then(({ uri }) => setVideoThumbs((prev) => ({ ...prev, [item.uri]: uri })))
+          .catch(() => {});
+      }
+    }
+  }, [mediaItems]);
 
   return (
     <>
@@ -128,7 +144,7 @@ export function PostForm({
               {mediaItems.map((item, index) => (
                 <View key={`${item.uri}-${index}`} style={styles.mediaThumbnailWrapper}>
                   {item.type === "video" ? (
-                    <VideoThumbnail style={styles.mediaThumbnail} />
+                    <VideoThumbnail thumbnailUrl={videoThumbs[item.uri]} style={styles.mediaThumbnail} />
                   ) : (
                     <Image source={{ uri: item.uri }} style={styles.mediaThumbnail} contentFit="cover" transition={200} />
                   )}

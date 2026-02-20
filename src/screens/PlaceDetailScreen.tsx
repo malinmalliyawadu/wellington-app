@@ -225,7 +225,7 @@ export function PlaceDetailScreen() {
               <Text style={styles.postText}>{item.post.content}</Text>
               {item.post.mediaUrl && (
                 item.post.type === 'video' ? (
-                  <VideoThumbnail thumbnailUrl={item.post.thumbnailUrl} style={styles.postMedia} />
+                  <VideoThumbnail thumbnailUrl={item.post.thumbnailUrl} fallbackUrl={item.post.mediaUrl} style={styles.postMedia} />
                 ) : (
                   <Image source={{ uri: item.post.mediaUrl }} style={styles.postMedia} contentFit="cover" transition={200} />
                 )
