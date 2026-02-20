@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAuth } from './AuthContext';
 import { useFollow } from './FollowContext';
 import { getExploredPlaceIds, markPlaceExplored } from '../services/explorations';
@@ -19,6 +19,10 @@ export function ExplorationProvider({ children }: { children: React.ReactNode })
   const { followingIds } = useFollow();
   const currentUserId = session?.user?.id;
   const [exploredPlaceIds, setExploredPlaceIds] = useState<string[]>([]);
+
+  // Ref to avoid stale closure in markExplored without adding exploredPlaceIds as a dependency
+  const exploredPlaceIdsRef = useRef(exploredPlaceIds);
+  exploredPlaceIdsRef.current = exploredPlaceIds;
 
   const fetchExplorations = useCallback(async () => {
     if (!currentUserId) {
@@ -47,8 +51,8 @@ export function ExplorationProvider({ children }: { children: React.ReactNode })
     async (placeId: string, method: ExplorationMethod): Promise<string[]> => {
       if (!currentUserId) return [];
 
-      // Check if already explored
-      if (exploredPlaceIds.includes(placeId)) {
+      // Read from ref to avoid exploredPlaceIds in the dependency array
+      if (exploredPlaceIdsRef.current.includes(placeId)) {
         return []; // Already explored, no new achievements
       }
 
@@ -74,17 +78,20 @@ export function ExplorationProvider({ children }: { children: React.ReactNode })
         return [];
       }
     },
-    [currentUserId, exploredPlaceIds, followingIds]
+    [currentUserId, followingIds]
   );
 
   const refetchExplorations = useCallback(() => {
     fetchExplorations();
   }, [fetchExplorations]);
 
+  const value = useMemo(
+    () => ({ exploredPlaceIds, isExplored, markExplored, refetchExplorations }),
+    [exploredPlaceIds, isExplored, markExplored, refetchExplorations]
+  );
+
   return (
-    <ExplorationContext.Provider
-      value={{ exploredPlaceIds, isExplored, markExplored, refetchExplorations }}
-    >
+    <ExplorationContext.Provider value={value}>
       {children}
     </ExplorationContext.Provider>
   );

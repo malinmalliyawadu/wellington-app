@@ -1,15 +1,19 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
 import { useAuth } from './AuthContext';
 import { getLikedPostIds, likePost, unlikePost, getAllLikeCounts } from '../services/likes';
 import { createLikeNotification, deleteNotificationForLike } from '../services/notifications';
 
-interface LikeContextType {
+interface LikeStateContextType {
   isLiked: (postId: string) => boolean;
-  toggleLike: (postId: string) => void;
   getLikeCount: (postId: string) => number;
 }
 
-const LikeContext = createContext<LikeContextType | undefined>(undefined);
+interface LikeActionsContextType {
+  toggleLike: (postId: string) => void;
+}
+
+const LikeStateContext = createContext<LikeStateContextType | undefined>(undefined);
+const LikeActionsContext = createContext<LikeActionsContextType | undefined>(undefined);
 
 export function LikeProvider({ children }: { children: React.ReactNode }) {
   const { session } = useAuth();
@@ -35,6 +39,11 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
   const isLiked = useCallback(
     (postId: string) => likedPostIds.includes(postId),
     [likedPostIds]
+  );
+
+  const getLikeCount = useCallback(
+    (postId: string) => likeCounts[postId] ?? 0,
+    [likeCounts]
   );
 
   const toggleLike = useCallback((postId: string) => {
@@ -78,22 +87,38 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
     });
   }, [currentUserId]);
 
-  const getLikeCount = useCallback(
-    (postId: string) => likeCounts[postId] ?? 0,
-    [likeCounts]
+  const stateValue = useMemo(
+    () => ({ isLiked, getLikeCount }),
+    [isLiked, getLikeCount]
+  );
+
+  const actionsValue = useMemo(
+    () => ({ toggleLike }),
+    [toggleLike]
   );
 
   return (
-    <LikeContext.Provider value={{ isLiked, toggleLike, getLikeCount }}>
-      {children}
-    </LikeContext.Provider>
+    <LikeActionsContext.Provider value={actionsValue}>
+      <LikeStateContext.Provider value={stateValue}>
+        {children}
+      </LikeStateContext.Provider>
+    </LikeActionsContext.Provider>
   );
 }
 
 export function useLike() {
-  const context = useContext(LikeContext);
-  if (!context) {
+  const state = useContext(LikeStateContext);
+  const actions = useContext(LikeActionsContext);
+  if (!state || !actions) {
     throw new Error('useLike must be used within a LikeProvider');
+  }
+  return { ...state, ...actions };
+}
+
+export function useLikeActions() {
+  const context = useContext(LikeActionsContext);
+  if (!context) {
+    throw new Error('useLikeActions must be used within a LikeProvider');
   }
   return context;
 }
