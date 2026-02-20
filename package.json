@@ -29,7 +29,9 @@
     "db:link:production": "supabase link --project-ref cxipwnwxvkguxtbzvnlz",
     "lint": "eslint . && deno lint --config supabase/functions/deno.json supabase/functions/",
     "typecheck": "tsc --noEmit && deno check --config supabase/functions/deno.json supabase/functions/*/index.ts",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "e2e": "maestro test .maestro/",
+    "e2e:login": "maestro test .maestro/login.yaml"
   },
   "dependencies": {
     "@expo-google-fonts/pacifico": "^0.4.1",

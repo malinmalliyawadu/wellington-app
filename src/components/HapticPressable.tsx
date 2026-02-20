@@ -2,7 +2,7 @@ import React from 'react';
 import { GestureResponderEvent, Pressable, PressableProps } from 'react-native';
 import * as Haptics from 'expo-haptics';
 
-export const HapticPressable = ({ onPress, children, style }: PressableProps) => {
+export const HapticPressable = ({ onPress, children, style, ...rest }: PressableProps) => {
     const handlePress = (event: GestureResponderEvent) => {
         // Trigger haptic feedback
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -16,6 +16,7 @@ export const HapticPressable = ({ onPress, children, style }: PressableProps) =>
                 typeof style === 'function' ? style(state) : style,
                 state.pressed && { opacity: 0.7 }
             ]}
+            {...rest}
         >
             {children}
         </Pressable>

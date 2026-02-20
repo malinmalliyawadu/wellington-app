@@ -1,0 +1,26 @@
+appId: com.malinmw.wellingtonapp
+name: "Tab Navigation - Navigate all 5 tabs"
+tags:
+  - navigation
+  - smoke
+
+---
+
+# Log in first
+- runFlow: flows/login.yaml
+
+# Map tab should be active by default (first tab)
+# Navigate to Feed tab
+- tapOn: "Feed"
+
+# Navigate to Events tab
+- tapOn: "Events"
+
+# Navigate to Profile tab
+- tapOn: "Profile"
+
+# Navigate to Search tab
+- tapOn: "Search"
+
+# Navigate back to Map tab
+- tapOn: "Map"
