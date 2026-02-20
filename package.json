@@ -4,6 +4,7 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
+    "start:production": "dotenv -e .env.production -- expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
@@ -22,6 +23,10 @@
     "db:setup:remote": "npm run db:reset:remote && npm run db:schema:remote && npm run db:migrate:remote && npm run db:create-users && npm run db:seed:remote",
     "db:migrate": "supabase migration up --local",
     "db:migrate:remote": "supabase db push",
+    "db:schema:production": "dotenv -e .env.production -- node supabase/run-sql.mjs supabase/schema.sql",
+    "db:stamp:production": "dotenv -e .env.production -- node supabase/run-sql.mjs supabase/stamp-migrations.sql",
+    "db:seed:production": "dotenv -e .env.production -- node supabase/run-sql.mjs supabase/seed-achievements.sql",
+    "db:link:production": "supabase link --project-ref cxipwnwxvkguxtbzvnlz",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "jest --passWithNoTests"
