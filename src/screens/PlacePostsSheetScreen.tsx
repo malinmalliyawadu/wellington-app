@@ -13,6 +13,7 @@ import { SFIcon } from "../components/SFIcon";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { useFollow } from "../context/FollowContext";
 import { useLike } from "../context/LikeContext";
+import { useMapPlaceSelection } from "../context/MapPlaceSelectionContext";
 import { useQuery } from "../hooks/useQuery";
 import { getPlaceById } from "../services/places";
 import { getPostsByPlaceId } from "../services/posts";
@@ -41,10 +42,19 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
 };
 
 export function PlacePostsSheetScreen() {
-  const { placeId } = useLocalSearchParams<{ placeId: string }>();
+  const { placeId: routePlaceId } = useLocalSearchParams<{ placeId: string }>();
+  const { selectedPlaceId, sheetOpenRef } = useMapPlaceSelection();
+  const placeId = selectedPlaceId ?? routePlaceId;
   const router = useRouter();
   const { followingIds } = useFollow();
   const { getLikeCount } = useLike();
+
+  useEffect(() => {
+    sheetOpenRef.current = true;
+    return () => {
+      sheetOpenRef.current = false;
+    };
+  }, [sheetOpenRef]);
 
   const fetchPlace = useCallback(() => getPlaceById(placeId!), [placeId]);
   const fetchPosts = useCallback(() => getPostsByPlaceId(placeId!), [placeId]);

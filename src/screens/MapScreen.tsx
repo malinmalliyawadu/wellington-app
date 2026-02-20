@@ -34,6 +34,7 @@ import { useRouter } from "expo-router";
 import { colors } from "../theme/colors";
 import { fonts } from "../theme/fonts";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
+import { useMapPlaceSelection } from "../context/MapPlaceSelectionContext";
 import * as Haptics from "expo-haptics";
 
 interface MapMarkerItemProps {
@@ -98,6 +99,7 @@ export function MapScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { selectPlace, sheetOpenRef } = useMapPlaceSelection();
   const { followingIds } = useFollow();
   const { selectedCategories, showFollowingOnly, showTrails, showEvents } =
     useMapFilters();
@@ -130,14 +132,16 @@ export function MapScreen() {
 
   const openPlaceSheet = useCallback(
     (placeId: string) => {
-      const path = `/map/place-posts/${placeId}` as const;
       if (activeTrailId) {
         setActiveTrailId(null);
         router.dismiss();
       }
-      router.push(path);
+      selectPlace(placeId);
+      if (!sheetOpenRef.current) {
+        router.push(`/map/place-posts/${placeId}`);
+      }
     },
-    [router, activeTrailId]
+    [router, activeTrailId, selectPlace, sheetOpenRef]
   );
 
   const handleMarkerPress = useCallback(
@@ -200,10 +204,13 @@ export function MapScreen() {
   const handleTrailPress = useCallback(
     (trailId: string) => {
       setActiveTrailId(trailId);
-      if (router.canDismiss()) router.dismiss();
+      if (sheetOpenRef.current) {
+        sheetOpenRef.current = false;
+        router.dismiss();
+      }
       router.push(`/map/trail/${trailId}`);
     },
-    [router]
+    [router, sheetOpenRef]
   );
 
   const activeFilterCount =
