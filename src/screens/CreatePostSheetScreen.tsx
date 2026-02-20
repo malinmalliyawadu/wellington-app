@@ -296,7 +296,7 @@ export function CreatePostSheetScreen() {
               const extension = item.type === "video" ? "mp4" : "jpg";
               const mimeType = item.type === "video" ? "video/mp4" : "image/jpeg";
               const fileName = `${profile.id}-${Date.now()}-${index}.${extension}`;
-              const url = await uploadMedia(compressedUri, fileName, mimeType);
+              const url = await uploadMedia(profile.id, compressedUri, fileName, mimeType);
               return {
                 mediaUrl: url,
                 mediaType: item.type,
@@ -345,7 +345,7 @@ export function CreatePostSheetScreen() {
         if (eventImageUri) {
           const compressedUri = await compressMedia(eventImageUri, "photo");
           const fileName = `${profile.id}-event-${Date.now()}.jpg`;
-          imageUrl = await uploadMedia(compressedUri, fileName, "image/jpeg");
+          imageUrl = await uploadMedia(profile.id, compressedUri, fileName, "image/jpeg");
         }
 
         const dateStr = eventDate!.toISOString().split("T")[0];

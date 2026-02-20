@@ -1,8 +1,8 @@
 // Wellington color theme
 export const colors = {
   // Brand
-  primary: "#00A5E0",
-  primaryDark: "#0086B8",
+  primary: "#F5A623",
+  primaryDark: "#D4930D",
 
   // Background
   background: "#FFFFFF",
@@ -34,7 +34,7 @@ export const colors = {
 
   // Interactive
   liked: "#E0245E",
-  saved: "#F5A623",
+  saved: "#E8962E",
 
   // Semantic
   error: "#DC2626",

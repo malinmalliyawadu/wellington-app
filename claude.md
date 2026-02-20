@@ -263,6 +263,15 @@ Supabase API layer. Each service handles CRUD operations for its domain:
 - `create-seed-users.mjs` - Script to create seed auth users
 - `run-sql.mjs` - Remote SQL execution helper
 
+## CI / Quality
+
+- **GitHub Actions** (`.github/workflows/ci.yml`) runs on push/PR to `main`: typecheck → lint → test
+- **TypeScript**: `npm run typecheck` (runs `tsc --noEmit`)
+- **ESLint**: `npm run lint` (runs `eslint .`) — uses `eslint-config-expo` flat config (`eslint.config.mjs`), ESLint v9
+- **Jest**: `npm test` (runs `jest --passWithNoTests`) — uses `jest-expo` preset, Jest v29
+- Tests live in `src/utils/__tests__/` — unit tests for utility functions
+- Install dependencies with `--legacy-peer-deps` flag (required due to peer dep conflicts)
+
 ## Key Patterns
 
 - **Shared screens across tabs**: `UserProfileScreen`, `FollowListScreen`, `DiscoverUsersScreen` use `usePathname()` to determine the current tab and build tab-relative paths (e.g. `/feed/user/123` vs `/map/user/123`)

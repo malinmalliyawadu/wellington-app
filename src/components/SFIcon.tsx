@@ -1,6 +1,6 @@
-import { Platform, StyleProp, ViewStyle } from 'react-native';
-import { SymbolView, SFSymbol, SymbolWeight } from 'expo-symbols';
-import { Ionicons } from '@expo/vector-icons';
+import { Platform, StyleProp, ViewStyle } from "react-native";
+import { SymbolView, SFSymbol, SymbolWeight } from "expo-symbols";
+import { Ionicons } from "@expo/vector-icons";
 
 interface SFIconProps {
   name: SFSymbol;
@@ -11,8 +11,15 @@ interface SFIconProps {
   style?: StyleProp<ViewStyle>;
 }
 
-export function SFIcon({ name, fallback, size = 24, color, weight, style }: SFIconProps) {
-  if (Platform.OS === 'ios') {
+export function SFIcon({
+  name,
+  fallback,
+  size = 24,
+  color,
+  weight,
+  style,
+}: SFIconProps) {
+  if (Platform.OS === "ios") {
     return (
       <SymbolView
         name={name}
@@ -23,5 +30,7 @@ export function SFIcon({ name, fallback, size = 24, color, weight, style }: SFIc
       />
     );
   }
-  return <Ionicons name={fallback} size={size} color={color} style={style as any} />;
+  return (
+    <Ionicons name={fallback} size={size} color={color} style={style as any} />
+  );
 }
