@@ -1,17 +1,10 @@
-import React, { useEffect } from "react";
+import React from "react";
 import { StyleSheet, ViewStyle, View } from "react-native";
 import { useRouter, usePathname } from "expo-router";
 import { BlurView } from "expo-blur";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withSequence,
-  withTiming,
-  Easing,
-} from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import { SFIcon } from "./SFIcon";
 import { HapticPressable } from "./HapticPressable";
 import { colors } from "../theme/colors";
@@ -23,29 +16,13 @@ interface FloatingCreateButtonProps {
 }
 
 function AIIcon() {
-  const glow = useSharedValue(0.3);
-
-  useEffect(() => {
-    glow.value = withRepeat(
-      withSequence(
-        withTiming(0.8, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.3, { duration: 2000, easing: Easing.inOut(Easing.ease) }),
-      ),
-      -1,
-    );
-  }, [glow]);
-
-  const glowStyle = useAnimatedStyle(() => ({
-    shadowOpacity: glow.value,
-  }));
-
   return (
-    <Animated.View style={[aiStyles.iconWrap, glowStyle]}>
+    <Animated.View style={[aiStyles.iconWrap]}>
       <SFIcon
         name="sparkles"
         fallback="sparkles"
-        size={22}
-        color={colors.primary}
+        size={32}
+        color={colors.text}
       />
     </Animated.View>
   );
@@ -67,8 +44,8 @@ function Buttons() {
   const tabPrefix = pathname.startsWith("/feed")
     ? "/feed"
     : pathname.startsWith("/events")
-      ? "/events"
-      : "/map";
+    ? "/events"
+    : "/map";
 
   const handleCreate = () => {
     const defaultType = pathname.startsWith("/events") ? "event" : "post";
@@ -104,24 +81,14 @@ export function FloatingCreateButton({ style }: FloatingCreateButtonProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View
-      style={[
-        styles.container,
-        { bottom: insets.bottom + 60 },
-        style,
-      ]}
-    >
+    <View style={[styles.container, { bottom: insets.bottom + 60 }, style]}>
       {glassEnabled ? (
         <GlassView style={styles.glass}>
           <Buttons />
         </GlassView>
       ) : (
         <View style={styles.blurContainer}>
-          <BlurView
-            intensity={10}
-            tint="light"
-            style={styles.blurBg}
-          />
+          <BlurView intensity={10} tint="light" style={styles.blurBg} />
           <View style={styles.blurInner}>
             <Buttons />
           </View>

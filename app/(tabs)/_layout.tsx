@@ -5,11 +5,12 @@ import {
   Badge,
 } from "expo-router/unstable-native-tabs";
 import { useNotifications } from "../../src/context/NotificationContext";
+import { colors } from "../../src/theme/colors";
 
 function TabLayout() {
   const { unreadCount } = useNotifications();
   return (
-    <NativeTabs>
+    <NativeTabs tintColor={colors.primary}>
       <NativeTabs.Trigger name="map">
         <Icon sf={{ default: "map", selected: "map.fill" }} />
         <Label>Map</Label>
