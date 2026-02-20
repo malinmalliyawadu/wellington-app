@@ -32,7 +32,6 @@
     "test": "jest --passWithNoTests"
   },
   "dependencies": {
-    "--legacy-peer-deps": "^0.0.1-security.6",
     "@expo-google-fonts/dm-sans": "^0.4.2",
     "@expo-google-fonts/inter": "^0.4.2",
     "@expo-google-fonts/pacifico": "^0.4.1",
@@ -74,7 +73,6 @@
     "expo-symbols": "~1.0.8",
     "expo-video": "~3.0.15",
     "expo-web-browser": "~15.0.10",
-    "jsonwebtoken": "^9.0.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
@@ -94,6 +92,7 @@
     "eslint": "^9.39.2",
     "eslint-config-expo": "^10.0.0",
     "jest": "^29.7.0",
+    "jsonwebtoken": "^9.0.3",
     "jest-expo": "^54.0.17",
     "pg": "^8.18.0",
     "supabase": "^2.76.6",

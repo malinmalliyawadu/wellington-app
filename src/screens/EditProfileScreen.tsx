@@ -108,13 +108,11 @@ export function EditProfileScreen() {
       const newAvatarUrl = await uploadAvatar(compressedUri, profile.id);
       console.log("Upload successful, new URL:", newAvatarUrl);
       setAvatarUrl(newAvatarUrl);
-    } catch (error) {
-      console.error("Photo upload error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
+    } catch (e) {
+      console.error("Photo upload error:", e);
       Alert.alert(
         "Upload Failed",
-        `Failed to upload photo: ${errorMessage}\n\nPlease check your Supabase storage setup.`
+        "Something went wrong while uploading your photo. Please try again."
       );
     } finally {
       setUploadingPhoto(false);
