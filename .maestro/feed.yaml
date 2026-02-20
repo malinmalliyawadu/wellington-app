@@ -1,0 +1,22 @@
+appId: com.malinmw.wellingtonapp
+name: "Feed - Browse feed posts"
+tags:
+  - feed
+
+---
+
+# Log in first
+- runFlow: flows/login.yaml
+
+# Navigate to Feed tab
+- tapOn: "Feed"
+
+# Wait for feed content to appear
+- extendedWaitUntil:
+    visible: "Your feed is empty|Discover People"
+    timeout: 10000
+    optional: true
+
+# Scroll through the feed
+- scroll
+- scroll

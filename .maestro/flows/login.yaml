@@ -1,0 +1,31 @@
+appId: com.malinmw.wellingtonapp
+
+# Reusable login subflow — logs in as "You" seed user via Dev Login
+# Usage: - runFlow: flows/login.yaml
+
+---
+- launchApp
+
+# Wait for login screen
+- assertVisible:
+    id: "login-screen"
+
+# Open dev login modal via testID
+- tapOn:
+    id: "dev-login-trigger"
+
+# Wait for seed users to appear
+- extendedWaitUntil:
+    visible:
+      id: "seed-user-you"
+    timeout: 5000
+
+# Tap "You" seed user via testID
+- tapOn:
+    id: "seed-user-you"
+
+# Wait for login to complete — login screen should disappear
+- extendedWaitUntil:
+    notVisible:
+      id: "login-screen"
+    timeout: 10000

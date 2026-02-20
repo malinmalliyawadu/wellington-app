@@ -8,7 +8,6 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
-  Modal,
   useWindowDimensions,
 } from "react-native";
 import { Image } from "expo-image";
@@ -23,22 +22,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { SFSymbol } from "expo-symbols";
 import { SFIcon } from "../components/SFIcon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import {
-  Gesture,
-  GestureDetector,
-  GestureHandlerRootView,
-} from "react-native-gesture-handler";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import Reanimated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withTiming,
-  withRepeat,
   withSequence,
   Easing,
   interpolate,
-  runOnJS,
-  cancelAnimation,
 } from "react-native-reanimated";
 import { fonts } from "../theme/fonts";
 import { signInWithGoogle, signInWithApple } from "../services/auth";
@@ -129,11 +120,6 @@ export function LoginScreen() {
     null
   );
   const [showDevModal, setShowDevModal] = useState(false);
-  const translateY = useSharedValue(600);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
 
   // Carousel — two stable layers (A/B) that flip-flop roles.
   // The visible layer never changes source; only the hidden one gets a new URI.
@@ -254,27 +240,11 @@ export function LoginScreen() {
 
   const openDevModal = () => {
     setShowDevModal(true);
-    translateY.value = withSpring(0, { damping: 20, stiffness: 90 });
   };
 
   const closeDevModal = () => {
-    translateY.value = withSpring(600, { damping: 20, stiffness: 90 });
-    setTimeout(() => setShowDevModal(false), 300);
+    setShowDevModal(false);
   };
-
-  const panGesture = Gesture.Pan()
-    .onUpdate((event) => {
-      if (event.translationY > 0) {
-        translateY.value = event.translationY;
-      }
-    })
-    .onEnd((event) => {
-      if (event.translationY > 150 || event.velocityY > 500) {
-        runOnJS(closeDevModal)();
-      } else {
-        translateY.value = withSpring(0, { damping: 20, stiffness: 90 });
-      }
-    });
 
   const renderButton = (
     onPress: () => void,
@@ -328,7 +298,7 @@ export function LoginScreen() {
   const renderDevTrigger = () => {
     if (glassEnabled) {
       return (
-        <HapticPressable style={styles.devTrigger} onPress={openDevModal}>
+        <HapticPressable testID="dev-login-trigger" style={styles.devTrigger} onPress={openDevModal}>
           <GlassView
             isInteractive
             style={styles.devTriggerGlass}
@@ -346,7 +316,7 @@ export function LoginScreen() {
     }
 
     return (
-      <HapticPressable style={styles.devTrigger} onPress={openDevModal}>
+      <HapticPressable testID="dev-login-trigger" style={styles.devTrigger} onPress={openDevModal}>
         <BlurView intensity={60} style={styles.devTriggerFallback}>
           <Ionicons
             name="code-slash"
@@ -359,54 +329,38 @@ export function LoginScreen() {
     );
   };
 
-  const renderDevModalInner = () => {
-    const inner = (
-      <>
-        <View style={styles.dragHandle} />
-        <Text style={styles.devTitle}>Dev Login</Text>
-        <ScrollView contentContainerStyle={styles.seedGrid}>
-          {SEED_USERS.map((user) => (
-            <HapticPressable
-              key={user.email}
-              style={styles.seedUser}
-              onPress={() => {
-                handleSeedLogin(user.email);
-                closeDevModal();
-              }}
-              disabled={loading !== null}
-            >
-              <Image source={{ uri: user.avatar }} style={styles.seedAvatar} contentFit="cover" transition={200} />
-              {loading === user.email ? (
-                <ActivityIndicator
-                  size="small"
-                  color="#fff"
-                  style={styles.seedSpinner}
-                />
-              ) : (
-                <Text style={styles.seedName} numberOfLines={1}>
-                  {user.name}
-                </Text>
-              )}
-            </HapticPressable>
-          ))}
-        </ScrollView>
-      </>
-    );
-
-    if (glassEnabled) {
-      return <GlassView style={styles.devModalGlass}>{inner}</GlassView>;
-    }
-
-    return (
-      <BlurView intensity={100} style={styles.devModalBlur}>
-        {inner}
-      </BlurView>
-    );
-  };
+  const renderDevModalInner = () => (
+    <View>
+      <Text style={styles.devTitle}>Dev Login</Text>
+      <ScrollView testID="dev-modal" contentContainerStyle={styles.seedGrid}>
+        {SEED_USERS.map((user) => (
+          <Pressable
+            key={user.email}
+            testID={`seed-user-${user.name.toLowerCase().replace(/[^a-z]/g, "-")}`}
+            style={styles.seedUser}
+            onPress={() => {
+              handleSeedLogin(user.email);
+              closeDevModal();
+            }}
+            disabled={loading !== null}
+          >
+            <Image source={{ uri: user.avatar }} style={styles.seedAvatar} contentFit="cover" transition={200} />
+            {loading === user.email ? (
+              <ActivityIndicator size="small" color="#fff" style={styles.seedSpinner} />
+            ) : (
+              <Text style={styles.seedName} numberOfLines={1}>
+                {user.name}
+              </Text>
+            )}
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
+  );
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={styles.backgroundImage}>
+      <View testID="login-screen" style={styles.backgroundImage}>
         {/* Layer A */}
         <Reanimated.Image
           source={{ uri: layerA }}
@@ -455,7 +409,7 @@ export function LoginScreen() {
             <View style={{ flex: 1 }} />
 
             {/* Title anchored above buttons */}
-            <Text style={styles.title}>Welly</Text>
+            <Text testID="login-title" style={styles.title}>Welly</Text>
 
             {/* Buttons */}
             <View style={styles.buttons}>
@@ -502,21 +456,12 @@ export function LoginScreen() {
         </LinearGradient>
       </View>
 
-      {/* Dev Login Modal */}
-      <Modal
-        visible={showDevModal}
-        transparent
-        animationType="fade"
-        onRequestClose={closeDevModal}
-      >
-        <Pressable style={styles.modalOverlay} onPress={closeDevModal}>
-          <GestureDetector gesture={panGesture}>
-            <Reanimated.View style={[styles.modalContent, animatedStyle]}>
-              {renderDevModalInner()}
-            </Reanimated.View>
-          </GestureDetector>
-        </Pressable>
-      </Modal>
+      {/* Dev Login - full screen overlay */}
+      {showDevModal && (
+        <View style={styles.devOverlay}>
+          {renderDevModalInner()}
+        </View>
+      )}
     </GestureHandlerRootView>
   );
 }
@@ -620,40 +565,12 @@ const styles = StyleSheet.create({
     color: "rgba(255, 255, 255, 0.7)",
     letterSpacing: 0.3,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    width: "100%",
-    maxHeight: "70%",
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-    overflow: "hidden",
-  },
-  devModalGlass: {
-    paddingTop: 20,
-    paddingBottom: 40,
+  devOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+    backgroundColor: "rgba(20, 20, 20, 0.97)",
+    justifyContent: "center",
     paddingHorizontal: 24,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
-  },
-  devModalBlur: {
-    paddingTop: 20,
-    paddingBottom: 40,
-    paddingHorizontal: 24,
-    backgroundColor: "rgba(255, 255, 255, 0.1)",
-    borderTopWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.2)",
-  },
-  dragHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(255, 255, 255, 0.4)",
-    alignSelf: "center",
-    marginBottom: 24,
   },
   devTitle: {
     fontSize: 13,

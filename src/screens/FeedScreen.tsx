@@ -133,6 +133,7 @@ export function FeedScreen() {
   return (
     <View style={styles.container}>
       <FlatList
+        testID="feed-list"
         data={postsWithData}
         keyExtractor={(item) => item.post.id}
         renderItem={renderItem}

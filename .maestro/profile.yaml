@@ -1,0 +1,19 @@
+appId: com.malinmw.wellingtonapp
+name: "Profile - View profile screen"
+tags:
+  - profile
+
+---
+
+# Log in first
+- runFlow: flows/login.yaml
+
+# Navigate to Profile tab
+- tapOn: "Profile"
+
+# Assert profile elements are visible
+- assertVisible: "Edit Profile"
+- assertVisible: "Find People"
+- assertVisible: "Posts"
+- assertVisible: "Followers"
+- assertVisible: "Following"
