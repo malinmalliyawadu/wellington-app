@@ -156,6 +156,12 @@ export function MapScreen() {
     }, 150);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (regionTimerRef.current) clearTimeout(regionTimerRef.current);
+    };
+  }, []);
+
   const handleMapLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     setMapLayout({ width, height });

@@ -1,5 +1,7 @@
-import React, { useRef } from "react";
-import { ImageProps, ImageSourcePropType } from "react-native";
+import React, { useRef, useState } from "react";
+import { ImageProps, ImageSourcePropType, View, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { colors } from "../theme/colors";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedRef,
@@ -15,12 +17,15 @@ import { useZoomOverlay } from "../context/ZoomOverlayContext";
 const RESET_CONFIG = { duration: 200, easing: Easing.out(Easing.quad) };
 const MAX_SCALE = 5;
 
-export function ZoomableImage({ style, source, ...props }: ImageProps) {
+export function ZoomableImage({ style, source, onError, ...props }: ImageProps) {
   const overlay = useZoomOverlay();
   const wrapperRef = useAnimatedRef<Animated.View>();
   const localActive = useSharedValue(false);
   const sourceRef = useRef<ImageSourcePropType | undefined>(source);
+  const [hasError, setHasError] = useState(false);
   sourceRef.current = source;
+
+  const uri = source && typeof source === "object" && !Array.isArray(source) ? (source as { uri?: string }).uri : undefined;
 
   const updateSource = () => {
     overlay.setSource(sourceRef.current!);
@@ -78,11 +83,35 @@ export function ZoomableImage({ style, source, ...props }: ImageProps) {
     };
   });
 
+  if (!uri || hasError) {
+    return (
+      <View style={[style, zoomStyles.fallback]}>
+        <Ionicons name="image-outline" size={40} color={colors.textMuted} />
+      </View>
+    );
+  }
+
   return (
     <Animated.View ref={wrapperRef}>
       <GestureDetector gesture={composed}>
-        <Animated.Image source={source} style={[style, animatedStyle]} {...props} />
+        <Animated.Image
+          source={source}
+          style={[style, animatedStyle]}
+          onError={(e) => {
+            setHasError(true);
+            onError?.(e);
+          }}
+          {...props}
+        />
       </GestureDetector>
     </Animated.View>
   );
 }
+
+const zoomStyles = StyleSheet.create({
+  fallback: {
+    backgroundColor: colors.gray200,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+});

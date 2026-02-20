@@ -7,6 +7,7 @@ import {
   StyleSheet,
   RefreshControl,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -97,6 +98,7 @@ export function ProfileScreen() {
     ])
   );
 
+  const [avatarError, setAvatarError] = useState(!currentUser.avatarUrl);
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
@@ -162,7 +164,13 @@ export function ProfileScreen() {
       }}
     >
       <View style={styles.profileSection}>
-        <Image source={{ uri: currentUser.avatarUrl }} style={styles.avatar} />
+        {avatarError ? (
+          <View style={[styles.avatar, styles.avatarFallback]}>
+            <Ionicons name="person" size={40} color={colors.textMuted} />
+          </View>
+        ) : (
+          <Image source={{ uri: currentUser.avatarUrl }} style={styles.avatar} onError={() => setAvatarError(true)} />
+        )}
         <Text style={styles.displayName}>{currentUser.displayName}</Text>
         <Text style={styles.username}>@{currentUser.username}</Text>
         {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
@@ -273,6 +281,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.12,
     shadowRadius: 8,
     elevation: 4,
+  },
+  avatarFallback: {
+    justifyContent: "center",
+    alignItems: "center",
   },
   displayName: {
     fontSize: 22,
