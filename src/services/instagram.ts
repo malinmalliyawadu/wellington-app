@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase';
 import type { InstagramConnection } from '../types/Instagram';
 
 const INSTAGRAM_APP_ID = process.env.EXPO_PUBLIC_INSTAGRAM_APP_ID!;
-const INSTAGRAM_APP_SECRET = process.env.EXPO_PUBLIC_INSTAGRAM_APP_SECRET!;
 const REDIRECT_URI = 'https://wellyapp.nz/auth/instagram/callback';
 const APP_REDIRECT_URI = 'wellington://instagram-callback';
 const SECURE_STORE_KEY = 'instagram_access_token';
@@ -36,87 +35,34 @@ export async function connectInstagram(): Promise<InstagramConnection> {
     throw new Error('No authorization code returned from Instagram');
   }
 
-  // Exchange code for short-lived token
-  const tokenForm = new URLSearchParams();
-  tokenForm.append('client_id', INSTAGRAM_APP_ID);
-  tokenForm.append('client_secret', INSTAGRAM_APP_SECRET);
-  tokenForm.append('grant_type', 'authorization_code');
-  tokenForm.append('redirect_uri', REDIRECT_URI);
-  tokenForm.append('code', code);
-
-  console.log('[Instagram] Exchanging code for token...');
-  const tokenRes = await fetch('https://api.instagram.com/oauth/access_token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: tokenForm.toString(),
+  // Exchange code for tokens via server-side Edge Function
+  console.log('[Instagram] Exchanging code for token via Edge Function...');
+  const { data: fnData, error: fnError } = await supabase.functions.invoke('instagram-token', {
+    body: { code },
   });
 
-  if (!tokenRes.ok) {
-    const tokenErr = await tokenRes.text();
-    console.error('[Instagram] Token exchange failed:', tokenRes.status, tokenErr);
+  if (fnError) {
+    console.error('[Instagram] Edge Function error:', fnError.message);
     throw new Error('Failed to exchange Instagram authorization code');
   }
 
-  const tokenData = await tokenRes.json();
-  const shortLivedToken: string = tokenData.access_token;
-  const igUserId: string = String(tokenData.user_id);
-
-  // Exchange short-lived token for long-lived token (60 days)
-  const longLivedRes = await fetch(
-    `https://graph.instagram.com/access_token` +
-      `?grant_type=ig_exchange_token` +
-      `&client_secret=${INSTAGRAM_APP_SECRET}` +
-      `&access_token=${shortLivedToken}`
-  );
-
-  if (!longLivedRes.ok) {
-    throw new Error('Failed to get long-lived Instagram token');
+  if (fnData.error) {
+    console.error('[Instagram] Server error:', fnData.error);
+    throw new Error(fnData.error);
   }
-
-  const longLivedData = await longLivedRes.json();
-  const accessToken: string = longLivedData.access_token;
-  const expiresIn: number = longLivedData.expires_in; // seconds
-
-  // Fetch Instagram username
-  const profileRes = await fetch(
-    `https://graph.instagram.com/me?fields=username&access_token=${accessToken}`
-  );
-
-  if (!profileRes.ok) {
-    throw new Error('Failed to fetch Instagram profile');
-  }
-
-  const profileData = await profileRes.json();
-  const igUsername: string = profileData.username;
-
-  const tokenExpiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
-
-  // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-
-  // Upsert connection in Supabase
-  const { data, error } = await supabase
-    .from('instagram_connections')
-    .upsert(
-      {
-        user_id: user.id,
-        instagram_user_id: igUserId,
-        instagram_username: igUsername,
-        access_token: accessToken,
-        token_expires_at: tokenExpiresAt,
-      },
-      { onConflict: 'user_id' }
-    )
-    .select()
-    .single();
-
-  if (error) throw error;
 
   // Cache token in secure store for fast access
-  await SecureStore.setItemAsync(SECURE_STORE_KEY, accessToken);
+  await SecureStore.setItemAsync(SECURE_STORE_KEY, fnData.accessToken);
 
-  return mapConnection(data);
+  return {
+    id: '',
+    userId: '',
+    instagramUserId: fnData.instagramUserId,
+    instagramUsername: fnData.instagramUsername,
+    accessToken: fnData.accessToken,
+    tokenExpiresAt: fnData.tokenExpiresAt,
+    connectedAt: fnData.connectedAt,
+  };
 }
 
 export async function disconnectInstagram(): Promise<void> {
