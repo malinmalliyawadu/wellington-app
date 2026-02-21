@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { queryClient } from "../src/lib/queryClient";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -31,18 +32,6 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => voi
 }
 
 SplashScreen.preventAutoHideAsync();
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: (failureCount, error: any) => {
-        if (error?.status === 401 || error?.status === 403) return false;
-        return failureCount < 2;
-      },
-      staleTime: 5 * 60 * 1000,
-    },
-  },
-});
 
 const WEBSITE_HOST = (
   process.env.EXPO_PUBLIC_WELLY_WEBSITE_URL || "https://welly.nz"

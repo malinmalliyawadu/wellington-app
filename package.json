@@ -5,6 +5,9 @@
   "scripts": {
     "start": "expo start",
     "start:production": "dotenv -e .env.production -- expo start",
+    "build:dev": "eas build -p ios --local --profile development",
+    "build:preview": "eas build -p ios --local --profile preview",
+    "build:prod": "eas build -p ios --local --profile production",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
@@ -67,6 +70,7 @@
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "expo-symbols": "~1.0.8",
+    "expo-updates": "~29.0.16",
     "expo-video": "~3.0.15",
     "expo-video-thumbnails": "~10.0.8",
     "expo-web-browser": "~15.0.10",

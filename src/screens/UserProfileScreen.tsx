@@ -10,7 +10,7 @@ import {
   Animated,
 } from "react-native";
 import { Image } from "expo-image";
-import { useRouter, useLocalSearchParams, usePathname } from "expo-router";
+import { useRouter, useLocalSearchParams, usePathname, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useQuery } from "../hooks/useQuery";
@@ -73,6 +73,15 @@ export function UserProfileScreen() {
     await Promise.all([refetchUser(), refetchPosts(), refetchPlaces(), refetchCounts(), refetchEvents()]);
     setRefreshing(false);
   }, [refetchUser, refetchPosts, refetchPlaces, refetchCounts, refetchEvents]);
+
+  // Refetch when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetchUser();
+      refetchPosts();
+      refetchCounts();
+    }, [refetchUser, refetchPosts, refetchCounts])
+  );
 
   const userPosts = useMemo(() => {
     if (!posts || !allPlaces) return [];

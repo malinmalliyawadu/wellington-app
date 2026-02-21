@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { AppState } from 'react-native';
 import { useAuth } from './AuthContext';
 import { useFollow } from './FollowContext';
 import { getExploredPlaceIds, markPlaceExplored } from '../services/explorations';
@@ -40,6 +41,14 @@ export function ExplorationProvider({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     fetchExplorations();
+  }, [fetchExplorations]);
+
+  // Refresh when app returns to foreground
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') fetchExplorations();
+    });
+    return () => sub.remove();
   }, [fetchExplorations]);
 
   const isExplored = useCallback(

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   View,
   Text,
@@ -13,7 +14,7 @@ import {
   Modal,
 } from "react-native";
 import { Image } from "expo-image";
-import { useLocalSearchParams, useRouter, usePathname, useNavigation } from "expo-router";
+import { useLocalSearchParams, useRouter, usePathname, useNavigation, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { SFIcon } from "../components/SFIcon";
@@ -72,6 +73,7 @@ export function PostDetailScreen() {
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editContent, setEditContent] = useState("");
+  const queryClient = useQueryClient();
   const { showToast } = useToast();
   const { isSaved, toggleSave } = useSave();
   const saved = isSaved('post', postId);
@@ -143,7 +145,8 @@ export function PostDetailScreen() {
   );
   const { data: comments, refetch: refetchComments } = useQuery(
     fetchComments,
-    post?.id
+    post?.id ? ['comments', post.id] : undefined,
+    { staleTime: 30_000 }
   );
 
   const commentUserIds = useMemo(
@@ -158,6 +161,14 @@ export function PostDetailScreen() {
   const commentUserMap = useMemo(
     () => new Map((commentUsers ?? []).map((u) => [u.id, u])),
     [commentUsers]
+  );
+
+  // Refetch post and comments when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetchPost();
+      refetchComments();
+    }, [refetchPost, refetchComments])
   );
 
   if (loading) {
@@ -214,7 +225,7 @@ export function PostDetailScreen() {
       setEditingCommentId(null);
       setCommentText("");
       Keyboard.dismiss();
-      setTimeout(() => refetchComments(), 0);
+      queryClient.invalidateQueries({ queryKey: ['q', ['comments', post.id]] });
     } catch (err: any) {
       Alert.alert("Error", err?.message ?? "Failed to save comment");
     }
@@ -254,6 +265,9 @@ export function PostDetailScreen() {
         onPress: async () => {
           try {
             await deletePost(post.id);
+            queryClient.invalidateQueries({ queryKey: ['q', 'posts'] });
+            queryClient.invalidateQueries({ queryKey: ['q', 'feed'] });
+            queryClient.invalidateQueries({ queryKey: ['q', ['post', post.id]] });
             showToast({ message: "Post deleted" });
             router.back();
           } catch (err: any) {
@@ -271,7 +285,9 @@ export function PostDetailScreen() {
       await updatePost(post.id, trimmed);
       setEditModalVisible(false);
       showToast({ message: "Post updated" });
-      refetchPost();
+      queryClient.invalidateQueries({ queryKey: ['q', 'posts'] });
+      queryClient.invalidateQueries({ queryKey: ['q', 'feed'] });
+      queryClient.invalidateQueries({ queryKey: ['q', ['post', post.id]] });
     } catch (err: any) {
       Alert.alert("Error", err?.message ?? "Failed to update post");
     }
@@ -532,7 +548,7 @@ export function PostDetailScreen() {
                                   onPress: async () => {
                                     try {
                                       await deleteComment(comment.id);
-                                      refetchComments();
+                                      queryClient.invalidateQueries({ queryKey: ['q', ['comments', post.id]] });
                                     } catch {}
                                   },
                                 },

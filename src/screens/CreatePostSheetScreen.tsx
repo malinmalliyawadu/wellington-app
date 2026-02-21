@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   View,
   Text,
@@ -47,6 +48,7 @@ type CreateType = "post" | "event";
 
 export function CreatePostSheetScreen() {
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const { profile } = useAuth();
   const { markExplored } = useExploration();
   const { showToast } = useToast();
@@ -417,6 +419,11 @@ export function CreatePostSheetScreen() {
           showToast(createAchievementToast(newAchievements[0]));
         }
 
+        // Invalidate caches so feed/map/profile show the new post
+        queryClient.invalidateQueries({ queryKey: ['q', 'posts'] });
+        queryClient.invalidateQueries({ queryKey: ['q', 'feed'] });
+        queryClient.invalidateQueries({ queryKey: ['q', 'places'] });
+
         setContent("");
         setSelectedPlace(null);
         setMediaItems([]);
@@ -450,6 +457,10 @@ export function CreatePostSheetScreen() {
           creatorId: profile.id,
           price: eventPrice.trim() ? parseFloat(eventPrice) || null : null,
         });
+
+        // Invalidate event caches so events screen shows the new event
+        queryClient.invalidateQueries({ queryKey: ['q', 'events'] });
+        queryClient.invalidateQueries({ queryKey: ['q', 'upcoming-events'] });
 
         Alert.alert(
           "Event Created!",
