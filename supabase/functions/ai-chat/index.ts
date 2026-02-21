@@ -102,10 +102,12 @@ function buildSystemPrompt(ctx: AIContext, weather: string): string {
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "Pacific/Auckland",
   });
   const timeStr = now.toLocaleTimeString("en-NZ", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Pacific/Auckland",
   });
 
   const locationStr = ctx.userLocation
