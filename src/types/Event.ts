@@ -13,4 +13,5 @@ export interface Event {
   attendeeIds?: string[];
   ticketUrl?: string;
   price?: number | null;
+  creatorId?: string;
 }

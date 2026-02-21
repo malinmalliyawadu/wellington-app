@@ -27,7 +27,7 @@ import { useToast } from "../context/ToastContext";
 import { findOrCreatePlace, getPlaceById } from "../services/places";
 import { createPost } from "../services/posts";
 import { uploadMedia } from "../services/storage";
-import { createEvent } from "../services/events";
+import { createEvent, updateEvent, getEventById } from "../services/events";
 import { createAchievementToast } from "../utils/achievementHelpers";
 import { compressMedia, compressAvatar } from "../utils/compressMedia";
 import * as ExpoVideoThumbnails from "expo-video-thumbnails";
@@ -56,10 +56,12 @@ export function CreatePostSheetScreen() {
     placeId: placeIdParam,
     defaultType,
     selectedPlaceData,
+    editEventId,
   } = useLocalSearchParams<{
     placeId?: string;
     defaultType?: CreateType;
     selectedPlaceData?: string;
+    editEventId?: string;
   }>();
   const router = useRouter();
   const pathname = usePathname();
@@ -68,8 +70,9 @@ export function CreatePostSheetScreen() {
 
   // Determine initial create type based on defaultType param (events tab -> event, otherwise -> post)
   const [createType, setCreateType] = useState<CreateType>(
-    defaultType || "post"
+    editEventId ? "event" : defaultType || "post"
   );
+  const isEditingEvent = !!editEventId;
 
   // Post-specific state
   const [content, setContent] = useState("");
@@ -182,6 +185,39 @@ export function CreatePostSheetScreen() {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }
   }, [keyboardVisible]);
+
+  // Load existing event data for editing
+  useEffect(() => {
+    if (!editEventId) return;
+    getEventById(editEventId).then(async (event) => {
+      if (!event) return;
+      setEventTitle(event.title);
+      setEventDescription(event.description);
+      setEventCategory(event.category);
+      setEventDate(new Date(event.date + "T00:00:00"));
+      if (event.startTime) {
+        const [h, m] = event.startTime.split(":");
+        const d = new Date();
+        d.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+        setEventStartTime(d);
+      }
+      if (event.endTime) {
+        const [h, m] = event.endTime.split(":");
+        const d = new Date();
+        d.setHours(parseInt(h, 10), parseInt(m, 10), 0, 0);
+        setEventEndTime(d);
+      }
+      if (event.imageUrl) {
+        setEventImageUri(event.imageUrl);
+      }
+      if (event.price != null) {
+        setEventPrice(event.price > 0 ? event.price.toString() : "");
+      }
+      // Load the associated place
+      const place = await getPlaceById(event.placeId);
+      if (place) setSelectedPlace(place);
+    });
+  }, [editEventId]);
 
   // Handle place selection from search sheet
   useFocusEffect(
@@ -433,9 +469,15 @@ export function CreatePostSheetScreen() {
         let imageUrl: string | undefined;
 
         if (eventImageUri) {
-          const compressedUri = await compressMedia(eventImageUri, "photo");
-          const fileName = `${profile.id}-event-${Date.now()}.jpg`;
-          imageUrl = await uploadMedia(profile.id, compressedUri, fileName, "image/jpeg");
+          const isRemoteUrl = eventImageUri.startsWith("http");
+          if (isRemoteUrl) {
+            // Existing remote image — no need to re-upload
+            imageUrl = eventImageUri;
+          } else {
+            const compressedUri = await compressMedia(eventImageUri, "photo");
+            const fileName = `${profile.id}-event-${Date.now()}.jpg`;
+            imageUrl = await uploadMedia(profile.id, compressedUri, fileName, "image/jpeg");
+          }
         }
 
         const dateStr = eventDate!.toISOString().split("T")[0];
@@ -445,43 +487,64 @@ export function CreatePostSheetScreen() {
           ? `${pad(eventEndTime.getHours())}:${pad(eventEndTime.getMinutes())}`
           : undefined;
 
-        await createEvent({
-          title: eventTitle.trim(),
-          description: eventDescription.trim(),
-          placeId: placeId,
-          date: dateStr,
-          startTime: startTimeStr,
-          endTime: endTimeStr,
-          imageUrl,
-          category: eventCategory,
-          creatorId: profile.id,
-          price: eventPrice.trim() ? parseFloat(eventPrice) || null : null,
-        });
+        if (isEditingEvent) {
+          await updateEvent(editEventId!, {
+            title: eventTitle.trim(),
+            description: eventDescription.trim(),
+            placeId: placeId,
+            date: dateStr,
+            startTime: startTimeStr,
+            endTime: endTimeStr,
+            imageUrl: imageUrl ?? (eventImageUri ? undefined : null),
+            category: eventCategory,
+            price: eventPrice.trim() ? parseFloat(eventPrice) || null : null,
+          });
 
-        // Invalidate event caches so events screen shows the new event
-        queryClient.invalidateQueries({ queryKey: ['q', 'events'] });
-        queryClient.invalidateQueries({ queryKey: ['q', 'upcoming-events'] });
+          queryClient.invalidateQueries({ queryKey: ['q', 'events'] });
+          queryClient.invalidateQueries({ queryKey: ['q', 'upcoming-events'] });
+          queryClient.invalidateQueries({ queryKey: ['q', ['event', editEventId]] });
 
-        Alert.alert(
-          "Event Created!",
-          `"${eventTitle}" at ${selectedPlace.name} has been created.`,
-          [
-            {
-              text: "OK",
-              onPress: () => {
-                setEventTitle("");
-                setEventDescription("");
-                setEventDate(null);
-                setEventStartTime(null);
-                setEventEndTime(null);
-                setEventImageUri(null);
-                setEventPrice("");
-                setSelectedPlace(null);
-                router.dismiss();
+          showToast({ message: "Event updated" });
+          router.dismiss();
+        } else {
+          await createEvent({
+            title: eventTitle.trim(),
+            description: eventDescription.trim(),
+            placeId: placeId,
+            date: dateStr,
+            startTime: startTimeStr,
+            endTime: endTimeStr,
+            imageUrl,
+            category: eventCategory,
+            creatorId: profile.id,
+            price: eventPrice.trim() ? parseFloat(eventPrice) || null : null,
+          });
+
+          // Invalidate event caches so events screen shows the new event
+          queryClient.invalidateQueries({ queryKey: ['q', 'events'] });
+          queryClient.invalidateQueries({ queryKey: ['q', 'upcoming-events'] });
+
+          Alert.alert(
+            "Event Created!",
+            `"${eventTitle}" at ${selectedPlace.name} has been created.`,
+            [
+              {
+                text: "OK",
+                onPress: () => {
+                  setEventTitle("");
+                  setEventDescription("");
+                  setEventDate(null);
+                  setEventStartTime(null);
+                  setEventEndTime(null);
+                  setEventImageUri(null);
+                  setEventPrice("");
+                  setSelectedPlace(null);
+                  router.dismiss();
+                },
               },
-            },
-          ]
-        );
+            ]
+          );
+        }
       }
     } catch (error: any) {
       Alert.alert("Error", error.message ?? `Failed to create ${createType}`);
@@ -534,7 +597,9 @@ export function CreatePostSheetScreen() {
                 </HapticPressable>
               </View>
               <View style={styles.headerCenter}>
-                {glassEnabled ? (
+                {isEditingEvent ? (
+                  <Text style={styles.editTitle}>Edit Event</Text>
+                ) : glassEnabled ? (
                   <GlassView style={styles.segmentControlGlass} glassEffectStyle="regular">
                     <HapticPressable
                       style={[styles.segment, createType === "post" && styles.segmentActiveGlass]}
@@ -576,7 +641,7 @@ export function CreatePostSheetScreen() {
               </View>
               <View style={styles.headerRight}>
                 <LiquidGlassButton
-                  title="Create"
+                  title={isEditingEvent ? "Save" : "Create"}
                   onPress={handleSubmit}
                   disabled={!isFormValid() || posting}
                   size="medium"
@@ -655,7 +720,7 @@ export function CreatePostSheetScreen() {
           <View style={styles.progressContent}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.progressText}>
-              {createType === "post" ? "Posting..." : "Creating event..."}
+              {createType === "post" ? "Posting..." : isEditingEvent ? "Saving..." : "Creating event..."}
             </Text>
             <Text style={styles.progressSubtext}>This may take a moment</Text>
           </View>
@@ -700,6 +765,11 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: "center",
     justifyContent: "center",
+  },
+  editTitle: {
+    fontSize: 17,
+    fontFamily: fonts.semiBold,
+    color: colors.text,
   },
   segmentControl: {
     flexDirection: "row",

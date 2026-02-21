@@ -1,4 +1,11 @@
-import React, { useCallback, useMemo, useState } from "react";
+import React, {
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   View,
   Text,
@@ -8,17 +15,23 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import {
+  useLocalSearchParams,
+  useRouter,
+  useNavigation,
+  usePathname,
+  useFocusEffect,
+} from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { SFIcon } from "../components/SFIcon";
 import { LinearGradient } from "expo-linear-gradient";
-import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import * as WebBrowser from "expo-web-browser";
 import {
   getEventById,
   getEventAttendees,
   toggleAttendance,
+  deleteEvent,
 } from "../services/events";
 import { getPlaceById } from "../services/places";
 import { getProfilesByIds } from "../services/users";
@@ -26,12 +39,14 @@ import { useQuery } from "../hooks/useQuery";
 import { useAuth } from "../context/AuthContext";
 import { useFollow } from "../context/FollowContext";
 import { addToCalendar } from "../utils/addToCalendar";
+import { useToast } from "../context/ToastContext";
 import { colors } from "../theme/colors";
 import type { Event } from "../types";
 import { shareEvent } from "../utils/sharing";
 import { useSave } from "../context/SaveContext";
 import { HapticPressable } from "src/components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
+import { ContextMenu, Button as ExpoButton, Host } from "@expo/ui/swift-ui";
 import { fonts } from "../theme/fonts";
 
 const CATEGORY_COLORS: Record<Event["category"], string> = {
@@ -86,30 +101,26 @@ function formatTime(time: string, endTime?: string): string {
   return formatSingleTime(time);
 }
 
-function getMonth(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-NZ", { month: "short" }).toUpperCase();
-}
-
-function getDay(dateString: string): string {
-  const date = new Date(dateString);
-  return date.getDate().toString();
-}
-
-const glassEnabled = isLiquidGlassAvailable();
-
 export function EventDetailScreen() {
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const router = useRouter();
+  const navigation = useNavigation();
+  const pathname = usePathname();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
   const { followingIds } = useFollow();
   const { isSaved, toggleSave } = useSave();
+  const queryClient = useQueryClient();
+  const { showToast } = useToast();
   const [togglingAttendance, setTogglingAttendance] = useState(false);
 
   const fetchEvent = useCallback(() => getEventById(eventId), [eventId]);
-  const { data: event, loading, refetch: refetchEvent } = useQuery(fetchEvent, ['event', eventId]);
+  const {
+    data: event,
+    loading,
+    refetch: refetchEvent,
+  } = useQuery(fetchEvent, ["event", eventId]);
 
   const fetchPlace = useCallback(
     () => (event ? getPlaceById(event.placeId) : Promise.resolve(null)),
@@ -150,6 +161,53 @@ export function EventDetailScreen() {
     }, [refetchEvent, refetchAttendees])
   );
 
+  const isOwnEvent =
+    event?.creatorId != null && event.creatorId === profile?.id;
+  const onEditRef = useRef<(() => void) | undefined>(undefined);
+  const onDeleteRef = useRef<(() => void) | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    if (!isOwnEvent) return;
+    navigation.setOptions({
+      headerRight: () => (
+        <Host matchContents>
+          <ContextMenu activationMethod="singlePress">
+            <ContextMenu.Trigger>
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingHorizontal: 7,
+                }}
+              >
+                <SFIcon
+                  name="ellipsis"
+                  fallback="ellipsis-horizontal"
+                  size={22}
+                />
+              </View>
+            </ContextMenu.Trigger>
+            <ContextMenu.Items>
+              <ExpoButton
+                systemImage="pencil"
+                onPress={() => onEditRef.current?.()}
+              >
+                Edit event
+              </ExpoButton>
+              <ExpoButton
+                systemImage="trash"
+                role="destructive"
+                onPress={() => onDeleteRef.current?.()}
+              >
+                Delete event
+              </ExpoButton>
+            </ContextMenu.Items>
+          </ContextMenu>
+        </Host>
+      ),
+    });
+  }, [navigation, isOwnEvent]);
+
   if (loading) {
     return (
       <View
@@ -164,6 +222,41 @@ export function EventDetailScreen() {
   }
 
   if (!event) return null;
+
+  const tabBase = "/" + pathname.split("/")[1];
+
+  onEditRef.current = () => {
+    router.push({
+      pathname: `${tabBase}/create-post` as any,
+      params: { editEventId: event.id },
+    });
+  };
+
+  onDeleteRef.current = () => {
+    Alert.alert("Delete event?", "This cannot be undone.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteEvent(event.id);
+            queryClient.invalidateQueries({ queryKey: ["q", "events"] });
+            queryClient.invalidateQueries({
+              queryKey: ["q", "upcoming-events"],
+            });
+            queryClient.invalidateQueries({
+              queryKey: ["q", ["event", event.id]],
+            });
+            showToast({ message: "Event deleted" });
+            router.back();
+          } catch (err: any) {
+            Alert.alert("Error", err?.message ?? "Failed to delete event");
+          }
+        },
+      },
+    ]);
+  };
 
   const currentUserId = session?.user?.id;
   const isGoing = currentUserId
@@ -220,22 +313,6 @@ export function EventDetailScreen() {
                 style={styles.heroGradient}
               />
 
-              {/* Date badge (top-right) */}
-              {glassEnabled ? (
-                <GlassView
-                  glassEffectStyle="regular"
-                  style={styles.heroDateBadge}
-                >
-                  <Text style={[styles.heroDateMonth, styles.heroDateMonthGlass]}>{getMonth(event.date)}</Text>
-                  <Text style={[styles.heroDateDay, styles.heroDateDayGlass]}>{getDay(event.date)}</Text>
-                </GlassView>
-              ) : (
-                <View style={[styles.heroDateBadge, styles.heroDateBadgeFallback]}>
-                  <Text style={styles.heroDateMonth}>{getMonth(event.date)}</Text>
-                  <Text style={styles.heroDateDay}>{getDay(event.date)}</Text>
-                </View>
-              )}
-
               {/* Title overlaid on bottom */}
               <Text style={styles.heroTitle} numberOfLines={3}>
                 {event.title}
@@ -253,15 +330,23 @@ export function EventDetailScreen() {
                 />
                 <Text style={styles.infoText}>{formatDate(event.date)}</Text>
                 <HapticPressable
-                  onPress={() => toggleSave('event', event.id)}
+                  onPress={() => toggleSave("event", event.id)}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={styles.shareButton}
                 >
                   <SFIcon
-                    name={isSaved('event', event.id) ? "bookmark.fill" : "bookmark"}
-                    fallback={isSaved('event', event.id) ? "bookmark" : "bookmark-outline"}
+                    name={
+                      isSaved("event", event.id) ? "bookmark.fill" : "bookmark"
+                    }
+                    fallback={
+                      isSaved("event", event.id)
+                        ? "bookmark"
+                        : "bookmark-outline"
+                    }
                     size={20}
-                    color={isSaved('event', event.id) ? colors.saved : colors.text}
+                    color={
+                      isSaved("event", event.id) ? colors.saved : colors.text
+                    }
                   />
                 </HapticPressable>
                 <HapticPressable
@@ -286,7 +371,12 @@ export function EventDetailScreen() {
                 </HapticPressable>
               </View>
               <View style={styles.infoRow}>
-                <SFIcon name="clock" fallback="time" size={18} color={colors.textSecondary} />
+                <SFIcon
+                  name="clock"
+                  fallback="time"
+                  size={18}
+                  color={colors.textSecondary}
+                />
                 <Text style={styles.infoText}>
                   {formatTime(event.startTime, event.endTime)}
                 </Text>
@@ -448,50 +538,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: "65%",
-  },
-  heroDateBadge: {
-    position: "absolute",
-    top: 60,
-    right: 16,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignItems: "center",
-    minWidth: 52,
-    overflow: "hidden",
-  },
-  heroDateBadgeFallback: {
-    backgroundColor: "#FFFFFF",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  heroDateMonth: {
-    fontSize: 11,
-    fontWeight: "700",
-    fontFamily: fonts.bold,
-    color: colors.primary,
-    letterSpacing: 0.5,
-  },
-  heroDateMonthGlass: {
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  heroDateDay: {
-    fontSize: 24,
-    fontFamily: fonts.extraBold,
-    color: colors.text,
-    lineHeight: 28,
-  },
-  heroDateDayGlass: {
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
   },
   heroTitle: {
     position: "absolute",
