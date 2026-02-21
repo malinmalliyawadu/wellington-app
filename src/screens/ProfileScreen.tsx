@@ -10,16 +10,12 @@ import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
-import { useHeaderHeight } from "@react-navigation/elements";
-import { useFollow } from "../context/FollowContext";
 import { useAuth } from "../context/AuthContext";
 import { useQuery } from "../hooks/useQuery";
 import { getPostsByUserId } from "../services/posts";
 import { getPlaces } from "../services/places";
 import { getFollowCounts } from "../services/follows";
-import { getUnlockedAchievementCount } from "../services/achievements";
 import { getEventsByUserId } from "../services/events";
-import { getGuidesByUserId } from "../services/guides";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { PostsGrid } from "../components/PostsGrid";
 import { UpcomingEvents } from "../components/UpcomingEvents";
@@ -64,14 +60,6 @@ export function ProfileScreen() {
     "follow-counts",
     currentUser.id,
   ]);
-  const fetchAchievementCount = useCallback(
-    () => getUnlockedAchievementCount(currentUser.id),
-    [currentUser.id]
-  );
-  const { data: achievementCount, refetch: refetchAchievementCount } = useQuery(
-    fetchAchievementCount,
-    ["achievement-count", currentUser.id]
-  );
   const fetchEvents = useCallback(
     () => getEventsByUserId(currentUser.id),
     [currentUser.id]
@@ -81,32 +69,18 @@ export function ProfileScreen() {
     "user",
     currentUser.id,
   ]);
-  const fetchGuides = useCallback(
-    () => getGuidesByUserId(currentUser.id),
-    [currentUser.id]
-  );
-  const { data: guides, refetch: refetchGuides } = useQuery(fetchGuides, [
-    "guides",
-    "user",
-    currentUser.id,
-  ]);
-
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
     useCallback(() => {
       refetchPosts();
       refetchPlaces();
       refetchCounts();
-      refetchAchievementCount();
       refetchEvents();
-      refetchGuides();
     }, [
       refetchPosts,
       refetchPlaces,
       refetchCounts,
-      refetchAchievementCount,
       refetchEvents,
-      refetchGuides,
     ])
   );
 
@@ -120,9 +94,7 @@ export function ProfileScreen() {
         refetchPosts(),
         refetchPlaces(),
         refetchCounts(),
-        refetchAchievementCount(),
         refetchEvents(),
-        refetchGuides(),
       ]);
     } finally {
       setRefreshing(false);
@@ -131,9 +103,7 @@ export function ProfileScreen() {
     refetchPosts,
     refetchPlaces,
     refetchCounts,
-    refetchAchievementCount,
     refetchEvents,
-    refetchGuides,
   ]);
 
   const postCount = posts?.length ?? 0;
@@ -223,39 +193,12 @@ export function ProfileScreen() {
           </HapticPressable>
         </View>
 
-        <View style={styles.buttonRow}>
-          <LiquidGlassButton
-            title="Edit Profile"
-            variant="secondary"
-            size="medium"
-            onPress={() => router.push("/profile/edit-profile")}
-            style={{ flex: 1, marginRight: 10 }}
-          />
-          <LiquidGlassButton
-            title="Find People"
-            variant="primary"
-            size="medium"
-            onPress={() => router.push("/profile/discover")}
-            style={{ flex: 1 }}
-          />
-        </View>
-
         <LiquidGlassButton
-          title={`Achievements · ${achievementCount ?? 0} unlocked`}
+          title="Edit Profile"
           variant="secondary"
           size="medium"
-          icon="trophy"
-          onPress={() => router.push("/profile/achievements")}
-          style={{ marginTop: 10 }}
-        />
-
-        <LiquidGlassButton
-          title={`Guides · ${guides?.length ?? 0}`}
-          variant="secondary"
-          size="medium"
-          icon="book-outline"
-          onPress={() => router.push({ pathname: "/profile/guides" as any, params: { userId: currentUser.id } })}
-          style={{ marginTop: 10 }}
+          onPress={() => router.push("/profile/edit-profile")}
+          style={{ marginTop: 20 }}
         />
 
         {igConnected && (
@@ -356,10 +299,6 @@ const styles = StyleSheet.create({
     width: 1,
     height: 30,
     backgroundColor: colors.gray200,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    marginTop: 20,
   },
   gridDivider: {
     height: 1,

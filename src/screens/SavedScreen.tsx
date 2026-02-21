@@ -3,6 +3,7 @@ import {
   View,
   Text,
   FlatList,
+  ScrollView,
   StyleSheet,
   ActivityIndicator,
 } from "react-native";
@@ -258,7 +259,11 @@ export function SavedScreen() {
         ListHeaderComponent={
           <>
             {/* Tab bar */}
-            <View style={styles.tabBar}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tabBar}
+            >
               {tabs.map((tab) => (
                 <HapticPressable
                   key={tab.key}
@@ -293,7 +298,7 @@ export function SavedScreen() {
                   </View>
                 </HapticPressable>
               ))}
-            </View>
+            </ScrollView>
 
             {/* Content */}
             {renderContent()}

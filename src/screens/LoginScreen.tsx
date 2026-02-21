@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
-  useWindowDimensions,
+  ImageBackground,
 } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -23,14 +23,6 @@ import { SFSymbol } from "expo-symbols";
 import { SFIcon } from "../components/SFIcon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Reanimated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  withSequence,
-  Easing,
-  interpolate,
-} from "react-native-reanimated";
 import { fonts } from "../theme/fonts";
 import { signInWithGoogle, signInWithApple } from "../services/auth";
 import { supabase } from "../lib/supabase";
@@ -39,17 +31,8 @@ import { HapticPressable } from "src/components/HapticPressable";
 
 const glassEnabled = isLiquidGlassAvailable();
 
-const BG_PHOTOS = [
-  "https://images.unsplash.com/photo-1489171084589-9b5031ebcf9b?w=1400&q=80", // Wellington harbour
-  "https://images.unsplash.com/photo-1507699622108-4be3abd695ad?w=1400&q=80", // Wellington cable car
-  "https://images.unsplash.com/photo-1562620948-7ef06527f430?q=80&w=1335&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Wellington waterfront
-  "https://images.unsplash.com/photo-1707566289229-17ae45d885e8?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Wellington night
-  "https://images.unsplash.com/photo-1589871973318-9ca1258faa5d?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // Wellington hills
-];
-
-const PHOTO_DURATION = 6000; // ms per photo
-const CROSSFADE_DURATION = 1500; // ms for crossfade
-const PARALLAX_SHIFT = 30; // px of slow pan per photo
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const splashBg = require("../../assets/splash-bg.png");
 
 const SEED_USERS = [
   {
@@ -115,84 +98,10 @@ const SEED_USERS = [
 
 export function LoginScreen() {
   const insets = useSafeAreaInsets();
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [loading, setLoading] = useState<"google" | "apple" | string | null>(
     null
   );
   const [showDevModal, setShowDevModal] = useState(false);
-
-  // Carousel — two stable layers (A/B) that flip-flop roles.
-  // The visible layer never changes source; only the hidden one gets a new URI.
-  const [layerA, setLayerA] = useState(BG_PHOTOS[0]);
-  const [layerB, setLayerB] = useState(BG_PHOTOS[1]);
-  const [aIsTop, setAIsTop] = useState(true);
-  const nextIdxRef = React.useRef(1);
-  const topOpacity = useSharedValue(1);
-  const parallaxAnim = useSharedValue(0);
-
-  useEffect(() => {
-    parallaxAnim.value = 0;
-    parallaxAnim.value = withTiming(1, {
-      duration: PHOTO_DURATION + CROSSFADE_DURATION,
-      easing: Easing.linear,
-    });
-
-    topOpacity.value = 1;
-    topOpacity.value = withSequence(
-      withTiming(1, { duration: PHOTO_DURATION - CROSSFADE_DURATION }),
-      withTiming(0, {
-        duration: CROSSFADE_DURATION,
-        easing: Easing.inOut(Easing.ease),
-      })
-    );
-
-    const timer = setTimeout(() => {
-      // The top layer just faded out. Now:
-      // 1. Load the next photo into the (now hidden) top layer
-      // 2. Flip which layer is on top
-      const upcoming =
-        BG_PHOTOS[(nextIdxRef.current + 1) % BG_PHOTOS.length];
-      if (aIsTop) {
-        setLayerA(upcoming);
-      } else {
-        setLayerB(upcoming);
-      }
-      nextIdxRef.current = (nextIdxRef.current + 1) % BG_PHOTOS.length;
-      setAIsTop((prev) => !prev);
-    }, PHOTO_DURATION);
-
-    return () => clearTimeout(timer);
-  }, [aIsTop]);
-
-  const topLayerStyle = useAnimatedStyle(() => ({
-    opacity: topOpacity.value,
-    transform: [
-      {
-        translateX: interpolate(
-          parallaxAnim.value,
-          [0, 1],
-          [0, -PARALLAX_SHIFT]
-        ),
-      },
-      { scale: 1.1 },
-    ],
-    zIndex: 1,
-  }));
-
-  const bottomLayerStyle = useAnimatedStyle(() => ({
-    opacity: 1,
-    transform: [
-      {
-        translateX: interpolate(
-          parallaxAnim.value,
-          [0, 1],
-          [PARALLAX_SHIFT, 0]
-        ),
-      },
-      { scale: 1.1 },
-    ],
-    zIndex: 0,
-  }));
 
   async function handleGoogleSignIn() {
     setLoading("google");
@@ -360,27 +269,12 @@ export function LoginScreen() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View testID="login-screen" style={styles.backgroundImage}>
-        {/* Layer A */}
-        <Reanimated.Image
-          source={{ uri: layerA }}
-          style={[
-            styles.carouselImage,
-            { width: screenWidth + PARALLAX_SHIFT * 2, height: screenHeight },
-            aIsTop ? topLayerStyle : bottomLayerStyle,
-          ]}
-          resizeMode="cover"
-        />
-        {/* Layer B */}
-        <Reanimated.Image
-          source={{ uri: layerB }}
-          style={[
-            styles.carouselImage,
-            { width: screenWidth + PARALLAX_SHIFT * 2, height: screenHeight },
-            aIsTop ? bottomLayerStyle : topLayerStyle,
-          ]}
-          resizeMode="cover"
-        />
+      <ImageBackground
+        testID="login-screen"
+        source={splashBg}
+        style={styles.backgroundImage}
+        resizeMode="cover"
+      >
         <LinearGradient
           colors={[
             "transparent",
@@ -454,7 +348,7 @@ export function LoginScreen() {
             {renderDevTrigger()}
           </View>
         </LinearGradient>
-      </View>
+      </ImageBackground>
 
       {/* Dev Login - full screen overlay */}
       {showDevModal && (
@@ -469,12 +363,6 @@ const styles = StyleSheet.create({
   backgroundImage: {
     flex: 1,
     backgroundColor: "#000",
-    overflow: "hidden",
-  },
-  carouselImage: {
-    position: "absolute",
-    top: 0,
-    left: 0,
   },
   gradient: {
     flex: 1,
