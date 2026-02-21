@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Image } from "expo-image";
-import { useRouter, useLocalSearchParams, usePathname } from "expo-router";
+import { useRouter, useLocalSearchParams, usePathname, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { FollowButton } from "../components/FollowButton";
@@ -27,7 +27,7 @@ export function LikesListScreen() {
   const { profile } = useAuth();
 
   const fetchLikerIds = useCallback(() => getLikerIds(postId), [postId]);
-  const { data: likerIds, loading: loadingIds } = useQuery(fetchLikerIds, ['likes', postId]);
+  const { data: likerIds, loading: loadingIds, refetch: refetchLikerIds } = useQuery(fetchLikerIds, ['likes', postId]);
 
   const fetchProfiles = useCallback(
     () => getProfilesByIds(likerIds ?? []),
@@ -39,6 +39,13 @@ export function LikesListScreen() {
   );
 
   const isLoading = loadingIds || loadingProfiles;
+
+  // Refetch when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetchLikerIds();
+    }, [refetchLikerIds])
+  );
 
   return (
     <View style={styles.container}>

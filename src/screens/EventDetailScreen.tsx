@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { SFIcon } from "../components/SFIcon";
@@ -109,7 +109,7 @@ export function EventDetailScreen() {
   const [togglingAttendance, setTogglingAttendance] = useState(false);
 
   const fetchEvent = useCallback(() => getEventById(eventId), [eventId]);
-  const { data: event, loading } = useQuery(fetchEvent, ['event', eventId]);
+  const { data: event, loading, refetch: refetchEvent } = useQuery(fetchEvent, ['event', eventId]);
 
   const fetchPlace = useCallback(
     () => (event ? getPlaceById(event.placeId) : Promise.resolve(null)),
@@ -140,6 +140,14 @@ export function EventDetailScreen() {
   const profileMap = useMemo(
     () => new Map((attendeeProfiles ?? []).map((u) => [u.id, u])),
     [attendeeProfiles]
+  );
+
+  // Refetch when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetchEvent();
+      refetchAttendees();
+    }, [refetchEvent, refetchAttendees])
   );
 
   if (loading) {

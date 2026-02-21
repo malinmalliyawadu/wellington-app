@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
-import { useRouter, usePathname } from 'expo-router';
+import { useRouter, usePathname, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { useFollow } from '../context/FollowContext';
@@ -24,8 +24,15 @@ export function DiscoverUsersScreen() {
   const { profile } = useAuth();
 
   const fetchUsers = useCallback(() => getOtherProfiles(profile?.id ?? ''), [profile?.id]);
-  const { data: otherUsers, loading } = useQuery(fetchUsers, profile?.id);
+  const { data: otherUsers, loading, refetch: refetchUsers } = useQuery(fetchUsers, profile?.id);
   const allUsers = Array.isArray(otherUsers) ? otherUsers : [];
+
+  // Refetch when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetchUsers();
+    }, [refetchUsers])
+  );
 
   // Show unfollowed users first, then followed users
   const sorted = useMemo(() => allUsers.slice().sort((a, b) => {

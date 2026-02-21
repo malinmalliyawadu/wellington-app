@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { AppState } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './AuthContext';
 import { getSavedItemIds, saveItem, unsaveItem } from '../services/saves';
 import type { SavedItemType } from '../types/database';
@@ -13,19 +15,14 @@ const SaveContext = createContext<SaveContextType | undefined>(undefined);
 
 export function SaveProvider({ children }: { children: React.ReactNode }) {
   const { session } = useAuth();
+  const queryClient = useQueryClient();
   const currentUserId = session?.user?.id;
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
   const [savedPlaces, setSavedPlaces] = useState<string[]>([]);
   const [savedEvents, setSavedEvents] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (!currentUserId) {
-      setSavedPosts([]);
-      setSavedPlaces([]);
-      setSavedEvents([]);
-      return;
-    }
-
+  const refreshFromServer = useCallback(() => {
+    if (!currentUserId) return;
     getSavedItemIds(currentUserId)
       .then(({ posts, places, events }) => {
         setSavedPosts(posts);
@@ -34,6 +31,24 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {});
   }, [currentUserId]);
+
+  useEffect(() => {
+    if (!currentUserId) {
+      setSavedPosts([]);
+      setSavedPlaces([]);
+      setSavedEvents([]);
+      return;
+    }
+    refreshFromServer();
+  }, [currentUserId, refreshFromServer]);
+
+  // Refresh when app returns to foreground
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refreshFromServer();
+    });
+    return () => sub.remove();
+  }, [refreshFromServer]);
 
   const getSetterForType = (type: SavedItemType) => {
     if (type === 'post') return setSavedPosts;
@@ -68,7 +83,9 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
           ? unsaveItem(currentUserId, type, id)
           : saveItem(currentUserId, type, id);
 
-        apiCall.catch(() => {
+        apiCall.then(() => {
+          queryClient.invalidateQueries({ queryKey: ['q', 'saved'] });
+        }).catch(() => {
           // Revert on error
           setter((current) =>
             alreadySaved
@@ -82,7 +99,7 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
           : [...prev, id];
       });
     },
-    [currentUserId]
+    [currentUserId, queryClient]
   );
 
   const getSavedIds = useCallback(

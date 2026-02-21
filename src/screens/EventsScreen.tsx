@@ -7,8 +7,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { useNavigation } from "expo-router";
+import { useRouter, useFocusEffect, useNavigation } from "expo-router";
 import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -154,6 +153,13 @@ export function EventsScreen() {
 
   const fetchPlaces = useCallback(() => getPlaces(), []);
   const { data: places, refetch: refetchPlaces } = useQuery(fetchPlaces, 'places');
+
+  // Refetch when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetchEvents();
+    }, [refetchEvents])
+  );
 
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {

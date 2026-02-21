@@ -32,7 +32,7 @@ export function FeedScreen() {
     data: feedPosts,
     loading: loadingPosts,
     refetch: refetchPosts,
-  } = useQuery(fetchFeedPosts, [followingIds, profile?.id]);
+  } = useQuery(fetchFeedPosts, [followingIds, profile?.id], { staleTime: 60_000 });
   const [refreshing, setRefreshing] = useState(false);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)

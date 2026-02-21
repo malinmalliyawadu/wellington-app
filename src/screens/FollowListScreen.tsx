@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Image } from "expo-image";
-import { useRouter, useLocalSearchParams, usePathname, useNavigation } from "expo-router";
+import { useRouter, useLocalSearchParams, usePathname, useNavigation, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useAuth } from "../context/AuthContext";
@@ -53,12 +53,12 @@ export function FollowListScreen() {
     () => getFollowingIds(userId),
     [userId]
   );
-  const { data: followingUserIds, loading: loadingFollowingIds } =
+  const { data: followingUserIds, loading: loadingFollowingIds, refetch: refetchFollowingIds } =
     useQuery(fetchFollowingIds, ['following', userId]);
 
   // Fetch follower IDs for this user
   const fetchFollowerIds = useCallback(() => getFollowerIds(userId), [userId]);
-  const { data: followerUserIds, loading: loadingFollowerIds } =
+  const { data: followerUserIds, loading: loadingFollowerIds, refetch: refetchFollowerIds } =
     useQuery(fetchFollowerIds, ['followers', userId]);
 
   // Fetch following profiles
@@ -79,6 +79,14 @@ export function FollowListScreen() {
   const { data: followerList, loading: loadingFollowerProfiles } = useQuery(
     fetchFollowers,
     followerUserIds && followerUserIds.length > 0
+  );
+
+  // Refetch when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetchFollowingIds();
+      refetchFollowerIds();
+    }, [refetchFollowingIds, refetchFollowerIds])
   );
 
   const listData =
