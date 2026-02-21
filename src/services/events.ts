@@ -175,6 +175,7 @@ export async function createEvent(params: {
       image_url: params.imageUrl ?? null,
       category: params.category,
       price: params.price ?? null,
+      creator_id: params.creatorId,
     })
     .select()
     .single();
@@ -187,6 +188,57 @@ export async function createEvent(params: {
     .insert({ event_id: data.id, user_id: params.creatorId });
 
   return mapEvent(data);
+}
+
+export async function updateEvent(
+  eventId: string,
+  params: {
+    title?: string;
+    description?: string;
+    placeId?: string;
+    date?: string;
+    startTime?: string;
+    endTime?: string | null;
+    imageUrl?: string | null;
+    category?: Event['category'];
+    price?: number | null;
+  }
+): Promise<Event> {
+  const updateData: Record<string, unknown> = {};
+  if (params.title !== undefined) updateData.title = params.title;
+  if (params.description !== undefined) updateData.description = params.description;
+  if (params.placeId !== undefined) updateData.place_id = params.placeId;
+  if (params.date !== undefined) updateData.date = params.date;
+  if (params.startTime !== undefined) updateData.start_time = params.startTime;
+  if (params.endTime !== undefined) updateData.end_time = params.endTime;
+  if (params.imageUrl !== undefined) updateData.image_url = params.imageUrl;
+  if (params.category !== undefined) updateData.category = params.category;
+  if (params.price !== undefined) updateData.price = params.price;
+
+  const { data, error } = await supabase
+    .from('events')
+    .update(updateData)
+    .eq('id', eventId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return mapEvent(data);
+}
+
+export async function deleteEvent(eventId: string): Promise<void> {
+  // Delete attendees first (foreign key constraint)
+  await supabase
+    .from('event_attendees')
+    .delete()
+    .eq('event_id', eventId);
+
+  const { error } = await supabase
+    .from('events')
+    .delete()
+    .eq('id', eventId);
+
+  if (error) throw error;
 }
 
 function mapEvent(row: {
@@ -202,6 +254,7 @@ function mapEvent(row: {
   ticket_url: string | null;
   price: number | null;
   created_at: string;
+  creator_id?: string | null;
 }): Event {
   return {
     id: row.id,
@@ -215,5 +268,6 @@ function mapEvent(row: {
     category: row.category as Event['category'],
     ticketUrl: row.ticket_url ?? undefined,
     price: row.price,
+    creatorId: row.creator_id ?? undefined,
   };
 }
