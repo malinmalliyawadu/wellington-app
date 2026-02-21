@@ -13,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { fonts } from "../theme/fonts";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { HapticPressable } from "./HapticPressable";
-import { colors } from "../theme/colors";
+import { useTheme } from "../theme/ThemeContext";
 import type { PlaceCategory } from "../types";
 
 type ButtonSize = "small" | "medium" | "large";
@@ -62,6 +62,7 @@ export function LiquidGlassButton({
   style,
   fullWidth = false,
 }: LiquidGlassButtonProps) {
+  const { colors } = useTheme();
   const sizeStyles = SIZE_STYLES[size];
   const iconSize = ICON_SIZES[size];
   const circleSize = CIRCLE_SIZES[size];

@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "react-native";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { HapticPressable } from "./HapticPressable";
 
 interface ErrorScreenProps {
@@ -8,6 +8,8 @@ interface ErrorScreenProps {
 }
 
 export function ErrorScreen({ error, retry }: ErrorScreenProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   return (
     <View style={styles.container}>
       <Text style={styles.emoji}>:(</Text>
@@ -19,7 +21,7 @@ export function ErrorScreen({ error, retry }: ErrorScreenProps) {
     </View>
   );
 }
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

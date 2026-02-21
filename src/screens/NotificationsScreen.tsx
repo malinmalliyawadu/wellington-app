@@ -18,7 +18,7 @@ import { getPostsByIds } from "../services/posts";
 import { useQuery } from "../hooks/useQuery";
 import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import type { Notification } from "../services/notifications";
 
@@ -37,6 +37,8 @@ function formatTimeAgo(dateString: string): string {
 }
 
 export function NotificationsScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const router = useRouter();
@@ -215,7 +217,7 @@ export function NotificationsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

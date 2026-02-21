@@ -4,7 +4,7 @@ import { BlurView } from "expo-blur";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { SFIcon } from "./SFIcon";
 import { HapticPressable } from "./HapticPressable";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 
 const glassEnabled = isLiquidGlassAvailable();
@@ -30,6 +30,8 @@ function ControlButtons({
   onToggleExploration,
   onCenterOnUser,
 }: MapControlsProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   return (
     <>
       <HapticPressable
@@ -94,19 +96,24 @@ function ControlButtons({
 }
 
 export function MapControls(props: MapControlsProps) {
+  const { colors, isDark } = useTheme();
+  const styles = createStyles(colors);
   const { activeFilterCount } = props;
 
   return (
     <>
       {glassEnabled ? (
-        <GlassView style={styles.controlsGlass}>
+        <GlassView
+          glassEffectStyle={isDark ? "clear" : "regular"}
+          style={styles.controlsGlass}
+        >
           <ControlButtons {...props} />
         </GlassView>
       ) : (
         <View style={styles.controlsContainer}>
           <BlurView
             intensity={10}
-            tint="light"
+            tint={isDark ? "dark" : "light"}
             style={styles.controlsBlurBg}
           />
           <View style={styles.controlsInner}>
@@ -123,74 +130,75 @@ export function MapControls(props: MapControlsProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  controlsContainer: {
-    width: 44,
-    borderRadius: 18,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  controlsGlass: {
-    width: 44,
-    borderRadius: 18,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  controlsBlurBg: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.4)",
-  },
-  controlsInner: {
-    width: "100%",
-  },
-  controlButton: {
-    width: "100%",
-    height: 44,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  controlButtonTop: {
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
-  },
-  controlButtonBottom: {
-    borderBottomLeftRadius: 18,
-    borderBottomRightRadius: 18,
-  },
-  controlButtonActive: {
-    backgroundColor: colors.primary,
-  },
-  controlDivider: {
-    height: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.08)",
-  },
-  filterBadge: {
-    position: "absolute",
-    top: -4,
-    right: -4,
-    backgroundColor: "#FFFFFF",
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: colors.primary,
-  },
-  filterBadgeText: {
-    fontSize: 10,
-    fontWeight: "700",
-    fontFamily: fonts.bold,
-    color: colors.primary,
-  },
-});
+const createStyles = (colors: Colors) =>
+  StyleSheet.create({
+    controlsContainer: {
+      width: 44,
+      borderRadius: 18,
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      elevation: 4,
+    },
+    controlsGlass: {
+      width: 44,
+      borderRadius: 18,
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      elevation: 4,
+    },
+    controlsBlurBg: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: "rgba(255, 255, 255, 0.15)",
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.4)",
+    },
+    controlsInner: {
+      width: "100%",
+    },
+    controlButton: {
+      width: "100%",
+      height: 44,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    controlButtonTop: {
+      borderTopLeftRadius: 18,
+      borderTopRightRadius: 18,
+    },
+    controlButtonBottom: {
+      borderBottomLeftRadius: 18,
+      borderBottomRightRadius: 18,
+    },
+    controlButtonActive: {
+      backgroundColor: colors.primary,
+    },
+    controlDivider: {
+      height: 1,
+      backgroundColor: "rgba(0, 0, 0, 0.08)",
+    },
+    filterBadge: {
+      position: "absolute",
+      top: -4,
+      right: -4,
+      backgroundColor: colors.cardBackground,
+      width: 18,
+      height: 18,
+      borderRadius: 9,
+      alignItems: "center",
+      justifyContent: "center",
+      borderWidth: 2,
+      borderColor: colors.primary,
+    },
+    filterBadgeText: {
+      fontSize: 10,
+      fontWeight: "700",
+      fontFamily: fonts.bold,
+      color: colors.primary,
+    },
+  });

@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fonts } from "../theme/fonts";
 import { Place, PlaceCategory } from '../types';
 import { SFIcon } from './SFIcon';
-import { colors } from '../theme/colors';
+import { useTheme, type Colors } from '../theme/ThemeContext';
 import { HapticPressable } from './HapticPressable';
 
 const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
@@ -64,6 +64,8 @@ export function MapSearchBar({
   onCategoriesChange,
   onFollowingToggle,
 }: MapSearchBarProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [query, setQuery] = useState('');
   const inputRef = useRef<TextInput>(null);
   const insets = useSafeAreaInsets();
@@ -226,7 +228,7 @@ export function MapSearchBar({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   wrapper: {
     position: 'absolute',
     left: 12,

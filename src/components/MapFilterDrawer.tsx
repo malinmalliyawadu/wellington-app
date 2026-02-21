@@ -7,7 +7,7 @@ import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { useMapFilters } from '../context/MapFilterContext';
 import { fonts } from "../theme/fonts";
 import { PlaceCategory } from '../types';
-import { colors } from '../theme/colors';
+import { useTheme, type Colors } from '../theme/ThemeContext';
 import { HapticPressable } from './HapticPressable';
 import { SFIcon } from './SFIcon';
 
@@ -41,6 +41,8 @@ const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof type
 };
 
 export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
   const {
     selectedCategories,
@@ -159,7 +161,7 @@ export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.cardBackground,

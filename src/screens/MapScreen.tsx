@@ -31,7 +31,7 @@ import { useExplorationTracking } from "../hooks/useExplorationTracking";
 import { WELLINGTON_REGION, isInWellington } from "../constants/wellington";
 import { Place } from "../types";
 import { useRouter } from "expo-router";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 import { useMapPlaceSelection } from "../context/MapPlaceSelectionContext";
@@ -91,6 +91,7 @@ const MapMarkerItem = React.memo(function MapMarkerItem({
 });
 
 export function MapScreen() {
+  const { colors, isDark } = useTheme();
   const { location: userCoords } = useLocation();
   const [showExplorationOverlay, setShowExplorationOverlay] = useState(false);
   const [showNeighborhoods, setShowNeighborhoods] = useState(false);
@@ -219,6 +220,8 @@ export function MapScreen() {
     (!showTrails ? 1 : 0) +
     (!showEvents ? 1 : 0);
 
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.container} onLayout={handleMapLayout}>
       <MapView
@@ -231,7 +234,7 @@ export function MapScreen() {
         compassOffset={{ x: -320, y: 0 }}
         onRegionChangeComplete={handleRegionChangeComplete}
         showsPointsOfInterest={false}
-        userInterfaceStyle="light"
+        userInterfaceStyle={isDark ? "dark" : "light"}
         minZoomLevel={9}
       >
         <NeighborhoodOverlay
@@ -277,7 +280,7 @@ export function MapScreen() {
 
       {isInitialLoad && (
         <View style={[styles.loadingOverlay, { top: insets.top + 106 }]}>
-          <BlurView intensity={15} tint="light" style={styles.loadingContainer}>
+          <BlurView intensity={15} tint={isDark ? "dark" : "light"} style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={colors.primary} />
             <Text style={styles.loadingText}>Loading places...</Text>
           </BlurView>
@@ -304,7 +307,7 @@ export function MapScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
   },

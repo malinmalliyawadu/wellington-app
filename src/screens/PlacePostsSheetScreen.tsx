@@ -29,7 +29,7 @@ import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { fonts } from "../theme/fonts";
 import { BlurView } from "expo-blur";
 import { HashtagText } from "../components/HashtagText";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import type { Place, PlaceCategory, Post } from "../types";
 
 const CATEGORY_LABELS: Record<PlaceCategory, string> = {
@@ -43,6 +43,8 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
 };
 
 export function PlacePostsSheetScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { placeId: routePlaceId } = useLocalSearchParams<{ placeId: string }>();
   const { selectedPlaceId, sheetOpenRef } = useMapPlaceSelection();
   const placeId = selectedPlaceId ?? routePlaceId;
@@ -359,6 +361,8 @@ export function PlacePostsSheetScreen() {
 }
 
 function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const fetchUser = useCallback(
     () => getProfileById(post.userId),
     [post.userId]
@@ -417,7 +421,7 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent",
@@ -454,7 +458,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   headerContentScrolled: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.background,
   },
   nameButton: {
     flexDirection: "row",

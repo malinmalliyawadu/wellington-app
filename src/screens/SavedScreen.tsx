@@ -22,7 +22,7 @@ import { PostsGrid } from "../components/PostsGrid";
 import { EventCard } from "../components/EventCard";
 import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import type { Place, PlaceCategory } from "../types";
 
@@ -39,6 +39,8 @@ const CATEGORY_ICONS: Record<PlaceCategory, { sf: string; fallback: string }> = 
 };
 
 export function SavedScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
@@ -309,7 +311,7 @@ export function SavedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -338,7 +340,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
   },
   tabTextActive: {
-    color: "#FFFFFF",
+    color: colors.background,
   },
   tabCount: {
     backgroundColor: colors.gray200,
@@ -350,7 +352,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
   },
   tabCountActive: {
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: colors.overlay,
   },
   tabCountText: {
     fontSize: 11,
@@ -358,7 +360,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
   },
   tabCountTextActive: {
-    color: "#FFFFFF",
+    color: colors.background,
   },
   // Places list
   placeRow: {

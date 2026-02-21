@@ -2,7 +2,7 @@ import { Stack, useRouter } from "expo-router";
 import { SFIcon } from "../../../src/components/SFIcon";
 import { HapticPressable } from "../../../src/components/HapticPressable";
 import { ErrorScreen } from "../../../src/components/ErrorScreen";
-import { colors } from "../../../src/theme/colors";
+import { useTheme } from "../../../src/theme/ThemeContext";
 
 export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
   return <ErrorScreen error={error} retry={retry} />;
@@ -10,6 +10,7 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => voi
 
 function CreateButton() {
   const router = useRouter();
+  const { colors } = useTheme();
   return (
     <HapticPressable
       style={{
@@ -26,6 +27,7 @@ function CreateButton() {
 
 function DiscoverButton() {
   const router = useRouter();
+  const { colors } = useTheme();
   return (
     <HapticPressable
       style={{
@@ -41,8 +43,9 @@ function DiscoverButton() {
 }
 
 export default function FeedLayout() {
+  const { colors } = useTheme();
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, headerTintColor: colors.text }}>
       <Stack.Screen
         name="index"
         options={{

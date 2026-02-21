@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { ImageProps, ImageSourcePropType, View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   useAnimatedRef,
@@ -18,6 +18,8 @@ const RESET_CONFIG = { duration: 200, easing: Easing.out(Easing.quad) };
 const MAX_SCALE = 5;
 
 export function ZoomableImage({ style, source, onError, ...props }: ImageProps) {
+  const { colors } = useTheme();
+  const zoomStyles = createZoomStyles(colors);
   const overlay = useZoomOverlay();
   const wrapperRef = useAnimatedRef<Animated.View>();
   const localActive = useSharedValue(false);
@@ -108,7 +110,7 @@ export function ZoomableImage({ style, source, onError, ...props }: ImageProps) 
   );
 }
 
-const zoomStyles = StyleSheet.create({
+const createZoomStyles = (colors: Colors) => StyleSheet.create({
   fallback: {
     backgroundColor: colors.gray200,
     justifyContent: "center",

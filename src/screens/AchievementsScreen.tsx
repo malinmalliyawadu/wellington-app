@@ -4,8 +4,10 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { AchievementsList } from "../components/AchievementsList";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../theme/ThemeContext";
 
 export function AchievementsScreen() {
+  const { colors } = useTheme();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
@@ -19,7 +21,7 @@ export function AchievementsScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -37,7 +39,6 @@ export function AchievementsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
   },
   scrollView: {
     flex: 1,

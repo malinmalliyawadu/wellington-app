@@ -14,7 +14,7 @@ import { SFSymbol } from "expo-symbols";
 import { SFIcon } from "../components/SFIcon";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { useQuery } from "../hooks/useQuery";
 import { getPlaces, findOrCreatePlace } from "../services/places";
 import { getPosts } from "../services/posts";
@@ -84,6 +84,7 @@ interface SearchScreenProps {
 }
 
 export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
+  const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -569,6 +570,8 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
     }
   };
 
+  const styles = createStyles(colors);
+
   // Search results view
   if (query.trim()) {
     return (
@@ -772,7 +775,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

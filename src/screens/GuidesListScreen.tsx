@@ -20,10 +20,11 @@ import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { useQuery } from "../hooks/useQuery";
 import { useAuth } from "../context/AuthContext";
 import { getGuidesByUserId } from "../services/guides";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 
 export function GuidesListScreen() {
+  const { colors } = useTheme();
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const router = useRouter();
   const pathname = usePathname();
@@ -31,6 +32,7 @@ export function GuidesListScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { profile } = useAuth();
+  const styles = createStyles(colors);
 
   const isOwnProfile = profile?.id === userId;
 
@@ -124,7 +126,7 @@ export function GuidesListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

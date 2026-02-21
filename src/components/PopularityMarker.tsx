@@ -9,7 +9,7 @@ import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { fonts } from "../theme/fonts";
 import { PlaceCategory } from "../types";
 import { SFIcon } from "./SFIcon";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 
 const glassEnabled = isLiquidGlassAvailable();
 
@@ -48,6 +48,8 @@ function PopularityMarkerInner({
   showLabel = false,
   events = [],
 }: PopularityMarkerProps) {
+  const { colors, isDark } = useTheme();
+  const styles = createStyles(colors);
   const hasEvents = events.length > 0;
   const shouldShowLabel = showLabel || hasEvents;
   const color = colors.category[category];
@@ -110,7 +112,7 @@ function PopularityMarkerInner({
         >
           <BlurView
             intensity={30}
-            tint="light"
+            tint={isDark ? "dark" : "light"}
             style={[
               styles.marker,
               {
@@ -178,7 +180,7 @@ function PopularityMarkerInner({
       >
         <BlurView
           intensity={40}
-          tint="light"
+          tint={isDark ? "dark" : "light"}
           style={[
             styles.blurMarker,
             {
@@ -192,7 +194,7 @@ function PopularityMarkerInner({
             style={[
               StyleSheet.absoluteFill,
               {
-                backgroundColor: "rgba(255, 255, 255, 0.4)",
+                backgroundColor: isDark ? "rgba(30, 30, 30, 0.6)" : "rgba(255, 255, 255, 0.4)",
                 borderRadius: size / 2,
                 borderWidth: 2.5,
                 borderColor: color,
@@ -307,7 +309,7 @@ function PopularityMarkerInner({
               {renderLabelContent()}
             </GlassView>
           ) : (
-            <BlurView intensity={15} tint="light" style={styles.labelContainer}>
+            <BlurView intensity={15} tint={isDark ? "dark" : "light"} style={styles.labelContainer}>
               {renderLabelContent()}
             </BlurView>
           )}
@@ -339,7 +341,7 @@ export const PopularityMarker = React.memo(
     arraysEqual(prev.posterAvatars ?? [], next.posterAvatars ?? [])
 );
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     alignItems: "center",
   },
@@ -439,18 +441,19 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   labelContainer: {
-    backgroundColor: "rgba(255, 255, 255, 0.4)",
+    backgroundColor: colors.translucentCardBackground,
     borderRadius: 8,
     paddingHorizontal: 7,
     paddingVertical: 3,
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.5)",
+    borderColor: colors.glassBorder,
   },
   labelName: {
     fontSize: 11,
     fontWeight: "500",
     fontFamily: fonts.medium,
     textAlign: "center",
+    color: colors.text,
   },
   avatarRow: {
     flexDirection: "row",
@@ -470,6 +473,6 @@ const styles = StyleSheet.create({
     height: 14,
     borderRadius: 7,
     borderWidth: 1,
-    borderColor: "#FFFFFF",
+    borderColor: colors.cardBackground,
   },
 });

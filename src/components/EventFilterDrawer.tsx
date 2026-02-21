@@ -6,7 +6,7 @@ import { SFSymbol } from 'expo-symbols';
 import { DrawerContentComponentProps } from '@react-navigation/drawer';
 import { CATEGORY_COLORS } from './EventCard';
 import { useEventFilters } from '../context/EventFilterContext';
-import { colors } from '../theme/colors';
+import { useTheme, type Colors } from '../theme/ThemeContext';
 import { HapticPressable } from './HapticPressable';
 import { SFIcon } from './SFIcon';
 import { fonts } from "../theme/fonts";
@@ -50,6 +50,8 @@ const CATEGORY_ICONS: Record<EventCategory, { sf: SFSymbol; fallback: keyof type
 };
 
 export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
   const {
     selectedDateRange,
@@ -183,7 +185,7 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.cardBackground,

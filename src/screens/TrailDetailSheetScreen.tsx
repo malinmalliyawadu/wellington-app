@@ -25,14 +25,8 @@ import { getPlaceById } from "../services/places";
 import { getProfileById } from "../services/users";
 import { sortPosts } from "../utils/postSorting";
 import { fonts } from "../theme/fonts";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import type { TrailDifficulty, Post } from "../types";
-
-const DIFFICULTY_COLORS: Record<TrailDifficulty, string> = {
-  easy: colors.success,
-  moderate: "#F59E0B",
-  hard: colors.error,
-};
 
 const DIFFICULTY_LABELS: Record<TrailDifficulty, string> = {
   easy: "Easy",
@@ -41,6 +35,13 @@ const DIFFICULTY_LABELS: Record<TrailDifficulty, string> = {
 };
 
 export function TrailDetailSheetScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+  const DIFFICULTY_COLORS: Record<TrailDifficulty, string> = {
+    easy: colors.success,
+    moderate: "#F59E0B",
+    hard: colors.error,
+  };
   const { trailId } = useLocalSearchParams<{ trailId: string }>();
   const router = useRouter();
   const { followingIds } = useFollow();
@@ -401,6 +402,8 @@ function PostCardContent({
   post: Post;
   isFollowed: boolean;
 }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const fetchUser = useCallback(
     () => getProfileById(post.userId),
     [post.userId]
@@ -471,7 +474,7 @@ function PostCardContent({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "transparent",

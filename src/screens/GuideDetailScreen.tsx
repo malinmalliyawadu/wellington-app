@@ -27,7 +27,7 @@ import { getPlacesByIds } from "../services/places";
 import { getTopPostMediaForPlaces } from "../services/posts";
 import { getProfileById } from "../services/users";
 import { shareGuide } from "../utils/sharing";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import type { PlaceCategory } from "../types";
 
@@ -43,6 +43,7 @@ const CATEGORY_ICONS: Record<PlaceCategory, { sf: string; fallback: string }> =
   };
 
 export function GuideDetailScreen() {
+  const { colors } = useTheme();
   const { guideId } = useLocalSearchParams<{ guideId: string }>();
   const router = useRouter();
   const pathname = usePathname();
@@ -50,6 +51,7 @@ export function GuideDetailScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const { isSaved, toggleSave } = useSave();
+  const styles = createStyles(colors);
 
   const fetchGuide = useCallback(() => getGuideById(guideId), [guideId]);
   const {
@@ -376,7 +378,7 @@ export function GuideDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

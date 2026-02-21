@@ -20,7 +20,7 @@ import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter, usePathname, useFocusEffect } from "expo-router";
 import { Place, PostType, EventCategory } from "../types";
 import type { MediaPickerItem } from "../components/create/PostForm";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { useAuth } from "../context/AuthContext";
 import { useExploration } from "../context/ExplorationContext";
 import { useToast } from "../context/ToastContext";
@@ -47,6 +47,8 @@ const glassEnabled = isLiquidGlassAvailable();
 type CreateType = "post" | "event";
 
 export function CreatePostSheetScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { profile } = useAuth();
@@ -730,7 +732,7 @@ export function CreatePostSheetScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.translucentCardBackground,
@@ -740,7 +742,7 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   headerScrolled: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.background,
   },
   headerRow: {
     flexDirection: "row",

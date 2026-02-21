@@ -13,13 +13,15 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import { useAuth } from "../context/AuthContext";
 import { FollowButton } from "../components/FollowButton";
 import { fonts } from "../theme/fonts";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { useQuery } from "../hooks/useQuery";
 import { getProfileById, getProfilesByIds } from "../services/users";
 import { getFollowerIds, getFollowingIds } from "../services/follows";
 import { HapticPressable } from "src/components/HapticPressable";
 
 export function FollowListScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const navigation = useNavigation();
   const { userId, tab: initialTab } = useLocalSearchParams<{
@@ -176,7 +178,7 @@ export function FollowListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

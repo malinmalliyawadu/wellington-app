@@ -25,10 +25,11 @@ import { FollowButton } from "../components/FollowButton";
 import { PostsGrid } from "../components/PostsGrid";
 import { UpcomingEvents } from "../components/UpcomingEvents";
 import { fonts } from "../theme/fonts";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { HapticPressable } from "src/components/HapticPressable";
 
 export function UserProfileScreen() {
+  const { colors } = useTheme();
   const router = useRouter();
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const pathname = usePathname();
@@ -105,6 +106,8 @@ export function UserProfileScreen() {
       place: placeMap.get(event.placeId),
     }));
   }, [events, allPlaces]);
+
+  const styles = createStyles(colors);
 
   if (loadingUser) {
     return (
@@ -241,7 +244,7 @@ export function UserProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

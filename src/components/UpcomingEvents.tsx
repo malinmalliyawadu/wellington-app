@@ -3,7 +3,7 @@ import { View, Text, ScrollView, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { fonts } from "../theme/fonts";
 import { EventCard } from "./EventCard";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { Event, Place } from "../types";
 
 interface UpcomingEventsProps {
@@ -11,6 +11,8 @@ interface UpcomingEventsProps {
 }
 
 export function UpcomingEvents({ events }: UpcomingEventsProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
 
   const eventsWithPlace = events.filter(
@@ -43,7 +45,7 @@ export function UpcomingEvents({ events }: UpcomingEventsProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   sectionTitle: {
     fontSize: 17,
     fontFamily: fonts.semiBold,

@@ -15,7 +15,7 @@ import { SFIcon } from "../components/SFIcon";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { Place } from "../types";
 import { useLocation } from "../context/LocationContext";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import {
   searchGooglePlaces,
   searchNearbyPlaces,
@@ -24,6 +24,8 @@ import { fonts } from "../theme/fonts";
 import { HapticPressable } from "../components/HapticPressable";
 
 export function PlaceSearchSheet() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ returnRoute?: string }>();
@@ -195,7 +197,7 @@ export function PlaceSearchSheet() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

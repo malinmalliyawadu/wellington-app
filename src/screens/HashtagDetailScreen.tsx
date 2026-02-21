@@ -10,16 +10,18 @@ import { getProfilesByIds } from '../services/users';
 import { getPlaces } from '../services/places';
 import { FeedPost } from '../components/FeedPost';
 import { formatNumber } from '../utils/formatNumber';
-import { colors } from '../theme/colors';
+import { useTheme, type Colors } from '../theme/ThemeContext';
 import { fonts } from '../theme/fonts';
 
 export function HashtagDetailScreen() {
+  const { colors } = useTheme();
   const { tag } = useLocalSearchParams<{ tag: string }>();
   const router = useRouter();
   const pathname = usePathname();
   const tabBase = '/' + pathname.split('/')[1];
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
+  const styles = createStyles(colors);
 
   const fetchHashtag = useCallback(() => getHashtagByName(tag), [tag]);
   const { data: hashtag, loading: loadingHashtag } = useQuery(fetchHashtag, ['hashtag', tag]);
@@ -146,7 +148,7 @@ export function HashtagDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

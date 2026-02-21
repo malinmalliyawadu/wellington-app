@@ -23,7 +23,7 @@ import {
 import { HapticPressable } from "../components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { fonts } from "../theme/fonts";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import type { InstagramMedia } from "../types/Instagram";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -32,9 +32,11 @@ const NUM_COLUMNS = 3;
 const CELL_SIZE = (SCREEN_WIDTH - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 
 export function InstagramImportScreen() {
+  const { colors } = useTheme();
   const router = useRouter();
   const headerHeight = useHeaderHeight();
   const insets = useSafeAreaInsets();
+  const styles = createStyles(colors);
   const [selectedPost, setSelectedPost] = useState<InstagramMedia | null>(null);
   const [importing, setImporting] = useState(false);
 
@@ -259,7 +261,7 @@ export function InstagramImportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

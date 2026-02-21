@@ -27,7 +27,7 @@ import {
 } from "../services/guides";
 import { getPlacesByIds, findOrCreatePlace } from "../services/places";
 import { searchGooglePlaces } from "../services/googlePlaces";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import type { Place, PlaceCategory } from "../types";
 
@@ -48,12 +48,14 @@ interface SelectedPlace {
 }
 
 export function CreateGuideScreen() {
+  const { colors } = useTheme();
   const { guideId } = useLocalSearchParams<{ guideId?: string }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   const { showToast } = useToast();
+  const styles = createStyles(colors);
 
   const isEditing = !!guideId;
 
@@ -429,7 +431,7 @@ export function CreateGuideScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
   },

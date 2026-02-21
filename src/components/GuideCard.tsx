@@ -6,7 +6,7 @@ import { SFIcon } from "./SFIcon";
 import { HapticPressable } from "./HapticPressable";
 import { useQuery } from "../hooks/useQuery";
 import { getProfileById } from "../services/users";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import type { Guide } from "../types";
 
@@ -17,6 +17,8 @@ interface GuideCardProps {
 }
 
 export function GuideCard({ guide, onPress, compact }: GuideCardProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const fetchCreator = useCallback(
     () => getProfileById(guide.userId),
     [guide.userId]
@@ -97,7 +99,7 @@ export function GuideCard({ guide, onPress, compact }: GuideCardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     backgroundColor: colors.cardBackground,
     borderRadius: 12,
@@ -194,4 +196,4 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     color: colors.textSecondary,
   },
-});
+} as const);

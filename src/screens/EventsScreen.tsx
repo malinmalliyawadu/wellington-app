@@ -20,7 +20,7 @@ import { getPlaces } from "../services/places";
 import { useQuery } from "../hooks/useQuery";
 import { useFollow } from "../context/FollowContext";
 import { useEventFilters } from "../context/EventFilterContext";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 import { fonts } from "../theme/fonts";
@@ -143,6 +143,7 @@ function getEventSection(eventDate: string, startTime: string): TimeSection {
 }
 
 export function EventsScreen() {
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const navigation = useNavigation();
@@ -279,6 +280,8 @@ export function EventsScreen() {
     navigation.dispatch(DrawerActions.openDrawer());
   };
 
+  const styles = createStyles(colors);
+
   if (loadingEvents) {
     return (
       <View
@@ -376,7 +379,7 @@ export function EventsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

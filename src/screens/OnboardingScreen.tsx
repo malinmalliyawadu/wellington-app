@@ -1,4 +1,10 @@
-import React, { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import React, {
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+  useEffect,
+} from "react";
 import {
   View,
   Text,
@@ -28,7 +34,7 @@ import { FollowButton } from "../components/FollowButton";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { HapticPressable } from "../components/HapticPressable";
 import { fonts } from "../theme/fonts";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import type { User } from "../types";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
@@ -58,6 +64,13 @@ const WELCOME_SLIDES = [
 ];
 
 export function OnboardingScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+  const welcomeStyles = createWelcomeStyles(colors);
+  const profileStyles = createProfileStyles(colors);
+  const followStyles = createFollowStyles(colors);
+  const locationStyles = createLocationStyles(colors);
+  const bottomStyles = createBottomStyles(colors);
   const insets = useSafeAreaInsets();
   const { profile, updateProfile, completeOnboarding } = useAuth();
   const [step, setStep] = useState(0);
@@ -443,8 +456,8 @@ export function OnboardingScreen() {
               </View>
               <Text style={styles.stepTitle}>Enable location</Text>
               <Text style={styles.stepSubtitle}>
-                See what&apos;s nearby and get personalised recommendations based on
-                where you are in Wellington
+                See what&apos;s nearby and get personalised recommendations
+                based on where you are in Wellington
               </Text>
             </View>
           </View>
@@ -526,7 +539,7 @@ export function OnboardingScreen() {
 }
 
 // Main layout styles
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
@@ -559,7 +572,7 @@ const styles = StyleSheet.create({
 });
 
 // Welcome step styles
-const welcomeStyles = StyleSheet.create({
+const createWelcomeStyles = (colors: Colors) => StyleSheet.create({
   dots: {
     flexDirection: "row",
     justifyContent: "center",
@@ -603,7 +616,7 @@ const welcomeStyles = StyleSheet.create({
 });
 
 // Profile setup styles
-const profileStyles = StyleSheet.create({
+const createProfileStyles = (colors: Colors) => StyleSheet.create({
   content: {
     paddingTop: 32,
     paddingBottom: 16,
@@ -693,7 +706,7 @@ const profileStyles = StyleSheet.create({
 });
 
 // Follow people styles
-const followStyles = StyleSheet.create({
+const createFollowStyles = (colors: Colors) => StyleSheet.create({
   header: {
     paddingTop: 32,
     paddingBottom: 16,
@@ -741,7 +754,7 @@ const followStyles = StyleSheet.create({
 });
 
 // Location step styles
-const locationStyles = StyleSheet.create({
+const createLocationStyles = (colors: Colors) => StyleSheet.create({
   container: {
     justifyContent: "center",
   },
@@ -761,7 +774,7 @@ const locationStyles = StyleSheet.create({
 });
 
 // Bottom bar button styles
-const bottomStyles = StyleSheet.create({
+const createBottomStyles = (colors: Colors) => StyleSheet.create({
   locationButtons: {
     gap: 12,
     alignItems: "center",

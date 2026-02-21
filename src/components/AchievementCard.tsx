@@ -2,13 +2,15 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { fonts } from "../theme/fonts";
 import { AchievementProgress } from "../types/Exploration";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 
 interface AchievementCardProps {
   achievement: AchievementProgress;
 }
 
 export function AchievementCard({ achievement }: AchievementCardProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const {
     title,
     description,
@@ -78,13 +80,13 @@ export function AchievementCard({ achievement }: AchievementCardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 14,
     paddingHorizontal: 16,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.cardBackground,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },

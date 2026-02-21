@@ -8,13 +8,15 @@ import { useFollow } from '../context/FollowContext';
 import { useAuth } from '../context/AuthContext';
 import { FollowButton } from '../components/FollowButton';
 import { fonts } from "../theme/fonts";
-import { colors } from '../theme/colors';
+import { useTheme, type Colors } from '../theme/ThemeContext';
 import { Pressable } from 'react-native';
 import { useQuery } from '../hooks/useQuery';
 import { getOtherProfiles } from '../services/users';
 import { HapticPressable } from 'src/components/HapticPressable';
 
 export function DiscoverUsersScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const pathname = usePathname();
   const tabBase = '/' + pathname.split('/')[1];
@@ -71,7 +73,7 @@ export function DiscoverUsersScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

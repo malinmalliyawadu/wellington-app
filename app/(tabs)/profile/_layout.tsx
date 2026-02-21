@@ -7,7 +7,7 @@ import { ErrorScreen } from "../../../src/components/ErrorScreen";
 import { useNotifications } from "../../../src/context/NotificationContext";
 import { useSave } from "../../../src/context/SaveContext";
 import { useAuth } from "../../../src/context/AuthContext";
-import { colors } from "../../../src/theme/colors";
+import { useTheme, type Colors } from "../../../src/theme/ThemeContext";
 
 export function ErrorBoundary({
   error,
@@ -22,9 +22,11 @@ export function ErrorBoundary({
 function GuidesButton() {
   const router = useRouter();
   const { profile } = useAuth();
+  const { colors } = useTheme();
+  const styles = createBellStyles(colors);
   return (
     <HapticPressable
-      style={bellStyles.container}
+      style={styles.container}
       onPress={() =>
         router.push({
           pathname: "/profile/guides" as any,
@@ -45,9 +47,11 @@ function GuidesButton() {
 
 function AchievementsButton() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = createBellStyles(colors);
   return (
     <HapticPressable
-      style={bellStyles.container}
+      style={styles.container}
       onPress={() => router.push("/profile/achievements" as any)}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
@@ -64,10 +68,12 @@ function AchievementsButton() {
 function NotificationBell() {
   const router = useRouter();
   const { unreadCount } = useNotifications();
+  const { colors } = useTheme();
+  const styles = createBellStyles(colors);
 
   return (
     <HapticPressable
-      style={bellStyles.container}
+      style={styles.container}
       onPress={() => router.push("/profile/notifications" as any)}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
@@ -77,31 +83,16 @@ function NotificationBell() {
         size={22}
         color={colors.text}
       />
-      {unreadCount > 0 && <View style={bellStyles.dot} />}
+      {unreadCount > 0 && <View style={styles.dot} />}
     </HapticPressable>
   );
 }
 
-const bellStyles = StyleSheet.create({
-  container: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 7,
-  },
-  dot: {
-    position: "absolute",
-    top: 0,
-    right: 9,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.error,
-  },
-});
-
 function SavedButton() {
   const router = useRouter();
   const { getSavedIds } = useSave();
+  const { colors } = useTheme();
+  const styles = createBellStyles(colors);
   const totalSaved =
     getSavedIds("post").length +
     getSavedIds("place").length +
@@ -109,7 +100,7 @@ function SavedButton() {
 
   return (
     <HapticPressable
-      style={bellStyles.container}
+      style={styles.container}
       onPress={() => router.push("/profile/saved" as any)}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
@@ -119,17 +110,19 @@ function SavedButton() {
         size={22}
         color={colors.text}
       />
-      {totalSaved > 0 && <View style={bellStyles.dot} />}
+      {totalSaved > 0 && <View style={styles.dot} />}
     </HapticPressable>
   );
 }
 
 function PrivacyButton() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = createBellStyles(colors);
 
   return (
     <HapticPressable
-      style={bellStyles.container}
+      style={styles.container}
       onPress={() => router.push("/profile/privacy" as any)}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
@@ -145,9 +138,11 @@ function PrivacyButton() {
 
 function DiscoverButton() {
   const router = useRouter();
+  const { colors } = useTheme();
+  const styles = createBellStyles(colors);
   return (
     <HapticPressable
-      style={bellStyles.container}
+      style={styles.container}
       onPress={() => router.push("/profile/discover")}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
@@ -162,6 +157,7 @@ function DiscoverButton() {
 }
 
 function LogoutButton() {
+  const { colors } = useTheme();
   return (
     <HapticPressable
       style={{
@@ -191,9 +187,28 @@ function LogoutButton() {
   );
 }
 
+const createBellStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 7,
+    },
+    dot: {
+      position: "absolute",
+      top: 0,
+      right: 9,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: colors.error,
+    },
+  });
+
 export default function ProfileLayout() {
+  const { colors } = useTheme();
   return (
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, headerTintColor: colors.text }}>
       <Stack.Screen
         name="index"
         options={{

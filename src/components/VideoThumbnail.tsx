@@ -2,7 +2,7 @@ import React from 'react';
 import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { SFIcon } from './SFIcon';
-import { colors } from '../theme/colors';
+import { useTheme, type Colors } from '../theme/ThemeContext';
 
 interface VideoThumbnailProps {
   thumbnailUrl?: string;
@@ -11,6 +11,8 @@ interface VideoThumbnailProps {
 }
 
 export function VideoThumbnail({ thumbnailUrl, fallbackUrl, style }: VideoThumbnailProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const imageUrl = thumbnailUrl || fallbackUrl;
   return (
     <View style={[styles.container, style]}>
@@ -26,7 +28,7 @@ export function VideoThumbnail({ thumbnailUrl, fallbackUrl, style }: VideoThumbn
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     backgroundColor: colors.gray200,
     overflow: 'hidden',

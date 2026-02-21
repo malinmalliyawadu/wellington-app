@@ -26,7 +26,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { fonts } from "../theme/fonts";
 import { signInWithGoogle, signInWithApple } from "../services/auth";
 import { supabase } from "../lib/supabase";
-import { colors } from "../theme/colors";
+import { useTheme } from "../theme/ThemeContext";
 import { HapticPressable } from "src/components/HapticPressable";
 
 const glassEnabled = isLiquidGlassAvailable();

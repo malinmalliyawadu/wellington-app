@@ -16,7 +16,7 @@ import { useFollow } from '../context/FollowContext';
 import { useLike } from '../context/LikeContext';
 import { useSave } from '../context/SaveContext';
 import { VideoThumbnail } from '../components/VideoThumbnail';
-import { colors } from '../theme/colors';
+import { useTheme, type Colors } from '../theme/ThemeContext';
 import type { PlaceCategory } from '../types';
 import { fonts } from "../theme/fonts";
 import { HapticPressable } from 'src/components/HapticPressable';
@@ -34,6 +34,8 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
 };
 
 export function PlaceDetailScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { placeId } = useLocalSearchParams<{ placeId: string }>();
   const router = useRouter();
   const pathname = usePathname();
@@ -251,6 +253,8 @@ export function PlaceDetailScreen() {
 }
 
 function PostLikeButton({ postId }: { postId: string }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { isLiked, toggleLike, getLikeCount } = useLike();
   const liked = isLiked(postId);
 
@@ -273,7 +277,7 @@ function PostLikeButton({ postId }: { postId: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

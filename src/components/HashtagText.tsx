@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, type TextStyle, type StyleProp } from 'react-native';
 import { parseTextWithHashtags } from '../utils/hashtags';
-import { colors } from '../theme/colors';
+import { useTheme } from '../theme/ThemeContext';
 import { fonts } from '../theme/fonts';
 
 interface HashtagTextProps {
@@ -12,7 +12,13 @@ interface HashtagTextProps {
 }
 
 export function HashtagText({ children, style, numberOfLines, onPressHashtag }: HashtagTextProps) {
+  const { colors } = useTheme();
   const segments = parseTextWithHashtags(children);
+
+  const hashtagStyle: TextStyle = {
+    color: colors.primary,
+    fontFamily: fonts.semiBold,
+  };
 
   return (
     <Text style={style} numberOfLines={numberOfLines}>
@@ -32,8 +38,3 @@ export function HashtagText({ children, style, numberOfLines, onPressHashtag }: 
     </Text>
   );
 }
-
-const hashtagStyle: TextStyle = {
-  color: colors.primary,
-  fontFamily: fonts.semiBold,
-};

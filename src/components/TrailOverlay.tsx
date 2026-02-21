@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from "react-native";
 import { Marker, Polyline } from "react-native-maps";
 import { SFIcon } from "./SFIcon";
 import { Trail } from "../types";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import * as Haptics from "expo-haptics";
 
@@ -18,6 +18,9 @@ export function TrailOverlay({
   activeTrailId,
   onTrailPress,
 }: TrailOverlayProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+
   return (
     <>
       {trails.map((trail) => {
@@ -95,7 +98,7 @@ export function TrailOverlay({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   trailMarker: {
     alignItems: "center",
     paddingBottom: 8,
@@ -115,7 +118,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   trailMarkerLabel: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.cardBackground,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
@@ -142,7 +145,7 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.cardBackground,
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",

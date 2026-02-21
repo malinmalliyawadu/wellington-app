@@ -15,7 +15,7 @@ import { SFSymbol } from 'expo-symbols';
 import { SFIcon } from '../components/SFIcon';
 import { fonts } from "../theme/fonts";
 import { LinearGradient } from 'expo-linear-gradient';
-import { colors } from '../theme/colors';
+import { useTheme, type Colors } from '../theme/ThemeContext';
 
 export interface ToastConfig {
   message: string;
@@ -40,6 +40,8 @@ export function useToast() {
 }
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [visible, setVisible] = useState(false);
   const [config, setConfig] = useState<ToastConfig>({ message: '' });
   const translateY = useRef(new Animated.Value(-100)).current;
@@ -164,7 +166,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
 const { width } = Dimensions.get('window');
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     position: 'absolute',
     left: 16,
@@ -229,6 +231,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     fontFamily: fonts.semiBold,
-    color: '#fff',
+    color: colors.background,
   },
 });

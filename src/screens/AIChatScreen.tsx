@@ -28,7 +28,7 @@ import { getGuidesWithPlaces } from "../services/guides";
 import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
 import Markdown from "react-native-markdown-display";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import type {
   Place,
@@ -110,12 +110,15 @@ const CHAT_STORAGE_KEY = "ai_chat_history";
 let msgId = 0;
 
 export function AIChatScreen() {
+  const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   const { followingIds } = useFollow();
   const { location: userLocation } = useLocation();
+  const styles = createStyles(colors);
+  const mdStyles = createMarkdownStyles(colors);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -500,7 +503,7 @@ export function AIChatScreen() {
                 <Text style={styles.aiLabel}>Welly</Text>
               </View>
 
-              <Markdown style={markdownStyles} onLinkPress={handleLinkPress}>{msg.content}</Markdown>
+              <Markdown style={mdStyles} onLinkPress={handleLinkPress}>{msg.content}</Markdown>
 
               {msg.aiResponse && msg.aiResponse.places.length > 0 && (
                 <View style={styles.cardsSection}>
@@ -599,6 +602,8 @@ function PlaceRecommendationCard({
   placeData?: Place;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const icon =
     CATEGORY_ICONS[recommendation.category] ?? CATEGORY_ICONS.attraction;
   const categoryColor =
@@ -645,6 +650,8 @@ function EventRecommendationCard({
   recommendation: AIEventRecommendation;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const eventDate = new Date(recommendation.date);
   const dateLabel = eventDate.toLocaleDateString("en-NZ", {
     weekday: "short",
@@ -696,6 +703,8 @@ function GuideRecommendationCard({
   recommendation: AIGuideRecommendation;
   onPress: () => void;
 }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   return (
     <HapticPressable style={styles.recCard} onPress={onPress}>
       <View
@@ -732,7 +741,7 @@ function GuideRecommendationCard({
   );
 }
 
-const markdownStyles = StyleSheet.create({
+const createMarkdownStyles = (colors: Colors) => StyleSheet.create({
   body: {
     fontSize: 15,
     fontFamily: fonts.medium,
@@ -763,7 +772,7 @@ const markdownStyles = StyleSheet.create({
   },
 });
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   headerButton: {
     width: 36,
     height: 36,

@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { VideoPlayer } from "./VideoPlayer";
 import { ZoomableImage } from "./ZoomableImage";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import type { MediaItem } from "../types";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -29,6 +29,8 @@ export function MediaCarousel({
   videoMuted = true,
   videoControls = false,
 }: MediaCarouselProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const [activeIndex, setActiveIndex] = useState(0);
 
   const onViewableItemsChanged = useRef(
@@ -96,6 +98,7 @@ export function MediaCarousel({
       videoControls,
       handleImageLoad,
       handleVideoLoad,
+      styles,
     ]
   );
 
@@ -134,7 +137,7 @@ export function MediaCarousel({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   media: {
     backgroundColor: colors.gray200,
   },

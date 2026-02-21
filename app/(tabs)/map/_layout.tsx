@@ -1,15 +1,17 @@
 import { Stack } from "expo-router";
 import { ErrorScreen } from "../../../src/components/ErrorScreen";
 import { MapPlaceSelectionProvider } from "../../../src/context/MapPlaceSelectionContext";
+import { useTheme } from "../../../src/theme/ThemeContext";
 
 export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
   return <ErrorScreen error={error} retry={retry} />;
 }
 
 export default function MapLayout() {
+  const { colors } = useTheme();
   return (
     <MapPlaceSelectionProvider>
-    <Stack screenOptions={{ headerShown: false }}>
+    <Stack screenOptions={{ headerShown: false, headerTintColor: colors.text }}>
       <Stack.Screen name="(drawer)" />
       <Stack.Screen
         name="place/[placeId]"

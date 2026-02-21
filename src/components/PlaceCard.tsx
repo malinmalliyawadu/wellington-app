@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { fonts } from "../theme/fonts";
 import { Place, PlaceCategory } from '../types';
-import { colors } from '../theme/colors';
+import { useTheme, type Colors } from '../theme/ThemeContext';
 import { HapticPressable } from './HapticPressable';
 
 interface PlaceCardProps {
@@ -21,7 +21,9 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
 };
 
 export function PlaceCard({ place, onClose }: PlaceCardProps) {
+  const { colors } = useTheme();
   const categoryColor = colors.category[place.category];
+  const styles = createStyles(colors);
 
   return (
     <View style={styles.container}>
@@ -43,7 +45,7 @@ export function PlaceCard({ place, onClose }: PlaceCardProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     backgroundColor: colors.cardBackground,
     borderRadius: 12,

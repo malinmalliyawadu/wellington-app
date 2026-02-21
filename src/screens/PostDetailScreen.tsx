@@ -54,7 +54,7 @@ import { getPostMediaItems } from "../utils/postMedia";
 import { VideoPlayer } from "../components/VideoPlayer";
 import { MediaCarousel } from "../components/MediaCarousel";
 import { ZoomableImage } from "../components/ZoomableImage";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import { sharePost } from "../utils/sharing";
 import { useSave } from "../context/SaveContext";
@@ -77,6 +77,8 @@ function formatTimeAgo(dateString: string): string {
 }
 
 export function PostDetailScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { postId } = useLocalSearchParams<{ postId: string }>();
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
@@ -728,7 +730,7 @@ export function PostDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

@@ -15,7 +15,7 @@ import { VideoPlayer } from "./VideoPlayer";
 import { MediaCarousel } from "./MediaCarousel";
 import { ZoomableImage } from "./ZoomableImage";
 import { SFIcon } from "./SFIcon";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { sharePost } from "../utils/sharing";
 import { useSave } from "../context/SaveContext";
 import { HapticPressable } from "./HapticPressable";
@@ -69,6 +69,8 @@ export const FeedPost = React.memo(function FeedPost({
   onPressLikes,
   onPressHashtag,
 }: FeedPostProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { isSaved, toggleSave } = useSave();
   const saved = isSaved('post', post.id);
   const categoryColor = colors.category[place.category];
@@ -324,7 +326,7 @@ export const FeedPost = React.memo(function FeedPost({
   );
 });
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     backgroundColor: colors.cardBackground,
   },

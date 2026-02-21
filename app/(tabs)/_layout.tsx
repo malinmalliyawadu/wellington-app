@@ -5,10 +5,11 @@ import {
   Badge,
 } from "expo-router/unstable-native-tabs";
 import { useNotifications } from "../../src/context/NotificationContext";
-import { colors } from "../../src/theme/colors";
+import { useTheme } from "../../src/theme/ThemeContext";
 
 function TabLayout() {
   const { unreadCount } = useNotifications();
+  const { colors } = useTheme();
   return (
     <NativeTabs tintColor={colors.primary}>
       <NativeTabs.Trigger name="map">

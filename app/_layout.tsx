@@ -16,6 +16,7 @@ import {
 } from "@expo-google-fonts/plus-jakarta-sans";
 import { Pacifico_400Regular } from "@expo-google-fonts/pacifico";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
+import { ThemeProvider } from "../src/theme/ThemeContext";
 
 import { FollowProvider } from "../src/context/FollowContext";
 import { LikeProvider } from "../src/context/LikeContext";
@@ -215,6 +216,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ThemeProvider>
       <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
         <ZoomOverlayProvider>
           <SafeAreaProvider>
@@ -241,6 +243,7 @@ export default function RootLayout() {
           </SafeAreaProvider>
         </ZoomOverlayProvider>
       </GestureHandlerRootView>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

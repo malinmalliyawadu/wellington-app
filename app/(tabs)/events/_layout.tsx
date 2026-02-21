@@ -4,7 +4,7 @@ import { ErrorScreen } from "../../../src/components/ErrorScreen";
 import { useEventFilters } from "../../../src/context/EventFilterContext";
 import { HapticPressable } from "../../../src/components/HapticPressable";
 import { SFIcon } from "../../../src/components/SFIcon";
-import { colors } from "../../../src/theme/colors";
+import { useTheme } from "../../../src/theme/ThemeContext";
 
 export function ErrorBoundary({
   error,
@@ -18,6 +18,7 @@ export function ErrorBoundary({
 
 function CreateButton() {
   const router = useRouter();
+  const { colors } = useTheme();
   return (
     <HapticPressable
       style={{
@@ -39,6 +40,7 @@ function FilterButton() {
     showFollowingOnly,
     openDrawer,
   } = useEventFilters();
+  const { colors } = useTheme();
 
   const activeFilterCount =
     (selectedDateRange ? 1 : 0) +
@@ -65,9 +67,10 @@ function FilterButton() {
 }
 
 export default function EventsLayout() {
+  const { colors } = useTheme();
   return (
     <EventFilterProvider>
-      <Stack screenOptions={{ headerShown: false }}>
+      <Stack screenOptions={{ headerShown: false, headerTintColor: colors.text }}>
         <Stack.Screen
           name="(drawer)"
           options={{

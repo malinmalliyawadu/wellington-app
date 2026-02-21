@@ -12,7 +12,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     scheme: "wellington",
     orientation: "portrait",
     icon: "./assets/icon.png",
-    userInterfaceStyle: "light",
+    userInterfaceStyle: "automatic",
     newArchEnabled: true,
     splash: {
       image: "./assets/splash-bg.png",

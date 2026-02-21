@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated from "react-native-reanimated";
 import { SFIcon } from "./SFIcon";
 import { HapticPressable } from "./HapticPressable";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 
 const glassEnabled = isLiquidGlassAvailable();
 
@@ -16,6 +16,8 @@ interface FloatingCreateButtonProps {
 }
 
 function AIIcon() {
+  const { colors } = useTheme();
+  const aiStyles = createAiStyles(colors);
   return (
     <Animated.View style={[aiStyles.iconWrap]}>
       <SFIcon
@@ -28,16 +30,18 @@ function AIIcon() {
   );
 }
 
-const aiStyles = StyleSheet.create({
-  iconWrap: {
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowRadius: 10,
-    elevation: 8,
-  },
-});
+const createAiStyles = (colors: Colors) =>
+  StyleSheet.create({
+    iconWrap: {
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 0 },
+      shadowRadius: 10,
+      elevation: 8,
+    },
+  });
 
 function Buttons() {
+  const { colors } = useTheme();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -79,16 +83,24 @@ function Buttons() {
 
 export function FloatingCreateButton({ style }: FloatingCreateButtonProps) {
   const insets = useSafeAreaInsets();
+  const { isDark } = useTheme();
 
   return (
     <View style={[styles.container, { bottom: insets.bottom + 60 }, style]}>
       {glassEnabled ? (
-        <GlassView style={styles.glass}>
+        <GlassView
+          glassEffectStyle={isDark ? "clear" : "regular"}
+          style={styles.glass}
+        >
           <Buttons />
         </GlassView>
       ) : (
         <View style={styles.blurContainer}>
-          <BlurView intensity={10} tint="light" style={styles.blurBg} />
+          <BlurView
+            intensity={10}
+            tint={isDark ? "dark" : "light"}
+            style={styles.blurBg}
+          />
           <View style={styles.blurInner}>
             <Buttons />
           </View>

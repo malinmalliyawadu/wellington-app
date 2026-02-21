@@ -8,7 +8,7 @@ import { Event, Place } from "../types";
 import { useFollow } from "../context/FollowContext";
 import { getProfilesByIds } from "../services/users";
 import { useQuery } from "../hooks/useQuery";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { HapticPressable } from "./HapticPressable";
 import { fonts } from "../theme/fonts";
 
@@ -82,6 +82,8 @@ export function EventCard({
   hasBorder,
   compact,
 }: EventCardProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const categoryColor = CATEGORY_COLORS[event.category];
   const { followingIds } = useFollow();
   const attendeeIds = event.attendeeIds ?? [];
@@ -265,7 +267,7 @@ export function EventCard({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     backgroundColor: colors.cardBackground,
   },
@@ -336,7 +338,7 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   dateBadgeFallback: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: colors.cardBackground,
   },
   dateMonth: {
     fontSize: 10,

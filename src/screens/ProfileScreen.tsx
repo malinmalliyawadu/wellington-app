@@ -20,11 +20,12 @@ import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { PostsGrid } from "../components/PostsGrid";
 import { UpcomingEvents } from "../components/UpcomingEvents";
 import { fonts } from "../theme/fonts";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { useInstagramConnection } from "../hooks/useInstagramConnection";
 import { HapticPressable } from "src/components/HapticPressable";
 
 export function ProfileScreen() {
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { profile } = useAuth();
@@ -131,6 +132,8 @@ export function ProfileScreen() {
     }));
   }, [events, allPlaces, placeMap]);
 
+  const styles = createStyles(colors);
+
   return (
     <ScrollView
       testID="profile-screen"
@@ -226,7 +229,7 @@ export function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

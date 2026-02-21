@@ -5,7 +5,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { SFIcon } from "../SFIcon";
 import { HapticPressable } from "../HapticPressable";
 import { EventCategory } from "../../types";
-import { colors } from "../../theme/colors";
+import { useTheme, type Colors } from "../../theme/ThemeContext";
 
 const EVENT_CATEGORIES: { type: EventCategory; label: string }[] = [
   { type: "music", label: "Music" },
@@ -57,6 +57,8 @@ export function EventForm({
   price,
   onPriceChange,
 }: EventFormProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   return (
     <>
       {/* Cover Image */}
@@ -179,7 +181,7 @@ export function EventForm({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   coverImageButton: {
     alignItems: "center",
     justifyContent: "center",

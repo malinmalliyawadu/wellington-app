@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { colors } from '../theme/colors';
+import { useTheme, type Colors } from '../theme/ThemeContext';
 
 interface VideoPlayerProps {
   uri: string;
@@ -22,6 +22,8 @@ export function VideoPlayer({
   useNativeControls = false,
   onLoad,
 }: VideoPlayerProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const player = useVideoPlayer(uri, (p) => {
     p.loop = isLooping;
     p.muted = isMuted;
@@ -68,7 +70,7 @@ export function VideoPlayer({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     width: '100%',
     backgroundColor: colors.gray200,

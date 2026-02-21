@@ -40,7 +40,7 @@ import { useAuth } from "../context/AuthContext";
 import { useFollow } from "../context/FollowContext";
 import { addToCalendar } from "../utils/addToCalendar";
 import { useToast } from "../context/ToastContext";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import type { Event } from "../types";
 import { shareEvent } from "../utils/sharing";
 import { useSave } from "../context/SaveContext";
@@ -102,6 +102,7 @@ function formatTime(time: string, endTime?: string): string {
 }
 
 export function EventDetailScreen() {
+  const { colors } = useTheme();
   const { eventId } = useLocalSearchParams<{ eventId: string }>();
   const router = useRouter();
   const navigation = useNavigation();
@@ -207,6 +208,8 @@ export function EventDetailScreen() {
       ),
     });
   }, [navigation, isOwnEvent]);
+
+  const styles = createStyles(colors);
 
   if (loading) {
     return (
@@ -517,7 +520,7 @@ export function EventDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

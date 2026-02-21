@@ -5,7 +5,7 @@ import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { SFIcon } from "../SFIcon";
 import { HapticPressable } from "../HapticPressable";
 import { Place } from "../../types";
-import { colors } from "../../theme/colors";
+import { useTheme, type Colors } from "../../theme/ThemeContext";
 
 const glassEnabled = isLiquidGlassAvailable();
 
@@ -20,6 +20,8 @@ export function PlacePicker({
   onPress,
   onClear,
 }: PlacePickerProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   if (selectedPlace) {
     return (
       <>
@@ -94,7 +96,7 @@ export function PlacePicker({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   placePillRow: {
     marginBottom: 16,
   },

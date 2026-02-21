@@ -20,7 +20,7 @@ import { useQuery } from "../hooks/useQuery";
 import { getProfileById } from "../services/users";
 import { fetchPlaceDetails } from "../services/googlePlaceDetails";
 import { VideoThumbnail } from "./VideoThumbnail";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { HapticPressable } from "./HapticPressable";
 import { HashtagText } from "./HashtagText";
 
@@ -56,6 +56,8 @@ export function PlacePostsSheet({
   onPressPlaceName,
   onPressPost,
 }: PlacePostsSheetProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const categoryColor = colors.category[place.category];
   const [placeDetails, setPlaceDetails] = useState<{
     rating?: number;
@@ -229,6 +231,8 @@ export function PlacePostsSheet({
 }
 
 function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const fetchUser = useCallback(
     () => getProfileById(post.userId),
     [post.userId]
@@ -287,7 +291,7 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     backgroundColor: colors.cardBackground,
     borderRadius: 16,

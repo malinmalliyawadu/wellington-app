@@ -20,9 +20,10 @@ import { useInstagramConnection } from "../hooks/useInstagramConnection";
 import { HapticPressable } from "../components/HapticPressable";
 import { fonts } from "../theme/fonts";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 
 export function EditProfileScreen() {
+  const { colors } = useTheme();
   const router = useRouter();
   const navigation = useNavigation();
   const headerHeight = useHeaderHeight();
@@ -198,6 +199,8 @@ export function EditProfileScreen() {
     }
   };
 
+  const styles = createStyles(colors);
+
   return (
     <View style={[styles.container, { paddingTop: headerHeight }]}>
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
@@ -322,7 +325,7 @@ export function EditProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

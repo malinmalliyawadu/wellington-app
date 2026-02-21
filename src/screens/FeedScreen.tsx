@@ -6,7 +6,7 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import { FeedPost } from "../components/FeedPost";
 import { useFollow } from "../context/FollowContext";
 import { useAuth } from "../context/AuthContext";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { useQuery } from "../hooks/useQuery";
 import { useQueryClient } from "@tanstack/react-query";
 import { getFeedPosts } from "../services/posts";
@@ -18,6 +18,7 @@ import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 import { fonts } from "../theme/fonts";
 
 export function FeedScreen() {
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { followingIds } = useFollow();
@@ -136,6 +137,8 @@ export function FeedScreen() {
     [handlePressUser, handlePressPlace, handlePressPost, handlePressLikes, handlePressHashtag]
   );
 
+  const styles = createStyles(colors);
+
   return (
     <View style={styles.container}>
       <FlatList
@@ -183,7 +186,7 @@ export function FeedScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

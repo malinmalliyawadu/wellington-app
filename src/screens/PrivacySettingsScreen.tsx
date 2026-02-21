@@ -3,13 +3,15 @@ import { View, Text, StyleSheet, Switch, Alert } from "react-native";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useAuth } from "../context/AuthContext";
 import { fonts } from "../theme/fonts";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { SFIcon } from "../components/SFIcon";
 import type { ProfileVisibility } from "../types/User";
 
 export function PrivacySettingsScreen() {
+  const { colors } = useTheme();
   const headerHeight = useHeaderHeight();
   const { profile, updateProfile } = useAuth();
+  const styles = createStyles(colors);
 
   const [saving, setSaving] = useState(false);
   const isPrivate = profile?.profileVisibility === "private";
@@ -68,7 +70,7 @@ export function PrivacySettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,

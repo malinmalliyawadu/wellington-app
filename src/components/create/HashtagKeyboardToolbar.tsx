@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, InputAccessoryView, ScrollView, StyleSheet, Platform } from 'react-native';
 import { HapticPressable } from '../HapticPressable';
 import { SFIcon } from '../SFIcon';
-import { colors } from '../../theme/colors';
+import { useTheme, type Colors } from '../../theme/ThemeContext';
 import { fonts } from '../../theme/fonts';
 
 export const HASHTAG_TOOLBAR_ID = 'hashtag-toolbar';
@@ -14,6 +14,8 @@ interface HashtagKeyboardToolbarProps {
 }
 
 function ToolbarContent({ chipTags, onChipPress, onHashPress }: HashtagKeyboardToolbarProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   return (
     <View style={styles.toolbar}>
       <HapticPressable style={styles.hashButton} onPress={onHashPress}>
@@ -59,7 +61,7 @@ export function HashtagInlineToolbar(props: HashtagKeyboardToolbarProps) {
   return <ToolbarContent {...props} />;
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',

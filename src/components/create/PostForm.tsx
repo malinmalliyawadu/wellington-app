@@ -5,7 +5,7 @@ import * as ExpoVideoThumbnails from "expo-video-thumbnails";
 import { SFIcon } from "../SFIcon";
 import { HapticPressable } from "../HapticPressable";
 import { VideoThumbnail } from "../VideoThumbnail";
-import { colors } from "../../theme/colors";
+import { useTheme, type Colors } from "../../theme/ThemeContext";
 
 const MAX_CONTENT_LENGTH = 500;
 const MAX_MEDIA_ITEMS = 5;
@@ -40,6 +40,8 @@ export function PostForm({
   onRemoveMedia,
   hashtagChips,
 }: PostFormProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const hasMedia = mediaItems.length > 0;
   const canAddMore = mediaItems.length < MAX_MEDIA_ITEMS;
 
@@ -147,7 +149,7 @@ export function PostForm({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   composerRow: {
     flexDirection: "row",
     alignItems: "flex-start",

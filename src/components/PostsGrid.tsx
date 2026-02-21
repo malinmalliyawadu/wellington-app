@@ -6,7 +6,7 @@ import { VideoThumbnail } from "./VideoThumbnail";
 import { SFIcon } from "./SFIcon";
 import { fonts } from "../theme/fonts";
 import { HapticPressable } from "./HapticPressable";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { isMultiMediaPost } from "../utils/postMedia";
 import type { Post, Place } from "../types";
 import { GlassView } from "expo-glass-effect";
@@ -31,6 +31,8 @@ export function PostsGrid({
   title,
   emptyText = "No posts yet",
 }: PostsGridProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const getItemLayout = useCallback(
     (_: any, index: number) => ({
       length: CELL_SIZE,
@@ -142,7 +144,7 @@ export function PostsGrid({
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   title: {
     fontSize: 17,
     fontFamily: fonts.semiBold,

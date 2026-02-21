@@ -12,13 +12,15 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { FollowButton } from "../components/FollowButton";
 import { fonts } from "../theme/fonts";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { useQuery } from "../hooks/useQuery";
 import { getProfilesByIds } from "../services/users";
 import { getLikerIds } from "../services/likes";
 import { HapticPressable } from "src/components/HapticPressable";
 
 export function LikesListScreen() {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const router = useRouter();
   const { postId } = useLocalSearchParams<{ postId: string }>();
   const pathname = usePathname();
@@ -97,7 +99,7 @@ export function LikesListScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
     flex: 1,
   },

@@ -7,7 +7,7 @@ import { getAchievementProgress } from "../services/achievements";
 import { fonts } from "../theme/fonts";
 import { AchievementCard } from "./AchievementCard";
 import { SFIcon } from "./SFIcon";
-import { colors } from "../theme/colors";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 import { AchievementProgress } from "../types/Exploration";
 
 interface AchievementsListProps {
@@ -34,6 +34,8 @@ const TYPE_CONFIG: Record<
 };
 
 export function AchievementsList({ userId }: AchievementsListProps) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
   const { data: achievements, loading, error } = useQuery(
     () => getAchievementProgress(userId),
     [userId]
@@ -201,7 +203,7 @@ export function AchievementsList({ userId }: AchievementsListProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (colors: Colors) => StyleSheet.create({
   container: {},
   loadingContainer: {
     padding: 24,
