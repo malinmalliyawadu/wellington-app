@@ -6,10 +6,59 @@ import { HapticPressable } from "../../../src/components/HapticPressable";
 import { ErrorScreen } from "../../../src/components/ErrorScreen";
 import { useNotifications } from "../../../src/context/NotificationContext";
 import { useSave } from "../../../src/context/SaveContext";
+import { useAuth } from "../../../src/context/AuthContext";
 import { colors } from "../../../src/theme/colors";
 
-export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
+export function ErrorBoundary({
+  error,
+  retry,
+}: {
+  error: Error;
+  retry: () => void;
+}) {
   return <ErrorScreen error={error} retry={retry} />;
+}
+
+function GuidesButton() {
+  const router = useRouter();
+  const { profile } = useAuth();
+  return (
+    <HapticPressable
+      style={bellStyles.container}
+      onPress={() =>
+        router.push({
+          pathname: "/profile/guides" as any,
+          params: { userId: profile?.id },
+        })
+      }
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <SFIcon
+        name="book"
+        fallback="book-outline"
+        size={22}
+        color={colors.text}
+      />
+    </HapticPressable>
+  );
+}
+
+function AchievementsButton() {
+  const router = useRouter();
+  return (
+    <HapticPressable
+      style={bellStyles.container}
+      onPress={() => router.push("/profile/achievements" as any)}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <SFIcon
+        name="trophy"
+        fallback="trophy-outline"
+        size={22}
+        color={colors.text}
+      />
+    </HapticPressable>
+  );
 }
 
 function NotificationBell() {
@@ -94,6 +143,24 @@ function PrivacyButton() {
   );
 }
 
+function DiscoverButton() {
+  const router = useRouter();
+  return (
+    <HapticPressable
+      style={bellStyles.container}
+      onPress={() => router.push("/profile/discover")}
+      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+    >
+      <SFIcon
+        name="person.2"
+        fallback="people-outline"
+        size={22}
+        color={colors.text}
+      />
+    </HapticPressable>
+  );
+}
+
 function LogoutButton() {
   return (
     <HapticPressable
@@ -136,6 +203,8 @@ export default function ProfileLayout() {
           headerLeft: () => (
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <NotificationBell />
+              <AchievementsButton />
+              <GuidesButton />
               <SavedButton />
             </View>
           ),
@@ -199,6 +268,7 @@ export default function ProfileLayout() {
           headerTitle: "",
           headerBackTitle: "Back",
           headerTransparent: true,
+          headerRight: () => <DiscoverButton />,
         }}
       />
       <Stack.Screen
