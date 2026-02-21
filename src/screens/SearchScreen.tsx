@@ -27,6 +27,7 @@ import { EventCard } from "../components/EventCard";
 import { GuideCard } from "../components/GuideCard";
 import { HapticPressable } from "../components/HapticPressable";
 import { getTrendingHashtags, searchHashtags } from "../services/hashtags";
+import { QueryErrorState } from "../components/QueryErrorState";
 import { formatNumber } from "../utils/formatNumber";
 import type {
   Place,
@@ -88,7 +89,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const { data: places } = useQuery(getPlaces, "places");
+  const { data: places, error: placesError, refetch: refetchPlaces } = useQuery(getPlaces, "places");
   const { data: posts } = useQuery(getPosts, "posts");
   const { data: users } = useQuery(getProfiles, "profiles");
   const { data: events } = useQuery(getUpcomingEvents, "events");
@@ -571,6 +572,10 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
   };
 
   const styles = createStyles(colors);
+
+  if (placesError && !places) {
+    return <QueryErrorState message={placesError} onRetry={refetchPlaces} />;
+  }
 
   // Search results view
   if (query.trim()) {

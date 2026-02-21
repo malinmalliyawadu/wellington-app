@@ -36,27 +36,32 @@ export function useMapData({
   const {
     data: places,
     loading: placesLoading,
+    error: placesError,
     refetch: refetchPlaces,
   } = useQuery(getPlaces, "places");
   const allPlaces = places ?? [];
   const {
     data: allPosts,
     loading: postsLoading,
+    error: postsError,
     refetch: refetchPosts,
   } = useQuery(getPosts, "posts");
   const {
     data: allUsers,
     loading: usersLoading,
+    error: usersError,
     refetch: refetchUsers,
   } = useQuery(getProfiles, "profiles");
-  const { data: trails, refetch: refetchTrails } = useQuery(
+  const { data: trails, error: trailsError, refetch: refetchTrails } = useQuery(
     getTrails,
     "trails"
   );
-  const { data: upcomingEvents, refetch: refetchEvents } = useQuery(
+  const { data: upcomingEvents, error: eventsError, refetch: refetchEvents } = useQuery(
     getUpcomingEvents,
     "upcoming-events"
   );
+
+  const error = placesError || postsError || usersError || trailsError || eventsError;
 
   const todayEvents = useMemo(() => {
     const now = new Date();
@@ -236,6 +241,7 @@ export function useMapData({
   return {
     places,
     trails,
+    error,
     isDataLoaded,
     isInitialLoad,
     filteredPlaces,
@@ -243,5 +249,6 @@ export function useMapData({
     baseMarkerDataMap,
     placeEventsMap,
     popularityMap,
+    refetchAll,
   };
 }

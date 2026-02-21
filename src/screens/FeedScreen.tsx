@@ -15,6 +15,7 @@ import { getPlaces } from "../services/places";
 import { sortPosts } from "../utils/postSorting";
 import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
+import { QueryErrorState } from "../components/QueryErrorState";
 import { fonts } from "../theme/fonts";
 
 export function FeedScreen() {
@@ -32,6 +33,7 @@ export function FeedScreen() {
   const {
     data: feedPosts,
     loading: loadingPosts,
+    error: feedError,
     refetch: refetchPosts,
   } = useQuery(fetchFeedPosts, [followingIds, profile?.id], { staleTime: 60_000 });
   const [refreshing, setRefreshing] = useState(false);
@@ -138,6 +140,10 @@ export function FeedScreen() {
   );
 
   const styles = createStyles(colors);
+
+  if (feedError && !feedPosts) {
+    return <QueryErrorState message={feedError} onRetry={refetchPosts} />;
+  }
 
   return (
     <View style={styles.container}>

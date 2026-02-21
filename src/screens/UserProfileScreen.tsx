@@ -27,6 +27,7 @@ import { UpcomingEvents } from "../components/UpcomingEvents";
 import { fonts } from "../theme/fonts";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { HapticPressable } from "src/components/HapticPressable";
+import { QueryErrorState } from "../components/QueryErrorState";
 
 export function UserProfileScreen() {
   const { colors } = useTheme();
@@ -59,7 +60,7 @@ export function UserProfileScreen() {
   }, [avatarAnim]);
 
   const fetchUser = useCallback(() => getProfileById(userId), [userId]);
-  const { data: user, loading: loadingUser, refetch: refetchUser } = useQuery(fetchUser, ['user', userId]);
+  const { data: user, loading: loadingUser, error: userError, refetch: refetchUser } = useQuery(fetchUser, ['user', userId]);
 
   const fetchPosts = useCallback(() => getPostsByUserIdAsync(userId), [userId]);
   const { data: posts, refetch: refetchPosts } = useQuery(fetchPosts, ['posts', 'user', userId]);
@@ -120,6 +121,10 @@ export function UserProfileScreen() {
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  if (userError && !user) {
+    return <QueryErrorState message={userError} onRetry={refetchUser} />;
   }
 
   if (!user) return null;

@@ -25,6 +25,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { SFIcon } from "../components/SFIcon";
+import { QueryErrorState } from "../components/QueryErrorState";
 import { LinearGradient } from "expo-linear-gradient";
 import * as WebBrowser from "expo-web-browser";
 import {
@@ -120,6 +121,7 @@ export function EventDetailScreen() {
   const {
     data: event,
     loading,
+    error: eventError,
     refetch: refetchEvent,
   } = useQuery(fetchEvent, ["event", eventId]);
 
@@ -222,6 +224,10 @@ export function EventDetailScreen() {
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  if (eventError && !event) {
+    return <QueryErrorState message={eventError} onRetry={refetchEvent} />;
   }
 
   if (!event) return null;

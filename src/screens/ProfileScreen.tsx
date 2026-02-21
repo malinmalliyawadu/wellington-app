@@ -23,6 +23,7 @@ import { fonts } from "../theme/fonts";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { useInstagramConnection } from "../hooks/useInstagramConnection";
 import { HapticPressable } from "src/components/HapticPressable";
+import { QueryErrorState } from "../components/QueryErrorState";
 
 export function ProfileScreen() {
   const { colors } = useTheme();
@@ -44,7 +45,7 @@ export function ProfileScreen() {
     () => getPostsByUserId(currentUser.id),
     [currentUser.id]
   );
-  const { data: posts, refetch: refetchPosts } = useQuery(fetchPosts, [
+  const { data: posts, error: postsError, refetch: refetchPosts } = useQuery(fetchPosts, [
     "posts",
     "user",
     currentUser.id,
@@ -133,6 +134,10 @@ export function ProfileScreen() {
   }, [events, allPlaces, placeMap]);
 
   const styles = createStyles(colors);
+
+  if (postsError && !posts) {
+    return <QueryErrorState message={postsError} onRetry={refetchPosts} />;
+  }
 
   return (
     <ScrollView
