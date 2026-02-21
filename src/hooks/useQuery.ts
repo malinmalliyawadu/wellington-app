@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 import { useQuery as useTanstackQuery } from '@tanstack/react-query';
 
-export const STALE_TIME = 5 * 60 * 1000; // 5 minutes
+export const STALE_TIME = 2 * 60 * 1000; // 2 minutes
 
 // Hermes can't JSON.stringify Symbol, so use a plain counter for keyless queries
 let _keylessId = 0;
@@ -13,7 +13,11 @@ interface QueryResult<T> {
   refetch: () => Promise<T>;
 }
 
-export function useQuery<T>(queryFn: () => Promise<T>, key?: unknown): QueryResult<T> {
+export function useQuery<T>(
+  queryFn: () => Promise<T>,
+  key?: unknown,
+  options?: { staleTime?: number }
+): QueryResult<T> {
   // Keyless calls get a stable unique number — never shares cache with other call sites
   const fallbackKey = useRef(_keylessId++).current;
   const queryKey = key !== undefined ? ['q', key] : ['q', fallbackKey];
@@ -22,12 +26,14 @@ export function useQuery<T>(queryFn: () => Promise<T>, key?: unknown): QueryResu
   const queryFnRef = useRef(queryFn);
   queryFnRef.current = queryFn;
 
+  const effectiveStaleTime = key !== undefined ? (options?.staleTime ?? STALE_TIME) : 0;
+
   const { data, isPending, error, refetch: tanstackRefetch } = useTanstackQuery<T, Error>({
     queryKey,
     queryFn: () => queryFnRef.current(),
-    staleTime: key !== undefined ? STALE_TIME : 0,
+    staleTime: effectiveStaleTime,
     // Keyless entries are ephemeral — remove from cache immediately on unmount
-    gcTime: key !== undefined ? STALE_TIME : 0,
+    gcTime: key !== undefined ? (options?.staleTime ?? STALE_TIME) : 0,
   });
 
   const refetch = useCallback(async (): Promise<T> => {

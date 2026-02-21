@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { useNavigation } from "@react-navigation/native";
-import { useRouter } from "expo-router";
+import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useNotifications } from "../context/NotificationContext";
@@ -77,6 +77,13 @@ export function NotificationsScreen() {
           : undefined,
     });
   }, [navigation, notifications.length, unreadCount, markAllAsRead, deleteAll]);
+
+  // Refetch when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refetch();
+    }, [refetch])
+  );
 
   const handleRefresh = useCallback(() => {
     setRefreshing(true);

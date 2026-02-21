@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import { AppState } from 'react-native';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './AuthContext';
 import { getLikedPostIds, likePost, unlikePost, getAllLikeCounts } from '../services/likes';
 import { createLikeNotification, deleteNotificationForLike } from '../services/notifications';
@@ -17,24 +19,36 @@ const LikeActionsContext = createContext<LikeActionsContextType | undefined>(und
 
 export function LikeProvider({ children }: { children: React.ReactNode }) {
   const { session } = useAuth();
+  const queryClient = useQueryClient();
   const currentUserId = session?.user?.id;
   const [likedPostIds, setLikedPostIds] = useState<string[]>([]);
   const [likeCounts, setLikeCounts] = useState<Record<string, number>>({});
+
+  const refreshFromServer = useCallback(() => {
+    if (!currentUserId) return;
+    getLikedPostIds(currentUserId)
+      .then(setLikedPostIds)
+      .catch(() => {});
+    getAllLikeCounts()
+      .then(setLikeCounts)
+      .catch(() => {});
+  }, [currentUserId]);
 
   useEffect(() => {
     if (!currentUserId) {
       setLikedPostIds([]);
       return;
     }
+    refreshFromServer();
+  }, [currentUserId, refreshFromServer]);
 
-    getLikedPostIds(currentUserId)
-      .then(setLikedPostIds)
-      .catch(() => {});
-
-    getAllLikeCounts()
-      .then(setLikeCounts)
-      .catch(() => {});
-  }, [currentUserId]);
+  // Refresh when app returns to foreground
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') refreshFromServer();
+    });
+    return () => sub.remove();
+  }, [refreshFromServer]);
 
   const isLiked = useCallback(
     (postId: string) => likedPostIds.includes(postId),
@@ -63,6 +77,8 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
         : likePost(currentUserId, postId);
 
       apiCall.then(() => {
+        queryClient.invalidateQueries({ queryKey: ['q', ['likes', postId]] });
+
         if (alreadyLiked) {
           deleteNotificationForLike(currentUserId, postId).catch(() => {});
         } else {
@@ -85,7 +101,7 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
         ? prev.filter((id) => id !== postId)
         : [...prev, postId];
     });
-  }, [currentUserId]);
+  }, [currentUserId, queryClient]);
 
   const stateValue = useMemo(
     () => ({ isLiked, getLikeCount }),

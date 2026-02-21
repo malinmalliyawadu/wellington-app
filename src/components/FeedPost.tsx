@@ -85,7 +85,7 @@ export const FeedPost = React.memo(function FeedPost({
     () => getCommentsByPostId(post.id),
     [post.id]
   );
-  const { data: comments } = useQuery(fetchComments, ['comments', post.id]);
+  const { data: comments } = useQuery(fetchComments, ['comments', post.id], { staleTime: 30_000 });
   const commentCount = comments?.length ?? 0;
   const [avatarError, setAvatarError] = useState(!user.avatarUrl);
 
