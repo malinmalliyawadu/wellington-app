@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState } from "react";
+import React, { useMemo, useCallback, useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -80,7 +80,10 @@ const SECTION_LABELS: Record<TimeSection, string> = {
   comingUp: "Coming Up",
 };
 
-const SECTION_ICONS: Record<TimeSection, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
+const SECTION_ICONS: Record<
+  TimeSection,
+  { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }
+> = {
   today: { sf: "sun.max.fill", fallback: "sunny" },
   tonight: { sf: "moon.fill", fallback: "moon" },
   tomorrow: { sf: "arrow.right.circle", fallback: "arrow-forward-circle" },
@@ -145,14 +148,30 @@ export function EventsScreen() {
   const navigation = useNavigation();
   const { isFollowing } = useFollow();
   const headerHeight = useHeaderHeight();
-  const { selectedDateRange, selectedCategories, showFollowingOnly, showFreeOnly } =
-    useEventFilters();
+  const {
+    selectedDateRange,
+    selectedCategories,
+    showFollowingOnly,
+    showFreeOnly,
+    registerOpenDrawer,
+  } = useEventFilters();
+
+  useEffect(() => {
+    registerOpenDrawer(() => navigation.dispatch(DrawerActions.openDrawer()));
+  }, [navigation, registerOpenDrawer]);
 
   const fetchEvents = useCallback(() => getUpcomingEvents(), []);
-  const { data: events, loading: loadingEvents, refetch: refetchEvents } = useQuery(fetchEvents, 'events');
+  const {
+    data: events,
+    loading: loadingEvents,
+    refetch: refetchEvents,
+  } = useQuery(fetchEvents, "events");
 
   const fetchPlaces = useCallback(() => getPlaces(), []);
-  const { data: places, refetch: refetchPlaces } = useQuery(fetchPlaces, 'places');
+  const { data: places, refetch: refetchPlaces } = useQuery(
+    fetchPlaces,
+    "places"
+  );
 
   // Refetch when screen comes into focus
   useFocusEffect(
@@ -364,7 +383,6 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     paddingHorizontal: 16,
-    paddingTop: 20,
     paddingBottom: 10,
   },
   sectionHeaderWithDivider: {

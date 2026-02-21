@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 
 type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community' | 'quiz' | 'craft' | 'kids' | 'cultural';
 type DateRange = 'today' | 'tomorrow' | 'weekend' | 'month';
@@ -13,6 +13,8 @@ interface EventFilterContextType {
   setShowFollowingOnly: (show: boolean) => void;
   showFreeOnly: boolean;
   setShowFreeOnly: (show: boolean) => void;
+  openDrawer: () => void;
+  registerOpenDrawer: (fn: () => void) => void;
 }
 
 const EventFilterContext = createContext<EventFilterContextType | null>(null);
@@ -22,6 +24,7 @@ export function EventFilterProvider({ children }: { children: React.ReactNode })
   const [selectedCategories, setSelectedCategories] = useState<EventCategory[]>([]);
   const [showFollowingOnly, setShowFollowingOnly] = useState(false);
   const [showFreeOnly, setShowFreeOnly] = useState(false);
+  const openDrawerRef = useRef<() => void>(() => {});
 
   const toggleCategory = (category: EventCategory) => {
     setSelectedCategories((prev) =>
@@ -30,6 +33,14 @@ export function EventFilterProvider({ children }: { children: React.ReactNode })
   };
 
   const clearCategories = () => setSelectedCategories([]);
+
+  const openDrawer = useCallback(() => {
+    openDrawerRef.current();
+  }, []);
+
+  const registerOpenDrawer = useCallback((fn: () => void) => {
+    openDrawerRef.current = fn;
+  }, []);
 
   return (
     <EventFilterContext.Provider
@@ -43,6 +54,8 @@ export function EventFilterProvider({ children }: { children: React.ReactNode })
         setShowFollowingOnly,
         showFreeOnly,
         setShowFreeOnly,
+        openDrawer,
+        registerOpenDrawer,
       }}
     >
       {children}
