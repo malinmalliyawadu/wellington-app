@@ -19,6 +19,8 @@ import { getPostsByUserId as getPostsByUserIdAsync } from "../services/posts";
 import { getPlaces } from "../services/places";
 import { getFollowCounts } from "../services/follows";
 import { getEventsByUserId } from "../services/events";
+import { getGuidesByUserId } from "../services/guides";
+import { GuideCard } from "../components/GuideCard";
 import { FollowButton } from "../components/FollowButton";
 import { PostsGrid } from "../components/PostsGrid";
 import { UpcomingEvents } from "../components/UpcomingEvents";
@@ -68,11 +70,14 @@ export function UserProfileScreen() {
   const fetchEvents = useCallback(() => getEventsByUserId(userId), [userId]);
   const { data: events, refetch: refetchEvents } = useQuery(fetchEvents, ['events', 'user', userId]);
 
+  const fetchGuides = useCallback(() => getGuidesByUserId(userId), [userId]);
+  const { data: guides, refetch: refetchGuides } = useQuery(fetchGuides, ['guides', 'user', userId]);
+
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([refetchUser(), refetchPosts(), refetchPlaces(), refetchCounts(), refetchEvents()]);
+    await Promise.all([refetchUser(), refetchPosts(), refetchPlaces(), refetchCounts(), refetchEvents(), refetchGuides()]);
     setRefreshing(false);
-  }, [refetchUser, refetchPosts, refetchPlaces, refetchCounts, refetchEvents]);
+  }, [refetchUser, refetchPosts, refetchPlaces, refetchCounts, refetchEvents, refetchGuides]);
 
   // Refetch when screen comes into focus
   useFocusEffect(
@@ -185,6 +190,26 @@ export function UserProfileScreen() {
 
       <UpcomingEvents events={userEvents} />
 
+      {guides && guides.length > 0 && (
+        <View style={styles.guidesSection}>
+          <Text style={styles.guidesSectionTitle}>Guides</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.guidesScroll}
+          >
+            {guides.map((guide) => (
+              <GuideCard
+                key={guide.id}
+                guide={guide}
+                compact
+                onPress={() => router.push(`${tabBase}/guide/${guide.id}`)}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
       <View style={styles.gridDivider} />
 
       <PostsGrid
@@ -289,9 +314,22 @@ const styles = StyleSheet.create({
   actionRow: {
     marginTop: 20,
   },
+  guidesSection: {
+    paddingTop: 16,
+  },
+  guidesSectionTitle: {
+    fontSize: 16,
+    fontFamily: fonts.semiBold,
+    color: colors.text,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  guidesScroll: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
   gridDivider: {
     height: 1,
-    // backgroundColor: colors.gray200,
     marginTop: 8,
   },
   avatarModalBackdrop: {

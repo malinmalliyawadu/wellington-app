@@ -35,6 +35,13 @@ interface FollowingUser {
   displayName?: string;
 }
 
+interface Guide {
+  id: string;
+  title: string;
+  placeCount: number;
+  creatorName?: string;
+}
+
 interface AIContext {
   places: Place[];
   events: Event[];
@@ -42,6 +49,7 @@ interface AIContext {
   followingUsers: FollowingUser[];
   userLocation: { latitude: number; longitude: number } | null;
   trendingHashtags?: string[];
+  guides?: Guide[];
 }
 
 interface ConversationMessage {
@@ -53,6 +61,7 @@ interface AIResponse {
   message: string;
   places: { placeId: string; placeName: string; category: string; reason: string }[];
   events: { eventId: string; eventTitle: string; date: string; startTime?: string; reason: string }[];
+  guides: { guideId: string; guideTitle: string; creatorName: string; placeCount: number; reason: string }[];
 }
 
 const WEATHER_CODES: Record<number, string> = {
@@ -177,6 +186,9 @@ ${followingStr || "Not following anyone yet."}
 RECENT POSTS FROM FOLLOWED USERS (user|place|content):
 ${postsStr || "No recent posts."}
 
+GUIDES (id|title|creator|placeCount):
+${ctx.guides?.length ? ctx.guides.map((g) => `${g.id}|${g.title}|${g.creatorName ?? "unknown"}|${g.placeCount} places`).join("\n") : "No guides yet."}
+
 TRENDING HASHTAGS:
 ${ctx.trendingHashtags?.length ? ctx.trendingHashtags.map((t) => `#${t}`).join(", ") : "None yet."}
 
@@ -196,25 +208,37 @@ INSTRUCTIONS:
 {
   "message": "Your friendly response text here",
   "places": [{"placeId": "uuid", "placeName": "Name", "category": "cafe", "reason": "Short reason"}],
-  "events": [{"eventId": "uuid", "eventTitle": "Title", "date": "2026-02-20", "startTime": "18:00", "reason": "Short reason"}]
+  "events": [{"eventId": "uuid", "eventTitle": "Title", "date": "2026-02-20", "startTime": "18:00", "reason": "Short reason"}],
+  "guides": [{"guideId": "uuid", "guideTitle": "Title", "creatorName": "Name", "placeCount": 5, "reason": "Short reason"}]
 }
-- Only include places/events that exist in the data above
-- Include 1-4 places and 0-3 events as relevant to the question
+- Only include places/events/guides that exist in the data above
+- Include 1-4 places, 0-3 events, and 0-2 guides as relevant to the question
+- When users ask for curated lists, recommendations from locals, or "best of" type questions, consider suggesting relevant guides
+- When mentioning guides in message text, use: [Guide Title](guide:guideId)
 - When suggesting activities, you may reference relevant trending hashtags to help users discover related content
 - If the question is unrelated to Wellington activities, respond helpfully but keep places/events arrays empty`;
+}
+
+function normalizeResponse(parsed: Record<string, unknown>): AIResponse {
+  return {
+    message: String(parsed.message ?? ""),
+    places: Array.isArray(parsed.places) ? parsed.places : [],
+    events: Array.isArray(parsed.events) ? parsed.events : [],
+    guides: Array.isArray(parsed.guides) ? parsed.guides : [],
+  };
 }
 
 function parseAIResponse(text: string): AIResponse {
   try {
     const parsed = JSON.parse(text);
-    if (parsed.message) return parsed;
+    if (parsed.message) return normalizeResponse(parsed);
   } catch { /* continue */ }
 
   const codeBlockMatch = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
   if (codeBlockMatch) {
     try {
       const parsed = JSON.parse(codeBlockMatch[1]);
-      if (parsed.message) return parsed;
+      if (parsed.message) return normalizeResponse(parsed);
     } catch { /* continue */ }
   }
 
@@ -222,7 +246,7 @@ function parseAIResponse(text: string): AIResponse {
   if (jsonMatch) {
     try {
       const parsed = JSON.parse(jsonMatch[0]);
-      if (parsed.message) return parsed;
+      if (parsed.message) return normalizeResponse(parsed);
     } catch { /* continue */ }
   }
 
@@ -230,6 +254,7 @@ function parseAIResponse(text: string): AIResponse {
     message: text,
     places: [],
     events: [],
+    guides: [],
   };
 }
 

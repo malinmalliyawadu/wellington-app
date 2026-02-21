@@ -20,6 +20,10 @@ export function getUserUrl(userId: string): string {
   return `${WEBSITE_URL}/user/${userId}`;
 }
 
+export function getGuideUrl(guideId: string): string {
+  return `${WEBSITE_URL}/guide/${guideId}`;
+}
+
 // Share helpers
 export function sharePost(
   postId: string,
@@ -42,5 +46,12 @@ export function shareEvent(
   const url = getEventUrl(eventId);
   Share.share({
     message: `${title} — ${date} at ${placeName}\n${description}\n${url}`,
+  });
+}
+
+export function shareGuide(guideId: string, title: string): void {
+  const url = getGuideUrl(guideId);
+  Share.share({
+    message: `Check out this guide: ${title}\n${url}`,
   });
 }

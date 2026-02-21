@@ -19,6 +19,7 @@ import { getPlaces } from "../services/places";
 import { getFollowCounts } from "../services/follows";
 import { getUnlockedAchievementCount } from "../services/achievements";
 import { getEventsByUserId } from "../services/events";
+import { getGuidesByUserId } from "../services/guides";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { PostsGrid } from "../components/PostsGrid";
 import { UpcomingEvents } from "../components/UpcomingEvents";
@@ -80,6 +81,15 @@ export function ProfileScreen() {
     "user",
     currentUser.id,
   ]);
+  const fetchGuides = useCallback(
+    () => getGuidesByUserId(currentUser.id),
+    [currentUser.id]
+  );
+  const { data: guides, refetch: refetchGuides } = useQuery(fetchGuides, [
+    "guides",
+    "user",
+    currentUser.id,
+  ]);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
@@ -89,12 +99,14 @@ export function ProfileScreen() {
       refetchCounts();
       refetchAchievementCount();
       refetchEvents();
+      refetchGuides();
     }, [
       refetchPosts,
       refetchPlaces,
       refetchCounts,
       refetchAchievementCount,
       refetchEvents,
+      refetchGuides,
     ])
   );
 
@@ -110,6 +122,7 @@ export function ProfileScreen() {
         refetchCounts(),
         refetchAchievementCount(),
         refetchEvents(),
+        refetchGuides(),
       ]);
     } finally {
       setRefreshing(false);
@@ -120,6 +133,7 @@ export function ProfileScreen() {
     refetchCounts,
     refetchAchievementCount,
     refetchEvents,
+    refetchGuides,
   ]);
 
   const postCount = posts?.length ?? 0;
@@ -232,6 +246,15 @@ export function ProfileScreen() {
           size="medium"
           icon="trophy"
           onPress={() => router.push("/profile/achievements")}
+          style={{ marginTop: 10 }}
+        />
+
+        <LiquidGlassButton
+          title={`Guides · ${guides?.length ?? 0}`}
+          variant="secondary"
+          size="medium"
+          icon="book-outline"
+          onPress={() => router.push({ pathname: "/profile/guides" as any, params: { userId: currentUser.id } })}
           style={{ marginTop: 10 }}
         />
 

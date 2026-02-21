@@ -136,6 +136,15 @@ export default function FeedLayout() {
           headerTransparent: true,
         }}
       />
+      <Stack.Screen
+        name="guide/[guideId]"
+        options={{
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Feed",
+          headerTransparent: true,
+        }}
+      />
     </Stack>
   );
 }

@@ -1,4 +1,4 @@
-import type { Place, Event, Post, User, AIResponse } from '../types';
+import type { Place, Event, Post, User, Guide, AIResponse } from '../types';
 import { supabase } from '../lib/supabase';
 
 interface AIContext {
@@ -8,6 +8,7 @@ interface AIContext {
   followingUsers: User[];
   userLocation: { latitude: number; longitude: number } | null;
   trendingHashtags?: string[];
+  guides?: (Guide & { creatorName?: string })[];
 }
 
 export interface ConversationMessage {

@@ -643,6 +643,77 @@ export type Database = {
           },
         ];
       };
+      guides: {
+        Row: {
+          id: string;
+          user_id: string;
+          title: string;
+          description: string | null;
+          cover_image_url: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          title: string;
+          description?: string | null;
+          cover_image_url?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          title?: string;
+          description?: string | null;
+          cover_image_url?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'guides_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+        ];
+      };
+      guide_places: {
+        Row: {
+          guide_id: string;
+          place_id: string;
+          sort_order: number;
+          note: string | null;
+          added_at: string;
+        };
+        Insert: {
+          guide_id: string;
+          place_id: string;
+          sort_order: number;
+          note?: string | null;
+          added_at?: string;
+        };
+        Update: {
+          sort_order?: number;
+          note?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'guide_places_guide_id_fkey';
+            columns: ['guide_id'];
+            referencedRelation: 'guides';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+          {
+            foreignKeyName: 'guide_places_place_id_fkey';
+            columns: ['place_id'];
+            referencedRelation: 'places';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+        ];
+      };
     };
     Views: {};
     Functions: {};
@@ -665,7 +736,7 @@ export type TrailDifficulty = 'easy' | 'moderate' | 'hard';
 export type ExplorationMethod = 'viewed' | 'posted';
 export type AchievementType = 'category' | 'milestone' | 'neighborhood' | 'social';
 export type NotificationType = 'like' | 'comment' | 'follow';
-export type SavedItemType = 'post' | 'place' | 'event';
+export type SavedItemType = 'post' | 'place' | 'event' | 'guide';
 
 export type Tables<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Row'];
