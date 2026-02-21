@@ -1,12 +1,14 @@
 import { useEffect, useCallback } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../src/lib/queryClient";
+import { setupNetworkManager } from "../src/lib/networkManager";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useShareIntent } from "expo-share-intent";
 import * as SplashScreen from "expo-splash-screen";
 import { ErrorScreen } from "../src/components/ErrorScreen";
+import { OfflineBanner } from "../src/components/OfflineBanner";
 import {
   useFonts,
   PlusJakartaSans_500Medium,
@@ -18,6 +20,7 @@ import { Pacifico_400Regular } from "@expo-google-fonts/pacifico";
 import { AuthProvider, useAuth } from "../src/context/AuthContext";
 import { ThemeProvider } from "../src/theme/ThemeContext";
 
+import { NetworkProvider } from "../src/context/NetworkContext";
 import { FollowProvider } from "../src/context/FollowContext";
 import { LikeProvider } from "../src/context/LikeContext";
 import { SaveProvider } from "../src/context/SaveContext";
@@ -32,6 +35,7 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => voi
   return <ErrorScreen error={error} retry={retry} />;
 }
 
+setupNetworkManager();
 SplashScreen.preventAutoHideAsync();
 
 const WEBSITE_HOST = (
@@ -216,6 +220,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <NetworkProvider>
       <ThemeProvider>
       <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
         <ZoomOverlayProvider>
@@ -230,6 +235,7 @@ export default function RootLayout() {
                         <ExplorationProvider>
                           <AuthGate>
                             <Slot />
+                            <OfflineBanner />
                           </AuthGate>
                           <StatusBar style="auto" />
                         </ExplorationProvider>
@@ -244,6 +250,7 @@ export default function RootLayout() {
         </ZoomOverlayProvider>
       </GestureHandlerRootView>
       </ThemeProvider>
+      </NetworkProvider>
     </QueryClientProvider>
   );
 }

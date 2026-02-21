@@ -30,6 +30,7 @@ import { fonts } from "../theme/fonts";
 import { BlurView } from "expo-blur";
 import { HashtagText } from "../components/HashtagText";
 import { useTheme, type Colors } from "../theme/ThemeContext";
+import { QueryErrorState } from "../components/QueryErrorState";
 import type { Place, PlaceCategory, Post } from "../types";
 
 const CATEGORY_LABELS: Record<PlaceCategory, string> = {
@@ -65,11 +66,13 @@ export function PlacePostsSheetScreen() {
   const {
     data: place,
     loading: placeLoading,
+    error: placeError,
     refetch: refetchPlace,
   } = useQuery(fetchPlace, ['place', placeId]);
   const {
     data: posts,
     loading: postsLoading,
+    error: postsError,
     refetch: refetchPosts,
   } = useQuery(fetchPosts, ['posts', 'place', placeId]);
   const {
@@ -162,6 +165,14 @@ export function PlacePostsSheetScreen() {
       });
     }
   }, [place]);
+
+  if ((placeError || postsError) && !place) {
+    return (
+      <View style={styles.container}>
+        <QueryErrorState message={placeError || postsError} onRetry={() => { refetchPlace(); refetchPosts(); }} />
+      </View>
+    );
+  }
 
   if (placeLoading || postsLoading || !place) {
     return (

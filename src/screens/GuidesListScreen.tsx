@@ -21,6 +21,7 @@ import { useQuery } from "../hooks/useQuery";
 import { useAuth } from "../context/AuthContext";
 import { getGuidesByUserId } from "../services/guides";
 import { useTheme, type Colors } from "../theme/ThemeContext";
+import { QueryErrorState } from "../components/QueryErrorState";
 import { fonts } from "../theme/fonts";
 
 export function GuidesListScreen() {
@@ -40,7 +41,7 @@ export function GuidesListScreen() {
     () => getGuidesByUserId(userId),
     [userId]
   );
-  const { data: guides, loading, refetch } = useQuery(fetchGuides, [
+  const { data: guides, loading, error: guidesError, refetch } = useQuery(fetchGuides, [
     "guides",
     "user",
     userId,
@@ -63,6 +64,10 @@ export function GuidesListScreen() {
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  if (guidesError && !guides) {
+    return <QueryErrorState message={guidesError} onRetry={refetch} />;
   }
 
   return (

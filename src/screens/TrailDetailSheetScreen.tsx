@@ -26,6 +26,7 @@ import { getProfileById } from "../services/users";
 import { sortPosts } from "../utils/postSorting";
 import { fonts } from "../theme/fonts";
 import { useTheme, type Colors } from "../theme/ThemeContext";
+import { QueryErrorState } from "../components/QueryErrorState";
 import type { TrailDifficulty, Post } from "../types";
 
 const DIFFICULTY_LABELS: Record<TrailDifficulty, string> = {
@@ -48,7 +49,7 @@ export function TrailDetailSheetScreen() {
   const { getLikeCount } = useLike();
 
   const fetchTrail = useCallback(() => getTrailById(trailId ?? ""), [trailId]);
-  const { data: trail, loading } = useQuery(fetchTrail, ["trail", trailId]);
+  const { data: trail, loading, error: trailError, refetch: refetchTrail } = useQuery(fetchTrail, ["trail", trailId]);
 
   // Fetch posts for the trail's shadow place
   const fetchPosts = useCallback(
@@ -108,7 +109,7 @@ export function TrailDetailSheetScreen() {
     [posts, getLikeCount]
   );
 
-  if (loading || !trail) {
+  if (loading && !trail) {
     return (
       <View style={styles.container}>
         <View style={styles.loading}>
@@ -117,6 +118,16 @@ export function TrailDetailSheetScreen() {
       </View>
     );
   }
+
+  if (trailError && !trail) {
+    return (
+      <View style={styles.container}>
+        <QueryErrorState message={trailError} onRetry={refetchTrail} />
+      </View>
+    );
+  }
+
+  if (!trail) return null;
 
   const trailColor = colors.category.trail;
 

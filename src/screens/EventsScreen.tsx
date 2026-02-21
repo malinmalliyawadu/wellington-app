@@ -23,6 +23,7 @@ import { useEventFilters } from "../context/EventFilterContext";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
+import { QueryErrorState } from "../components/QueryErrorState";
 import { fonts } from "../theme/fonts";
 
 type DateRange = "today" | "tomorrow" | "weekend" | "month";
@@ -165,6 +166,7 @@ export function EventsScreen() {
   const {
     data: events,
     loading: loadingEvents,
+    error: eventsError,
     refetch: refetchEvents,
   } = useQuery(fetchEvents, "events");
 
@@ -297,6 +299,10 @@ export function EventsScreen() {
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  if (eventsError && !events) {
+    return <QueryErrorState message={eventsError} onRetry={refetchEvents} />;
   }
 
   return (

@@ -22,6 +22,7 @@ import { fonts } from "../theme/fonts";
 import { HapticPressable } from 'src/components/HapticPressable';
 import { HashtagText } from '../components/HashtagText';
 import { LiquidGlassButton } from '../components/LiquidGlassButton';
+import { QueryErrorState } from '../components/QueryErrorState';
 
 const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   cafe: 'Cafe',
@@ -46,7 +47,7 @@ export function PlaceDetailScreen() {
   const { isSaved, toggleSave } = useSave();
 
   const fetchPlace = useCallback(() => getPlaceById(placeId), [placeId]);
-  const { data: place, loading: loadingPlace, refetch: refetchPlace } = useQuery(fetchPlace, ['place', placeId]);
+  const { data: place, loading: loadingPlace, error: placeError, refetch: refetchPlace } = useQuery(fetchPlace, ['place', placeId]);
 
   const fetchPosts = useCallback(() => getPostsByPlaceIdAsync(placeId), [placeId]);
   const { data: posts, loading: loadingPosts, refetch: refetchPosts } = useQuery(fetchPosts, ['posts', 'place', placeId]);
@@ -109,6 +110,10 @@ export function PlaceDetailScreen() {
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  if (placeError && !place) {
+    return <QueryErrorState message={placeError} onRetry={refetchPlace} />;
   }
 
   if (!place) return null;

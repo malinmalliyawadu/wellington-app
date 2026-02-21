@@ -38,7 +38,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         setNotifications(notifs);
         setUnreadCount(count);
       })
-      .catch(() => {});
+      .catch((e) => console.warn('Failed to load notifications:', e));
   }, [currentUserId]);
 
   // Initial load
@@ -59,7 +59,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (AppState.currentState === 'active') {
         fetchUnreadCount(currentUserId)
           .then(setUnreadCount)
-          .catch(() => {});
+          .catch((e) => console.warn('Failed to poll unread count:', e));
       }
     }, 30000);
 

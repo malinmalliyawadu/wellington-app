@@ -18,6 +18,7 @@ import { useQuery } from "../hooks/useQuery";
 import { getProfileById, getProfilesByIds } from "../services/users";
 import { getFollowerIds, getFollowingIds } from "../services/follows";
 import { HapticPressable } from "src/components/HapticPressable";
+import { QueryErrorState } from "../components/QueryErrorState";
 
 export function FollowListScreen() {
   const { colors } = useTheme();
@@ -55,12 +56,12 @@ export function FollowListScreen() {
     () => getFollowingIds(userId),
     [userId]
   );
-  const { data: followingUserIds, loading: loadingFollowingIds, refetch: refetchFollowingIds } =
+  const { data: followingUserIds, loading: loadingFollowingIds, error: followingError, refetch: refetchFollowingIds } =
     useQuery(fetchFollowingIds, ['following', userId]);
 
   // Fetch follower IDs for this user
   const fetchFollowerIds = useCallback(() => getFollowerIds(userId), [userId]);
-  const { data: followerUserIds, loading: loadingFollowerIds, refetch: refetchFollowerIds } =
+  const { data: followerUserIds, loading: loadingFollowerIds, error: followerError, refetch: refetchFollowerIds } =
     useQuery(fetchFollowerIds, ['followers', userId]);
 
   // Fetch following profiles
@@ -98,6 +99,17 @@ export function FollowListScreen() {
     activeTab === "following"
       ? loadingFollowingIds || loadingFollowingProfiles
       : loadingFollowerIds || loadingFollowerProfiles;
+
+  const activeError = activeTab === "following" ? followingError : followerError;
+  const activeRefetch = activeTab === "following" ? refetchFollowingIds : refetchFollowerIds;
+
+  if (activeError && listData.length === 0) {
+    return (
+      <View style={[styles.container, { paddingTop: headerHeight }]}>
+        <QueryErrorState message={activeError} onRetry={activeRefetch} />
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { paddingTop: headerHeight }]}>

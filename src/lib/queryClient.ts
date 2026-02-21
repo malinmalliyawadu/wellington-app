@@ -8,6 +8,7 @@ export const queryClient = new QueryClient({
         return failureCount < 2;
       },
       staleTime: 2 * 60 * 1000, // 2 minutes
+      networkMode: "offlineFirst",
     },
   },
 });

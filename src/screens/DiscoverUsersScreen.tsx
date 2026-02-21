@@ -13,6 +13,7 @@ import { Pressable } from 'react-native';
 import { useQuery } from '../hooks/useQuery';
 import { getOtherProfiles } from '../services/users';
 import { HapticPressable } from 'src/components/HapticPressable';
+import { QueryErrorState } from '../components/QueryErrorState';
 
 export function DiscoverUsersScreen() {
   const { colors } = useTheme();
@@ -26,7 +27,7 @@ export function DiscoverUsersScreen() {
   const { profile } = useAuth();
 
   const fetchUsers = useCallback(() => getOtherProfiles(profile?.id ?? ''), [profile?.id]);
-  const { data: otherUsers, loading, refetch: refetchUsers } = useQuery(fetchUsers, profile?.id);
+  const { data: otherUsers, loading, error: usersError, refetch: refetchUsers } = useQuery(fetchUsers, profile?.id);
   const allUsers = Array.isArray(otherUsers) ? otherUsers : [];
 
   // Refetch when screen comes into focus
@@ -42,6 +43,10 @@ export function DiscoverUsersScreen() {
     const bFollowed = isFollowing(b.id) ? 1 : 0;
     return aFollowed - bFollowed;
   }), [allUsers, isFollowing]);
+
+  if (usersError && !otherUsers) {
+    return <QueryErrorState message={usersError} onRetry={refetchUsers} />;
+  }
 
   return (
     <View style={styles.container}>

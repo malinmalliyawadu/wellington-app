@@ -31,6 +31,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { SFIcon } from "../components/SFIcon";
+import { QueryErrorState } from "../components/QueryErrorState";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated from "react-native-reanimated";
 import { TapGestureHandler, State } from "react-native-gesture-handler";
@@ -100,6 +101,7 @@ export function PostDetailScreen() {
   const {
     data: post,
     loading,
+    error: postError,
     refetch: refetchPost,
   } = useQuery(fetchPost, ["post", postId]);
   const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
@@ -223,6 +225,10 @@ export function PostDetailScreen() {
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  if (postError && !post) {
+    return <QueryErrorState message={postError} onRetry={refetchPost} />;
   }
 
   if (!post) return null;
