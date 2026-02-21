@@ -11,6 +11,7 @@ import { getPlaces } from '../services/places';
 import { FeedPost } from '../components/FeedPost';
 import { formatNumber } from '../utils/formatNumber';
 import { useTheme, type Colors } from '../theme/ThemeContext';
+import { QueryErrorState } from '../components/QueryErrorState';
 import { fonts } from '../theme/fonts';
 
 export function HashtagDetailScreen() {
@@ -24,7 +25,7 @@ export function HashtagDetailScreen() {
   const styles = createStyles(colors);
 
   const fetchHashtag = useCallback(() => getHashtagByName(tag), [tag]);
-  const { data: hashtag, loading: loadingHashtag } = useQuery(fetchHashtag, ['hashtag', tag]);
+  const { data: hashtag, loading: loadingHashtag, error: hashtagError, refetch: refetchHashtag } = useQuery(fetchHashtag, ['hashtag', tag]);
 
   const fetchPostIds = useCallback(
     () => (hashtag ? getPostIdsByHashtagId(hashtag.id) : Promise.resolve([])),
@@ -100,6 +101,10 @@ export function HashtagDetailScreen() {
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  if (hashtagError && !hashtag) {
+    return <QueryErrorState message={hashtagError} onRetry={refetchHashtag} />;
   }
 
   return (

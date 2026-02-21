@@ -24,6 +24,7 @@ import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
+import { QueryErrorState } from "../components/QueryErrorState";
 import type { Place, PlaceCategory } from "../types";
 
 type Tab = "posts" | "places" | "events" | "guides";
@@ -56,7 +57,7 @@ export function SavedScreen() {
     () => getPostsByIds(savedPostIds),
     [savedPostIds]
   );
-  const { data: posts, refetch: refetchPosts } = useQuery(fetchPosts, [
+  const { data: posts, error: postsError, refetch: refetchPosts } = useQuery(fetchPosts, [
     "saved-posts",
     ...savedPostIds,
   ]);
@@ -65,7 +66,7 @@ export function SavedScreen() {
     () => getPlacesByIds(savedPlaceIds),
     [savedPlaceIds]
   );
-  const { data: places, refetch: refetchPlaces } = useQuery(fetchPlaces, [
+  const { data: places, error: placesError, refetch: refetchPlaces } = useQuery(fetchPlaces, [
     "saved-places",
     ...savedPlaceIds,
   ]);
@@ -74,7 +75,7 @@ export function SavedScreen() {
     () => getEventsByIds(savedEventIds),
     [savedEventIds]
   );
-  const { data: events, refetch: refetchEvents } = useQuery(fetchEvents, [
+  const { data: events, error: eventsError, refetch: refetchEvents } = useQuery(fetchEvents, [
     "saved-events",
     ...savedEventIds,
   ]);
@@ -83,7 +84,7 @@ export function SavedScreen() {
     () => getGuidesByIds(savedGuideIds),
     [savedGuideIds]
   );
-  const { data: savedGuides, refetch: refetchGuides } = useQuery(fetchGuides, [
+  const { data: savedGuides, error: guidesError, refetch: refetchGuides } = useQuery(fetchGuides, [
     "saved-guides",
     ...savedGuideIds,
   ]);
@@ -123,6 +124,9 @@ export function SavedScreen() {
   const renderContent = () => {
     switch (activeTab) {
       case "posts":
+        if (postsError && !posts) {
+          return <QueryErrorState message={postsError} onRetry={refetchPosts} fullScreen={false} />;
+        }
         return (
           <PostsGrid
             posts={postsWithPlaces}
@@ -132,6 +136,9 @@ export function SavedScreen() {
         );
 
       case "places":
+        if (placesError && !places) {
+          return <QueryErrorState message={placesError} onRetry={refetchPlaces} fullScreen={false} />;
+        }
         if (!places || places.length === 0) {
           return (
             <View style={styles.emptyState}>
@@ -188,6 +195,9 @@ export function SavedScreen() {
         );
 
       case "events":
+        if (eventsError && !events) {
+          return <QueryErrorState message={eventsError} onRetry={refetchEvents} fullScreen={false} />;
+        }
         if (!events || events.length === 0) {
           return (
             <View style={styles.emptyState}>
@@ -221,6 +231,9 @@ export function SavedScreen() {
         );
 
       case "guides":
+        if (guidesError && !savedGuides) {
+          return <QueryErrorState message={guidesError} onRetry={refetchGuides} fullScreen={false} />;
+        }
         if (!savedGuides || savedGuides.length === 0) {
           return (
             <View style={styles.emptyState}>

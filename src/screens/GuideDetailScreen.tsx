@@ -29,6 +29,7 @@ import { getProfileById } from "../services/users";
 import { shareGuide } from "../utils/sharing";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
+import { QueryErrorState } from "../components/QueryErrorState";
 import type { PlaceCategory } from "../types";
 
 const CATEGORY_ICONS: Record<PlaceCategory, { sf: string; fallback: string }> =
@@ -57,6 +58,7 @@ export function GuideDetailScreen() {
   const {
     data: guide,
     loading: loadingGuide,
+    error: guideError,
     refetch: refetchGuide,
   } = useQuery(fetchGuide, ["guide", guideId]);
 
@@ -159,6 +161,10 @@ export function GuideDetailScreen() {
         <ActivityIndicator size="large" color={colors.primary} />
       </View>
     );
+  }
+
+  if (guideError && !guide) {
+    return <QueryErrorState message={guideError} onRetry={refetchGuide} />;
   }
 
   if (!guide) return null;

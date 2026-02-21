@@ -34,6 +34,7 @@ import { useRouter } from "expo-router";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
+import { QueryErrorState } from "../components/QueryErrorState";
 import { useMapPlaceSelection } from "../context/MapPlaceSelectionContext";
 import * as Haptics from "expo-haptics";
 
@@ -113,11 +114,13 @@ export function MapScreen() {
   const {
     places,
     trails,
+    error: mapError,
     isInitialLoad,
     filteredPlaces,
     annotatedPlaceIds,
     baseMarkerDataMap,
     placeEventsMap,
+    refetchAll,
   } = useMapData({
     followingIds,
     selectedCategories,
@@ -278,12 +281,18 @@ export function MapScreen() {
           })}
       </MapView>
 
-      {isInitialLoad && (
+      {isInitialLoad && !mapError && (
         <View style={[styles.loadingOverlay, { top: insets.top + 106 }]}>
           <BlurView intensity={15} tint={isDark ? "dark" : "light"} style={styles.loadingContainer}>
             <ActivityIndicator size="small" color={colors.primary} />
             <Text style={styles.loadingText}>Loading places...</Text>
           </BlurView>
+        </View>
+      )}
+
+      {mapError && !places && (
+        <View style={[styles.loadingOverlay, { top: insets.top + 106 }]}>
+          <QueryErrorState message={mapError} onRetry={refetchAll} fullScreen={false} />
         </View>
       )}
 

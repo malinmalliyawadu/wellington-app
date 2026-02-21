@@ -19,6 +19,7 @@ import { useQuery } from "../hooks/useQuery";
 import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
 import { useTheme, type Colors } from "../theme/ThemeContext";
+import { QueryErrorState } from "../components/QueryErrorState";
 import { fonts } from "../theme/fonts";
 import type { Notification } from "../services/notifications";
 
@@ -102,7 +103,7 @@ export function NotificationsScreen() {
   );
 
   const fetchActors = useCallback(() => getProfilesByIds(actorIds), [actorIds]);
-  const { data: actors, loading } = useQuery(fetchActors, actorIds);
+  const { data: actors, loading, error: actorsError } = useQuery(fetchActors, actorIds);
 
   const fetchPosts = useCallback(() => getPostsByIds(postIds), [postIds]);
   const { data: posts } = useQuery(fetchPosts, postIds);
@@ -183,6 +184,10 @@ export function NotificationsScreen() {
         />
       </View>
     );
+  }
+
+  if (actorsError && notifications.length === 0) {
+    return <QueryErrorState message={actorsError} onRetry={refetch} />;
   }
 
   return (

@@ -23,7 +23,7 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
     if (!currentUserId) return;
     getFollowingIds(currentUserId)
       .then(setFollowingIds)
-      .catch(() => {});
+      .catch((e) => console.warn('Failed to load following IDs:', e));
   }, [currentUserId]);
 
   useEffect(() => {

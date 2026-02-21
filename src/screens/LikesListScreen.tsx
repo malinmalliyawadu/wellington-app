@@ -17,6 +17,7 @@ import { useQuery } from "../hooks/useQuery";
 import { getProfilesByIds } from "../services/users";
 import { getLikerIds } from "../services/likes";
 import { HapticPressable } from "src/components/HapticPressable";
+import { QueryErrorState } from "../components/QueryErrorState";
 
 export function LikesListScreen() {
   const { colors } = useTheme();
@@ -29,7 +30,7 @@ export function LikesListScreen() {
   const { profile } = useAuth();
 
   const fetchLikerIds = useCallback(() => getLikerIds(postId), [postId]);
-  const { data: likerIds, loading: loadingIds, refetch: refetchLikerIds } = useQuery(fetchLikerIds, ['likes', postId]);
+  const { data: likerIds, loading: loadingIds, error: likesError, refetch: refetchLikerIds } = useQuery(fetchLikerIds, ['likes', postId]);
 
   const fetchProfiles = useCallback(
     () => getProfilesByIds(likerIds ?? []),
@@ -48,6 +49,10 @@ export function LikesListScreen() {
       refetchLikerIds();
     }, [refetchLikerIds])
   );
+
+  if (likesError && !likerIds) {
+    return <QueryErrorState message={likesError} onRetry={refetchLikerIds} />;
+  }
 
   return (
     <View style={styles.container}>

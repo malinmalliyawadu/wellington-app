@@ -28,10 +28,10 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
     if (!currentUserId) return;
     getLikedPostIds(currentUserId)
       .then(setLikedPostIds)
-      .catch(() => {});
+      .catch((e) => console.warn('Failed to load liked post IDs:', e));
     getAllLikeCounts()
       .then(setLikeCounts)
-      .catch(() => {});
+      .catch((e) => console.warn('Failed to load like counts:', e));
   }, [currentUserId]);
 
   useEffect(() => {

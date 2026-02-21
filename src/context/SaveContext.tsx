@@ -31,7 +31,7 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
         setSavedEvents(events);
         setSavedGuides(guides);
       })
-      .catch(() => {});
+      .catch((e) => console.warn('Failed to load saved items:', e));
   }, [currentUserId]);
 
   useEffect(() => {
