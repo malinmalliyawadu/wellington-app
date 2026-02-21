@@ -13,7 +13,9 @@ import { useSave } from "../context/SaveContext";
 import { getPostsByIds } from "../services/posts";
 import { getPlacesByIds } from "../services/places";
 import { getEventsByIds } from "../services/events";
+import { getGuidesByIds } from "../services/guides";
 import { getPlaces } from "../services/places";
+import { GuideCard } from "../components/GuideCard";
 import { useQuery } from "../hooks/useQuery";
 import { PostsGrid } from "../components/PostsGrid";
 import { EventCard } from "../components/EventCard";
@@ -23,7 +25,7 @@ import { colors } from "../theme/colors";
 import { fonts } from "../theme/fonts";
 import type { Place, PlaceCategory } from "../types";
 
-type Tab = "posts" | "places" | "events";
+type Tab = "posts" | "places" | "events" | "guides";
 
 const CATEGORY_ICONS: Record<PlaceCategory, { sf: string; fallback: string }> = {
   cafe: { sf: "cup.and.saucer.fill", fallback: "cafe" },
@@ -45,6 +47,7 @@ export function SavedScreen() {
   const savedPostIds = getSavedIds("post");
   const savedPlaceIds = getSavedIds("place");
   const savedEventIds = getSavedIds("event");
+  const savedGuideIds = getSavedIds("guide");
 
   const fetchPosts = useCallback(
     () => getPostsByIds(savedPostIds),
@@ -73,6 +76,15 @@ export function SavedScreen() {
     ...savedEventIds,
   ]);
 
+  const fetchGuides = useCallback(
+    () => getGuidesByIds(savedGuideIds),
+    [savedGuideIds]
+  );
+  const { data: savedGuides, refetch: refetchGuides } = useQuery(fetchGuides, [
+    "saved-guides",
+    ...savedGuideIds,
+  ]);
+
   const fetchAllPlaces = useCallback(() => getPlaces(), []);
   const { data: allPlaces } = useQuery(fetchAllPlaces, "all-places");
 
@@ -86,7 +98,8 @@ export function SavedScreen() {
       refetchPosts();
       refetchPlaces();
       refetchEvents();
-    }, [refetchPosts, refetchPlaces, refetchEvents])
+      refetchGuides();
+    }, [refetchPosts, refetchPlaces, refetchEvents, refetchGuides])
   );
 
   const postsWithPlaces = useMemo(() => {
@@ -101,6 +114,7 @@ export function SavedScreen() {
     { key: "posts", label: "Posts", count: savedPostIds.length },
     { key: "places", label: "Places", count: savedPlaceIds.length },
     { key: "events", label: "Events", count: savedEventIds.length },
+    { key: "guides", label: "Guides", count: savedGuideIds.length },
   ];
 
   const renderContent = () => {
@@ -200,6 +214,33 @@ export function SavedScreen() {
                 </View>
               );
             })}
+          </View>
+        );
+
+      case "guides":
+        if (!savedGuides || savedGuides.length === 0) {
+          return (
+            <View style={styles.emptyState}>
+              <SFIcon
+                name="bookmark"
+                fallback="bookmark-outline"
+                size={40}
+                color={colors.gray300}
+              />
+              <Text style={styles.emptyText}>No saved guides yet</Text>
+            </View>
+          );
+        }
+        return (
+          <View style={styles.guidesList}>
+            {savedGuides.map((guide) => (
+              <View key={guide.id} style={styles.guideCardWrapper}>
+                <GuideCard
+                  guide={guide}
+                  onPress={() => router.push(`/profile/guide/${guide.id}`)}
+                />
+              </View>
+            ))}
           </View>
         );
     }
@@ -354,6 +395,15 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  // Guides list
+  guidesList: {
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  guideCardWrapper: {
+    borderRadius: 12,
+    overflow: "hidden",
   },
   // Empty state
   emptyState: {

@@ -20,9 +20,11 @@ import { getPlaces, findOrCreatePlace } from "../services/places";
 import { getPosts } from "../services/posts";
 import { getProfiles } from "../services/users";
 import { getUpcomingEvents } from "../services/events";
+import { getGuides } from "../services/guides";
 import { searchGooglePlaces } from "../services/googlePlaces";
 import { fonts } from "../theme/fonts";
 import { EventCard } from "../components/EventCard";
+import { GuideCard } from "../components/GuideCard";
 import { HapticPressable } from "../components/HapticPressable";
 import { getTrendingHashtags, searchHashtags } from "../services/hashtags";
 import { formatNumber } from "../utils/formatNumber";
@@ -31,6 +33,7 @@ import type {
   Post,
   User,
   Event,
+  Guide,
   PlaceCategory,
   Hashtag,
 } from "../types";
@@ -70,8 +73,8 @@ const ALL_CATEGORIES: PlaceCategory[] = [
 
 interface SearchResult {
   id: string;
-  type: "place" | "post" | "user" | "event" | "hashtag";
-  data: Place | Post | User | Event | Omit<Place, "id"> | Hashtag;
+  type: "place" | "post" | "user" | "event" | "hashtag" | "guide";
+  data: Place | Post | User | Event | Omit<Place, "id"> | Hashtag | Guide;
   source?: "google";
 }
 
@@ -92,6 +95,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
     getTrendingHashtags,
     "trending-hashtags"
   );
+  const { data: guides } = useQuery(getGuides, "guides");
 
   // Hashtag search state
   const [hashtagResults, setHashtagResults] = useState<Hashtag[]>([]);
@@ -278,8 +282,21 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
       }
     });
 
+    (guides ?? []).forEach((guide) => {
+      if (
+        guide.title.toLowerCase().includes(q) ||
+        guide.description?.toLowerCase().includes(q)
+      ) {
+        results.push({
+          id: `guide-${guide.id}`,
+          type: "guide",
+          data: guide,
+        });
+      }
+    });
+
     return results;
-  }, [query, places, posts, users, events]);
+  }, [query, places, posts, users, events, guides]);
 
   // Group search results by type, merging Google Places into the Places section
   const groupedResults = useMemo(() => {
@@ -299,6 +316,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
     const userResults = searchResults.filter((r) => r.type === "user");
     const postResults = searchResults.filter((r) => r.type === "post");
     const eventResults = searchResults.filter((r) => r.type === "event");
+    const guideResults = searchResults.filter((r) => r.type === "guide");
 
     // Deduplicate: skip Google results that already exist locally
     const localGooglePlaceIds = new Set(
@@ -326,6 +344,8 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
       sections.push({ title: "Posts", data: postResults.slice(0, 5) });
     if (eventResults.length > 0)
       sections.push({ title: "Events", data: eventResults });
+    if (guideResults.length > 0)
+      sections.push({ title: "Guides", data: guideResults });
 
     return sections;
   }, [searchResults, googleResults, googleLoading, hashtagResults]);
@@ -344,6 +364,10 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
 
   const handleEventPress = (eventId: string) => {
     router.push(`/search/event/${eventId}`);
+  };
+
+  const handleGuidePress = (guideId: string) => {
+    router.push(`/search/guide/${guideId}`);
   };
 
   const handleHashtagPress = (tagName: string) => {
@@ -525,6 +549,18 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
             place={place}
             onPress={() => handleEventPress(event.id)}
           />
+        );
+      }
+
+      case "guide": {
+        const guide = item.data as Guide;
+        return (
+          <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+            <GuideCard
+              guide={guide}
+              onPress={() => handleGuidePress(guide.id)}
+            />
+          </View>
         );
       }
 

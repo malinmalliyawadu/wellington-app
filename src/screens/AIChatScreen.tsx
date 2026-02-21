@@ -34,9 +34,11 @@ import type {
   Event,
   Post,
   User,
+  Guide,
   Hashtag,
   AIPlaceRecommendation,
   AIEventRecommendation,
+  AIGuideRecommendation,
   ChatMessage,
 } from "../types";
 
@@ -284,6 +286,13 @@ export function AIChatScreen() {
           queryClient.getQueryData(["q", "trending-hashtags"]) ?? [];
         const trendingHashtags = cachedHashtags.map((h) => h.name);
 
+        const cachedGuides: Guide[] =
+          queryClient.getQueryData(["q", "guides"]) ?? [];
+        const guidesWithCreators = cachedGuides.map((g) => ({
+          ...g,
+          creatorName: profileMap.get(g.userId)?.displayName,
+        }));
+
         const aiResponse = await askAI(conversationHistory, {
           places: cachedPlaces,
           events: cachedEvents,
@@ -291,6 +300,7 @@ export function AIChatScreen() {
           followingUsers,
           userLocation,
           trendingHashtags,
+          guides: guidesWithCreators,
         });
 
         const assistantMsg: ChatMessage = {
@@ -358,6 +368,13 @@ export function AIChatScreen() {
     [router, tabPrefix]
   );
 
+  const handleGuidePress = useCallback(
+    (guideId: string) => {
+      router.push(`${tabPrefix}/guide/${guideId}`);
+    },
+    [router, tabPrefix]
+  );
+
   const handleLinkPress = useCallback(
     (url: string) => {
       const placeMatch = url.match(/^place:(.+)$/);
@@ -373,6 +390,11 @@ export function AIChatScreen() {
       const userMatch = url.match(/^user:(.+)$/);
       if (userMatch) {
         router.push(`${tabPrefix}/user/${userMatch[1]}`);
+        return false;
+      }
+      const guideMatch = url.match(/^guide:(.+)$/);
+      if (guideMatch) {
+        router.push(`${tabPrefix}/guide/${guideMatch[1]}`);
         return false;
       }
       return true;
@@ -505,6 +527,18 @@ export function AIChatScreen() {
                       key={event.eventId}
                       recommendation={event}
                       onPress={() => handleEventPress(event.eventId)}
+                    />
+                  ))}
+                </View>
+              )}
+
+              {msg.aiResponse && msg.aiResponse.guides && msg.aiResponse.guides.length > 0 && (
+                <View style={styles.cardsSection}>
+                  {msg.aiResponse.guides.map((guide) => (
+                    <GuideRecommendationCard
+                      key={guide.guideId}
+                      recommendation={guide}
+                      onPress={() => handleGuidePress(guide.guideId)}
                     />
                   ))}
                 </View>
@@ -646,6 +680,49 @@ function EventRecommendationCard({
           {recommendation.eventTitle}
         </Text>
         <Text style={styles.recCardDate}>{dateLabel}{timeLabel}</Text>
+        <Text style={styles.recCardReason} numberOfLines={2}>
+          {recommendation.reason}
+        </Text>
+      </View>
+      <SFIcon
+        name="chevron.right"
+        fallback="chevron-forward"
+        size={16}
+        color={colors.gray400}
+      />
+    </HapticPressable>
+  );
+}
+
+function GuideRecommendationCard({
+  recommendation,
+  onPress,
+}: {
+  recommendation: AIGuideRecommendation;
+  onPress: () => void;
+}) {
+  return (
+    <HapticPressable style={styles.recCard} onPress={onPress}>
+      <View
+        style={[
+          styles.recIconCircle,
+          { backgroundColor: colors.primary + "15" },
+        ]}
+      >
+        <SFIcon
+          name="book.fill"
+          fallback="book"
+          size={18}
+          color={colors.primary}
+        />
+      </View>
+      <View style={styles.recCardContent}>
+        <Text style={styles.recCardTitle} numberOfLines={1}>
+          {recommendation.guideTitle}
+        </Text>
+        <Text style={styles.recCardDate}>
+          by {recommendation.creatorName} · {recommendation.placeCount} places
+        </Text>
         <Text style={styles.recCardReason} numberOfLines={2}>
           {recommendation.reason}
         </Text>

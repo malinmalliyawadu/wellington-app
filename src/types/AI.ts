@@ -13,10 +13,19 @@ export interface AIEventRecommendation {
   reason: string;
 }
 
+export interface AIGuideRecommendation {
+  guideId: string;
+  guideTitle: string;
+  creatorName: string;
+  placeCount: number;
+  reason: string;
+}
+
 export interface AIResponse {
   message: string;
   places: AIPlaceRecommendation[];
   events: AIEventRecommendation[];
+  guides: AIGuideRecommendation[];
 }
 
 export interface ChatMessage {

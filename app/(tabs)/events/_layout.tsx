@@ -79,6 +79,15 @@ export default function EventsLayout() {
             headerTransparent: true,
           }}
         />
+        <Stack.Screen
+          name="guide/[guideId]"
+          options={{
+            headerShown: true,
+            headerTitle: "",
+            headerBackTitle: "Events",
+            headerTransparent: true,
+          }}
+        />
       </Stack>
     </EventFilterProvider>
   );

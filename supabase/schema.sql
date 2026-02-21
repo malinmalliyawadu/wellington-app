@@ -446,7 +446,7 @@ create policy "trails_public_read" on trails
 -- Saved/bookmarked items (posts, places, events)
 create table if not exists saved_items (
   user_id uuid not null references profiles(id) on delete cascade,
-  item_type text not null check (item_type in ('post', 'place', 'event')),
+  item_type text not null check (item_type in ('post', 'place', 'event', 'guide')),
   item_id uuid not null,
   created_at timestamptz not null default now(),
   primary key (user_id, item_type, item_id)
@@ -468,6 +468,68 @@ create policy "Users can save items"
 drop policy if exists "Users can unsave items" on saved_items;
 create policy "Users can unsave items"
   on saved_items for delete using (auth.uid() = user_id);
+
+-- Guides: curated lists of places created by users
+create table guides (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  title text not null,
+  description text,
+  cover_image_url text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index guides_user_id_idx on guides(user_id);
+create index guides_created_at_idx on guides(created_at desc);
+
+-- Guide places (join table)
+create table guide_places (
+  guide_id uuid not null references guides(id) on delete cascade,
+  place_id uuid not null references places(id) on delete cascade,
+  sort_order integer not null default 0,
+  note text,
+  added_at timestamptz not null default now(),
+  primary key (guide_id, place_id)
+);
+
+create index guide_places_guide_id_idx on guide_places(guide_id);
+
+-- RLS: guides
+alter table guides enable row level security;
+
+create policy "Guides are viewable by everyone"
+  on guides for select using (true);
+
+create policy "Users can create own guides"
+  on guides for insert with check (auth.uid() = user_id);
+
+create policy "Users can update own guides"
+  on guides for update using (auth.uid() = user_id);
+
+create policy "Users can delete own guides"
+  on guides for delete using (auth.uid() = user_id);
+
+-- RLS: guide_places
+alter table guide_places enable row level security;
+
+create policy "Guide places are viewable by everyone"
+  on guide_places for select using (true);
+
+create policy "Guide owner can add places"
+  on guide_places for insert with check (
+    exists (select 1 from guides where guides.id = guide_id and guides.user_id = auth.uid())
+  );
+
+create policy "Guide owner can update places"
+  on guide_places for update using (
+    exists (select 1 from guides where guides.id = guide_id and guides.user_id = auth.uid())
+  );
+
+create policy "Guide owner can remove places"
+  on guide_places for delete using (
+    exists (select 1 from guides where guides.id = guide_id and guides.user_id = auth.uid())
+  );
 
 -- Instagram connections for importing posts
 create table if not exists instagram_connections (
