@@ -3,7 +3,7 @@ import {
   View,
   Text,
   TextInput,
-  FlatList,
+  ScrollView,
   StyleSheet,
   Alert,
   KeyboardAvoidingView,
@@ -277,30 +277,35 @@ export function CreateGuideScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <View style={styles.header}>
-        <HapticPressable onPress={() => router.back()}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </HapticPressable>
-        <Text style={styles.headerTitle}>
-          {isEditing ? "Edit Guide" : "New Guide"}
-        </Text>
-        <HapticPressable onPress={handleSave} disabled={saving}>
-          <Text
-            style={[styles.saveText, saving && { opacity: 0.5 }]}
-          >
-            {saving ? "Saving..." : "Save"}
-          </Text>
-        </HapticPressable>
-      </View>
-
-      <FlatList
-        data={selectedPlaces}
-        keyExtractor={(_, index) => index.toString()}
+      <ScrollView
+        style={styles.scrollView}
+        stickyHeaderIndices={[0]}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom: insets.bottom + 20,
         }}
-        ListHeaderComponent={
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerRow}>
+            <HapticPressable onPress={() => router.back()}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </HapticPressable>
+            <Text style={styles.headerTitle}>
+              {isEditing ? "Edit Guide" : "New Guide"}
+            </Text>
+            <HapticPressable onPress={handleSave} disabled={saving}>
+              <Text
+                style={[styles.saveText, saving && { opacity: 0.5 }]}
+              >
+                {saving ? "Saving..." : "Save"}
+              </Text>
+            </HapticPressable>
+          </View>
+        </View>
+
+        <View style={styles.content}>
           <View style={styles.formSection}>
             <TextInput
               style={styles.titleInput}
@@ -322,60 +327,60 @@ export function CreateGuideScreen() {
 
             <Text style={styles.sectionTitle}>Places</Text>
           </View>
-        }
-        renderItem={({ item, index }) => (
-          <View style={styles.selectedPlaceRow}>
-            <View style={styles.placeNumber}>
-              <Text style={styles.placeNumberText}>{index + 1}</Text>
+
+          {selectedPlaces.map((item, index) => (
+            <View key={index} style={styles.selectedPlaceRow}>
+              <View style={styles.placeNumber}>
+                <Text style={styles.placeNumberText}>{index + 1}</Text>
+              </View>
+              <View
+                style={[
+                  styles.placeCategoryDot,
+                  {
+                    backgroundColor:
+                      colors.category[item.place.category],
+                  },
+                ]}
+              >
+                <SFIcon
+                  name={
+                    CATEGORY_ICONS[item.place.category].sf as any
+                  }
+                  fallback={
+                    CATEGORY_ICONS[item.place.category]
+                      .fallback as any
+                  }
+                  size={12}
+                  color="#FFFFFF"
+                />
+              </View>
+              <View style={styles.selectedPlaceInfo}>
+                <Text style={styles.selectedPlaceName} numberOfLines={1}>
+                  {item.place.name}
+                </Text>
+                <TextInput
+                  style={styles.noteInput}
+                  placeholder="Add a note..."
+                  placeholderTextColor={colors.gray400}
+                  value={item.note}
+                  onChangeText={(text) => handleUpdateNote(index, text)}
+                  maxLength={200}
+                />
+              </View>
+              <HapticPressable
+                onPress={() => handleRemovePlace(index)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <SFIcon
+                  name="xmark.circle.fill"
+                  fallback="close-circle"
+                  size={20}
+                  color={colors.gray400}
+                />
+              </HapticPressable>
             </View>
-            <View
-              style={[
-                styles.placeCategoryDot,
-                {
-                  backgroundColor:
-                    colors.category[item.place.category],
-                },
-              ]}
-            >
-              <SFIcon
-                name={
-                  CATEGORY_ICONS[item.place.category].sf as any
-                }
-                fallback={
-                  CATEGORY_ICONS[item.place.category]
-                    .fallback as any
-                }
-                size={12}
-                color="#FFFFFF"
-              />
-            </View>
-            <View style={styles.selectedPlaceInfo}>
-              <Text style={styles.selectedPlaceName} numberOfLines={1}>
-                {item.place.name}
-              </Text>
-              <TextInput
-                style={styles.noteInput}
-                placeholder="Add a note..."
-                placeholderTextColor={colors.gray400}
-                value={item.note}
-                onChangeText={(text) => handleUpdateNote(index, text)}
-                maxLength={200}
-              />
-            </View>
-            <HapticPressable
-              onPress={() => handleRemovePlace(index)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <SFIcon
-                name="xmark.circle.fill"
-                fallback="close-circle"
-                size={20}
-                color={colors.gray400}
-              />
-            </HapticPressable>
-          </View>
-        )}
-        ListFooterComponent={
+          ))}
+
           <View style={styles.searchSection}>
             <View style={styles.searchInputContainer}>
               <SFIcon
@@ -428,8 +433,8 @@ export function CreateGuideScreen() {
               </HapticPressable>
             ))}
           </View>
-        }
-      />
+        </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -437,16 +442,20 @@ export function CreateGuideScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: colors.translucentCardBackground,
   },
   header: {
+    paddingHorizontal: 16,
+    backgroundColor: colors.translucentCardBackground,
+  },
+  headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
     paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.gray200,
   },
   cancelText: {
     fontSize: 16,
@@ -462,6 +471,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: fonts.semiBold,
     color: colors.primary,
+  },
+  content: {
+    paddingHorizontal: 0,
   },
   formSection: {
     padding: 16,
