@@ -19,11 +19,13 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
+import { LinearGradient } from "expo-linear-gradient";
 import { useQuery } from "../hooks/useQuery";
 import { useAuth } from "../context/AuthContext";
 import { useSave } from "../context/SaveContext";
 import { getGuideById, getGuidePlaces, deleteGuide } from "../services/guides";
 import { getPlacesByIds } from "../services/places";
+import { getTopPostMediaForPlaces } from "../services/posts";
 import { getProfileById } from "../services/users";
 import { shareGuide } from "../utils/sharing";
 import { colors } from "../theme/colors";
@@ -77,6 +79,15 @@ export function GuideDetailScreen() {
     ...placeIds,
   ]);
 
+  const fetchMedia = useCallback(
+    () => getTopPostMediaForPlaces(placeIds),
+    [placeIds]
+  );
+  const { data: placeMediaMap } = useQuery(fetchMedia, [
+    "place-media",
+    ...placeIds,
+  ]);
+
   const fetchCreator = useCallback(
     () => (guide ? getProfileById(guide.userId) : Promise.resolve(null)),
     [guide?.userId]
@@ -101,13 +112,24 @@ export function GuideDetailScreen() {
     [places]
   );
 
+  const heroImageUrl = useMemo(() => {
+    if (guide?.coverImageUrl) return guide.coverImageUrl;
+    const firstPlaceId = guidePlaces?.[0]?.placeId;
+    if (firstPlaceId && placeMediaMap) {
+      const media = placeMediaMap.get(firstPlaceId);
+      return media?.thumbnailUrl ?? media?.mediaUrl;
+    }
+    return undefined;
+  }, [guide?.coverImageUrl, guidePlaces, placeMediaMap]);
+
   const listData = useMemo(
     () =>
       (guidePlaces ?? []).map((gp) => ({
         ...gp,
         place: placeMap.get(gp.placeId),
+        imageUrl: placeMediaMap?.get(gp.placeId),
       })),
-    [guidePlaces, placeMap]
+    [guidePlaces, placeMap, placeMediaMap]
   );
 
   const handleDelete = useCallback(() => {
@@ -154,6 +176,23 @@ export function GuideDetailScreen() {
           paddingBottom: insets.bottom + 60,
         }}
         ListHeaderComponent={
+          <>
+            {heroImageUrl && (
+              <View style={styles.heroContainer}>
+                <Image
+                  source={{ uri: heroImageUrl }}
+                  style={styles.heroImage}
+                  contentFit="cover"
+                  transition={200}
+                />
+                <LinearGradient
+                  colors={["transparent", "rgba(0,0,0,0.6)"]}
+                  start={{ x: 0, y: 0.4 }}
+                  end={{ x: 0, y: 1 }}
+                  style={styles.heroGradient}
+                />
+              </View>
+            )}
           <View style={styles.header}>
             <Text style={styles.title}>{guide.title}</Text>
             {guide.description && (
@@ -276,10 +315,12 @@ export function GuideDetailScreen() {
               </View>
             )}
           </View>
+          </>
         }
         renderItem={({ item, index }) => {
           const place = item.place;
           if (!place) return null;
+          const mediaUrl = item.imageUrl?.thumbnailUrl ?? item.imageUrl?.mediaUrl;
 
           return (
             <HapticPressable
@@ -291,19 +332,28 @@ export function GuideDetailScreen() {
               <View style={styles.placeNumber}>
                 <Text style={styles.placeNumberText}>{index + 1}</Text>
               </View>
-              <View
-                style={[
-                  styles.placeCategoryDot,
-                  { backgroundColor: colors.category[place.category] },
-                ]}
-              >
-                <SFIcon
-                  name={CATEGORY_ICONS[place.category].sf as any}
-                  fallback={CATEGORY_ICONS[place.category].fallback as any}
-                  size={14}
-                  color="#FFFFFF"
+              {mediaUrl ? (
+                <Image
+                  source={{ uri: mediaUrl }}
+                  style={styles.placeThumbnail}
+                  contentFit="cover"
+                  transition={200}
                 />
-              </View>
+              ) : (
+                <View
+                  style={[
+                    styles.placeCategoryDot,
+                    { backgroundColor: colors.category[place.category] },
+                  ]}
+                >
+                  <SFIcon
+                    name={CATEGORY_ICONS[place.category].sf as any}
+                    fallback={CATEGORY_ICONS[place.category].fallback as any}
+                    size={14}
+                    color="#FFFFFF"
+                  />
+                </View>
+              )}
               <View style={styles.placeInfo}>
                 <Text style={styles.placeName} numberOfLines={1}>
                   {place.name}
@@ -340,6 +390,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  heroContainer: {
+    height: 200,
+    position: "relative",
+  },
+  heroImage: {
+    width: "100%",
+    height: "100%",
+    backgroundColor: colors.gray200,
+  },
+  heroGradient: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: "60%",
   },
   header: {
     padding: 20,
@@ -419,10 +485,16 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semiBold,
     color: colors.textSecondary,
   },
+  placeThumbnail: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: colors.gray200,
+  },
   placeCategoryDot: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },

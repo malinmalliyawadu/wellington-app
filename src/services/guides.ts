@@ -1,5 +1,48 @@
 import { supabase } from '../lib/supabase';
-import type { Guide, GuidePlace } from '../types';
+import { getTopPostMediaForPlaces } from './posts';
+import type { Guide, GuidePlace, GuideWithPlaces } from '../types';
+
+/** Enrich guides with place counts and first-place cover images. */
+async function enrichGuides(guides: Guide[]): Promise<Guide[]> {
+  if (guides.length === 0) return guides;
+
+  const guideIds = guides.map((g) => g.id);
+
+  // Fetch guide_places rows for counts and first place per guide
+  const { data: placeRows } = await supabase
+    .from('guide_places')
+    .select('guide_id, place_id, sort_order')
+    .in('guide_id', guideIds)
+    .order('sort_order', { ascending: true });
+
+  if (!placeRows) return guides;
+
+  const countMap = new Map<string, number>();
+  const firstPlaceMap = new Map<string, string>();
+  for (const row of placeRows) {
+    countMap.set(row.guide_id, (countMap.get(row.guide_id) ?? 0) + 1);
+    if (!firstPlaceMap.has(row.guide_id)) {
+      firstPlaceMap.set(row.guide_id, row.place_id);
+    }
+  }
+
+  // Fetch top post media for all first-place IDs
+  const firstPlaceIds = [...new Set(firstPlaceMap.values())];
+  const mediaMap = await getTopPostMediaForPlaces(firstPlaceIds);
+
+  for (const guide of guides) {
+    guide.placeCount = countMap.get(guide.id) ?? 0;
+    const firstPlaceId = firstPlaceMap.get(guide.id);
+    if (firstPlaceId) {
+      const media = mediaMap.get(firstPlaceId);
+      if (media) {
+        guide.firstPlaceImageUrl = media.thumbnailUrl ?? media.mediaUrl;
+      }
+    }
+  }
+
+  return guides;
+}
 
 export async function getGuides(): Promise<Guide[]> {
   const { data, error } = await supabase
@@ -8,29 +51,7 @@ export async function getGuides(): Promise<Guide[]> {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-
-  const guides = (data ?? []).map(mapGuide);
-
-  // Batch-fetch place counts
-  if (guides.length > 0) {
-    const guideIds = guides.map((g) => g.id);
-    const { data: placeRows } = await supabase
-      .from('guide_places')
-      .select('guide_id')
-      .in('guide_id', guideIds);
-
-    if (placeRows) {
-      const countMap = new Map<string, number>();
-      for (const row of placeRows) {
-        countMap.set(row.guide_id, (countMap.get(row.guide_id) ?? 0) + 1);
-      }
-      for (const guide of guides) {
-        guide.placeCount = countMap.get(guide.id) ?? 0;
-      }
-    }
-  }
-
-  return guides;
+  return enrichGuides((data ?? []).map(mapGuide));
 }
 
 export async function getGuidesByUserId(userId: string): Promise<Guide[]> {
@@ -41,29 +62,7 @@ export async function getGuidesByUserId(userId: string): Promise<Guide[]> {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-
-  const guides = (data ?? []).map(mapGuide);
-
-  // Batch-fetch place counts
-  if (guides.length > 0) {
-    const guideIds = guides.map((g) => g.id);
-    const { data: placeRows } = await supabase
-      .from('guide_places')
-      .select('guide_id')
-      .in('guide_id', guideIds);
-
-    if (placeRows) {
-      const countMap = new Map<string, number>();
-      for (const row of placeRows) {
-        countMap.set(row.guide_id, (countMap.get(row.guide_id) ?? 0) + 1);
-      }
-      for (const guide of guides) {
-        guide.placeCount = countMap.get(guide.id) ?? 0;
-      }
-    }
-  }
-
-  return guides;
+  return enrichGuides((data ?? []).map(mapGuide));
 }
 
 export async function getGuideById(guideId: string): Promise<Guide | null> {
@@ -111,29 +110,63 @@ export async function getGuidesByIds(ids: string[]): Promise<Guide[]> {
     .in('id', ids);
 
   if (error) throw error;
+  return enrichGuides((data ?? []).map(mapGuide));
+}
 
+export async function getGuidesWithPlaces(): Promise<GuideWithPlaces[]> {
+  const { data, error } = await supabase
+    .from('guides')
+    .select('*')
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
   const guides = (data ?? []).map(mapGuide);
+  if (guides.length === 0) return [];
 
-  // Batch-fetch place counts
-  if (guides.length > 0) {
-    const guideIds = guides.map((g) => g.id);
-    const { data: placeRows } = await supabase
-      .from('guide_places')
-      .select('guide_id')
-      .in('guide_id', guideIds);
+  const guideIds = guides.map((g) => g.id);
 
-    if (placeRows) {
-      const countMap = new Map<string, number>();
-      for (const row of placeRows) {
-        countMap.set(row.guide_id, (countMap.get(row.guide_id) ?? 0) + 1);
-      }
-      for (const guide of guides) {
-        guide.placeCount = countMap.get(guide.id) ?? 0;
-      }
+  // Fetch guide_places joined with places for name/category
+  const { data: gpRows } = await supabase
+    .from('guide_places')
+    .select('guide_id, place_id, note, sort_order, places(name, category)')
+    .in('guide_id', guideIds)
+    .order('sort_order', { ascending: true });
+
+  // Fetch creator profiles
+  const userIds = [...new Set(guides.map((g) => g.userId))];
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, display_name')
+    .in('id', userIds);
+
+  const profileMap = new Map<string, string>();
+  for (const p of profiles ?? []) {
+    if (p.display_name) profileMap.set(p.id, p.display_name);
+  }
+
+  // Group place details by guide
+  const guidePlacesMap = new Map<string, { name: string; category: string; note?: string }[]>();
+  const countMap = new Map<string, number>();
+  for (const row of gpRows ?? []) {
+    countMap.set(row.guide_id, (countMap.get(row.guide_id) ?? 0) + 1);
+    const place = row.places as unknown as { name: string; category: string } | null;
+    if (place) {
+      const arr = guidePlacesMap.get(row.guide_id) ?? [];
+      arr.push({
+        name: place.name,
+        category: place.category,
+        note: row.note ?? undefined,
+      });
+      guidePlacesMap.set(row.guide_id, arr);
     }
   }
 
-  return guides;
+  return guides.map((g) => ({
+    ...g,
+    placeCount: countMap.get(g.id) ?? 0,
+    creatorName: profileMap.get(g.userId),
+    places: guidePlacesMap.get(g.id) ?? [],
+  }));
 }
 
 export async function createGuide(params: {
