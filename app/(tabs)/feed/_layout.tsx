@@ -8,6 +8,22 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => voi
   return <ErrorScreen error={error} retry={retry} />;
 }
 
+function CreateButton() {
+  const router = useRouter();
+  return (
+    <HapticPressable
+      style={{
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 7,
+      }}
+      onPress={() => router.push("/feed/create-post")}
+    >
+      <SFIcon name="plus" fallback="add" size={22} color={colors.text} />
+    </HapticPressable>
+  );
+}
+
 function DiscoverButton() {
   const router = useRouter();
   return (
@@ -33,6 +49,7 @@ export default function FeedLayout() {
           headerShown: true,
           headerTitle: "Feed",
           headerTransparent: true,
+          headerLeft: () => <CreateButton />,
           headerRight: () => <DiscoverButton />,
         }}
       />

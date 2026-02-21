@@ -1,4 +1,11 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   View,
@@ -14,14 +21,24 @@ import {
   Modal,
 } from "react-native";
 import { Image } from "expo-image";
-import { useLocalSearchParams, useRouter, usePathname, useNavigation, useFocusEffect } from "expo-router";
+import {
+  useLocalSearchParams,
+  useRouter,
+  usePathname,
+  useNavigation,
+  useFocusEffect,
+} from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { SFIcon } from "../components/SFIcon";
 import { LinearGradient } from "expo-linear-gradient";
 import Animated from "react-native-reanimated";
 import { TapGestureHandler, State } from "react-native-gesture-handler";
-import { getPostById as getPostByIdAsync, updatePost, deletePost } from "../services/posts";
+import {
+  getPostById as getPostByIdAsync,
+  updatePost,
+  deletePost,
+} from "../services/posts";
 import { getProfileById, getProfilesByIds } from "../services/users";
 import { getPlaceById as getPlaceByIdAsync } from "../services/places";
 import {
@@ -76,9 +93,13 @@ export function PostDetailScreen() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const { isSaved, toggleSave } = useSave();
-  const saved = isSaved('post', postId);
+  const saved = isSaved("post", postId);
   const fetchPost = useCallback(() => getPostByIdAsync(postId), [postId]);
-  const { data: post, loading, refetch: refetchPost } = useQuery(fetchPost, ['post', postId]);
+  const {
+    data: post,
+    loading,
+    refetch: refetchPost,
+  } = useQuery(fetchPost, ["post", postId]);
   const [aspectRatio, setAspectRatio] = useState<number>(16 / 9);
 
   // Use stored dimensions when available to avoid layout shift
@@ -99,15 +120,33 @@ export function PostDetailScreen() {
         <Host matchContents>
           <ContextMenu activationMethod="singlePress">
             <ContextMenu.Trigger>
-              <View style={{ alignItems: "center", justifyContent: "center", paddingHorizontal: 7 }}>
-                <SFIcon name="ellipsis" fallback="ellipsis-horizontal" size={22} color={colors.text} />
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingHorizontal: 7,
+                }}
+              >
+                <SFIcon
+                  name="ellipsis"
+                  fallback="ellipsis-horizontal"
+                  size={22}
+                  color={colors.text}
+                />
               </View>
             </ContextMenu.Trigger>
             <ContextMenu.Items>
-              <ExpoButton systemImage="pencil" onPress={() => onEditRef.current?.()}>
+              <ExpoButton
+                systemImage="pencil"
+                onPress={() => onEditRef.current?.()}
+              >
                 Edit caption
               </ExpoButton>
-              <ExpoButton systemImage="trash" role="destructive" onPress={() => onDeleteRef.current?.()}>
+              <ExpoButton
+                systemImage="trash"
+                role="destructive"
+                onPress={() => onDeleteRef.current?.()}
+              >
                 Delete post
               </ExpoButton>
             </ContextMenu.Items>
@@ -145,7 +184,7 @@ export function PostDetailScreen() {
   );
   const { data: comments, refetch: refetchComments } = useQuery(
     fetchComments,
-    post?.id ? ['comments', post.id] : undefined,
+    post?.id ? ["comments", post.id] : undefined,
     { staleTime: 30_000 }
   );
 
@@ -225,7 +264,7 @@ export function PostDetailScreen() {
       setEditingCommentId(null);
       setCommentText("");
       Keyboard.dismiss();
-      queryClient.invalidateQueries({ queryKey: ['q', ['comments', post.id]] });
+      queryClient.invalidateQueries({ queryKey: ["q", ["comments", post.id]] });
     } catch (err: any) {
       Alert.alert("Error", err?.message ?? "Failed to save comment");
     }
@@ -265,9 +304,11 @@ export function PostDetailScreen() {
         onPress: async () => {
           try {
             await deletePost(post.id);
-            queryClient.invalidateQueries({ queryKey: ['q', 'posts'] });
-            queryClient.invalidateQueries({ queryKey: ['q', 'feed'] });
-            queryClient.invalidateQueries({ queryKey: ['q', ['post', post.id]] });
+            queryClient.invalidateQueries({ queryKey: ["q", "posts"] });
+            queryClient.invalidateQueries({ queryKey: ["q", "feed"] });
+            queryClient.invalidateQueries({
+              queryKey: ["q", ["post", post.id]],
+            });
             showToast({ message: "Post deleted" });
             router.back();
           } catch (err: any) {
@@ -285,9 +326,9 @@ export function PostDetailScreen() {
       await updatePost(post.id, trimmed);
       setEditModalVisible(false);
       showToast({ message: "Post updated" });
-      queryClient.invalidateQueries({ queryKey: ['q', 'posts'] });
-      queryClient.invalidateQueries({ queryKey: ['q', 'feed'] });
-      queryClient.invalidateQueries({ queryKey: ['q', ['post', post.id]] });
+      queryClient.invalidateQueries({ queryKey: ["q", "posts"] });
+      queryClient.invalidateQueries({ queryKey: ["q", "feed"] });
+      queryClient.invalidateQueries({ queryKey: ["q", ["post", post.id]] });
     } catch (err: any) {
       Alert.alert("Error", err?.message ?? "Failed to update post");
     }
@@ -310,7 +351,12 @@ export function PostDetailScreen() {
             style={styles.header}
             onPress={() => handlePressUser(post.userId)}
           >
-            <Image source={{ uri: user?.avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} />
+            <Image
+              source={{ uri: user?.avatarUrl }}
+              style={styles.avatar}
+              contentFit="cover"
+              transition={200}
+            />
             <View style={styles.headerText}>
               <Text style={styles.displayName}>
                 {user?.displayName ?? "Unknown"}
@@ -391,7 +437,12 @@ export function PostDetailScreen() {
                 style={[styles.heartOverlay, heartOverlayStyle]}
                 pointerEvents="none"
               >
-                <SFIcon name="heart.fill" fallback="heart" size={80} color="#FFFFFF" />
+                <SFIcon
+                  name="heart.fill"
+                  fallback="heart"
+                  size={80}
+                  color="#FFFFFF"
+                />
               </Animated.View>
             </View>
           </TapGestureHandler>
@@ -436,7 +487,7 @@ export function PostDetailScreen() {
             </HapticPressable>
           </View>
           <HapticPressable
-            onPress={() => toggleSave('post', postId)}
+            onPress={() => toggleSave("post", postId)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <SFIcon
@@ -464,10 +515,11 @@ export function PostDetailScreen() {
 
         {/* Caption */}
         <View style={styles.captionRow}>
-          <Text style={styles.captionAuthor}>{user?.displayName}</Text>
           <HashtagText
             style={styles.captionText}
-            onPressHashtag={(tag) => router.push(`${currentTab}/hashtag/${tag}` as any)}
+            onPressHashtag={(tag) =>
+              router.push(`${currentTab}/hashtag/${tag}` as any)
+            }
           >
             {post.content}
           </HashtagText>
@@ -479,7 +531,12 @@ export function PostDetailScreen() {
             style={styles.locationRow}
             onPress={() => handlePressPlace(place.id)}
           >
-            <SFIcon name="mappin" fallback="location" size={16} color={categoryColor} />
+            <SFIcon
+              name="mappin"
+              fallback="location"
+              size={16}
+              color={categoryColor}
+            />
             <Text style={styles.locationName}>{place.name}</Text>
             <SFIcon
               name="chevron.right"
@@ -520,7 +577,9 @@ export function PostDetailScreen() {
                     </Text>
                     <HashtagText
                       style={styles.commentBody}
-                      onPressHashtag={(tag) => router.push(`${currentTab}/hashtag/${tag}` as any)}
+                      onPressHashtag={(tag) =>
+                        router.push(`${currentTab}/hashtag/${tag}` as any)
+                      }
                     >
                       {comment.text}
                     </HashtagText>
@@ -548,7 +607,9 @@ export function PostDetailScreen() {
                                   onPress: async () => {
                                     try {
                                       await deleteComment(comment.id);
-                                      queryClient.invalidateQueries({ queryKey: ['q', ['comments', post.id]] });
+                                      queryClient.invalidateQueries({
+                                        queryKey: ["q", ["comments", post.id]],
+                                      });
                                     } catch {}
                                   },
                                 },
@@ -587,7 +648,12 @@ export function PostDetailScreen() {
             onPress={handleCancelEdit}
             style={styles.cancelButton}
           >
-            <SFIcon name="xmark.circle.fill" fallback="close-circle" size={22} color={colors.textMuted} />
+            <SFIcon
+              name="xmark.circle.fill"
+              fallback="close-circle"
+              size={22}
+              color={colors.textMuted}
+            />
           </HapticPressable>
         )}
         <TextInput
@@ -610,7 +676,9 @@ export function PostDetailScreen() {
           style={styles.sendButton}
         >
           <SFIcon
-            name={editingCommentId ? "checkmark.circle.fill" : "paperplane.fill"}
+            name={
+              editingCommentId ? "checkmark.circle.fill" : "paperplane.fill"
+            }
             fallback={editingCommentId ? "checkmark-circle" : "send"}
             size={22}
             color={commentText.trim() ? colors.primary : colors.gray300}

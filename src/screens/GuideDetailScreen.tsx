@@ -15,7 +15,6 @@ import {
   useFocusEffect,
 } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
 import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
@@ -32,15 +31,16 @@ import { colors } from "../theme/colors";
 import { fonts } from "../theme/fonts";
 import type { PlaceCategory } from "../types";
 
-const CATEGORY_ICONS: Record<PlaceCategory, { sf: string; fallback: string }> = {
-  cafe: { sf: "cup.and.saucer.fill", fallback: "cafe" },
-  restaurant: { sf: "fork.knife", fallback: "restaurant" },
-  bar: { sf: "wineglass.fill", fallback: "wine" },
-  attraction: { sf: "safari", fallback: "compass" },
-  park: { sf: "leaf.fill", fallback: "leaf" },
-  venue: { sf: "music.note.list", fallback: "musical-notes" },
-  trail: { sf: "figure.hiking", fallback: "walk" },
-};
+const CATEGORY_ICONS: Record<PlaceCategory, { sf: string; fallback: string }> =
+  {
+    cafe: { sf: "cup.and.saucer.fill", fallback: "cafe" },
+    restaurant: { sf: "fork.knife", fallback: "restaurant" },
+    bar: { sf: "wineglass.fill", fallback: "wine" },
+    attraction: { sf: "safari", fallback: "compass" },
+    park: { sf: "leaf.fill", fallback: "leaf" },
+    venue: { sf: "music.note.list", fallback: "musical-notes" },
+    trail: { sf: "figure.hiking", fallback: "walk" },
+  };
 
 export function GuideDetailScreen() {
   const { guideId } = useLocalSearchParams<{ guideId: string }>();
@@ -48,7 +48,6 @@ export function GuideDetailScreen() {
   const pathname = usePathname();
   const tabBase = "/" + pathname.split("/")[1];
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const { profile } = useAuth();
   const { isSaved, toggleSave } = useSave();
 
@@ -74,10 +73,7 @@ export function GuideDetailScreen() {
     [guidePlaces]
   );
   const fetchPlaces = useCallback(() => getPlacesByIds(placeIds), [placeIds]);
-  const { data: places } = useQuery(fetchPlaces, [
-    "places",
-    ...placeIds,
-  ]);
+  const { data: places } = useQuery(fetchPlaces, ["places", ...placeIds]);
 
   const fetchMedia = useCallback(
     () => getTopPostMediaForPlaces(placeIds),
@@ -172,7 +168,6 @@ export function GuideDetailScreen() {
         keyExtractor={(item) => item.placeId}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: headerHeight,
           paddingBottom: insets.bottom + 60,
         }}
         ListHeaderComponent={
@@ -193,141 +188,136 @@ export function GuideDetailScreen() {
                 />
               </View>
             )}
-          <View style={styles.header}>
-            <Text style={styles.title}>{guide.title}</Text>
-            {guide.description && (
-              <Text style={styles.description}>{guide.description}</Text>
-            )}
+            <View style={styles.header}>
+              <Text style={styles.title}>{guide.title}</Text>
+              {guide.description && (
+                <Text style={styles.description}>{guide.description}</Text>
+              )}
 
-            <HapticPressable
-              style={styles.creatorRow}
-              onPress={() =>
-                router.push(`${tabBase}/user/${guide.userId}`)
-              }
-            >
-              {creator?.avatarUrl ? (
-                <Image
-                  source={{ uri: creator.avatarUrl }}
-                  style={styles.creatorAvatar}
-                  contentFit="cover"
-                  transition={200}
-                />
-              ) : (
-                <View
-                  style={[styles.creatorAvatar, styles.creatorAvatarFallback]}
+              <HapticPressable
+                style={styles.creatorRow}
+                onPress={() => router.push(`${tabBase}/user/${guide.userId}`)}
+              >
+                {creator?.avatarUrl ? (
+                  <Image
+                    source={{ uri: creator.avatarUrl }}
+                    style={styles.creatorAvatar}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                ) : (
+                  <View
+                    style={[styles.creatorAvatar, styles.creatorAvatarFallback]}
+                  >
+                    <SFIcon
+                      name="person.fill"
+                      fallback="person"
+                      size={14}
+                      color={colors.textMuted}
+                    />
+                  </View>
+                )}
+                <Text style={styles.creatorName}>
+                  {creator?.displayName ?? ""}
+                </Text>
+              </HapticPressable>
+
+              <View style={styles.statsRow}>
+                <View style={styles.stat}>
+                  <SFIcon
+                    name="mappin.and.ellipse"
+                    fallback="location"
+                    size={16}
+                    color={colors.textSecondary}
+                  />
+                  <Text style={styles.statText}>
+                    {guide.placeCount}{" "}
+                    {guide.placeCount === 1 ? "place" : "places"}
+                  </Text>
+                </View>
+                <HapticPressable
+                  style={styles.stat}
+                  onPress={() => toggleSave("guide", guide.id)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <SFIcon
-                    name="person.fill"
-                    fallback="person"
-                    size={14}
-                    color={colors.textMuted}
+                    name={
+                      isSaved("guide", guide.id) ? "bookmark.fill" : "bookmark"
+                    }
+                    fallback={
+                      isSaved("guide", guide.id)
+                        ? "bookmark"
+                        : "bookmark-outline"
+                    }
+                    size={16}
+                    color={
+                      isSaved("guide", guide.id)
+                        ? colors.saved
+                        : colors.textSecondary
+                    }
+                  />
+                  <Text
+                    style={[
+                      styles.statText,
+                      isSaved("guide", guide.id) && { color: colors.saved },
+                    ]}
+                  >
+                    Save
+                  </Text>
+                </HapticPressable>
+                <HapticPressable
+                  style={styles.stat}
+                  onPress={() => shareGuide(guide.id, guide.title)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <SFIcon
+                    name="square.and.arrow.up"
+                    fallback="share-outline"
+                    size={16}
+                    color={colors.textSecondary}
+                  />
+                  <Text style={styles.statText}>Share</Text>
+                </HapticPressable>
+              </View>
+
+              {isOwner && (
+                <View style={styles.ownerActions}>
+                  <LiquidGlassButton
+                    title="Edit Guide"
+                    variant="secondary"
+                    size="medium"
+                    icon="create-outline"
+                    onPress={() =>
+                      router.push({
+                        pathname: `${tabBase}/create-guide` as any,
+                        params: { guideId: guide.id },
+                      })
+                    }
+                    style={{ flex: 1, marginRight: 8 }}
+                  />
+                  <LiquidGlassButton
+                    title="Delete"
+                    variant="secondary"
+                    size="medium"
+                    icon="trash-outline"
+                    onPress={handleDelete}
+                    style={{ flex: 1 }}
                   />
                 </View>
               )}
-              <Text style={styles.creatorName}>
-                {creator?.displayName ?? ""}
-              </Text>
-            </HapticPressable>
-
-            <View style={styles.statsRow}>
-              <View style={styles.stat}>
-                <SFIcon
-                  name="mappin.and.ellipse"
-                  fallback="location"
-                  size={16}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.statText}>
-                  {guide.placeCount}{" "}
-                  {guide.placeCount === 1 ? "place" : "places"}
-                </Text>
-              </View>
-              <HapticPressable
-                style={styles.stat}
-                onPress={() => toggleSave("guide", guide.id)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <SFIcon
-                  name={
-                    isSaved("guide", guide.id)
-                      ? "bookmark.fill"
-                      : "bookmark"
-                  }
-                  fallback={
-                    isSaved("guide", guide.id)
-                      ? "bookmark"
-                      : "bookmark-outline"
-                  }
-                  size={16}
-                  color={
-                    isSaved("guide", guide.id)
-                      ? colors.saved
-                      : colors.textSecondary
-                  }
-                />
-                <Text
-                  style={[
-                    styles.statText,
-                    isSaved("guide", guide.id) && { color: colors.saved },
-                  ]}
-                >
-                  Save
-                </Text>
-              </HapticPressable>
-              <HapticPressable
-                style={styles.stat}
-                onPress={() => shareGuide(guide.id, guide.title)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <SFIcon
-                  name="square.and.arrow.up"
-                  fallback="share-outline"
-                  size={16}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.statText}>Share</Text>
-              </HapticPressable>
             </View>
-
-            {isOwner && (
-              <View style={styles.ownerActions}>
-                <LiquidGlassButton
-                  title="Edit Guide"
-                  variant="secondary"
-                  size="medium"
-                  icon="create-outline"
-                  onPress={() =>
-                    router.push({
-                      pathname: `${tabBase}/create-guide` as any,
-                      params: { guideId: guide.id },
-                    })
-                  }
-                  style={{ flex: 1, marginRight: 8 }}
-                />
-                <LiquidGlassButton
-                  title="Delete"
-                  variant="secondary"
-                  size="medium"
-                  icon="trash-outline"
-                  onPress={handleDelete}
-                  style={{ flex: 1 }}
-                />
-              </View>
-            )}
-          </View>
           </>
         }
         renderItem={({ item, index }) => {
           const place = item.place;
           if (!place) return null;
-          const mediaUrl = item.imageUrl?.thumbnailUrl ?? item.imageUrl?.mediaUrl;
+          const mediaUrl =
+            item.imageUrl?.thumbnailUrl ?? item.imageUrl?.mediaUrl;
 
           return (
             <HapticPressable
               style={styles.placeRow}
-              onPress={() =>
-                router.push(`${tabBase}/place/${place.id}`)
-              }
+              onPress={() => router.push(`${tabBase}/place/${place.id}`)}
             >
               <View style={styles.placeNumber}>
                 <Text style={styles.placeNumberText}>{index + 1}</Text>

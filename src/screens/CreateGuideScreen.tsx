@@ -63,7 +63,14 @@ export function CreateGuideScreen() {
   const [saving, setSaving] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<
-    { name: string; address: string; placeId?: string; category?: PlaceCategory; latitude?: number; longitude?: number }[]
+    {
+      name: string;
+      address: string;
+      placeId?: string;
+      category?: PlaceCategory;
+      latitude?: number;
+      longitude?: number;
+    }[]
   >([]);
   const [, setSearching] = useState(false);
 
@@ -202,10 +209,7 @@ export function CreateGuideScreen() {
       return;
     }
     if (selectedPlaces.length === 0) {
-      Alert.alert(
-        "No places",
-        "Please add at least one place to your guide"
-      );
+      Alert.alert("No places", "Please add at least one place to your guide");
       return;
     }
 
@@ -296,9 +300,7 @@ export function CreateGuideScreen() {
               {isEditing ? "Edit Guide" : "New Guide"}
             </Text>
             <HapticPressable onPress={handleSave} disabled={saving}>
-              <Text
-                style={[styles.saveText, saving && { opacity: 0.5 }]}
-              >
+              <Text style={[styles.saveText, saving && { opacity: 0.5 }]}>
                 {saving ? "Saving..." : "Save"}
               </Text>
             </HapticPressable>
@@ -337,19 +339,13 @@ export function CreateGuideScreen() {
                 style={[
                   styles.placeCategoryDot,
                   {
-                    backgroundColor:
-                      colors.category[item.place.category],
+                    backgroundColor: colors.category[item.place.category],
                   },
                 ]}
               >
                 <SFIcon
-                  name={
-                    CATEGORY_ICONS[item.place.category].sf as any
-                  }
-                  fallback={
-                    CATEGORY_ICONS[item.place.category]
-                      .fallback as any
-                  }
+                  name={CATEGORY_ICONS[item.place.category].sf as any}
+                  fallback={CATEGORY_ICONS[item.place.category].fallback as any}
                   size={12}
                   color="#FFFFFF"
                 />
@@ -411,16 +407,10 @@ export function CreateGuideScreen() {
                   color={colors.textSecondary}
                 />
                 <View style={styles.searchResultInfo}>
-                  <Text
-                    style={styles.searchResultName}
-                    numberOfLines={1}
-                  >
+                  <Text style={styles.searchResultName} numberOfLines={1}>
                     {result.name}
                   </Text>
-                  <Text
-                    style={styles.searchResultAddress}
-                    numberOfLines={1}
-                  >
+                  <Text style={styles.searchResultAddress} numberOfLines={1}>
                     {result.address}
                   </Text>
                 </View>

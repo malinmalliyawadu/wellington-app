@@ -1,4 +1,4 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { EventFilterProvider } from "../../../src/context/EventFilterContext";
 import { ErrorScreen } from "../../../src/components/ErrorScreen";
 import { useEventFilters } from "../../../src/context/EventFilterContext";
@@ -14,6 +14,22 @@ export function ErrorBoundary({
   retry: () => void;
 }) {
   return <ErrorScreen error={error} retry={retry} />;
+}
+
+function CreateButton() {
+  const router = useRouter();
+  return (
+    <HapticPressable
+      style={{
+        alignItems: "center",
+        justifyContent: "center",
+        paddingHorizontal: 7,
+      }}
+      onPress={() => router.push({ pathname: "/events/create-post", params: { defaultType: "event" } })}
+    >
+      <SFIcon name="plus" fallback="add" size={22} color={colors.text} />
+    </HapticPressable>
+  );
 }
 
 function FilterButton() {
@@ -58,6 +74,7 @@ export default function EventsLayout() {
             headerShown: true,
             headerTitle: "Events",
             headerTransparent: true,
+            headerLeft: () => <CreateButton />,
             headerRight: () => <FilterButton />,
           }}
         />
