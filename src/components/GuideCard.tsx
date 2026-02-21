@@ -28,10 +28,10 @@ export function GuideCard({ guide, onPress, compact }: GuideCardProps) {
       style={[styles.container, compact && styles.containerCompact]}
       onPress={onPress}
     >
-      {guide.coverImageUrl ? (
+      {(guide.coverImageUrl || guide.firstPlaceImageUrl) ? (
         <View style={[styles.imageContainer, compact && styles.imageContainerCompact]}>
           <Image
-            source={{ uri: guide.coverImageUrl }}
+            source={{ uri: guide.coverImageUrl ?? guide.firstPlaceImageUrl }}
             style={styles.image}
             contentFit="cover"
             transition={200}

@@ -38,8 +38,10 @@ interface FollowingUser {
 interface Guide {
   id: string;
   title: string;
+  description?: string;
   placeCount: number;
   creatorName?: string;
+  places?: { name: string; category: string; note?: string }[];
 }
 
 interface AIContext {
@@ -186,8 +188,14 @@ ${followingStr || "Not following anyone yet."}
 RECENT POSTS FROM FOLLOWED USERS (user|place|content):
 ${postsStr || "No recent posts."}
 
-GUIDES (id|title|creator|placeCount):
-${ctx.guides?.length ? ctx.guides.map((g) => `${g.id}|${g.title}|${g.creatorName ?? "unknown"}|${g.placeCount} places`).join("\n") : "No guides yet."}
+GUIDES (curated place lists by users — recommend these when relevant to the user's query):
+${ctx.guides?.length ? ctx.guides.map((g) => {
+    const placesStr = g.places?.length
+      ? `\n  Places: ${g.places.map((p) => `${p.name} (${p.category})`).join(", ")}`
+      : "";
+    const descStr = g.description ? ` — "${g.description}"` : "";
+    return `${g.id}|"${g.title}" by ${g.creatorName ?? "unknown"} (${g.placeCount} places)${descStr}${placesStr}`;
+  }).join("\n") : "No guides yet."}
 
 TRENDING HASHTAGS:
 ${ctx.trendingHashtags?.length ? ctx.trendingHashtags.map((t) => `#${t}`).join(", ") : "None yet."}
@@ -213,7 +221,7 @@ INSTRUCTIONS:
 }
 - Only include places/events/guides that exist in the data above
 - Include 1-4 places, 0-3 events, and 0-2 guides as relevant to the question
-- When users ask for curated lists, recommendations from locals, or "best of" type questions, consider suggesting relevant guides
+- Check the GUIDES section for relevant guides to recommend. If a guide's title, description, or places match the user's query, include it in the guides array
 - When mentioning guides in message text, use: [Guide Title](guide:guideId)
 - When suggesting activities, you may reference relevant trending hashtags to help users discover related content
 - If the question is unrelated to Wellington activities, respond helpfully but keep places/events arrays empty`;

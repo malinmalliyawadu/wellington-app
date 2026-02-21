@@ -24,6 +24,7 @@ import { useAuth } from "../context/AuthContext";
 import { useFollow } from "../context/FollowContext";
 import { useLocation } from "../context/LocationContext";
 import { askAI } from "../services/ai";
+import { getGuidesWithPlaces } from "../services/guides";
 import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
 import Markdown from "react-native-markdown-display";
@@ -34,7 +35,6 @@ import type {
   Event,
   Post,
   User,
-  Guide,
   Hashtag,
   AIPlaceRecommendation,
   AIEventRecommendation,
@@ -286,12 +286,7 @@ export function AIChatScreen() {
           queryClient.getQueryData(["q", "trending-hashtags"]) ?? [];
         const trendingHashtags = cachedHashtags.map((h) => h.name);
 
-        const cachedGuides: Guide[] =
-          queryClient.getQueryData(["q", "guides"]) ?? [];
-        const guidesWithCreators = cachedGuides.map((g) => ({
-          ...g,
-          creatorName: profileMap.get(g.userId)?.displayName,
-        }));
+        const guides = await getGuidesWithPlaces();
 
         const aiResponse = await askAI(conversationHistory, {
           places: cachedPlaces,
@@ -300,7 +295,7 @@ export function AIChatScreen() {
           followingUsers,
           userLocation,
           trendingHashtags,
-          guides: guidesWithCreators,
+          guides,
         });
 
         const assistantMsg: ChatMessage = {
