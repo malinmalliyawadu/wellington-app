@@ -20,14 +20,16 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
   const [savedPosts, setSavedPosts] = useState<string[]>([]);
   const [savedPlaces, setSavedPlaces] = useState<string[]>([]);
   const [savedEvents, setSavedEvents] = useState<string[]>([]);
+  const [savedGuides, setSavedGuides] = useState<string[]>([]);
 
   const refreshFromServer = useCallback(() => {
     if (!currentUserId) return;
     getSavedItemIds(currentUserId)
-      .then(({ posts, places, events }) => {
+      .then(({ posts, places, events, guides }) => {
         setSavedPosts(posts);
         setSavedPlaces(places);
         setSavedEvents(events);
+        setSavedGuides(guides);
       })
       .catch(() => {});
   }, [currentUserId]);
@@ -37,6 +39,7 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
       setSavedPosts([]);
       setSavedPlaces([]);
       setSavedEvents([]);
+      setSavedGuides([]);
       return;
     }
     refreshFromServer();
@@ -53,6 +56,7 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
   const getSetterForType = (type: SavedItemType) => {
     if (type === 'post') return setSavedPosts;
     if (type === 'place') return setSavedPlaces;
+    if (type === 'guide') return setSavedGuides;
     return setSavedEvents;
   };
 
@@ -60,9 +64,10 @@ export function SaveProvider({ children }: { children: React.ReactNode }) {
     (type: SavedItemType) => {
       if (type === 'post') return savedPosts;
       if (type === 'place') return savedPlaces;
+      if (type === 'guide') return savedGuides;
       return savedEvents;
     },
-    [savedPosts, savedPlaces, savedEvents]
+    [savedPosts, savedPlaces, savedEvents, savedGuides]
   );
 
   const isSaved = useCallback(

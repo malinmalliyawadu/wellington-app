@@ -283,6 +283,38 @@ export default function ProfileLayout() {
           headerTransparent: true,
         }}
       />
+      <Stack.Screen
+        name="guides"
+        options={{
+          headerShown: true,
+          headerTitle: "Guides",
+          headerBackTitle: "Profile",
+          headerTransparent: true,
+        }}
+      />
+      <Stack.Screen
+        name="guide/[guideId]"
+        options={{
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Guides",
+          headerTransparent: true,
+        }}
+      />
+      <Stack.Screen
+        name="create-guide"
+        options={{
+          presentation: "formSheet",
+          headerShown: false,
+          contentStyle: { backgroundColor: "transparent" },
+          sheetAllowedDetents: [0.95, 1.0],
+          sheetGrabberVisible: true,
+          sheetCornerRadius: 32,
+          sheetInitialDetentIndex: 0,
+          sheetLargestUndimmedDetentIndex: 0,
+          sheetExpandsWhenScrolledToEdge: false,
+        }}
+      />
     </Stack>
   );
 }

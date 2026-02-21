@@ -68,6 +68,15 @@ export default function SearchLayout() {
           headerTransparent: true,
         }}
       />
+      <Stack.Screen
+        name="guide/[guideId]"
+        options={{
+          headerShown: true,
+          headerTitle: "",
+          headerBackTitle: "Search",
+          headerTransparent: true,
+        }}
+      />
     </Stack>
   );
 }
