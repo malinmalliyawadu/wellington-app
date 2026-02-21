@@ -4,6 +4,7 @@ export interface Guide {
   title: string;
   description?: string;
   coverImageUrl?: string;
+  firstPlaceImageUrl?: string;
   placeCount: number;
   createdAt: string;
   updatedAt: string;
@@ -15,4 +16,9 @@ export interface GuidePlace {
   sortOrder: number;
   note?: string;
   addedAt: string;
+}
+
+export interface GuideWithPlaces extends Guide {
+  creatorName?: string;
+  places: { name: string; category: string; note?: string }[];
 }

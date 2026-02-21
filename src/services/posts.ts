@@ -197,6 +197,30 @@ export async function createPost(post: {
   return mapPost(data);
 }
 
+export async function getTopPostMediaForPlaces(
+  placeIds: string[]
+): Promise<Map<string, { mediaUrl: string; thumbnailUrl?: string }>> {
+  if (placeIds.length === 0) return new Map();
+
+  const { data } = await supabase
+    .from('posts')
+    .select('place_id, media_url, thumbnail_url, likes')
+    .in('place_id', placeIds)
+    .not('media_url', 'is', null)
+    .order('likes', { ascending: false });
+
+  const map = new Map<string, { mediaUrl: string; thumbnailUrl?: string }>();
+  for (const row of data ?? []) {
+    if (!map.has(row.place_id)) {
+      map.set(row.place_id, {
+        mediaUrl: row.media_url!,
+        thumbnailUrl: row.thumbnail_url ?? undefined,
+      });
+    }
+  }
+  return map;
+}
+
 function mapMediaItem(row: {
   id: string;
   media_url: string;
