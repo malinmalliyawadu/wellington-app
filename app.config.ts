@@ -9,6 +9,9 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     name: "Welly",
     slug: "wellington-app",
     version: "1.0.0",
+    runtimeVersion: {
+      policy: "appVersion",
+    },
     scheme: "wellington",
     orientation: "portrait",
     icon: "./assets/icon.png",

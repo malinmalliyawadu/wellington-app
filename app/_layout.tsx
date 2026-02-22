@@ -30,6 +30,7 @@ import { ExplorationProvider } from "../src/context/ExplorationContext";
 import { LocationProvider } from "../src/context/LocationContext";
 import { ZoomOverlayProvider } from "../src/context/ZoomOverlayContext";
 import { StatusBar } from "expo-status-bar";
+import { useOTAUpdates } from "../src/hooks/useOTAUpdates";
 
 export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
   return <ErrorScreen error={error} retry={retry} />;
@@ -202,6 +203,8 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  useOTAUpdates();
+
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_500Medium,
     PlusJakartaSans_600SemiBold,
