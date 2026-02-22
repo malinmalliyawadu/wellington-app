@@ -13,7 +13,10 @@ import { useTheme, type Colors } from "../theme/ThemeContext";
 
 const glassEnabled = isLiquidGlassAvailable();
 
-const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
+const CATEGORY_ICONS: Record<
+  PlaceCategory,
+  { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }
+> = {
   cafe: { sf: "cup.and.saucer.fill", fallback: "cafe" },
   restaurant: { sf: "fork.knife", fallback: "restaurant" },
   bar: { sf: "wineglass.fill", fallback: "wine" },
@@ -55,6 +58,7 @@ function PopularityMarkerInner({
   const color = colors.category[category];
   const iconSize = Math.round(size * 0.45);
   const iconName = CATEGORY_ICONS[category];
+  const unfollowedIconColor = isDark ? "#E8E8E8aa" : color;
 
   const renderMarker = () => {
     if (glassEnabled) {
@@ -73,7 +77,12 @@ function PopularityMarkerInner({
             ]}
             glassEffectStyle="clear"
           >
-            <SFIcon name={iconName.sf} fallback={iconName.fallback} size={iconSize} color="#FFFFFF" />
+            <SFIcon
+              name={iconName.sf}
+              fallback={iconName.fallback}
+              size={iconSize}
+              color="#FFFFFF"
+            />
           </GlassView>
         );
       }
@@ -92,7 +101,12 @@ function PopularityMarkerInner({
           ]}
           glassEffectStyle="clear"
         >
-          <SFIcon name={iconName.sf} fallback={iconName.fallback} size={iconSize} color={color} />
+          <SFIcon
+            name={iconName.sf}
+            fallback={iconName.fallback}
+            size={iconSize}
+            color={unfollowedIconColor}
+          />
         </GlassView>
       );
     }
@@ -194,7 +208,9 @@ function PopularityMarkerInner({
             style={[
               StyleSheet.absoluteFill,
               {
-                backgroundColor: isDark ? "rgba(30, 30, 30, 0.6)" : "rgba(255, 255, 255, 0.4)",
+                backgroundColor: isDark
+                  ? "rgba(30, 30, 30, 0.6)"
+                  : "rgba(255, 255, 255, 0.4)",
                 borderRadius: size / 2,
                 borderWidth: 2.5,
                 borderColor: color,
@@ -228,7 +244,7 @@ function PopularityMarkerInner({
             name={iconName.sf}
             fallback={iconName.fallback}
             size={iconSize}
-            color={color}
+            color={unfollowedIconColor}
             style={{ zIndex: 10 }}
           />
         </BlurView>
@@ -242,7 +258,9 @@ function PopularityMarkerInner({
         <View style={styles.eventRow}>
           <View style={styles.eventDateBadge}>
             <Text style={styles.eventDateMonth}>
-              {new Date(events[0].date).toLocaleDateString("en-NZ", { month: "short" }).toUpperCase()}
+              {new Date(events[0].date)
+                .toLocaleDateString("en-NZ", { month: "short" })
+                .toUpperCase()}
             </Text>
             <Text style={styles.eventDateDay}>
               {new Date(events[0].date).getDate()}
@@ -309,7 +327,11 @@ function PopularityMarkerInner({
               {renderLabelContent()}
             </GlassView>
           ) : (
-            <BlurView intensity={15} tint={isDark ? "dark" : "light"} style={styles.labelContainer}>
+            <BlurView
+              intensity={15}
+              tint={isDark ? "dark" : "light"}
+              style={styles.labelContainer}
+            >
               {renderLabelContent()}
             </BlurView>
           )}
@@ -337,142 +359,147 @@ export const PopularityMarker = React.memo(
     prev.placeName === next.placeName &&
     prev.showLabel === next.showLabel &&
     (prev.events?.length ?? 0) === (next.events?.length ?? 0) &&
-    (prev.events ?? []).every((e, i) => e.date === next.events?.[i]?.date && e.attendeeAvatars.length === next.events?.[i]?.attendeeAvatars.length) &&
+    (prev.events ?? []).every(
+      (e, i) =>
+        e.date === next.events?.[i]?.date &&
+        e.attendeeAvatars.length === next.events?.[i]?.attendeeAvatars.length
+    ) &&
     arraysEqual(prev.posterAvatars ?? [], next.posterAvatars ?? [])
 );
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  container: {
-    alignItems: "center",
-  },
-  eventRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  eventRight: {
-    flexShrink: 1,
-  },
-  eventDateBadge: {
-    alignItems: "center",
-    minWidth: 22,
-  },
-  eventDateMonth: {
-    fontSize: 7,
-    fontWeight: "700",
-    fontFamily: fonts.bold,
-    color: colors.category.venue,
-    letterSpacing: 0.3,
-  },
-  eventDateDay: {
-    fontSize: 12,
-    fontFamily: fonts.extraBold,
-    color: colors.text,
-    lineHeight: 13,
-  },
-  eventMore: {
-    fontSize: 9,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.textMuted,
-  },
-  followedGlassMarker: {
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  glassMarker: {
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
-    elevation: 6,
-  },
-  glassLabelContainer: {
-    borderRadius: 8,
-    overflow: "hidden",
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-  },
-  marker: {
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  markerContainer: {
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  blurMarker: {
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  highlight: {
-    position: "absolute",
-    top: "10%",
-    left: "10%",
-  },
-  labelWrapper: {
-    marginTop: 2,
-    borderRadius: 8,
-    maxWidth: 200,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.16,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  labelContainer: {
-    backgroundColor: colors.translucentCardBackground,
-    borderRadius: 8,
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderWidth: 1,
-    borderColor: colors.glassBorder,
-  },
-  labelName: {
-    fontSize: 11,
-    fontWeight: "500",
-    fontFamily: fonts.medium,
-    textAlign: "center",
-    color: colors.text,
-  },
-  avatarRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 1,
-    gap: 4,
-  },
-  avatarStack: {
-    flexDirection: "row",
-    height: 14,
-    width: 34, // 14 + 2*10 overlap
-  },
-  avatar: {
-    position: "absolute",
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: colors.cardBackground,
-  },
-});
+const createStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      alignItems: "center",
+    },
+    eventRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+    },
+    eventRight: {
+      flexShrink: 1,
+    },
+    eventDateBadge: {
+      alignItems: "center",
+      minWidth: 22,
+    },
+    eventDateMonth: {
+      fontSize: 7,
+      fontWeight: "700",
+      fontFamily: fonts.bold,
+      color: colors.category.venue,
+      letterSpacing: 0.3,
+    },
+    eventDateDay: {
+      fontSize: 12,
+      fontFamily: fonts.extraBold,
+      color: colors.text,
+      lineHeight: 13,
+    },
+    eventMore: {
+      fontSize: 9,
+      fontWeight: "600",
+      fontFamily: fonts.semiBold,
+      color: colors.textMuted,
+    },
+    followedGlassMarker: {
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.25,
+      shadowRadius: 10,
+      elevation: 6,
+    },
+    glassMarker: {
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.2,
+      shadowRadius: 10,
+      elevation: 6,
+    },
+    glassLabelContainer: {
+      borderRadius: 8,
+      overflow: "hidden",
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+    },
+    marker: {
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    markerContainer: {
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 6,
+    },
+    blurMarker: {
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+    },
+    highlight: {
+      position: "absolute",
+      top: "10%",
+      left: "10%",
+    },
+    labelWrapper: {
+      marginTop: 2,
+      borderRadius: 8,
+      maxWidth: 200,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.16,
+      shadowRadius: 4,
+      elevation: 4,
+    },
+    labelContainer: {
+      backgroundColor: colors.translucentCardBackground,
+      borderRadius: 8,
+      paddingHorizontal: 7,
+      paddingVertical: 3,
+      borderWidth: 1,
+      borderColor: colors.glassBorder,
+    },
+    labelName: {
+      fontSize: 11,
+      fontWeight: "500",
+      fontFamily: fonts.medium,
+      textAlign: "center",
+      color: colors.text,
+    },
+    avatarRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      marginTop: 1,
+      gap: 4,
+    },
+    avatarStack: {
+      flexDirection: "row",
+      height: 14,
+      width: 34, // 14 + 2*10 overlap
+    },
+    avatar: {
+      position: "absolute",
+      width: 14,
+      height: 14,
+      borderRadius: 7,
+      borderWidth: 1,
+      borderColor: colors.cardBackground,
+    },
+  });

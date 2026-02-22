@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../src/lib/queryClient";
 import { setupNetworkManager } from "../src/lib/networkManager";
@@ -213,19 +213,13 @@ export default function RootLayout() {
     Pacifico_400Regular,
   });
 
-  const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded) {
-      await SplashScreen.hideAsync();
-    }
-  }, [fontsLoaded]);
-
   if (!fontsLoaded) return null;
 
   return (
     <QueryClientProvider client={queryClient}>
       <NetworkProvider>
       <ThemeProvider>
-      <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutRootView}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
         <ZoomOverlayProvider>
           <SafeAreaProvider>
             <AuthProvider>
