@@ -4,12 +4,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { FeedPost } from "../components/FeedPost";
+import { FeedGuideCard } from "../components/FeedGuideCard";
 import { useFollow } from "../context/FollowContext";
 import { useAuth } from "../context/AuthContext";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { useQuery } from "../hooks/useQuery";
 import { useQueryClient } from "@tanstack/react-query";
 import { getFeedPosts } from "../services/posts";
+import { getFeedGuides } from "../services/guides";
 import { getProfilesByIds } from "../services/users";
 import { getPlaces } from "../services/places";
 import { sortPosts } from "../utils/postSorting";
@@ -17,6 +19,7 @@ import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 import { QueryErrorState } from "../components/QueryErrorState";
 import { fonts } from "../theme/fonts";
+import type { FeedItem } from "../types";
 
 export function FeedScreen() {
   const { colors } = useTheme();
@@ -26,39 +29,52 @@ export function FeedScreen() {
   const { profile } = useAuth();
   const queryClient = useQueryClient();
   const headerHeight = useHeaderHeight();
+
   const fetchFeedPosts = useCallback(
     () => getFeedPosts(followingIds, profile?.id),
     [followingIds, profile?.id]
   );
   const {
     data: feedPosts,
-    loading: loadingPosts,
     error: feedError,
     refetch: refetchPosts,
   } = useQuery(fetchFeedPosts, [followingIds, profile?.id], { staleTime: 60_000 });
+
+  const fetchFeedGuidesData = useCallback(
+    () => getFeedGuides(followingIds, profile?.id),
+    [followingIds, profile?.id]
+  );
+  const {
+    data: feedGuides,
+    refetch: refetchGuides,
+  } = useQuery(fetchFeedGuidesData, ['feedGuides', followingIds, profile?.id], { staleTime: 60_000 });
+
   const [refreshing, setRefreshing] = useState(false);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
     useCallback(() => {
       refetchPosts();
-    }, [refetchPosts])
+      refetchGuides();
+    }, [refetchPosts, refetchGuides])
   );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await refetchPosts();
+      await Promise.all([refetchPosts(), refetchGuides()]);
     } finally {
       setRefreshing(false);
     }
-  }, [refetchPosts]);
+  }, [refetchPosts, refetchGuides]);
 
   // Fetch all users and places for the feed
-  const userIds = useMemo(
-    () => [...new Set((feedPosts ?? []).map((p) => p.userId))],
-    [feedPosts]
-  );
+  const userIds = useMemo(() => {
+    const postUserIds = (feedPosts ?? []).map((p) => p.userId);
+    const guideUserIds = (feedGuides ?? []).map((g) => g.userId);
+    return [...new Set([...postUserIds, ...guideUserIds])];
+  }, [feedPosts, feedGuides]);
+
   const fetchUsers = useCallback(() => getProfilesByIds(userIds), [userIds]);
   const { data: users } = useQuery(fetchUsers, userIds);
   const { data: places } = useQuery(getPlaces, 'places');
@@ -74,6 +90,14 @@ export function FeedScreen() {
   }, [feedPosts, queryClient]);
 
   useEffect(() => {
+    if (feedGuides) {
+      for (const guide of feedGuides) {
+        queryClient.setQueryData(['q', ['guide', guide.id]], guide);
+      }
+    }
+  }, [feedGuides, queryClient]);
+
+  useEffect(() => {
     if (users) {
       for (const user of users) {
         queryClient.setQueryData(['q', ['user', user.id]], user);
@@ -81,21 +105,36 @@ export function FeedScreen() {
     }
   }, [users, queryClient]);
 
-  const postsWithData = useMemo(() => {
-    if (!feedPosts || !users || !places) return [];
+  const feedItems = useMemo<FeedItem[]>(() => {
+    if (!users || !places) return [];
     const userMap = new Map(users.map((u) => [u.id, u]));
     const placeMap = new Map(places.map((p) => [p.id, p]));
-    // Use centralized sorting - sorts by most recent first
-    const sorted = sortPosts(feedPosts);
-    return sorted
-      .map((post) => {
-        const user = userMap.get(post.userId);
-        const place = placeMap.get(post.placeId);
-        if (!user || !place) return null;
-        return { post, user, place };
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null);
-  }, [feedPosts, users, places]);
+
+    const items: FeedItem[] = [];
+
+    // Add posts
+    const sorted = sortPosts(feedPosts ?? []);
+    for (const post of sorted) {
+      const user = userMap.get(post.userId);
+      const place = placeMap.get(post.placeId);
+      if (user && place) {
+        items.push({ type: 'post', post, user, place, sortDate: post.createdAt });
+      }
+    }
+
+    // Add guides
+    for (const guide of feedGuides ?? []) {
+      const user = userMap.get(guide.userId);
+      if (user) {
+        items.push({ type: 'guide', guide, user, sortDate: guide.createdAt });
+      }
+    }
+
+    // Sort combined feed by date descending
+    items.sort((a, b) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime());
+
+    return items;
+  }, [feedPosts, feedGuides, users, places]);
 
   const handlePressUser = useCallback(
     (userId: string) => router.push(`/feed/user/${userId}`),
@@ -123,21 +162,42 @@ export function FeedScreen() {
     [router]
   );
 
-  const renderItem = useCallback(
-    ({ item }: { item: (typeof postsWithData)[number] }) => (
-      <FeedPost
-        post={item.post}
-        user={item.user}
-        place={item.place}
-        onPressUser={handlePressUser}
-        onPressPlace={handlePressPlace}
-        onPressPost={handlePressPost}
-        onPressLikes={handlePressLikes}
-        onPressHashtag={handlePressHashtag}
-      />
-    ),
-    [handlePressUser, handlePressPlace, handlePressPost, handlePressLikes, handlePressHashtag]
+  const handlePressGuide = useCallback(
+    (guideId: string) => router.push(`/feed/guide/${guideId}` as any),
+    [router]
   );
+
+  const renderItem = useCallback(
+    ({ item }: { item: FeedItem }) => {
+      if (item.type === 'guide') {
+        return (
+          <FeedGuideCard
+            guide={item.guide}
+            user={item.user}
+            onPress={() => handlePressGuide(item.guide.id)}
+            onPressUser={handlePressUser}
+          />
+        );
+      }
+      return (
+        <FeedPost
+          post={item.post}
+          user={item.user}
+          place={item.place}
+          onPressUser={handlePressUser}
+          onPressPlace={handlePressPlace}
+          onPressPost={handlePressPost}
+          onPressLikes={handlePressLikes}
+          onPressHashtag={handlePressHashtag}
+        />
+      );
+    },
+    [handlePressUser, handlePressPlace, handlePressPost, handlePressLikes, handlePressHashtag, handlePressGuide]
+  );
+
+  const keyExtractor = useCallback((item: FeedItem) => {
+    return item.type === 'post' ? `post-${item.post.id}` : `guide-${item.guide.id}`;
+  }, []);
 
   const styles = createStyles(colors);
 
@@ -149,8 +209,8 @@ export function FeedScreen() {
     <View style={styles.container}>
       <FlatList
         testID="feed-list"
-        data={postsWithData}
-        keyExtractor={(item) => item.post.id}
+        data={feedItems}
+        keyExtractor={keyExtractor}
         renderItem={renderItem}
         windowSize={5}
         maxToRenderPerBatch={5}

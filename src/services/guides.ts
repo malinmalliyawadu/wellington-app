@@ -44,6 +44,25 @@ async function enrichGuides(guides: Guide[]): Promise<Guide[]> {
   return guides;
 }
 
+export async function getFeedGuides(
+  followingIds: string[],
+  currentUserId?: string
+): Promise<Guide[]> {
+  const userIds = currentUserId
+    ? [...new Set([...followingIds, currentUserId])]
+    : followingIds;
+  if (userIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from('guides')
+    .select('*')
+    .in('user_id', userIds)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return enrichGuides((data ?? []).map(mapGuide));
+}
+
 export async function getGuides(): Promise<Guide[]> {
   const { data, error } = await supabase
     .from('guides')
@@ -88,6 +107,41 @@ export async function getGuideById(guideId: string): Promise<Guide | null> {
   guide.placeCount = count ?? 0;
 
   return guide;
+}
+
+export interface GuidePlacePreview {
+  placeId: string;
+  name: string;
+  category: string;
+  imageUrl?: string;
+}
+
+export async function getGuidePlacePreviews(guideId: string): Promise<GuidePlacePreview[]> {
+  const { data } = await supabase
+    .from('guide_places')
+    .select('place_id, places(name, category)')
+    .eq('guide_id', guideId)
+    .order('sort_order', { ascending: true })
+    .limit(6);
+
+  if (!data || data.length === 0) return [];
+
+  const placeIds = data.map((r) => r.place_id);
+  const mediaMap = await getTopPostMediaForPlaces(placeIds);
+
+  const results: GuidePlacePreview[] = [];
+  for (const row of data) {
+    const place = row.places as unknown as { name: string; category: string } | null;
+    if (!place) continue;
+    const media = mediaMap.get(row.place_id);
+    results.push({
+      placeId: row.place_id,
+      name: place.name,
+      category: place.category,
+      imageUrl: media?.thumbnailUrl ?? media?.mediaUrl,
+    });
+  }
+  return results;
 }
 
 export async function getGuidePlaces(guideId: string): Promise<GuidePlace[]> {
@@ -187,7 +241,7 @@ export async function createGuide(params: {
     .single();
 
   if (error) throw error;
-  return { ...mapGuide(data), placeCount: 0 };
+  return { ...mapGuide(data), placeCount: 0, likes: 0 };
 }
 
 export async function updateGuide(
@@ -284,6 +338,7 @@ function mapGuide(row: {
   title: string;
   description: string | null;
   cover_image_url: string | null;
+  likes: number | null;
   created_at: string;
   updated_at: string;
 }): Guide {
@@ -294,6 +349,7 @@ function mapGuide(row: {
     description: row.description ?? undefined,
     coverImageUrl: row.cover_image_url ?? undefined,
     placeCount: 0,
+    likes: row.likes ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

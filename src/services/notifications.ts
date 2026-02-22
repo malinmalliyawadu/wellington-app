@@ -4,8 +4,9 @@ export interface Notification {
   id: string;
   recipientId: string;
   actorId: string;
-  type: 'like' | 'comment' | 'follow';
+  type: 'like' | 'comment' | 'follow' | 'guide_like' | 'guide_comment';
   postId: string | null;
+  guideId: string | null;
   read: boolean;
   createdAt: string;
 }
@@ -17,6 +18,7 @@ function mapRow(row: any): Notification {
     actorId: row.actor_id,
     type: row.type,
     postId: row.post_id ?? null,
+    guideId: row.guide_id ?? null,
     read: row.read,
     createdAt: row.created_at,
   };
@@ -163,4 +165,62 @@ export async function deleteAllNotifications(recipientId: string): Promise<void>
     .eq('recipient_id', recipientId);
 
   if (error) throw error;
+}
+
+export async function createGuideLikeNotification(actorId: string, guideId: string): Promise<void> {
+  const { data: guide, error: guideError } = await supabase
+    .from('guides')
+    .select('user_id')
+    .eq('id', guideId)
+    .single();
+
+  if (guideError || !guide) return;
+  if (guide.user_id === actorId) return;
+
+  const { error } = await supabase
+    .from('notifications')
+    .insert({
+      recipient_id: guide.user_id,
+      actor_id: actorId,
+      type: 'guide_like' as const,
+      guide_id: guideId,
+    });
+
+  if (error && error.code !== '23505') throw error;
+}
+
+export async function deleteNotificationForGuideLike(actorId: string, guideId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('actor_id', actorId)
+    .eq('guide_id', guideId)
+    .eq('type', 'guide_like');
+
+  if (error) throw error;
+}
+
+export async function createGuideCommentNotification(actorId: string, guideId: string): Promise<void> {
+  const { data: guide, error: guideError } = await supabase
+    .from('guides')
+    .select('user_id')
+    .eq('id', guideId)
+    .single();
+
+  if (guideError || !guide) return;
+  if (guide.user_id === actorId) return;
+
+  const { error } = await supabase
+    .from('notifications')
+    .insert({
+      recipient_id: guide.user_id,
+      actor_id: actorId,
+      type: 'guide_comment' as const,
+      guide_id: guideId,
+    });
+
+  if (error) {
+    console.error('createGuideCommentNotification error:', error);
+    throw error;
+  }
 }

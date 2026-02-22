@@ -518,6 +518,7 @@ export type Database = {
           actor_id: string;
           type: NotificationType;
           post_id: string | null;
+          guide_id: string | null;
           read: boolean;
           created_at: string;
         };
@@ -527,6 +528,7 @@ export type Database = {
           actor_id: string;
           type: NotificationType;
           post_id?: string | null;
+          guide_id?: string | null;
           read?: boolean;
           created_at?: string;
         };
@@ -650,6 +652,7 @@ export type Database = {
           title: string;
           description: string | null;
           cover_image_url: string | null;
+          likes: number;
           created_at: string;
           updated_at: string;
         };
@@ -659,6 +662,7 @@ export type Database = {
           title: string;
           description?: string | null;
           cover_image_url?: string | null;
+          likes?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -666,6 +670,7 @@ export type Database = {
           title?: string;
           description?: string | null;
           cover_image_url?: string | null;
+          likes?: number;
           updated_at?: string;
         };
         Relationships: [
@@ -714,6 +719,73 @@ export type Database = {
           },
         ];
       };
+      guide_likes: {
+        Row: {
+          guide_id: string;
+          user_id: string;
+          created_at: string;
+        };
+        Insert: {
+          guide_id: string;
+          user_id: string;
+          created_at?: string;
+        };
+        Update: {
+          guide_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'guide_likes_guide_id_fkey';
+            columns: ['guide_id'];
+            referencedRelation: 'guides';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+          {
+            foreignKeyName: 'guide_likes_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+        ];
+      };
+      guide_comments: {
+        Row: {
+          id: string;
+          guide_id: string;
+          user_id: string;
+          text: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          guide_id: string;
+          user_id: string;
+          text: string;
+          created_at?: string;
+        };
+        Update: {
+          text?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'guide_comments_guide_id_fkey';
+            columns: ['guide_id'];
+            referencedRelation: 'guides';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+          {
+            foreignKeyName: 'guide_comments_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+        ];
+      };
     };
     Views: {};
     Functions: {};
@@ -735,7 +807,7 @@ export type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'co
 export type TrailDifficulty = 'easy' | 'moderate' | 'hard';
 export type ExplorationMethod = 'viewed' | 'posted';
 export type AchievementType = 'category' | 'milestone' | 'neighborhood' | 'social';
-export type NotificationType = 'like' | 'comment' | 'follow';
+export type NotificationType = 'like' | 'comment' | 'follow' | 'guide_like' | 'guide_comment';
 export type SavedItemType = 'post' | 'place' | 'event' | 'guide';
 
 export type Tables<T extends keyof Database['public']['Tables']> =

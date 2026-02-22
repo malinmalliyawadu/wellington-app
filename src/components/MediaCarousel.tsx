@@ -124,7 +124,7 @@ export function MediaCarousel({
         })}
       />
       {showDots && (
-        <View style={styles.dotsContainer}>
+        <View style={styles.dotsContainer} pointerEvents="none">
           {mediaItems.map((item, index) => (
             <View
               key={item.id}
@@ -142,22 +142,23 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     backgroundColor: colors.gray200,
   },
   dotsContainer: {
+    position: "absolute",
+    bottom: 10,
+    left: 0,
+    right: 0,
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    paddingVertical: 8,
-    gap: 6,
+    gap: 5,
   },
   dot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.gray300,
+    backgroundColor: "rgba(255,255,255,0.4)",
   },
   dotActive: {
-    backgroundColor: colors.primary,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+    backgroundColor: "#FFFFFF",
+    width: 18,
   },
 });

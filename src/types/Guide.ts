@@ -6,6 +6,7 @@ export interface Guide {
   coverImageUrl?: string;
   firstPlaceImageUrl?: string;
   placeCount: number;
+  likes: number;
   createdAt: string;
   updatedAt: string;
 }

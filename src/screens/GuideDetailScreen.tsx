@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,10 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  TextInput,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Image } from "expo-image";
 import {
@@ -15,6 +19,8 @@ import {
   useFocusEffect,
 } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
+import { useQueryClient } from "@tanstack/react-query";
 import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
@@ -22,10 +28,18 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useQuery } from "../hooks/useQuery";
 import { useAuth } from "../context/AuthContext";
 import { useSave } from "../context/SaveContext";
+import { useLike } from "../context/LikeContext";
 import { getGuideById, getGuidePlaces, deleteGuide } from "../services/guides";
 import { getPlacesByIds } from "../services/places";
 import { getTopPostMediaForPlaces } from "../services/posts";
-import { getProfileById } from "../services/users";
+import { getProfileById, getProfilesByIds } from "../services/users";
+import {
+  getGuideComments,
+  createGuideComment,
+  updateGuideComment,
+  deleteGuideComment,
+} from "../services/guideComments";
+import { createGuideCommentNotification } from "../services/notifications";
 import { shareGuide } from "../utils/sharing";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
@@ -43,6 +57,18 @@ const CATEGORY_ICONS: Record<PlaceCategory, { sf: string; fallback: string }> =
     trail: { sf: "figure.hiking", fallback: "walk" },
   };
 
+function formatTimeAgo(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffDays > 0) return `${diffDays}d ago`;
+  if (diffHours > 0) return `${diffHours}h ago`;
+  return "Just now";
+}
+
 export function GuideDetailScreen() {
   const { colors } = useTheme();
   const { guideId } = useLocalSearchParams<{ guideId: string }>();
@@ -52,7 +78,17 @@ export function GuideDetailScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const { isSaved, toggleSave } = useSave();
+  const { isGuideLiked, toggleGuideLike, getGuideLikeCount } = useLike();
+  const headerHeight = useHeaderHeight();
+  const queryClient = useQueryClient();
   const styles = createStyles(colors);
+  const inputRef = useRef<TextInput>(null);
+  const [commentText, setCommentText] = useState("");
+  const [inputFocused, setInputFocused] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+
+  const liked = isGuideLiked(guideId);
+  const likeCount = getGuideLikeCount(guideId);
 
   const fetchGuide = useCallback(() => getGuideById(guideId), [guideId]);
   const {
@@ -97,11 +133,37 @@ export function GuideDetailScreen() {
     guide?.userId ?? "",
   ]);
 
+  // Comments
+  const fetchComments = useCallback(
+    () => getGuideComments(guideId),
+    [guideId]
+  );
+  const { data: comments, refetch: refetchComments } = useQuery(
+    fetchComments,
+    ["guideComments", guideId],
+    { staleTime: 30_000 }
+  );
+
+  const commentUserIds = useMemo(
+    () => [...new Set((comments ?? []).map((c) => c.userId))],
+    [comments]
+  );
+  const fetchCommentUsers = useCallback(
+    () => getProfilesByIds(commentUserIds),
+    [commentUserIds]
+  );
+  const { data: commentUsers } = useQuery(fetchCommentUsers, commentUserIds);
+  const commentUserMap = useMemo(
+    () => new Map((commentUsers ?? []).map((u) => [u.id, u])),
+    [commentUsers]
+  );
+
   useFocusEffect(
     useCallback(() => {
       refetchGuide();
       refetchPlaces();
-    }, [refetchGuide, refetchPlaces])
+      refetchComments();
+    }, [refetchGuide, refetchPlaces, refetchComments])
   );
 
   const loading = loadingGuide || loadingPlaces;
@@ -150,6 +212,41 @@ export function GuideDetailScreen() {
     ]);
   }, [guideId, router]);
 
+  const handleSubmitComment = async () => {
+    const trimmed = commentText.trim();
+    if (!trimmed || !profile) return;
+    try {
+      if (editingCommentId) {
+        await updateGuideComment(editingCommentId, trimmed);
+      } else {
+        await createGuideComment({
+          guideId,
+          userId: profile.id,
+          text: trimmed,
+        });
+        createGuideCommentNotification(profile.id, guideId).catch(() => {});
+      }
+      setEditingCommentId(null);
+      setCommentText("");
+      Keyboard.dismiss();
+      queryClient.invalidateQueries({
+        queryKey: ["q", ["guideComments", guideId]],
+      });
+    } catch (err: any) {
+      Alert.alert("Error", err?.message ?? "Failed to save comment");
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingCommentId(null);
+    setCommentText("");
+    Keyboard.dismiss();
+  };
+
+  const handlePressUser = (userId: string) => {
+    router.push(`${tabBase}/user/${userId}` as any);
+  };
+
   if (loading) {
     return (
       <View
@@ -169,18 +266,25 @@ export function GuideDetailScreen() {
 
   if (!guide) return null;
 
+  const allComments = comments ?? [];
+
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={0}
+    >
       <FlatList
         data={listData}
         keyExtractor={(item) => item.placeId}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         contentContainerStyle={{
           paddingBottom: insets.bottom + 60,
         }}
         ListHeaderComponent={
           <>
-            {heroImageUrl && (
+            {heroImageUrl ? (
               <View style={styles.heroContainer}>
                 <Image
                   source={{ uri: heroImageUrl }}
@@ -195,6 +299,8 @@ export function GuideDetailScreen() {
                   style={styles.heroGradient}
                 />
               </View>
+            ) : (
+              <View style={{ height: headerHeight }} />
             )}
             <View style={styles.header}>
               <Text style={styles.title}>{guide.title}</Text>
@@ -243,6 +349,26 @@ export function GuideDetailScreen() {
                     {guide.placeCount === 1 ? "place" : "places"}
                   </Text>
                 </View>
+                <HapticPressable
+                  style={styles.stat}
+                  onPress={() => toggleGuideLike(guideId)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <SFIcon
+                    name={liked ? "heart.fill" : "heart"}
+                    fallback={liked ? "heart" : "heart-outline"}
+                    size={16}
+                    color={liked ? colors.liked : colors.textSecondary}
+                  />
+                  <Text
+                    style={[
+                      styles.statText,
+                      liked && { color: colors.liked },
+                    ]}
+                  >
+                    {likeCount}
+                  </Text>
+                </HapticPressable>
                 <HapticPressable
                   style={styles.stat}
                   onPress={() => toggleSave("guide", guide.id)}
@@ -374,153 +500,374 @@ export function GuideDetailScreen() {
             </HapticPressable>
           );
         }}
+        ListFooterComponent={
+          allComments.length > 0 ? (
+            <View style={styles.commentsSection}>
+              <Text style={styles.commentsSectionTitle}>Comments</Text>
+              {allComments.map((comment) => {
+                const commentUser = commentUserMap.get(comment.userId);
+                const isOwn = comment.userId === profile?.id;
+                return (
+                  <View key={comment.id} style={styles.commentRow}>
+                    <HapticPressable
+                      onPress={() => handlePressUser(comment.userId)}
+                    >
+                      <Image
+                        source={{ uri: commentUser?.avatarUrl }}
+                        style={styles.commentAvatar}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                    </HapticPressable>
+                    <View style={styles.commentContent}>
+                      <Text style={styles.commentText}>
+                        <Text style={styles.commentAuthor}>
+                          {commentUser?.displayName ?? "Unknown"}
+                        </Text>
+                        <Text style={styles.commentTime}>
+                          {" "}
+                          {formatTimeAgo(comment.createdAt)}
+                        </Text>
+                      </Text>
+                      <Text style={styles.commentBody}>{comment.text}</Text>
+                      {isOwn && (
+                        <View style={styles.commentActions}>
+                          <HapticPressable
+                            onPress={() => {
+                              setEditingCommentId(comment.id);
+                              setCommentText(comment.text);
+                              inputRef.current?.focus();
+                            }}
+                          >
+                            <Text style={styles.commentActionText}>Edit</Text>
+                          </HapticPressable>
+                          <HapticPressable
+                            onPress={() => {
+                              Alert.alert(
+                                "Delete comment?",
+                                "This cannot be undone.",
+                                [
+                                  { text: "Cancel", style: "cancel" },
+                                  {
+                                    text: "Delete",
+                                    style: "destructive",
+                                    onPress: async () => {
+                                      try {
+                                        await deleteGuideComment(comment.id);
+                                        queryClient.invalidateQueries({
+                                          queryKey: [
+                                            "q",
+                                            ["guideComments", guideId],
+                                          ],
+                                        });
+                                      } catch {}
+                                    },
+                                  },
+                                ]
+                              );
+                            }}
+                          >
+                            <Text
+                              style={[
+                                styles.commentActionText,
+                                { color: colors.liked },
+                              ]}
+                            >
+                              Delete
+                            </Text>
+                          </HapticPressable>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No places in this guide yet</Text>
           </View>
         }
       />
-    </View>
+
+      {/* Comment input bar */}
+      <View
+        style={[
+          styles.inputBar,
+          { paddingBottom: inputFocused ? 8 : insets.bottom + 60 },
+        ]}
+      >
+        {editingCommentId && (
+          <HapticPressable
+            onPress={handleCancelEdit}
+            style={styles.cancelButton}
+          >
+            <SFIcon
+              name="xmark.circle.fill"
+              fallback="close-circle"
+              size={22}
+              color={colors.textMuted}
+            />
+          </HapticPressable>
+        )}
+        <TextInput
+          ref={inputRef}
+          style={styles.commentInput}
+          placeholder={
+            editingCommentId ? "Edit comment..." : "Add a comment..."
+          }
+          placeholderTextColor={colors.textMuted}
+          value={commentText}
+          onChangeText={setCommentText}
+          onFocus={() => setInputFocused(true)}
+          onBlur={() => setInputFocused(false)}
+          onSubmitEditing={handleSubmitComment}
+          returnKeyType="send"
+        />
+        <HapticPressable
+          onPress={handleSubmitComment}
+          disabled={!commentText.trim()}
+          style={styles.sendButton}
+        >
+          <SFIcon
+            name={
+              editingCommentId ? "checkmark.circle.fill" : "paperplane.fill"
+            }
+            fallback={editingCommentId ? "checkmark-circle" : "send"}
+            size={22}
+            color={commentText.trim() ? colors.primary : colors.gray300}
+          />
+        </HapticPressable>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  heroContainer: {
-    height: 200,
-    position: "relative",
-  },
-  heroImage: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: colors.gray200,
-  },
-  heroGradient: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: "60%",
-  },
-  header: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray200,
-  },
-  title: {
-    fontSize: 24,
-    fontFamily: fonts.bold,
-    color: colors.text,
-    marginBottom: 8,
-  },
-  description: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  creatorRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 16,
-  },
-  creatorAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.gray200,
-  },
-  creatorAvatarFallback: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  creatorName: {
-    fontSize: 14,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-  },
-  statsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 20,
-  },
-  stat: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  statText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-  },
-  ownerActions: {
-    flexDirection: "row",
-    marginTop: 16,
-  },
-  placeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.gray200,
-    gap: 12,
-  },
-  placeNumber: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: colors.gray100,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  placeNumberText: {
-    fontSize: 12,
-    fontFamily: fonts.semiBold,
-    color: colors.textSecondary,
-  },
-  placeThumbnail: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: colors.gray200,
-  },
-  placeCategoryDot: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  placeInfo: {
-    flex: 1,
-  },
-  placeName: {
-    fontSize: 15,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-  },
-  placeAddress: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  placeNote: {
-    fontSize: 13,
-    color: colors.primary,
-    fontStyle: "italic",
-    marginTop: 4,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: colors.textMuted,
-  },
-});
+const createStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    heroContainer: {
+      height: 260,
+      position: "relative",
+    },
+    heroImage: {
+      width: "100%",
+      height: "100%",
+      backgroundColor: colors.gray200,
+    },
+    heroGradient: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: "60%",
+    },
+    header: {
+      padding: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.gray200,
+    },
+    title: {
+      fontSize: 24,
+      fontFamily: fonts.bold,
+      color: colors.text,
+      marginBottom: 8,
+    },
+    description: {
+      fontSize: 15,
+      color: colors.textSecondary,
+      lineHeight: 22,
+      marginBottom: 16,
+    },
+    creatorRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginBottom: 16,
+    },
+    creatorAvatar: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.gray200,
+    },
+    creatorAvatarFallback: {
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    creatorName: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+    },
+    statsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 20,
+    },
+    stat: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 5,
+    },
+    statText: {
+      fontSize: 14,
+      color: colors.textSecondary,
+    },
+    ownerActions: {
+      flexDirection: "row",
+      marginTop: 16,
+    },
+    placeRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.gray200,
+      gap: 12,
+    },
+    placeNumber: {
+      width: 24,
+      height: 24,
+      borderRadius: 12,
+      backgroundColor: colors.gray100,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    placeNumberText: {
+      fontSize: 12,
+      fontFamily: fonts.semiBold,
+      color: colors.textSecondary,
+    },
+    placeThumbnail: {
+      width: 48,
+      height: 48,
+      borderRadius: 8,
+      backgroundColor: colors.gray200,
+    },
+    placeCategoryDot: {
+      width: 48,
+      height: 48,
+      borderRadius: 8,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    placeInfo: {
+      flex: 1,
+    },
+    placeName: {
+      fontSize: 15,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+    },
+    placeAddress: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    placeNote: {
+      fontSize: 13,
+      color: colors.primary,
+      fontStyle: "italic",
+      marginTop: 4,
+    },
+    emptyState: {
+      alignItems: "center",
+      paddingVertical: 40,
+    },
+    emptyText: {
+      fontSize: 15,
+      color: colors.textMuted,
+    },
+    // Comments
+    commentsSection: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.gray200,
+      paddingTop: 16,
+    },
+    commentsSectionTitle: {
+      fontSize: 15,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+      paddingHorizontal: 14,
+      marginBottom: 12,
+    },
+    commentRow: {
+      flexDirection: "row",
+      paddingHorizontal: 14,
+      marginBottom: 12,
+    },
+    commentAvatar: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.gray200,
+      marginRight: 10,
+    },
+    commentContent: {
+      flex: 1,
+    },
+    commentText: {
+      fontSize: 13,
+      lineHeight: 18,
+    },
+    commentAuthor: {
+      fontWeight: "600",
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+    },
+    commentTime: {
+      fontSize: 12,
+      color: colors.textMuted,
+    },
+    commentBody: {
+      fontSize: 14,
+      color: colors.text,
+      lineHeight: 19,
+      marginTop: 2,
+    },
+    commentActions: {
+      flexDirection: "row",
+      gap: 16,
+      marginTop: 4,
+    },
+    commentActionText: {
+      fontSize: 12,
+      fontWeight: "600",
+      fontFamily: fonts.semiBold,
+      color: colors.textMuted,
+    },
+    // Comment input bar
+    inputBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 12,
+      paddingTop: 8,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.gray200,
+      backgroundColor: colors.background,
+    },
+    commentInput: {
+      flex: 1,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.gray100,
+      paddingHorizontal: 16,
+      fontSize: 14,
+      color: colors.text,
+    },
+    cancelButton: {
+      marginRight: 8,
+      padding: 4,
+    },
+    sendButton: {
+      marginLeft: 8,
+      padding: 4,
+    },
+  });
