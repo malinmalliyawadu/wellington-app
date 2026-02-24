@@ -8,3 +8,4 @@ export * from './AI';
 export * from './Hashtag';
 export * from './Guide';
 export * from './Feed';
+export * from './Report';
