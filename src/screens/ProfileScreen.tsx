@@ -24,6 +24,121 @@ import { useTheme, type Colors } from "../theme/ThemeContext";
 import { useInstagramConnection } from "../hooks/useInstagramConnection";
 import { HapticPressable } from "src/components/HapticPressable";
 import { QueryErrorState } from "../components/QueryErrorState";
+import { SFIcon } from "../components/SFIcon";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
+import { useSave } from "../context/SaveContext";
+
+const glassEnabled = isLiquidGlassAvailable();
+
+const QUICK_ACTIONS = [
+  {
+    label: "Awards",
+    icon: "trophy" as const,
+    fallback: "trophy-outline" as const,
+    tint: "#F5A623",
+    route: "/profile/achievements" as const,
+  },
+  {
+    label: "Guides",
+    icon: "book" as const,
+    fallback: "book-outline" as const,
+    tint: "#0077B6",
+    route: "/profile/guides" as const,
+  },
+  {
+    label: "Saved",
+    icon: "bookmark" as const,
+    fallback: "bookmark-outline" as const,
+    tint: "#E8962E",
+    route: "/profile/saved" as const,
+  },
+] as const;
+
+function QuickActions() {
+  const { colors } = useTheme();
+  const router = useRouter();
+  const { profile } = useAuth();
+  const { getSavedIds } = useSave();
+
+  const totalSaved =
+    getSavedIds("post").length +
+    getSavedIds("place").length +
+    getSavedIds("event").length;
+
+  return (
+    <View style={quickStyles.row}>
+      {QUICK_ACTIONS.map((action) => {
+        const hasBadge = action.label === "Saved" && totalSaved > 0;
+        const tileStyle = [quickStyles.tile, { backgroundColor: action.tint + "1F" }];
+        const content = (
+          <>
+            <SFIcon name={action.icon} fallback={action.fallback} size={18} color={action.tint} />
+            <Text style={[quickStyles.label, { color: colors.text }]}>{action.label}</Text>
+          </>
+        );
+        return (
+          <HapticPressable
+            key={action.label}
+            style={quickStyles.tileWrapper}
+            onPress={() => {
+              if (action.label === "Guides") {
+                router.push({
+                  pathname: action.route as any,
+                  params: { userId: profile?.id },
+                });
+              } else {
+                router.push(action.route as any);
+              }
+            }}
+          >
+            {glassEnabled ? (
+              <GlassView glassEffectStyle="regular" style={tileStyle}>{content}</GlassView>
+            ) : (
+              <View style={tileStyle}>{content}</View>
+            )}
+            {hasBadge && (
+              <View style={[quickStyles.badge, { backgroundColor: colors.error }]} />
+            )}
+          </HapticPressable>
+        );
+      })}
+    </View>
+  );
+}
+
+const quickStyles = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 16,
+    width: "100%",
+  },
+  tileWrapper: {
+    flex: 1,
+    position: "relative",
+  },
+  tile: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    height: 48,
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  badge: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+  },
+  label: {
+    fontSize: 13,
+    fontFamily: fonts.semiBold,
+  },
+});
 
 export function ProfileScreen() {
   const { colors } = useTheme();
@@ -219,6 +334,8 @@ export function ProfileScreen() {
             style={{ marginTop: 10 }}
           />
         )}
+
+        <QuickActions />
       </View>
 
       <UpcomingEvents events={userEvents} />

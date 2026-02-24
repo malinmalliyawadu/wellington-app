@@ -5,8 +5,6 @@ import { signOut } from "../../../src/services/auth";
 import { HapticPressable } from "../../../src/components/HapticPressable";
 import { ErrorScreen } from "../../../src/components/ErrorScreen";
 import { useNotifications } from "../../../src/context/NotificationContext";
-import { useSave } from "../../../src/context/SaveContext";
-import { useAuth } from "../../../src/context/AuthContext";
 import { useTheme, type Colors } from "../../../src/theme/ThemeContext";
 
 export function ErrorBoundary({
@@ -17,52 +15,6 @@ export function ErrorBoundary({
   retry: () => void;
 }) {
   return <ErrorScreen error={error} retry={retry} />;
-}
-
-function GuidesButton() {
-  const router = useRouter();
-  const { profile } = useAuth();
-  const { colors } = useTheme();
-  const styles = createBellStyles(colors);
-  return (
-    <HapticPressable
-      style={styles.container}
-      onPress={() =>
-        router.push({
-          pathname: "/profile/guides" as any,
-          params: { userId: profile?.id },
-        })
-      }
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-    >
-      <SFIcon
-        name="book"
-        fallback="book-outline"
-        size={22}
-        color={colors.text}
-      />
-    </HapticPressable>
-  );
-}
-
-function AchievementsButton() {
-  const router = useRouter();
-  const { colors } = useTheme();
-  const styles = createBellStyles(colors);
-  return (
-    <HapticPressable
-      style={styles.container}
-      onPress={() => router.push("/profile/achievements" as any)}
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-    >
-      <SFIcon
-        name="trophy"
-        fallback="trophy-outline"
-        size={22}
-        color={colors.text}
-      />
-    </HapticPressable>
-  );
 }
 
 function NotificationBell() {
@@ -84,33 +36,6 @@ function NotificationBell() {
         color={colors.text}
       />
       {unreadCount > 0 && <View style={styles.dot} />}
-    </HapticPressable>
-  );
-}
-
-function SavedButton() {
-  const router = useRouter();
-  const { getSavedIds } = useSave();
-  const { colors } = useTheme();
-  const styles = createBellStyles(colors);
-  const totalSaved =
-    getSavedIds("post").length +
-    getSavedIds("place").length +
-    getSavedIds("event").length;
-
-  return (
-    <HapticPressable
-      style={styles.container}
-      onPress={() => router.push("/profile/saved" as any)}
-      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-    >
-      <SFIcon
-        name="bookmark"
-        fallback="bookmark-outline"
-        size={22}
-        color={colors.text}
-      />
-      {totalSaved > 0 && <View style={styles.dot} />}
     </HapticPressable>
   );
 }
@@ -218,13 +143,12 @@ export default function ProfileLayout() {
           headerLeft: () => (
             <View style={{ flexDirection: "row", alignItems: "center" }}>
               <NotificationBell />
-              <AchievementsButton />
-              <GuidesButton />
-              <SavedButton />
             </View>
           ),
           headerRight: () => (
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", gap: 8 }}
+            >
               <SettingsButton />
               <LogoutButton />
             </View>
