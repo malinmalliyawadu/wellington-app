@@ -318,6 +318,35 @@ export function CreatePostSheetScreen() {
     }
   };
 
+  const takeMedia = async () => {
+    if (mediaItems.length >= 5) return;
+
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Camera Access Required',
+        'Please allow camera access in Settings to take photos and videos.',
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['images', 'videos'],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const newItem: MediaPickerItem = {
+        uri: asset.uri,
+        type: (asset.type === 'video' ? 'video' : 'photo') as 'photo' | 'video',
+        width: asset.width || undefined,
+        height: asset.height || undefined,
+      };
+      setMediaItems((prev) => [...prev, newItem].slice(0, 5));
+    }
+  };
+
   const pickEventImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -668,6 +697,7 @@ export function CreatePostSheetScreen() {
                 inputAccessoryViewID={Platform.OS === 'ios' ? HASHTAG_TOOLBAR_ID : undefined}
                 mediaItems={mediaItems}
                 onPickMedia={pickMedia}
+                onTakeMedia={takeMedia}
                 onRemoveMedia={(index) => {
                   setMediaItems((prev) => prev.filter((_, i) => i !== index));
                 }}

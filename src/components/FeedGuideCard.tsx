@@ -385,6 +385,7 @@ const createStyles = (colors: Colors) =>
       paddingVertical: 4,
       borderRadius: 6,
       overflow: "hidden",
+      backgroundColor: "rgba(0,0,0,0.25)",
     },
     badgeFallback: {
       backgroundColor: "rgba(0,0,0,0.5)",
@@ -394,6 +395,9 @@ const createStyles = (colors: Colors) =>
       fontFamily: fonts.bold,
       color: "#FFFFFF",
       letterSpacing: 0.5,
+      textShadowColor: "rgba(0,0,0,0.3)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
     },
     placeLabel: {
       position: "absolute",
@@ -407,6 +411,7 @@ const createStyles = (colors: Colors) =>
       borderRadius: 6,
       maxWidth: "60%",
       overflow: "hidden",
+      backgroundColor: "rgba(0,0,0,0.25)",
     },
     placeLabelFallback: {
       backgroundColor: "rgba(0,0,0,0.5)",
@@ -436,6 +441,9 @@ const createStyles = (colors: Colors) =>
       fontFamily: fonts.semiBold,
       color: "#FFFFFF",
       flexShrink: 1,
+      textShadowColor: "rgba(0,0,0,0.3)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
     },
     gradient: {
       position: "absolute",

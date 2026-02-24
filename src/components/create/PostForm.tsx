@@ -25,6 +25,7 @@ interface PostFormProps {
   inputAccessoryViewID?: string;
   mediaItems: MediaPickerItem[];
   onPickMedia: () => void;
+  onTakeMedia: () => void;
   onRemoveMedia: (index: number) => void;
   hashtagChips?: React.ReactNode;
 }
@@ -37,6 +38,7 @@ export function PostForm({
   inputAccessoryViewID,
   mediaItems,
   onPickMedia,
+  onTakeMedia,
   onRemoveMedia,
   hashtagChips,
 }: PostFormProps) {
@@ -123,9 +125,14 @@ export function PostForm({
                 </View>
               ))}
               {canAddMore && (
-                <HapticPressable style={styles.addMediaButton} onPress={onPickMedia}>
-                  <SFIcon name="plus" fallback="add" size={24} color={colors.gray400} />
-                </HapticPressable>
+                <>
+                  <HapticPressable style={styles.addMediaButton} onPress={onTakeMedia}>
+                    <SFIcon name="camera.fill" fallback="camera" size={20} color={colors.gray400} />
+                  </HapticPressable>
+                  <HapticPressable style={styles.addMediaButton} onPress={onPickMedia}>
+                    <SFIcon name="plus" fallback="add" size={24} color={colors.gray400} />
+                  </HapticPressable>
+                </>
               )}
             </ScrollView>
             <Text style={styles.mediaCounter}>
@@ -133,17 +140,30 @@ export function PostForm({
             </Text>
           </View>
         ) : (
-          <HapticPressable style={styles.mediaButton} onPress={onPickMedia}>
-            <SFIcon
-              name="camera.fill"
-              fallback="camera"
-              size={28}
-              color={colors.gray400}
-            />
-            <Text style={styles.mediaButtonText}>
-              Add photos & videos
-            </Text>
-          </HapticPressable>
+          <View style={styles.mediaButtonRow}>
+            <HapticPressable style={styles.mediaButton} onPress={onTakeMedia}>
+              <SFIcon
+                name="camera.fill"
+                fallback="camera"
+                size={28}
+                color={colors.gray400}
+              />
+              <Text style={styles.mediaButtonText}>
+                Camera
+              </Text>
+            </HapticPressable>
+            <HapticPressable style={styles.mediaButton} onPress={onPickMedia}>
+              <SFIcon
+                name="photo.on.rectangle"
+                fallback="images"
+                size={28}
+                color={colors.gray400}
+              />
+              <Text style={styles.mediaButtonText}>
+                Library
+              </Text>
+            </HapticPressable>
+          </View>
         )}
     </>
   );
@@ -188,11 +208,16 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     textAlign: "right",
     marginTop: 2,
   },
+  mediaButtonRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 16,
+  },
   mediaButton: {
+    flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    height: 140,
-    marginTop: 16,
+    height: 110,
     borderRadius: 12,
     backgroundColor: colors.gray100,
     overflow: "hidden",
