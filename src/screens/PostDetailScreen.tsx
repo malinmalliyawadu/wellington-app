@@ -64,6 +64,7 @@ import { createCommentNotification } from "../services/notifications";
 import { ContextMenu, Button as ExpoButton, Host } from "@expo/ui/swift-ui";
 import { HapticPressable } from "src/components/HapticPressable";
 import { HashtagText } from "../components/HashtagText";
+import { useReport } from "../hooks/useReport";
 
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -116,9 +117,10 @@ export function PostDetailScreen() {
   const isOwnPost = post?.userId === profile?.id;
   const onEditRef = useRef<(() => void) | undefined>(undefined);
   const onDeleteRef = useRef<(() => void) | undefined>(undefined);
+  const onReportRef = useRef<(() => void) | undefined>(undefined);
+  const { showReportAlert } = useReport();
 
   useLayoutEffect(() => {
-    if (!isOwnPost) return;
     navigation.setOptions({
       headerRight: () => (
         <Host matchContents>
@@ -140,19 +142,31 @@ export function PostDetailScreen() {
               </View>
             </ContextMenu.Trigger>
             <ContextMenu.Items>
-              <ExpoButton
-                systemImage="pencil"
-                onPress={() => onEditRef.current?.()}
-              >
-                Edit caption
-              </ExpoButton>
-              <ExpoButton
-                systemImage="trash"
-                role="destructive"
-                onPress={() => onDeleteRef.current?.()}
-              >
-                Delete post
-              </ExpoButton>
+              {isOwnPost ? (
+                <>
+                  <ExpoButton
+                    systemImage="pencil"
+                    onPress={() => onEditRef.current?.()}
+                  >
+                    Edit caption
+                  </ExpoButton>
+                  <ExpoButton
+                    systemImage="trash"
+                    role="destructive"
+                    onPress={() => onDeleteRef.current?.()}
+                  >
+                    Delete post
+                  </ExpoButton>
+                </>
+              ) : (
+                <ExpoButton
+                  systemImage="flag"
+                  role="destructive"
+                  onPress={() => onReportRef.current?.()}
+                >
+                  Report
+                </ExpoButton>
+              )}
             </ContextMenu.Items>
           </ContextMenu>
         </Host>
@@ -301,6 +315,14 @@ export function PostDetailScreen() {
   onEditRef.current = () => {
     setEditContent(post.content);
     setEditModalVisible(true);
+  };
+
+  onReportRef.current = () => {
+    showReportAlert({
+      contentType: 'post',
+      contentId: post.id,
+      reportedUserId: post.userId,
+    });
   };
 
   onDeleteRef.current = () => {

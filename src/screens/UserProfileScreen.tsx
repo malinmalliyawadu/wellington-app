@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from "react";
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   Animated,
 } from "react-native";
 import { Image } from "expo-image";
-import { useRouter, useLocalSearchParams, usePathname, useFocusEffect } from "expo-router";
+import { useRouter, useLocalSearchParams, usePathname, useFocusEffect, useNavigation } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useQuery } from "../hooks/useQuery";
@@ -28,15 +28,62 @@ import { fonts } from "../theme/fonts";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { HapticPressable } from "src/components/HapticPressable";
 import { QueryErrorState } from "../components/QueryErrorState";
+import { useAuth } from "../context/AuthContext";
+import { useReport } from "../hooks/useReport";
+import { SFIcon } from "../components/SFIcon";
+import { ContextMenu, Button as ExpoButton, Host } from "@expo/ui/swift-ui";
 
 export function UserProfileScreen() {
   const { colors } = useTheme();
   const router = useRouter();
+  const navigation = useNavigation();
   const { userId } = useLocalSearchParams<{ userId: string }>();
   const pathname = usePathname();
   const tabBase = "/" + pathname.split("/")[1];
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
+  const { profile } = useAuth();
+  const { showReportAlert } = useReport();
+  const onReportRef = useRef<(() => void) | undefined>(undefined);
+
+  const isOtherUser = profile?.id !== userId;
+
+  useLayoutEffect(() => {
+    if (!isOtherUser) return;
+    navigation.setOptions({
+      headerRight: () => (
+        <Host matchContents>
+          <ContextMenu activationMethod="singlePress">
+            <ContextMenu.Trigger>
+              <View
+                style={{
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingHorizontal: 7,
+                }}
+              >
+                <SFIcon
+                  name="ellipsis"
+                  fallback="ellipsis-horizontal"
+                  size={22}
+                  color={colors.text}
+                />
+              </View>
+            </ContextMenu.Trigger>
+            <ContextMenu.Items>
+              <ExpoButton
+                systemImage="flag"
+                role="destructive"
+                onPress={() => onReportRef.current?.()}
+              >
+                Report user
+              </ExpoButton>
+            </ContextMenu.Items>
+          </ContextMenu>
+        </Host>
+      ),
+    });
+  }, [navigation, isOtherUser]);
 
   const [refreshing, setRefreshing] = useState(false);
   const [avatarVisible, setAvatarVisible] = useState(false);
@@ -128,6 +175,14 @@ export function UserProfileScreen() {
   }
 
   if (!user) return null;
+
+  onReportRef.current = () => {
+    showReportAlert({
+      contentType: 'user',
+      contentId: undefined,
+      reportedUserId: userId,
+    });
+  };
 
   const followerCount = counts?.followers ?? 0;
   const followingCount = counts?.following ?? 0;
