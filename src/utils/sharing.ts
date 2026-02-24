@@ -1,7 +1,7 @@
 import { Share } from "react-native";
 
 const WEBSITE_URL =
-  process.env.EXPO_PUBLIC_WELLY_WEBSITE_URL || "https://welly.nz";
+  process.env.EXPO_PUBLIC_WELLY_WEBSITE_URL || "https://wellyapp.nz";
 
 // URL generators — produce HTTPS URLs for rich link previews
 export function getPostUrl(postId: string): string {

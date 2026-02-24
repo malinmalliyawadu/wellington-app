@@ -32,7 +32,13 @@ import { ZoomOverlayProvider } from "../src/context/ZoomOverlayContext";
 import { StatusBar } from "expo-status-bar";
 import { useOTAUpdates } from "../src/hooks/useOTAUpdates";
 
-export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
+export function ErrorBoundary({
+  error,
+  retry,
+}: {
+  error: Error;
+  retry: () => void;
+}) {
   return <ErrorScreen error={error} retry={retry} />;
 }
 
@@ -40,7 +46,7 @@ setupNetworkManager();
 SplashScreen.preventAutoHideAsync();
 
 const WEBSITE_HOST = (
-  process.env.EXPO_PUBLIC_WELLY_WEBSITE_URL || "https://welly.nz"
+  process.env.EXPO_PUBLIC_WELLY_WEBSITE_URL || "https://wellyapp.nz"
 )
   .replace(/^https?:\/\//, "")
   .replace(/\/$/, "");
@@ -69,9 +75,14 @@ function parseShareIntentRoute(url: string): string | null {
     return null;
   }
 
-  // Match https://welly.nz/post/{id}, /event/{id}, /place/{id}, /user/{id}
+  // Match https://wellyapp.nz/post/{id}, /event/{id}, /place/{id}, /user/{id}
   const websiteMatch = url.match(
-    new RegExp(`https?://${WEBSITE_HOST.replace(/\./g, "\\.")}/(post|event|place|user)/([^/?#]+)`)
+    new RegExp(
+      `https?://${WEBSITE_HOST.replace(
+        /\./g,
+        "\\."
+      )}/(post|event|place|user)/([^/?#]+)`
+    )
   );
   if (websiteMatch) {
     const [, type, id] = websiteMatch;
@@ -125,7 +136,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     if (shareIntent.type === "weburl" && shareIntent.webUrl) {
       route = parseShareIntentRoute(shareIntent.webUrl);
     } else if (shareIntent.type === "text" && shareIntent.text) {
-      // Match wellington:// deep links or https://welly.nz/... URLs
+      // Match wellington:// deep links or https://wellyapp.nz/... URLs
       const urlMatch = shareIntent.text.match(
         /(wellington:\/\/\S+|https?:\/\/[^\s]+)/
       );
@@ -218,35 +229,35 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <NetworkProvider>
-      <ThemeProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <ZoomOverlayProvider>
-          <SafeAreaProvider>
-            <AuthProvider>
-              <LocationProvider>
-                <FollowProvider>
-                  <LikeProvider>
-                    <SaveProvider>
-                    <NotificationProvider>
-                      <ToastProvider>
-                        <ExplorationProvider>
-                          <AuthGate>
-                            <Slot />
-                            <OfflineBanner />
-                          </AuthGate>
-                          <StatusBar style="auto" />
-                        </ExplorationProvider>
-                      </ToastProvider>
-                    </NotificationProvider>
-                    </SaveProvider>
-                  </LikeProvider>
-                </FollowProvider>
-              </LocationProvider>
-            </AuthProvider>
-          </SafeAreaProvider>
-        </ZoomOverlayProvider>
-      </GestureHandlerRootView>
-      </ThemeProvider>
+        <ThemeProvider>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <ZoomOverlayProvider>
+              <SafeAreaProvider>
+                <AuthProvider>
+                  <LocationProvider>
+                    <FollowProvider>
+                      <LikeProvider>
+                        <SaveProvider>
+                          <NotificationProvider>
+                            <ToastProvider>
+                              <ExplorationProvider>
+                                <AuthGate>
+                                  <Slot />
+                                  <OfflineBanner />
+                                </AuthGate>
+                                <StatusBar style="auto" />
+                              </ExplorationProvider>
+                            </ToastProvider>
+                          </NotificationProvider>
+                        </SaveProvider>
+                      </LikeProvider>
+                    </FollowProvider>
+                  </LocationProvider>
+                </AuthProvider>
+              </SafeAreaProvider>
+            </ZoomOverlayProvider>
+          </GestureHandlerRootView>
+        </ThemeProvider>
       </NetworkProvider>
     </QueryClientProvider>
   );
