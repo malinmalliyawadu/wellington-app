@@ -788,7 +788,12 @@ export type Database = {
       };
     };
     Views: {};
-    Functions: {};
+    Functions: {
+      delete_user_account: {
+        Args: Record<string, never>;
+        Returns: undefined;
+      };
+    };
     Enums: {
       place_category: PlaceCategory;
       post_type: PostType;

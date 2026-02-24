@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { queryClient } from '../lib/queryClient';
 import { updateProfile as updateProfileService } from '../services/users';
 import type { User } from '../types';
 
@@ -42,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         fetchProfile(session.user.id);
       } else {
         setProfile(null);
+        queryClient.clear();
         setLoading(false);
       }
     });

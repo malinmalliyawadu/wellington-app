@@ -104,3 +104,37 @@ export async function signOut() {
   const { error } = await supabase.auth.signOut();
   if (error) throw error;
 }
+
+export async function deleteAccount(userId: string) {
+  // 1. Clean up storage files (best-effort, while still authenticated)
+  try {
+    const { data: postMedia } = await supabase.storage
+      .from('post-media')
+      .list(userId);
+    if (postMedia?.length) {
+      const paths = postMedia.map((f) => `${userId}/${f.name}`);
+      await supabase.storage.from('post-media').remove(paths);
+    }
+  } catch (e) {
+    console.warn('Failed to clean up post-media storage:', e);
+  }
+
+  try {
+    const { data: avatars } = await supabase.storage
+      .from('avatars')
+      .list(userId);
+    if (avatars?.length) {
+      const paths = avatars.map((f) => `${userId}/${f.name}`);
+      await supabase.storage.from('avatars').remove(paths);
+    }
+  } catch (e) {
+    console.warn('Failed to clean up avatar storage:', e);
+  }
+
+  // 2. Delete user from auth.users (CASCADE handles all DB data)
+  const { error } = await supabase.rpc('delete_user_account');
+  if (error) throw error;
+
+  // 3. Sign out locally
+  await supabase.auth.signOut();
+}

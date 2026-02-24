@@ -115,7 +115,7 @@ function SavedButton() {
   );
 }
 
-function PrivacyButton() {
+function SettingsButton() {
   const router = useRouter();
   const { colors } = useTheme();
   const styles = createBellStyles(colors);
@@ -123,7 +123,7 @@ function PrivacyButton() {
   return (
     <HapticPressable
       style={styles.container}
-      onPress={() => router.push("/profile/privacy" as any)}
+      onPress={() => router.push("/profile/settings" as any)}
       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
     >
       <SFIcon
@@ -225,7 +225,7 @@ export default function ProfileLayout() {
           ),
           headerRight: () => (
             <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <PrivacyButton />
+              <SettingsButton />
               <LogoutButton />
             </View>
           ),
@@ -328,10 +328,10 @@ export default function ProfileLayout() {
         }}
       />
       <Stack.Screen
-        name="privacy"
+        name="settings"
         options={{
           headerShown: true,
-          headerTitle: "Privacy",
+          headerTitle: "Settings",
           headerBackTitle: "Profile",
           headerTransparent: true,
         }}
