@@ -24,6 +24,10 @@ export function getGuideUrl(guideId: string): string {
   return `${WEBSITE_URL}/guide/${guideId}`;
 }
 
+export function getTrailUrl(trailId: string): string {
+  return `${WEBSITE_URL}/trail/${trailId}`;
+}
+
 // Share helpers
 export function sharePost(
   postId: string,
@@ -53,5 +57,12 @@ export function shareGuide(guideId: string, title: string): void {
   const url = getGuideUrl(guideId);
   Share.share({
     message: `Check out this guide: ${title}\n${url}`,
+  });
+}
+
+export function shareTrail(trailId: string, name: string): void {
+  const url = getTrailUrl(trailId);
+  Share.share({
+    message: `Check out this trail: ${name}\n${url}`,
   });
 }

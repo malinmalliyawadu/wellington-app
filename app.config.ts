@@ -26,6 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       supportsTablet: false,
       bundleIdentifier: "com.malinmw.wellingtonapp",
       buildNumber,
+      associatedDomains: ["applinks:wellyapp.nz"],
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },

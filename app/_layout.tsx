@@ -170,7 +170,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       }
 
       if (
-        shareIntent.type === "media" &&
+        (shareIntent.type === "media" || shareIntent.type === "file") &&
         shareIntent.files &&
         shareIntent.files.length > 0
       ) {

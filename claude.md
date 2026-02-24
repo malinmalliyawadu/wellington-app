@@ -248,7 +248,7 @@ Supabase API layer. Each service handles CRUD operations for its domain:
 
 **`colors.ts`**
 
-- Brand: `primary` (#00A5E0), `primaryDark` (#0086B8)
+- Brand: `primary` (#F5A623), `primaryDark` (#D4930D)
 - Category colors: cafe (brown), restaurant (orange), bar (purple), attraction (blue), park (green), venue (red)
 - Interactive: `liked` (#E0245E) for heart icons
 - Grays: `gray100` through `gray600`
