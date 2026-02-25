@@ -21,6 +21,7 @@ import type { PlaceCategory } from '../types';
 import { fonts } from "../theme/fonts";
 import { HapticPressable } from 'src/components/HapticPressable';
 import { HashtagText } from '../components/HashtagText';
+import { getProfileByUsername } from '../services/users';
 import { LiquidGlassButton } from '../components/LiquidGlassButton';
 import { QueryErrorState } from '../components/QueryErrorState';
 
@@ -233,6 +234,11 @@ export function PlaceDetailScreen() {
               <HashtagText
                 style={styles.postText}
                 onPressHashtag={(tag) => router.push(`${tabBase}/hashtag/${tag}` as any)}
+                onPressMention={(username) => {
+                  getProfileByUsername(username).then((u) => {
+                    if (u) router.push(`${tabBase}/user/${u.id}` as any);
+                  });
+                }}
               >
                 {item.post.content}
               </HashtagText>

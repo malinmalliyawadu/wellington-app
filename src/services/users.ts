@@ -16,6 +16,21 @@ export async function getProfileById(id: string): Promise<User | null> {
   return mapProfile(data);
 }
 
+export async function getProfileByUsername(username: string): Promise<User | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .ilike('username', username)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+
+  return mapProfile(data);
+}
+
 export async function getProfiles(): Promise<User[]> {
   const { data, error } = await supabase
     .from('profiles')

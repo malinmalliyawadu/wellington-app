@@ -111,6 +111,13 @@ export function NotificationPreferencesScreen() {
           onToggle={(v) => handleToggle("commentReplies", v)}
           colors={colors}
         />
+        <ToggleRow
+          label="Mentions"
+          description="When someone mentions you in a post or comment"
+          value={prefs.mentions}
+          onToggle={(v) => handleToggle("mentions", v)}
+          colors={colors}
+        />
       </View>
 
       {/* Events */}

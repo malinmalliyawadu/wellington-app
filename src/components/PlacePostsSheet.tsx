@@ -32,6 +32,7 @@ interface PlacePostsSheetProps {
   onClose: () => void;
   onPressPlaceName?: (placeId: string) => void;
   onPressPost?: (postId: string) => void;
+  onPressMention?: (username: string) => void;
 }
 
 const CATEGORY_LABELS: Record<PlaceCategory, string> = {
@@ -55,6 +56,7 @@ export function PlacePostsSheet({
   onClose,
   onPressPlaceName,
   onPressPost,
+  onPressMention,
 }: PlacePostsSheetProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -208,6 +210,7 @@ export function PlacePostsSheet({
               <PostRow
                 post={post}
                 isFollowed={followingIds.includes(post.userId)}
+                onPressMention={onPressMention}
               />
             </HapticPressable>
           ))}
@@ -230,7 +233,7 @@ export function PlacePostsSheet({
   );
 }
 
-function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
+function PostRow({ post, isFollowed, onPressMention }: { post: Post; isFollowed: boolean; onPressMention?: (username: string) => void }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const fetchUser = useCallback(
@@ -255,7 +258,7 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
             </View>
           )}
         </View>
-        <HashtagText style={styles.postText} numberOfLines={2}>
+        <HashtagText style={styles.postText} numberOfLines={2} onPressMention={onPressMention}>
           {post.content}
         </HashtagText>
         <HapticPressable

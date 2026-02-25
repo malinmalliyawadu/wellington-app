@@ -41,6 +41,11 @@ import { EventForm } from "../components/create/EventForm";
 import { HashtagKeyboardToolbar, HashtagInlineToolbar, HASHTAG_TOOLBAR_ID } from "../components/create/HashtagKeyboardToolbar";
 import { useHashtagRecommendations } from "../hooks/useHashtagRecommendations";
 import { detectHashtagAtCursor } from "../utils/hashtags";
+import { detectMentionAtCursor, extractMentions } from "../utils/mentions";
+import { useMentionSuggestions } from "../hooks/useMentionSuggestions";
+import { MentionSuggestions } from "../components/create/MentionSuggestions";
+import { getProfileByUsername } from "../services/users";
+import { createMentionNotification } from "../services/notifications";
 
 const glassEnabled = isLiquidGlassAvailable();
 
@@ -119,6 +124,10 @@ export function CreatePostSheetScreen() {
     cursorPosition,
   });
 
+  // Mention autocomplete
+  const mentionQuery = detectMentionAtCursor(content, cursorPosition);
+  const mentionSuggestions = useMentionSuggestions(mentionQuery, profile?.id);
+
   const handleSelectionChange = useCallback(
     (e: NativeSyntheticEvent<TextInputSelectionChangeEventData>) => {
       setCursorPosition(e.nativeEvent.selection.end);
@@ -163,6 +172,33 @@ export function CreatePostSheetScreen() {
     setContent(newContent);
     setCursorPosition(Math.min(cursorPosition + 1, MAX));
   }, [content, cursorPosition]);
+
+  const insertAt = useCallback(() => {
+    const MAX = 500;
+    if (content.length >= MAX) return;
+    const before = content.slice(0, cursorPosition);
+    const after = content.slice(cursorPosition);
+    const newContent = (before + '@' + after).slice(0, MAX);
+    setContent(newContent);
+    setCursorPosition(Math.min(cursorPosition + 1, MAX));
+  }, [content, cursorPosition]);
+
+  const insertMention = useCallback(
+    (user: { username: string }) => {
+      const MAX = 500;
+      const partial = detectMentionAtCursor(content, cursorPosition);
+      if (partial === null) return;
+
+      const start = cursorPosition - partial.length - 1; // -1 for the @
+      const before = content.slice(0, start);
+      const after = content.slice(cursorPosition);
+      const insertion = `@${user.username} `;
+      const newContent = (before + insertion + after).slice(0, MAX);
+      setContent(newContent);
+      setCursorPosition(Math.min(before.length + insertion.length, MAX));
+    },
+    [content, cursorPosition],
+  );
 
   // Keyboard visibility listeners
   useEffect(() => {
@@ -486,6 +522,14 @@ export function CreatePostSheetScreen() {
           showToast(createAchievementToast(newAchievements[0]));
         }
 
+        // Send mention notifications
+        const mentionedUsernames = extractMentions(content.trim());
+        for (const username of mentionedUsernames) {
+          getProfileByUsername(username).then((u) => {
+            if (u) createMentionNotification(profile.id, u.id, newPost.id).catch(() => {});
+          });
+        }
+
         // Invalidate caches so feed/map/profile show the new post
         queryClient.invalidateQueries({ queryKey: ['q', 'posts'] });
         queryClient.invalidateQueries({ queryKey: ['q', 'feed'] });
@@ -689,30 +733,39 @@ export function CreatePostSheetScreen() {
             />
 
             {createType === "post" ? (
-              <PostForm
-                avatarUrl={profile?.avatarUrl}
-                content={content}
-                onContentChange={setContent}
-                onSelectionChange={handleSelectionChange}
-                inputAccessoryViewID={Platform.OS === 'ios' ? HASHTAG_TOOLBAR_ID : undefined}
-                mediaItems={mediaItems}
-                onPickMedia={pickMedia}
-                onTakeMedia={takeMedia}
-                onRemoveMedia={(index) => {
-                  setMediaItems((prev) => prev.filter((_, i) => i !== index));
-                }}
-                hashtagChips={
-                  Platform.OS !== 'ios' && chipRecommendations.length > 0 ? (
-                    <View style={styles.hashtagSection}>
-                      <HashtagInlineToolbar
-                        chipTags={chipRecommendations}
-                        onChipPress={insertHashtag}
-                        onHashPress={insertHash}
-                      />
-                    </View>
-                  ) : null
-                }
-              />
+              <>
+                {mentionSuggestions.length > 0 && (
+                  <MentionSuggestions
+                    suggestions={mentionSuggestions}
+                    onSelect={insertMention}
+                  />
+                )}
+                <PostForm
+                  avatarUrl={profile?.avatarUrl}
+                  content={content}
+                  onContentChange={setContent}
+                  onSelectionChange={handleSelectionChange}
+                  inputAccessoryViewID={Platform.OS === 'ios' ? HASHTAG_TOOLBAR_ID : undefined}
+                  mediaItems={mediaItems}
+                  onPickMedia={pickMedia}
+                  onTakeMedia={takeMedia}
+                  onRemoveMedia={(index) => {
+                    setMediaItems((prev) => prev.filter((_, i) => i !== index));
+                  }}
+                  hashtagChips={
+                    Platform.OS !== 'ios' && chipRecommendations.length > 0 ? (
+                      <View style={styles.hashtagSection}>
+                        <HashtagInlineToolbar
+                          chipTags={chipRecommendations}
+                          onChipPress={insertHashtag}
+                          onHashPress={insertHash}
+                          onAtPress={insertAt}
+                        />
+                      </View>
+                    ) : null
+                  }
+                />
+              </>
             ) : (
               <EventForm
                 title={eventTitle}
@@ -737,12 +790,13 @@ export function CreatePostSheetScreen() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* iOS keyboard toolbar with # button and hashtag chips */}
+      {/* iOS keyboard toolbar with # and @ buttons and hashtag chips */}
       {createType === "post" && (
         <HashtagKeyboardToolbar
           chipTags={chipRecommendations}
           onChipPress={insertHashtag}
           onHashPress={insertHash}
+          onAtPress={insertAt}
         />
       )}
 

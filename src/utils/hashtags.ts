@@ -1,5 +1,5 @@
 export interface TextSegment {
-  type: 'text' | 'hashtag';
+  type: 'text' | 'hashtag' | 'mention';
   value: string;
 }
 
@@ -69,6 +69,38 @@ export function parseTextWithHashtags(text: string): TextSegment[] {
   }
 
   HASHTAG_REGEX.lastIndex = 0;
+
+  if (lastIndex < text.length) {
+    segments.push({ type: 'text', value: text.slice(lastIndex) });
+  }
+
+  return segments;
+}
+
+/**
+ * Unified parser that handles both #hashtags and @mentions in a single pass.
+ * Mentions require @ to be at string start or preceded by whitespace (prevents matching emails).
+ */
+const RICH_TEXT_REGEX = /(?:#([a-zA-Z0-9_]{1,30})\b)|(?:(?:^|(?<=\s))@([a-zA-Z0-9_]{1,30})\b)/g;
+
+export function parseRichText(text: string): TextSegment[] {
+  const segments: TextSegment[] = [];
+  let lastIndex = 0;
+  let match;
+
+  while ((match = RICH_TEXT_REGEX.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push({ type: 'text', value: text.slice(lastIndex, match.index) });
+    }
+    if (match[1] !== undefined) {
+      segments.push({ type: 'hashtag', value: match[1] });
+    } else if (match[2] !== undefined) {
+      segments.push({ type: 'mention', value: match[2] });
+    }
+    lastIndex = match.index + match[0].length;
+  }
+
+  RICH_TEXT_REGEX.lastIndex = 0;
 
   if (lastIndex < text.length) {
     segments.push({ type: 'text', value: text.slice(lastIndex) });

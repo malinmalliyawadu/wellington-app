@@ -1,4 +1,4 @@
-import { extractHashtags, parseTextWithHashtags, placeNameToHashtag, detectHashtagAtCursor } from '../hashtags';
+import { extractHashtags, parseTextWithHashtags, parseRichText, placeNameToHashtag, detectHashtagAtCursor } from '../hashtags';
 
 describe('extractHashtags', () => {
   it('returns empty array for text without hashtags', () => {
@@ -131,6 +131,64 @@ describe('placeNameToHashtag', () => {
 
   it('returns null for empty string', () => {
     expect(placeNameToHashtag('')).toBeNull();
+  });
+});
+
+describe('parseRichText', () => {
+  it('returns single text segment for plain text', () => {
+    expect(parseRichText('no tags or mentions')).toEqual([
+      { type: 'text', value: 'no tags or mentions' },
+    ]);
+  });
+
+  it('parses hashtags', () => {
+    expect(parseRichText('Love #coffee')).toEqual([
+      { type: 'text', value: 'Love ' },
+      { type: 'hashtag', value: 'coffee' },
+    ]);
+  });
+
+  it('parses mentions', () => {
+    expect(parseRichText('Hey @alice')).toEqual([
+      { type: 'text', value: 'Hey ' },
+      { type: 'mention', value: 'alice' },
+    ]);
+  });
+
+  it('parses mixed hashtags and mentions', () => {
+    expect(parseRichText('@alice loves #coffee')).toEqual([
+      { type: 'mention', value: 'alice' },
+      { type: 'text', value: ' loves ' },
+      { type: 'hashtag', value: 'coffee' },
+    ]);
+  });
+
+  it('does not match emails as mentions', () => {
+    expect(parseRichText('user@gmail.com')).toEqual([
+      { type: 'text', value: 'user@gmail.com' },
+    ]);
+  });
+
+  it('handles mention at start of text', () => {
+    expect(parseRichText('@bob is here')).toEqual([
+      { type: 'mention', value: 'bob' },
+      { type: 'text', value: ' is here' },
+    ]);
+  });
+
+  it('handles empty string', () => {
+    expect(parseRichText('')).toEqual([]);
+  });
+
+  it('handles complex mixed content', () => {
+    expect(parseRichText('Great #brunch with @alice at #wellington')).toEqual([
+      { type: 'text', value: 'Great ' },
+      { type: 'hashtag', value: 'brunch' },
+      { type: 'text', value: ' with ' },
+      { type: 'mention', value: 'alice' },
+      { type: 'text', value: ' at ' },
+      { type: 'hashtag', value: 'wellington' },
+    ]);
   });
 });
 
