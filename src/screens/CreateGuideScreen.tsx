@@ -431,150 +431,151 @@ export function CreateGuideScreen() {
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-    backgroundColor: colors.translucentCardBackground,
-  },
-  header: {
-    paddingHorizontal: 16,
-    backgroundColor: colors.translucentCardBackground,
-  },
-  headerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 14,
-  },
-  cancelText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    fontFamily: fonts.medium,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-  },
-  saveText: {
-    fontSize: 16,
-    fontFamily: fonts.semiBold,
-    color: colors.primary,
-  },
-  content: {
-    paddingHorizontal: 0,
-  },
-  formSection: {
-    padding: 16,
-  },
-  titleInput: {
-    fontSize: 20,
-    fontFamily: fonts.bold,
-    color: colors.text,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.gray200,
-  },
-  descriptionInput: {
-    fontSize: 15,
-    fontFamily: fonts.medium,
-    color: colors.text,
-    paddingVertical: 12,
-    minHeight: 60,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.gray200,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-    marginTop: 20,
-    marginBottom: 8,
-  },
-  selectedPlaceRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.gray200,
-    gap: 10,
-  },
-  placeNumber: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.gray100,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  placeNumberText: {
-    fontSize: 11,
-    fontFamily: fonts.semiBold,
-    color: colors.textSecondary,
-  },
-  placeCategoryDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  selectedPlaceInfo: {
-    flex: 1,
-  },
-  selectedPlaceName: {
-    fontSize: 14,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-  },
-  noteInput: {
-    fontSize: 13,
-    fontFamily: fonts.medium,
-    color: colors.textSecondary,
-    paddingVertical: 2,
-  },
-  searchSection: {
-    padding: 16,
-  },
-  searchInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.gray100,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: fonts.medium,
-    color: colors.text,
-  },
-  searchResultRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 4,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.gray200,
-    gap: 10,
-  },
-  searchResultInfo: {
-    flex: 1,
-  },
-  searchResultName: {
-    fontSize: 14,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-  },
-  searchResultAddress: {
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 1,
-  },
-});
+const createStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    scrollView: {
+      flex: 1,
+      backgroundColor: colors.translucentCardBackground,
+    },
+    header: {
+      paddingHorizontal: 16,
+      backgroundColor: colors.translucentCardBackground,
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingVertical: 20,
+    },
+    cancelText: {
+      fontSize: 16,
+      color: colors.textSecondary,
+      fontFamily: fonts.medium,
+    },
+    headerTitle: {
+      fontSize: 17,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+    },
+    saveText: {
+      fontSize: 16,
+      fontFamily: fonts.semiBold,
+      color: colors.primary,
+    },
+    content: {
+      paddingHorizontal: 0,
+    },
+    formSection: {
+      padding: 16,
+    },
+    titleInput: {
+      fontSize: 20,
+      fontFamily: fonts.bold,
+      color: colors.text,
+      paddingVertical: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.gray200,
+    },
+    descriptionInput: {
+      fontSize: 15,
+      fontFamily: fonts.medium,
+      color: colors.text,
+      paddingVertical: 12,
+      minHeight: 60,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.gray200,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+      marginTop: 20,
+      marginBottom: 8,
+    },
+    selectedPlaceRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.gray200,
+      gap: 10,
+    },
+    placeNumber: {
+      width: 22,
+      height: 22,
+      borderRadius: 11,
+      backgroundColor: colors.gray100,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    placeNumberText: {
+      fontSize: 11,
+      fontFamily: fonts.semiBold,
+      color: colors.textSecondary,
+    },
+    placeCategoryDot: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    selectedPlaceInfo: {
+      flex: 1,
+    },
+    selectedPlaceName: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+    },
+    noteInput: {
+      fontSize: 13,
+      fontFamily: fonts.medium,
+      color: colors.textSecondary,
+      paddingVertical: 2,
+    },
+    searchSection: {
+      padding: 16,
+    },
+    searchInputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.gray100,
+      borderRadius: 10,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      gap: 8,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 15,
+      fontFamily: fonts.medium,
+      color: colors.text,
+    },
+    searchResultRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingVertical: 12,
+      paddingHorizontal: 4,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.gray200,
+      gap: 10,
+    },
+    searchResultInfo: {
+      flex: 1,
+    },
+    searchResultName: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+    },
+    searchResultAddress: {
+      fontSize: 12,
+      color: colors.textSecondary,
+      marginTop: 1,
+    },
+  });

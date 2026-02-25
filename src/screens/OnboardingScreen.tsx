@@ -91,10 +91,10 @@ export function OnboardingScreen() {
 
   // Profile setup state
   const profileScrollRef = useRef<ScrollView>(null);
-  const [displayName, setDisplayName] = useState(profile?.displayName ?? "");
-  const [username, setUsername] = useState(profile?.username ?? "");
+  const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
   const [bio, setBio] = useState(profile?.bio ?? "");
-  const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl ?? "");
+  const [avatarUrl, setAvatarUrl] = useState("");
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
@@ -178,6 +178,10 @@ export function OnboardingScreen() {
   };
 
   const handleSaveProfile = async () => {
+    if (!avatarUrl) {
+      Alert.alert("Photo Required", "Please upload a profile photo to continue");
+      return;
+    }
     if (!displayName.trim()) {
       Alert.alert("Error", "Display name is required");
       return;
