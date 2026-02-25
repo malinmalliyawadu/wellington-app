@@ -14,7 +14,6 @@ import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { PopularityMarker, MarkerEvent } from "../components/PopularityMarker";
-import { FogOfWarOverlay } from "../components/FogOfWarOverlay";
 import { NeighborhoodOverlay } from "../components/NeighborhoodOverlay";
 import { TrailOverlay } from "../components/TrailOverlay";
 import { MapControls } from "../components/MapControls";
@@ -41,6 +40,7 @@ interface MapMarkerItemProps {
   showLabel: boolean;
   events: MarkerEvent[];
   scale: Animated.Value;
+  opacity: number;
   onPress: (placeId: string) => void;
   onAppear: (placeId: string) => void;
 }
@@ -54,6 +54,7 @@ const MapMarkerItem = React.memo(function MapMarkerItem({
   showLabel,
   events,
   scale,
+  opacity,
   onPress,
   onAppear,
 }: MapMarkerItemProps) {
@@ -75,7 +76,7 @@ const MapMarkerItem = React.memo(function MapMarkerItem({
         onPress(place.id);
       }}
     >
-      <Animated.View style={{ transform: [{ scale }] }}>
+      <Animated.View style={{ transform: [{ scale }], opacity }}>
         <PopularityMarker
           size={size}
           category={place.category}
@@ -94,7 +95,6 @@ const MapMarkerItem = React.memo(function MapMarkerItem({
 export function MapScreen() {
   const { colors, isDark } = useTheme();
   const { location: userCoords } = useLocation();
-  const [showExplorationOverlay, setShowExplorationOverlay] = useState(false);
   const [showNeighborhoods, setShowNeighborhoods] = useState(false);
   const [activeTrailId, setActiveTrailId] = useState<string | null>(null);
   const mapRef = useRef<MapView>(null);
@@ -132,7 +132,7 @@ export function MapScreen() {
 
   const { getMarkerScale, animateMarkerAppear, animateMarkerPress } = useMarkerAnimation();
 
-  useExplorationTracking(userCoords, places, showExplorationOverlay);
+  useExplorationTracking(userCoords, places, true);
 
   const openPlaceSheet = useCallback(
     (placeId: string) => {
@@ -280,10 +280,6 @@ export function MapScreen() {
             });
           }}
         />
-        <FogOfWarOverlay
-          places={filteredPlaces}
-          visible={showExplorationOverlay}
-        />
         {showTrails && (
           <TrailOverlay
             trails={trails ?? []}
@@ -306,6 +302,7 @@ export function MapScreen() {
                 showLabel={annotatedPlaceIds.has(place.id)}
                 events={placeEventsMap.get(place.id) ?? []}
                 scale={getMarkerScale(place.id)}
+                opacity={activeTrailId ? 0.2 : 1}
                 onPress={handleMarkerPress}
                 onAppear={animateMarkerAppear}
               />
@@ -340,13 +337,9 @@ export function MapScreen() {
         <MapControls
           activeFilterCount={activeFilterCount}
           showNeighborhoods={showNeighborhoods}
-          showExplorationOverlay={showExplorationOverlay}
           hasUserLocation={!!userCoords}
           onOpenFilters={openFilters}
           onToggleNeighborhoods={() => setShowNeighborhoods(!showNeighborhoods)}
-          onToggleExploration={() =>
-            setShowExplorationOverlay(!showExplorationOverlay)
-          }
           onCenterOnUser={centerOnUser}
         />
       </View>

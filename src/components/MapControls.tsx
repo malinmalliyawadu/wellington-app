@@ -12,22 +12,18 @@ const glassEnabled = isLiquidGlassAvailable();
 interface MapControlsProps {
   activeFilterCount: number;
   showNeighborhoods: boolean;
-  showExplorationOverlay: boolean;
   hasUserLocation: boolean;
   onOpenFilters: () => void;
   onToggleNeighborhoods: () => void;
-  onToggleExploration: () => void;
   onCenterOnUser: () => void;
 }
 
 function ControlButtons({
   activeFilterCount,
   showNeighborhoods,
-  showExplorationOverlay,
   hasUserLocation,
   onOpenFilters,
   onToggleNeighborhoods,
-  onToggleExploration,
   onCenterOnUser,
 }: MapControlsProps) {
   const { colors } = useTheme();
@@ -67,28 +63,14 @@ function ControlButtons({
       <View style={styles.controlDivider} />
 
       <HapticPressable
-        style={[styles.controlButton]}
-        onPress={onToggleExploration}
-      >
-        <SFIcon
-          name={showExplorationOverlay ? "eye.fill" : "eye"}
-          fallback={showExplorationOverlay ? "eye" : "eye-outline"}
-          size={22}
-          color={showExplorationOverlay ? colors.primary : colors.text}
-        />
-      </HapticPressable>
-
-      <View style={styles.controlDivider} />
-
-      <HapticPressable
         style={[styles.controlButton, styles.controlButtonBottom]}
         onPress={onCenterOnUser}
       >
         <SFIcon
-          name={hasUserLocation ? "location.fill" : "location"}
-          fallback={hasUserLocation ? "navigate" : "navigate-outline"}
+          name={"location"}
+          fallback={"navigate-outline"}
           size={22}
-          color={hasUserLocation ? colors.primary : colors.text}
+          color={colors.text}
         />
       </HapticPressable>
     </>
