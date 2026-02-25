@@ -5,6 +5,7 @@ interface AIContext {
   places: Place[];
   events: Event[];
   feedPosts: (Post & { userName?: string; placeName?: string })[];
+  userPosts: (Post & { placeName?: string })[];
   followingUsers: User[];
   userLocation: { latitude: number; longitude: number } | null;
   trendingHashtags?: string[];

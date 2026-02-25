@@ -265,9 +265,6 @@ function PopularityMarkerInner({
             <Text style={styles.eventDateDay}>
               {new Date(events[0].date).getDate()}
             </Text>
-            {events.length > 1 && (
-              <Text style={styles.eventMore}>+{events.length - 1}</Text>
-            )}
           </View>
           <View style={styles.eventRight}>
             {placeName && (
@@ -396,12 +393,6 @@ const createStyles = (colors: Colors) =>
       fontFamily: fonts.extraBold,
       color: colors.text,
       lineHeight: 13,
-    },
-    eventMore: {
-      fontSize: 9,
-      fontWeight: "600",
-      fontFamily: fonts.semiBold,
-      color: colors.textMuted,
     },
     followedGlassMarker: {
       alignItems: "center",

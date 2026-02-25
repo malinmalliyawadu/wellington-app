@@ -267,11 +267,19 @@ export function AIChatScreen() {
         );
 
         const feedPosts = cachedPosts
-          .filter((p) => followingSet.has(p.userId) || p.userId === profile?.id)
+          .filter((p) => followingSet.has(p.userId))
           .slice(0, 50)
           .map((p) => ({
             ...p,
             userName: profileMap.get(p.userId)?.displayName,
+            placeName: placeNameMap.get(p.placeId),
+          }));
+
+        const userPosts = cachedPosts
+          .filter((p) => p.userId === profile?.id)
+          .slice(0, 20)
+          .map((p) => ({
+            ...p,
             placeName: placeNameMap.get(p.placeId),
           }));
 
@@ -295,6 +303,7 @@ export function AIChatScreen() {
           places: cachedPlaces,
           events: cachedEvents,
           feedPosts,
+          userPosts,
           followingUsers,
           userLocation,
           trendingHashtags,
