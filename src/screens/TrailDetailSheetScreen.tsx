@@ -578,6 +578,7 @@ const createStyles = (colors: Colors) =>
       fontSize: 14,
       fontFamily: fonts.bold,
       color: colors.text,
+      textAlign: "center",
     },
     statLabel: {
       fontSize: 11,
