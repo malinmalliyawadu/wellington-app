@@ -1,9 +1,4 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useCallback,
-} from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -14,7 +9,7 @@ import {
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import { useLocation } from "../context/LocationContext";
-import { useNavigation , useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -47,6 +42,7 @@ interface MapMarkerItemProps {
   events: MarkerEvent[];
   scale: Animated.Value;
   onPress: (placeId: string) => void;
+  onAppear: (placeId: string) => void;
 }
 
 const MapMarkerItem = React.memo(function MapMarkerItem({
@@ -59,7 +55,12 @@ const MapMarkerItem = React.memo(function MapMarkerItem({
   events,
   scale,
   onPress,
+  onAppear,
 }: MapMarkerItemProps) {
+  React.useEffect(() => {
+    onAppear(place.id);
+  }, [onAppear, place.id]);
+
   return (
     <Marker.Animated
       coordinate={{
@@ -129,7 +130,7 @@ export function MapScreen() {
     mapLayout,
   });
 
-  const { getMarkerScale, animateMarkerPress } = useMarkerAnimation();
+  const { getMarkerScale, animateMarkerAppear, animateMarkerPress } = useMarkerAnimation();
 
   useExplorationTracking(userCoords, places, showExplorationOverlay);
 
@@ -232,7 +233,12 @@ export function MapScreen() {
       if (trail && trail.coordinates.length > 0) {
         const sheetHeight = mapLayout.height * 0.5;
         mapRef.current?.fitToCoordinates(trail.coordinates, {
-          edgePadding: { top: 100, right: 60, bottom: sheetHeight + 40, left: 60 },
+          edgePadding: {
+            top: 100,
+            right: 60,
+            bottom: sheetHeight + 40,
+            left: 60,
+          },
           animated: true,
         });
       }
@@ -301,6 +307,7 @@ export function MapScreen() {
                 events={placeEventsMap.get(place.id) ?? []}
                 scale={getMarkerScale(place.id)}
                 onPress={handleMarkerPress}
+                onAppear={animateMarkerAppear}
               />
             );
           })}
@@ -308,7 +315,11 @@ export function MapScreen() {
 
       {isInitialLoad && !mapError && (
         <View style={[styles.loadingOverlay, { top: insets.top + 106 }]}>
-          <BlurView intensity={15} tint={isDark ? "dark" : "light"} style={styles.loadingContainer}>
+          <BlurView
+            intensity={15}
+            tint={isDark ? "dark" : "light"}
+            style={styles.loadingContainer}
+          >
             <ActivityIndicator size="small" color={colors.primary} />
             <Text style={styles.loadingText}>Loading places...</Text>
           </BlurView>
@@ -317,7 +328,11 @@ export function MapScreen() {
 
       {mapError && !places && (
         <View style={[styles.loadingOverlay, { top: insets.top + 106 }]}>
-          <QueryErrorState message={mapError} onRetry={refetchAll} fullScreen={false} />
+          <QueryErrorState
+            message={mapError}
+            onRetry={refetchAll}
+            fullScreen={false}
+          />
         </View>
       )}
 
@@ -341,41 +356,42 @@ export function MapScreen() {
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  map: {
-    flex: 1,
-  },
-  loadingOverlay: {
-    position: "absolute",
-    left: 16,
-    right: 16,
-    alignItems: "center",
-  },
-  loadingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    overflow: "hidden",
-    borderRadius: 99,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  loadingText: {
-    fontSize: 13,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-  },
-  controlsWrapper: {
-    position: "absolute",
-    right: 16,
-    width: 52,
-  },
-});
+const createStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+    },
+    map: {
+      flex: 1,
+    },
+    loadingOverlay: {
+      position: "absolute",
+      left: 16,
+      right: 16,
+      alignItems: "center",
+    },
+    loadingContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      overflow: "hidden",
+      borderRadius: 99,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
+    },
+    loadingText: {
+      fontSize: 13,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+    },
+    controlsWrapper: {
+      position: "absolute",
+      right: 16,
+      width: 52,
+    },
+  });
