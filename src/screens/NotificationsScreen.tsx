@@ -217,6 +217,7 @@ export function NotificationsScreen() {
     event_attendance: "is going to your event",
     event_reminder: "Event starting soon",
     comment_reply: "replied to your comment",
+    mention: "mentioned you",
   };
 
   const renderItem = useCallback(

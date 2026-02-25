@@ -12,7 +12,7 @@ import { useQuery } from "../hooks/useQuery";
 import { useQueryClient } from "@tanstack/react-query";
 import { getFeedPosts } from "../services/posts";
 import { getFeedGuides } from "../services/guides";
-import { getProfilesByIds } from "../services/users";
+import { getProfilesByIds, getProfileByUsername } from "../services/users";
 import { getPlaces } from "../services/places";
 import { sortPosts } from "../utils/postSorting";
 import { HapticPressable } from "src/components/HapticPressable";
@@ -162,6 +162,15 @@ export function FeedScreen() {
     [router]
   );
 
+  const handlePressMention = useCallback(
+    (username: string) => {
+      getProfileByUsername(username).then((user) => {
+        if (user) router.push(`/feed/user/${user.id}` as any);
+      });
+    },
+    [router]
+  );
+
   const handlePressGuide = useCallback(
     (guideId: string) => router.push(`/feed/guide/${guideId}` as any),
     [router]
@@ -189,10 +198,11 @@ export function FeedScreen() {
           onPressPost={handlePressPost}
           onPressLikes={handlePressLikes}
           onPressHashtag={handlePressHashtag}
+          onPressMention={handlePressMention}
         />
       );
     },
-    [handlePressUser, handlePressPlace, handlePressPost, handlePressLikes, handlePressHashtag, handlePressGuide]
+    [handlePressUser, handlePressPlace, handlePressPost, handlePressLikes, handlePressHashtag, handlePressMention, handlePressGuide]
   );
 
   const keyExtractor = useCallback((item: FeedItem) => {

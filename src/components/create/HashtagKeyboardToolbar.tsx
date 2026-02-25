@@ -11,9 +11,10 @@ interface HashtagKeyboardToolbarProps {
   chipTags: string[];
   onChipPress: (tag: string) => void;
   onHashPress: () => void;
+  onAtPress?: () => void;
 }
 
-function ToolbarContent({ chipTags, onChipPress, onHashPress }: HashtagKeyboardToolbarProps) {
+function ToolbarContent({ chipTags, onChipPress, onHashPress, onAtPress }: HashtagKeyboardToolbarProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   return (
@@ -21,6 +22,11 @@ function ToolbarContent({ chipTags, onChipPress, onHashPress }: HashtagKeyboardT
       <HapticPressable style={styles.hashButton} onPress={onHashPress}>
         <Text style={styles.hashButtonText}>#</Text>
       </HapticPressable>
+      {onAtPress && (
+        <HapticPressable style={styles.hashButton} onPress={onAtPress}>
+          <Text style={styles.hashButtonText}>@</Text>
+        </HapticPressable>
+      )}
       {chipTags.length > 0 && (
         <>
           <View style={styles.divider} />

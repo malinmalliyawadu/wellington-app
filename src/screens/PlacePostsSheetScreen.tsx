@@ -29,6 +29,7 @@ import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { fonts } from "../theme/fonts";
 import { BlurView } from "expo-blur";
 import { HashtagText } from "../components/HashtagText";
+import { getProfileByUsername } from "../services/users";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { QueryErrorState } from "../components/QueryErrorState";
 import type { Place, PlaceCategory, Post } from "../types";
@@ -50,6 +51,14 @@ export function PlacePostsSheetScreen() {
   const { selectedPlaceId, sheetOpenRef } = useMapPlaceSelection();
   const placeId = selectedPlaceId ?? routePlaceId;
   const router = useRouter();
+  const handlePressMention = useCallback(
+    (username: string) => {
+      getProfileByUsername(username).then((u) => {
+        if (u) router.push(`/map/user/${u.id}` as any);
+      });
+    },
+    [router]
+  );
   const { followingIds } = useFollow();
   const { getLikeCount } = useLike();
 
@@ -321,6 +330,7 @@ export function PlacePostsSheetScreen() {
                   <PostRow
                     post={post}
                     isFollowed={followingIds.includes(post.userId)}
+                    onPressMention={handlePressMention}
                   />
                 </HapticPressable>
               ))}
@@ -371,7 +381,7 @@ export function PlacePostsSheetScreen() {
   );
 }
 
-function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
+function PostRow({ post, isFollowed, onPressMention }: { post: Post; isFollowed: boolean; onPressMention?: (username: string) => void }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const fetchUser = useCallback(
@@ -396,7 +406,11 @@ function PostRow({ post, isFollowed }: { post: Post; isFollowed: boolean }) {
             </View>
           )}
         </View>
-        <HashtagText style={styles.postText} numberOfLines={2}>
+        <HashtagText
+          style={styles.postText}
+          numberOfLines={2}
+          onPressMention={onPressMention}
+        >
           {post.content}
         </HashtagText>
         <HapticPressable

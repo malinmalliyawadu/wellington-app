@@ -8,7 +8,8 @@ export type NotificationType =
   | 'guide_comment'
   | 'event_attendance'
   | 'event_reminder'
-  | 'comment_reply';
+  | 'comment_reply'
+  | 'mention';
 
 export interface Notification {
   id: string;
@@ -299,4 +300,25 @@ export async function createCommentReplyNotification(
     console.error('createCommentReplyNotification error:', error);
     throw error;
   }
+}
+
+export async function createMentionNotification(
+  actorId: string,
+  mentionedUserId: string,
+  postId: string,
+): Promise<void> {
+  // Don't notify yourself
+  if (mentionedUserId === actorId) return;
+
+  const { error } = await supabase
+    .from('notifications')
+    .insert({
+      recipient_id: mentionedUserId,
+      actor_id: actorId,
+      type: 'mention' as any,
+      post_id: postId,
+    });
+
+  // Ignore unique violation (duplicate mention notification)
+  if (error && error.code !== '23505') throw error;
 }

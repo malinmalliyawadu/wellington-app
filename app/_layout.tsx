@@ -106,6 +106,7 @@ const NOTIFICATION_MESSAGES: Record<NotificationType, string> = {
   event_attendance: "is going to your event",
   event_reminder: "Event starting soon",
   comment_reply: "replied to your comment",
+  mention: "mentioned you",
 };
 
 function NotificationBannerBridge() {
