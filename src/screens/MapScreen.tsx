@@ -169,6 +169,22 @@ export function MapScreen() {
     };
   }, []);
 
+  // Clear active trail highlight when trail sheet is dismissed
+  useEffect(() => {
+    const parent = navigation.getParent();
+    if (!parent) return;
+    const unsubscribe = parent.addListener("state", () => {
+      const state = parent.getState();
+      const hasTrailRoute = state?.routes?.some((r: any) =>
+        r.name?.startsWith("trail/")
+      );
+      if (!hasTrailRoute) {
+        setActiveTrailId(null);
+      }
+    });
+    return unsubscribe;
+  }, [navigation]);
+
   const handleMapLayout = useCallback((e: LayoutChangeEvent) => {
     const { width, height } = e.nativeEvent.layout;
     setMapLayout({ width, height });
@@ -211,9 +227,18 @@ export function MapScreen() {
         sheetOpenRef.current = false;
         router.dismiss();
       }
+
+      const trail = trails?.find((t) => t.id === trailId);
+      if (trail && trail.coordinates.length > 0) {
+        mapRef.current?.fitToCoordinates(trail.coordinates, {
+          edgePadding: { top: 100, right: 60, bottom: 300, left: 60 },
+          animated: true,
+        });
+      }
+
       router.push(`/map/trail/${trailId}`);
     },
-    [router, sheetOpenRef]
+    [router, sheetOpenRef, trails]
   );
 
   const activeFilterCount =
