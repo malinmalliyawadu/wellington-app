@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
-import Anthropic from "@anthropic-ai/sdk";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import Anthropic from "npm:@anthropic-ai/sdk@0.39.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,6 +29,11 @@ interface FeedPost {
   placeName?: string;
 }
 
+interface UserPost {
+  content: string;
+  placeName?: string;
+}
+
 interface FollowingUser {
   id: string;
   username: string;
@@ -48,6 +53,7 @@ interface AIContext {
   places: Place[];
   events: Event[];
   feedPosts: FeedPost[];
+  userPosts?: UserPost[];
   followingUsers: FollowingUser[];
   userLocation: { latitude: number; longitude: number } | null;
   trendingHashtags?: string[];
@@ -170,6 +176,14 @@ function buildSystemPrompt(ctx: AIContext, weather: string): string {
     )
     .join("\n");
 
+  const userPostsStr = (ctx.userPosts ?? [])
+    .slice(0, 20)
+    .map(
+      (p) =>
+        `${p.placeName ?? "unknown place"}|${p.content.slice(0, 100)}`
+    )
+    .join("\n");
+
   return `You are Welly, a friendly AI assistant for the Welly app — a map-based social platform for discovering things to do in Wellington, New Zealand.
 
 Current date/time: ${dateStr}, ${timeStr}
@@ -184,6 +198,9 @@ ${eventsStr || "No upcoming events."}
 
 FOLLOWED USERS (id|name):
 ${followingStr || "Not following anyone yet."}
+
+USER'S OWN POSTS (place|content) — places the user has already been to:
+${userPostsStr || "No posts yet."}
 
 RECENT POSTS FROM FOLLOWED USERS (user|place|content):
 ${postsStr || "No recent posts."}
@@ -209,6 +226,7 @@ INSTRUCTIONS:
   - Users: [Display Name](user:userId)
   For example: "Check out [Cafe Polo](place:abc-123) — [Sarah](user:def-456) posted about it recently!"
 - Consider the time of day, day of week, and current weather when suggesting activities (e.g. indoor spots on rainy days, outdoor activities when it's nice)
+- Use the USER'S OWN POSTS to understand their taste and preferences, but do NOT recommend places they've already posted about unless they specifically ask about them
 - Prioritize places and events that the user's followed people have posted about or are attending
 - When followed users are attending an event, mention them by name (e.g. "Sarah and Mike are going to this one!")
 - Keep your message to 2-3 short paragraphs max
