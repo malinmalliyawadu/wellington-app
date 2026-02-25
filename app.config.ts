@@ -29,6 +29,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       associatedDomains: ["applinks:wellyapp.nz"],
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
+        LSApplicationQueriesSchemes: ["instagram", "tiktok", "twitter"],
       },
     },
     android: {

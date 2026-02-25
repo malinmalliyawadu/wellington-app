@@ -66,7 +66,7 @@ export async function getProfilesByIds(ids: string[]): Promise<User[]> {
 
 export async function updateProfile(
   id: string,
-  updates: { username?: string; displayName?: string; avatarUrl?: string; bio?: string; profileVisibility?: string }
+  updates: { username?: string; displayName?: string; avatarUrl?: string; bio?: string; profileVisibility?: string; instagramUsername?: string; tiktokUsername?: string; xUsername?: string }
 ): Promise<void> {
   const { error } = await supabase
     .from('profiles')
@@ -76,6 +76,9 @@ export async function updateProfile(
       ...(updates.avatarUrl !== undefined && { avatar_url: updates.avatarUrl }),
       ...(updates.bio !== undefined && { bio: updates.bio }),
       ...(updates.profileVisibility !== undefined && { profile_visibility: updates.profileVisibility }),
+      ...(updates.instagramUsername !== undefined && { instagram_username: updates.instagramUsername || null }),
+      ...(updates.tiktokUsername !== undefined && { tiktok_username: updates.tiktokUsername || null }),
+      ...(updates.xUsername !== undefined && { x_username: updates.xUsername || null }),
     })
     .eq('id', id);
 
@@ -89,6 +92,9 @@ function mapProfile(row: {
   avatar_url: string;
   bio: string | null;
   profile_visibility?: string | null;
+  instagram_username?: string | null;
+  tiktok_username?: string | null;
+  x_username?: string | null;
 }): User {
   return {
     id: row.id,
@@ -97,5 +103,8 @@ function mapProfile(row: {
     avatarUrl: row.avatar_url,
     bio: row.bio ?? undefined,
     profileVisibility: (row.profile_visibility as User['profileVisibility']) ?? 'public',
+    instagramUsername: row.instagram_username ?? undefined,
+    tiktokUsername: row.tiktok_username ?? undefined,
+    xUsername: row.x_username ?? undefined,
   };
 }

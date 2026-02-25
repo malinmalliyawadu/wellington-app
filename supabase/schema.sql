@@ -16,6 +16,9 @@ create table profiles (
   bio text,
   onboarding_completed boolean not null default false,
   profile_visibility text not null default 'public' check (profile_visibility in ('public', 'private')),
+  instagram_username text,
+  tiktok_username text,
+  x_username text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

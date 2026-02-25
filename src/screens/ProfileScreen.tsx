@@ -25,9 +25,9 @@ import { useInstagramConnection } from "../hooks/useInstagramConnection";
 import { HapticPressable } from "src/components/HapticPressable";
 import { QueryErrorState } from "../components/QueryErrorState";
 import { SFIcon } from "../components/SFIcon";
+import { SocialLinks } from "../components/SocialLinks";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { useSave } from "../context/SaveContext";
-import { useToast } from "../context/ToastContext";
 
 const glassEnabled = isLiquidGlassAvailable();
 
@@ -70,11 +70,21 @@ function QuickActions() {
     <View style={quickStyles.row}>
       {QUICK_ACTIONS.map((action) => {
         const hasBadge = action.label === "Saved" && totalSaved > 0;
-        const tileStyle = [quickStyles.tile, { backgroundColor: action.tint + "1F" }];
+        const tileStyle = [
+          quickStyles.tile,
+          { backgroundColor: action.tint + "1F" },
+        ];
         const content = (
           <>
-            <SFIcon name={action.icon} fallback={action.fallback} size={18} color={action.tint} />
-            <Text style={[quickStyles.label, { color: colors.text }]}>{action.label}</Text>
+            <SFIcon
+              name={action.icon}
+              fallback={action.fallback}
+              size={18}
+              color={action.tint}
+            />
+            <Text style={[quickStyles.label, { color: colors.text }]}>
+              {action.label}
+            </Text>
           </>
         );
         return (
@@ -93,12 +103,16 @@ function QuickActions() {
             }}
           >
             {glassEnabled ? (
-              <GlassView glassEffectStyle="regular" style={tileStyle}>{content}</GlassView>
+              <GlassView glassEffectStyle="regular" style={tileStyle}>
+                {content}
+              </GlassView>
             ) : (
               <View style={tileStyle}>{content}</View>
             )}
             {hasBadge && (
-              <View style={[quickStyles.badge, { backgroundColor: colors.error }]} />
+              <View
+                style={[quickStyles.badge, { backgroundColor: colors.error }]}
+              />
             )}
           </HapticPressable>
         );
@@ -148,7 +162,6 @@ export function ProfileScreen() {
   const { profile } = useAuth();
 
   const { isConnected: igConnected } = useInstagramConnection();
-  const { showToast } = useToast();
 
   const currentUser = profile ?? {
     id: "",
@@ -162,11 +175,11 @@ export function ProfileScreen() {
     () => getPostsByUserId(currentUser.id),
     [currentUser.id]
   );
-  const { data: posts, error: postsError, refetch: refetchPosts } = useQuery(fetchPosts, [
-    "posts",
-    "user",
-    currentUser.id,
-  ]);
+  const {
+    data: posts,
+    error: postsError,
+    refetch: refetchPosts,
+  } = useQuery(fetchPosts, ["posts", "user", currentUser.id]);
   const { data: allPlaces, refetch: refetchPlaces } = useQuery(
     getPlaces,
     "places"
@@ -195,12 +208,7 @@ export function ProfileScreen() {
       refetchPlaces();
       refetchCounts();
       refetchEvents();
-    }, [
-      refetchPosts,
-      refetchPlaces,
-      refetchCounts,
-      refetchEvents,
-    ])
+    }, [refetchPosts, refetchPlaces, refetchCounts, refetchEvents])
   );
 
   const [avatarError, setAvatarError] = useState(!currentUser.avatarUrl);
@@ -218,12 +226,7 @@ export function ProfileScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [
-    refetchPosts,
-    refetchPlaces,
-    refetchCounts,
-    refetchEvents,
-  ]);
+  }, [refetchPosts, refetchPlaces, refetchCounts, refetchEvents]);
 
   const postCount = posts?.length ?? 0;
   const followerCount = counts?.followers ?? 0;
@@ -279,11 +282,26 @@ export function ProfileScreen() {
             <Ionicons name="person" size={40} color={colors.textMuted} />
           </View>
         ) : (
-          <Image source={{ uri: currentUser.avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} onError={() => setAvatarError(true)} />
+          <Image
+            source={{ uri: currentUser.avatarUrl }}
+            style={styles.avatar}
+            contentFit="cover"
+            transition={200}
+            onError={() => setAvatarError(true)}
+          />
         )}
-        <Text testID="profile-display-name" style={styles.displayName}>{currentUser.displayName}</Text>
-        <Text testID="profile-username" style={styles.username}>@{currentUser.username}</Text>
+        <Text testID="profile-display-name" style={styles.displayName}>
+          {currentUser.displayName}
+        </Text>
+        <Text testID="profile-username" style={styles.username}>
+          @{currentUser.username}
+        </Text>
         {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
+        <SocialLinks
+          instagramUsername={currentUser.instagramUsername}
+          tiktokUsername={currentUser.tiktokUsername}
+          xUsername={currentUser.xUsername}
+        />
 
         <View testID="profile-stats" style={styles.statsRow}>
           <View style={styles.stat}>
@@ -338,46 +356,6 @@ export function ProfileScreen() {
         )}
 
         <QuickActions />
-
-        {__DEV__ && (
-          <View style={{ marginTop: 16, gap: 8, width: "100%" }}>
-            <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center", fontFamily: fonts.semiBold }}>
-              Test Toasts
-            </Text>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              <LiquidGlassButton
-                title="Default"
-                variant="secondary"
-                size="small"
-                onPress={() => showToast({ message: "This is a default toast" })}
-                style={{ flex: 1 }}
-              />
-              <LiquidGlassButton
-                title="Achievement"
-                variant="secondary"
-                size="small"
-                onPress={() => showToast({ type: "achievement", title: "Achievement Unlocked", message: "Cafe Explorer" })}
-                style={{ flex: 1 }}
-              />
-            </View>
-            <View style={{ flexDirection: "row", gap: 8 }}>
-              <LiquidGlassButton
-                title="Error"
-                variant="secondary"
-                size="small"
-                onPress={() => showToast({ type: "error", message: "Something went wrong" })}
-                style={{ flex: 1 }}
-              />
-              <LiquidGlassButton
-                title="Notification"
-                variant="secondary"
-                size="small"
-                onPress={() => showToast({ type: "notification", message: "Someone liked your post", avatarUrl: currentUser.avatarUrl })}
-                style={{ flex: 1 }}
-              />
-            </View>
-          </View>
-        )}
       </View>
 
       <UpcomingEvents events={userEvents} />
@@ -393,82 +371,83 @@ export function ProfileScreen() {
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  profileSection: {
-    alignItems: "center",
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    backgroundColor: colors.background,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.gray200,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  avatarFallback: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  displayName: {
-    fontSize: 22,
-    fontFamily: fonts.bold,
-    color: colors.text,
-  },
-  username: {
-    fontSize: 15,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
-  bio: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: "center",
-    marginTop: 8,
-    paddingHorizontal: 32,
-    lineHeight: 20,
-  },
-  statsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 20,
-    paddingHorizontal: 20,
-  },
-  stat: {
-    alignItems: "center",
-    paddingHorizontal: 20,
-  },
-  statNumber: {
-    fontSize: 24,
-    fontFamily: fonts.extraBold,
-    color: colors.text,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: colors.textMuted,
-    marginTop: 2,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-  },
-  statDivider: {
-    width: 1,
-    height: 30,
-    backgroundColor: colors.gray200,
-  },
-  gridDivider: {
-    height: 1,
-    paddingVertical: 8,
-  },
-});
+const createStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    profileSection: {
+      alignItems: "center",
+      paddingVertical: 24,
+      paddingHorizontal: 16,
+      backgroundColor: colors.background,
+    },
+    avatar: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      backgroundColor: colors.gray200,
+      marginBottom: 12,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.12,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    avatarFallback: {
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    displayName: {
+      fontSize: 22,
+      fontFamily: fonts.bold,
+      color: colors.text,
+    },
+    username: {
+      fontSize: 15,
+      color: colors.textMuted,
+      marginTop: 2,
+    },
+    bio: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      textAlign: "center",
+      marginTop: 8,
+      paddingHorizontal: 32,
+      lineHeight: 20,
+    },
+    statsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 20,
+      paddingHorizontal: 20,
+    },
+    stat: {
+      alignItems: "center",
+      paddingHorizontal: 20,
+    },
+    statNumber: {
+      fontSize: 24,
+      fontFamily: fonts.extraBold,
+      color: colors.text,
+    },
+    statLabel: {
+      fontSize: 11,
+      color: colors.textMuted,
+      marginTop: 2,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      fontWeight: "600",
+      fontFamily: fonts.semiBold,
+    },
+    statDivider: {
+      width: 1,
+      height: 30,
+      backgroundColor: colors.gray200,
+    },
+    gridDivider: {
+      height: 1,
+      paddingVertical: 8,
+    },
+  });

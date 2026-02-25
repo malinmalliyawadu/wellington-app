@@ -8,4 +8,7 @@ export interface User {
   bio?: string;
   onboardingCompleted?: boolean;
   profileVisibility?: ProfileVisibility;
+  instagramUsername?: string;
+  tiktokUsername?: string;
+  xUsername?: string;
 }

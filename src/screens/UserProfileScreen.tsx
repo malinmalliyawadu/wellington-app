@@ -31,6 +31,7 @@ import { QueryErrorState } from "../components/QueryErrorState";
 import { useAuth } from "../context/AuthContext";
 import { useReport } from "../hooks/useReport";
 import { SFIcon } from "../components/SFIcon";
+import { SocialLinks } from "../components/SocialLinks";
 import { ContextMenu, Button as ExpoButton, Host } from "@expo/ui/swift-ui";
 
 export function UserProfileScreen() {
@@ -212,6 +213,11 @@ export function UserProfileScreen() {
         <Text style={styles.displayName}>{user.displayName}</Text>
         <Text style={styles.username}>@{user.username}</Text>
         {user.bio && <Text style={styles.bio}>{user.bio}</Text>}
+        <SocialLinks
+          instagramUsername={user.instagramUsername}
+          tiktokUsername={user.tiktokUsername}
+          xUsername={user.xUsername}
+        />
 
         <View style={styles.statsRow}>
           <View style={styles.stat}>

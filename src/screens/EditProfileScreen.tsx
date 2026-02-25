@@ -5,9 +5,12 @@ import {
   TextInput,
   StyleSheet,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { useRouter, useNavigation } from "expo-router";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -31,6 +34,9 @@ export function EditProfileScreen() {
   const [username, setUsername] = useState(profile?.username ?? "");
   const [bio, setBio] = useState(profile?.bio ?? "");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatarUrl ?? "");
+  const [instagram, setInstagram] = useState(profile?.instagramUsername ?? "");
+  const [tiktok, setTiktok] = useState(profile?.tiktokUsername ?? "");
+  const [xHandle, setXHandle] = useState(profile?.xUsername ?? "");
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
@@ -38,7 +44,10 @@ export function EditProfileScreen() {
     displayName !== (profile?.displayName ?? "") ||
     username !== (profile?.username ?? "") ||
     bio !== (profile?.bio ?? "") ||
-    avatarUrl !== (profile?.avatarUrl ?? "");
+    avatarUrl !== (profile?.avatarUrl ?? "") ||
+    instagram !== (profile?.instagramUsername ?? "") ||
+    tiktok !== (profile?.tiktokUsername ?? "") ||
+    xHandle !== (profile?.xUsername ?? "");
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -64,7 +73,18 @@ export function EditProfileScreen() {
         </HapticPressable>
       ),
     });
-  }, [navigation, hasChanges, saving, displayName, username, bio, avatarUrl]);
+  }, [
+    navigation,
+    hasChanges,
+    saving,
+    displayName,
+    username,
+    bio,
+    avatarUrl,
+    instagram,
+    tiktok,
+    xHandle,
+  ]);
 
   const handleChangePhoto = async () => {
     if (!profile) return;
@@ -141,6 +161,9 @@ export function EditProfileScreen() {
         username: username.trim(),
         bio: bio.trim() || undefined,
         avatarUrl: avatarUrl,
+        instagramUsername: instagram.trim() || undefined,
+        tiktokUsername: tiktok.trim() || undefined,
+        xUsername: xHandle.trim() || undefined,
       });
 
       Alert.alert("Success", "Profile updated successfully", [
@@ -159,11 +182,24 @@ export function EditProfileScreen() {
   const styles = createStyles(colors);
 
   return (
-    <View style={[styles.container, { paddingTop: headerHeight }]}>
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={styles.contentContainer}>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingTop: headerHeight }]}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.contentContainer}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.avatarSection}>
           <View style={styles.avatarContainer}>
-            <Image source={{ uri: avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} />
+            <Image
+              source={{ uri: avatarUrl }}
+              style={styles.avatar}
+              contentFit="cover"
+              transition={200}
+            />
             {uploadingPhoto && (
               <View style={styles.avatarOverlay}>
                 <ActivityIndicator size="large" color="#FFFFFF" />
@@ -233,115 +269,204 @@ export function EditProfileScreen() {
             <Text style={styles.helperText}>{bio.length}/150</Text>
           </View>
 
+          <Text style={styles.sectionTitle}>Social Links</Text>
+
+          <View style={styles.field}>
+            <View style={styles.socialInputRow}>
+              <Ionicons
+                name="logo-instagram"
+                size={20}
+                color={colors.textSecondary}
+                style={styles.socialIcon}
+              />
+              <View style={[styles.inputContainer, { flex: 1 }]}>
+                <Text style={styles.atSymbol}>@</Text>
+                <TextInput
+                  style={[styles.input, styles.usernameInput]}
+                  value={instagram}
+                  onChangeText={(text) => setInstagram(text.replace(/^@/, ""))}
+                  placeholder="instagram handle"
+                  placeholderTextColor={colors.textMuted}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  maxLength={30}
+                />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.field}>
+            <View style={styles.socialInputRow}>
+              <Ionicons
+                name="logo-tiktok"
+                size={20}
+                color={colors.textSecondary}
+                style={styles.socialIcon}
+              />
+              <View style={[styles.inputContainer, { flex: 1 }]}>
+                <Text style={styles.atSymbol}>@</Text>
+                <TextInput
+                  style={[styles.input, styles.usernameInput]}
+                  value={tiktok}
+                  onChangeText={(text) => setTiktok(text.replace(/^@/, ""))}
+                  placeholder="tiktok handle"
+                  placeholderTextColor={colors.textMuted}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  maxLength={24}
+                />
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.field}>
+            <View style={styles.socialInputRow}>
+              <Ionicons
+                name="logo-twitter"
+                size={20}
+                color={colors.textSecondary}
+                style={styles.socialIcon}
+              />
+              <View style={[styles.inputContainer, { flex: 1 }]}>
+                <Text style={styles.atSymbol}>@</Text>
+                <TextInput
+                  style={[styles.input, styles.usernameInput]}
+                  value={xHandle}
+                  onChangeText={(text) => setXHandle(text.replace(/^@/, ""))}
+                  placeholder="X handle"
+                  placeholderTextColor={colors.textMuted}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  maxLength={15}
+                />
+              </View>
+            </View>
+          </View>
         </View>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  saveButtonContainer: {
-    paddingHorizontal: 10,
-    textAlign: "center",
-  },
-  saveButton: {
-    fontSize: 16,
-    fontFamily: fonts.semiBold,
-  },
-  saveButtonDisabled: {
-    color: colors.textMuted,
-  },
-  content: {
-    flex: 1,
-  },
-  contentContainer: {
-    paddingBottom: 120,
-  },
-  avatarSection: {
-    alignItems: "center",
-    paddingVertical: 32,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  avatarContainer: {
-    position: "relative",
-    marginBottom: 12,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: colors.gray200,
-  },
-  avatarOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: 50,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  changePhotoButton: {
-    marginTop: 8,
-  },
-  form: {
-    padding: 16,
-  },
-  field: {
-    marginBottom: 28,
-  },
-  label: {
-    fontSize: 14,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: colors.gray100,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: colors.text,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.gray100,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: "hidden",
-  },
-  atSymbol: {
-    fontSize: 16,
-    color: colors.textMuted,
-    paddingLeft: 16,
-    fontWeight: "500",
-    fontFamily: fonts.medium,
-  },
-  usernameInput: {
-    flex: 1,
-    backgroundColor: "transparent",
-    borderWidth: 0,
-    paddingLeft: 4,
-  },
-  bioInput: {
-    minHeight: 100,
-    paddingTop: 12,
-  },
-  helperText: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: 6,
-  },
-});
+const createStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    saveButtonContainer: {
+      paddingHorizontal: 10,
+      textAlign: "center",
+    },
+    saveButton: {
+      fontSize: 16,
+      fontFamily: fonts.semiBold,
+    },
+    saveButtonDisabled: {
+      color: colors.textMuted,
+    },
+    content: {
+      flex: 1,
+    },
+    contentContainer: {
+      paddingBottom: 120,
+    },
+    avatarSection: {
+      alignItems: "center",
+      paddingVertical: 32,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    avatarContainer: {
+      position: "relative",
+      marginBottom: 12,
+    },
+    avatar: {
+      width: 100,
+      height: 100,
+      borderRadius: 50,
+      backgroundColor: colors.gray200,
+    },
+    avatarOverlay: {
+      position: "absolute",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      borderRadius: 50,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    changePhotoButton: {
+      marginTop: 8,
+    },
+    form: {
+      padding: 16,
+    },
+    field: {
+      marginBottom: 28,
+    },
+    label: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+      marginBottom: 8,
+    },
+    input: {
+      backgroundColor: colors.gray100,
+      borderRadius: 10,
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      fontSize: 16,
+      color: colors.text,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    inputContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.gray100,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: "hidden",
+    },
+    atSymbol: {
+      backgroundColor: "transparent",
+      fontSize: 16,
+      color: colors.textMuted,
+      paddingLeft: 12,
+      fontWeight: "500",
+    },
+    usernameInput: {
+      flex: 1,
+      backgroundColor: "transparent",
+      borderWidth: 0,
+      paddingLeft: 2,
+    },
+    bioInput: {
+      minHeight: 100,
+      paddingTop: 12,
+    },
+    helperText: {
+      fontSize: 13,
+      color: colors.textMuted,
+      marginTop: 6,
+    },
+    sectionTitle: {
+      fontSize: 16,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+      marginBottom: 16,
+    },
+    socialInputRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 10,
+    },
+    socialIcon: {
+      width: 24,
+      textAlign: "center",
+    },
+  });
