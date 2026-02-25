@@ -76,7 +76,7 @@ export function getMarkerSizeWithRange(
 ): number {
   if (range.maxScore === range.minScore) return (MIN_SIZE + MAX_SIZE) / 2;
   const t = (score - range.minScore) / (range.maxScore - range.minScore);
-  return MIN_SIZE + t * (MAX_SIZE - MIN_SIZE);
+  return Math.max(MIN_SIZE, MIN_SIZE + t * (MAX_SIZE - MIN_SIZE));
 }
 
 export function isFollowedPlace(
