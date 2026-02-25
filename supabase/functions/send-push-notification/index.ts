@@ -14,6 +14,7 @@ const NOTIFICATION_TYPE_MAP: Record<string, { prefsKey: string; message: (name: 
   guide_comment: { prefsKey: "guide_comments", message: (name) => `${name} commented on your guide` },
   event_attendance: { prefsKey: "event_attendance", message: (name) => `${name} is going to your event` },
   comment_reply: { prefsKey: "comment_replies", message: (name) => `${name} replied to your comment` },
+  mention: { prefsKey: "mentions", message: (name) => `${name} mentioned you` },
 };
 
 Deno.serve(async (req) => {

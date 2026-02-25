@@ -40,7 +40,7 @@ import {
   updatePost,
   deletePost,
 } from "../services/posts";
-import { getProfileById, getProfilesByIds } from "../services/users";
+import { getProfileById, getProfilesByIds, getProfileByUsername } from "../services/users";
 import { getPlaceById as getPlaceByIdAsync } from "../services/places";
 import {
   getCommentsByPostId as getCommentsAsync,
@@ -60,11 +60,14 @@ import { fonts } from "../theme/fonts";
 import { sharePost } from "../utils/sharing";
 import { useSave } from "../context/SaveContext";
 import { useToast } from "../context/ToastContext";
-import { createCommentNotification } from "../services/notifications";
+import { createCommentNotification, createMentionNotification } from "../services/notifications";
 import { ContextMenu, Button as ExpoButton, Host } from "@expo/ui/swift-ui";
 import { HapticPressable } from "src/components/HapticPressable";
 import { HashtagText } from "../components/HashtagText";
 import { useReport } from "../hooks/useReport";
+import { detectMentionAtCursor, extractMentions } from "../utils/mentions";
+import { useMentionSuggestions } from "../hooks/useMentionSuggestions";
+import { MentionSuggestions } from "../components/create/MentionSuggestions";
 
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString);
@@ -90,6 +93,7 @@ export function PostDetailScreen() {
   const { profile } = useAuth();
   const inputRef = useRef<TextInput>(null);
   const [commentText, setCommentText] = useState("");
+  const [commentCursorPosition, setCommentCursorPosition] = useState(0);
   const [inputFocused, setInputFocused] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -220,6 +224,27 @@ export function PostDetailScreen() {
     [commentUsers]
   );
 
+  // Mention autocomplete for comment input
+  const commentMentionQuery = detectMentionAtCursor(commentText, commentCursorPosition);
+  const commentMentionSuggestions = useMentionSuggestions(commentMentionQuery, profile?.id);
+
+  const insertCommentMention = useCallback(
+    (user: { username: string }) => {
+      const MAX = 500;
+      const partial = detectMentionAtCursor(commentText, commentCursorPosition);
+      if (partial === null) return;
+
+      const start = commentCursorPosition - partial.length - 1;
+      const before = commentText.slice(0, start);
+      const after = commentText.slice(commentCursorPosition);
+      const insertion = `@${user.username} `;
+      const newText = (before + insertion + after).slice(0, MAX);
+      setCommentText(newText);
+      setCommentCursorPosition(Math.min(before.length + insertion.length, MAX));
+    },
+    [commentText, commentCursorPosition],
+  );
+
   // Refetch post and comments when screen comes into focus
   useFocusEffect(
     useCallback(() => {
@@ -269,6 +294,12 @@ export function PostDetailScreen() {
     router.push(`${currentTab}/place/${placeId}` as any);
   };
 
+  const handlePressMention = (username: string) => {
+    getProfileByUsername(username).then((u) => {
+      if (u) router.push(`${currentTab}/user/${u.id}` as any);
+    });
+  };
+
   const handleSubmitComment = async () => {
     const trimmed = commentText.trim();
     if (!trimmed || !profile) return;
@@ -282,6 +313,13 @@ export function PostDetailScreen() {
           text: trimmed,
         });
         createCommentNotification(profile.id, post.id).catch(() => {});
+        // Send mention notifications for mentioned users in the comment
+        const mentionedUsernames = extractMentions(trimmed);
+        for (const username of mentionedUsernames) {
+          getProfileByUsername(username).then((u) => {
+            if (u) createMentionNotification(profile.id, u.id, post.id).catch(() => {});
+          });
+        }
       }
       setEditingCommentId(null);
       setCommentText("");
@@ -550,6 +588,7 @@ export function PostDetailScreen() {
             onPressHashtag={(tag) =>
               router.push(`${currentTab}/hashtag/${tag}` as any)
             }
+            onPressMention={handlePressMention}
           >
             {post.content}
           </HashtagText>
@@ -610,6 +649,7 @@ export function PostDetailScreen() {
                       onPressHashtag={(tag) =>
                         router.push(`${currentTab}/hashtag/${tag}` as any)
                       }
+                      onPressMention={handlePressMention}
                     >
                       {comment.text}
                     </HashtagText>
@@ -666,6 +706,16 @@ export function PostDetailScreen() {
         )}
       </ScrollView>
 
+      {/* Mention suggestions above input bar */}
+      {commentMentionSuggestions.length > 0 && (
+        <View style={{ paddingHorizontal: 12 }}>
+          <MentionSuggestions
+            suggestions={commentMentionSuggestions}
+            onSelect={insertCommentMention}
+          />
+        </View>
+      )}
+
       {/* Comment input bar */}
       <View
         style={[
@@ -695,6 +745,9 @@ export function PostDetailScreen() {
           placeholderTextColor={colors.textMuted}
           value={commentText}
           onChangeText={setCommentText}
+          onSelectionChange={(e) =>
+            setCommentCursorPosition(e.nativeEvent.selection.end)
+          }
           onFocus={() => setInputFocused(true)}
           onBlur={() => setInputFocused(false)}
           onSubmitEditing={handleSubmitComment}

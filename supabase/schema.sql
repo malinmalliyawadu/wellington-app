@@ -320,7 +320,7 @@ create table notifications (
   id uuid default gen_random_uuid() primary key,
   recipient_id uuid not null references profiles(id) on delete cascade,
   actor_id uuid not null references profiles(id) on delete cascade,
-  type text not null check (type in ('like', 'comment', 'follow', 'guide_like', 'guide_comment', 'event_attendance', 'event_reminder', 'comment_reply')),
+  type text not null check (type in ('like', 'comment', 'follow', 'guide_like', 'guide_comment', 'event_attendance', 'event_reminder', 'comment_reply', 'mention')),
   post_id uuid references posts(id) on delete cascade,
   guide_id uuid references guides(id) on delete cascade,
   event_id uuid references events(id) on delete cascade,
@@ -407,6 +407,7 @@ create table notification_preferences (
   event_reminders boolean not null default true,
   guide_likes boolean not null default true,
   guide_comments boolean not null default true,
+  mentions boolean not null default true,
   updated_at timestamptz not null default now()
 );
 

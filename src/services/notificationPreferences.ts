@@ -10,6 +10,7 @@ export interface NotificationPreferences {
   eventReminders: boolean;
   guideLikes: boolean;
   guideComments: boolean;
+  mentions: boolean;
 }
 
 const DEFAULTS: NotificationPreferences = {
@@ -22,6 +23,7 @@ const DEFAULTS: NotificationPreferences = {
   eventReminders: true,
   guideLikes: true,
   guideComments: true,
+  mentions: true,
 };
 
 function mapRow(row: any): NotificationPreferences {
@@ -35,6 +37,7 @@ function mapRow(row: any): NotificationPreferences {
     eventReminders: row.event_reminders ?? true,
     guideLikes: row.guide_likes ?? true,
     guideComments: row.guide_comments ?? true,
+    mentions: row.mentions ?? true,
   };
 }
 
@@ -69,6 +72,7 @@ export async function updateNotificationPreferences(
         ...(prefs.eventReminders !== undefined && { event_reminders: prefs.eventReminders }),
         ...(prefs.guideLikes !== undefined && { guide_likes: prefs.guideLikes }),
         ...(prefs.guideComments !== undefined && { guide_comments: prefs.guideComments }),
+        ...(prefs.mentions !== undefined && { mentions: prefs.mentions }),
       },
       { onConflict: 'user_id' }
     );

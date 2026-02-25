@@ -41,6 +41,7 @@ interface FeedPostProps {
   onPressPost?: (postId: string) => void;
   onPressLikes?: (postId: string) => void;
   onPressHashtag?: (tag: string) => void;
+  onPressMention?: (username: string) => void;
 }
 
 function formatTimeAgo(dateString: string): string {
@@ -68,6 +69,7 @@ export const FeedPost = React.memo(function FeedPost({
   onPressPost,
   onPressLikes,
   onPressHashtag,
+  onPressMention,
 }: FeedPostProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -237,7 +239,7 @@ export const FeedPost = React.memo(function FeedPost({
 
       {/* Content */}
       <View style={styles.content}>
-        <HashtagText style={styles.caption} onPressHashtag={onPressHashtag}>{post.content}</HashtagText>
+        <HashtagText style={styles.caption} onPressHashtag={onPressHashtag} onPressMention={onPressMention}>{post.content}</HashtagText>
       </View>
 
       {/* Location row */}

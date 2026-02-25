@@ -62,8 +62,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   const timeoutRef = useRef<NodeJS.Timeout>(undefined);
   const insets = useSafeAreaInsets();
 
-  const labelColor =
-    Platform.OS === "ios" ? PlatformColor("label") : colors.text;
+  const labelColor = (
+    Platform.OS === "ios" ? PlatformColor("label") : colors.text
+  ) as string;
 
   const hideToast = useCallback(() => {
     Animated.timing(translateY, {

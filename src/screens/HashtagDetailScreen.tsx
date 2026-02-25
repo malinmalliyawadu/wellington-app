@@ -6,7 +6,7 @@ import { useHeaderHeight } from '@react-navigation/elements';
 import { useQuery } from '../hooks/useQuery';
 import { getHashtagByName, getPostIdsByHashtagId } from '../services/hashtags';
 import { getPostsByIds } from '../services/posts';
-import { getProfilesByIds } from '../services/users';
+import { getProfilesByIds, getProfileByUsername } from '../services/users';
 import { getPlaces } from '../services/places';
 import { FeedPost } from '../components/FeedPost';
 import { formatNumber } from '../utils/formatNumber';
@@ -95,6 +95,15 @@ export function HashtagDetailScreen() {
     [router, tabBase]
   );
 
+  const handlePressMention = useCallback(
+    (username: string) => {
+      getProfileByUsername(username).then((user) => {
+        if (user) router.push(`${tabBase}/user/${user.id}` as any);
+      });
+    },
+    [router, tabBase]
+  );
+
   if (loadingHashtag) {
     return (
       <View style={[styles.container, styles.center]}>
@@ -133,6 +142,7 @@ export function HashtagDetailScreen() {
             onPressPlace={handlePressPlace}
             onPressPost={handlePressPost}
             onPressHashtag={handlePressHashtag}
+            onPressMention={handlePressMention}
           />
         )}
         ListEmptyComponent={
