@@ -16,7 +16,8 @@ export function createAchievementToast(achievementId: string): ToastConfig {
   }
 
   return {
-    message: `🏆 ${achievement.title}`,
+    title: 'Achievement Unlocked',
+    message: achievement.title,
     type: 'achievement',
     duration: 4000,
     icon: 'trophy',

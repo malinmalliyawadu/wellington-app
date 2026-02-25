@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useRef } from 
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   Animated,
   Dimensions,
@@ -19,10 +20,13 @@ import { useTheme, type Colors } from '../theme/ThemeContext';
 
 export interface ToastConfig {
   message: string;
-  type?: 'default' | 'achievement' | 'error';
+  title?: string;
+  type?: 'default' | 'achievement' | 'error' | 'notification';
   duration?: number;
   icon?: keyof typeof Ionicons.glyphMap;
   sfIcon?: SFSymbol;
+  avatarUrl?: string;
+  onPress?: () => void;
 }
 
 interface ToastContextValue {
@@ -72,6 +76,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } else if (toastConfig.type === 'error') {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        } else if (toastConfig.type === 'notification') {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         } else {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         }
@@ -131,7 +137,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           ]}
         >
           {config.type === 'achievement' ? (
-            <TouchableOpacity activeOpacity={0.9} onPress={hideToast}>
+            <TouchableOpacity activeOpacity={0.9} onPress={hideToast} style={{ alignSelf: 'stretch' }}>
               <LinearGradient
                 colors={['#FFD700', '#FFA500']}
                 start={{ x: 0, y: 0 }}
@@ -141,10 +147,37 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                 <View style={styles.achievementIconContainer}>
                   <SFIcon name={getIcon().sf} fallback={getIcon().fallback} size={28} color="#fff" />
                 </View>
-                <Text style={[styles.message, styles.achievementMessage]} numberOfLines={2}>
-                  {config.message}
-                </Text>
+                <View style={{ flex: 1 }}>
+                  {config.title && (
+                    <Text style={styles.achievementTitle} numberOfLines={1}>
+                      {config.title}
+                    </Text>
+                  )}
+                  <Text style={[styles.message, styles.achievementMessage]} numberOfLines={2}>
+                    {config.message}
+                  </Text>
+                </View>
               </LinearGradient>
+            </TouchableOpacity>
+          ) : config.type === 'notification' ? (
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => {
+                if (config.onPress) {
+                  config.onPress();
+                }
+                hideToast();
+              }}
+              style={[styles.toast, styles.notificationToast]}
+            >
+              {config.avatarUrl ? (
+                <Image source={{ uri: config.avatarUrl }} style={styles.notificationAvatar} />
+              ) : (
+                <SFIcon name="bell.fill" fallback="notifications" size={24} color="#fff" style={styles.icon} />
+              )}
+              <Text style={styles.message} numberOfLines={2}>
+                {config.message}
+              </Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
@@ -214,6 +247,17 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     justifyContent: 'center',
     marginRight: 14,
   },
+  achievementTitle: {
+    fontSize: 12,
+    fontFamily: fonts.bold,
+    color: '#fff',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 2,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2,
+  },
   achievementMessage: {
     fontSize: 16,
     fontFamily: fonts.bold,
@@ -223,6 +267,16 @@ const createStyles = (colors: Colors) => StyleSheet.create({
   },
   errorToast: {
     backgroundColor: '#E74C3C',
+  },
+  notificationToast: {
+    backgroundColor: colors.text,
+  },
+  notificationAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: 12,
+    backgroundColor: colors.gray300,
   },
   icon: {
     marginRight: 12,

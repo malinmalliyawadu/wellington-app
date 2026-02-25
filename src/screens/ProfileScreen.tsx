@@ -27,6 +27,7 @@ import { QueryErrorState } from "../components/QueryErrorState";
 import { SFIcon } from "../components/SFIcon";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { useSave } from "../context/SaveContext";
+import { useToast } from "../context/ToastContext";
 
 const glassEnabled = isLiquidGlassAvailable();
 
@@ -147,6 +148,7 @@ export function ProfileScreen() {
   const { profile } = useAuth();
 
   const { isConnected: igConnected } = useInstagramConnection();
+  const { showToast } = useToast();
 
   const currentUser = profile ?? {
     id: "",
@@ -336,6 +338,46 @@ export function ProfileScreen() {
         )}
 
         <QuickActions />
+
+        {__DEV__ && (
+          <View style={{ marginTop: 16, gap: 8, width: "100%" }}>
+            <Text style={{ fontSize: 12, color: colors.textMuted, textAlign: "center", fontFamily: fonts.semiBold }}>
+              Test Toasts
+            </Text>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <LiquidGlassButton
+                title="Default"
+                variant="secondary"
+                size="small"
+                onPress={() => showToast({ message: "This is a default toast" })}
+                style={{ flex: 1 }}
+              />
+              <LiquidGlassButton
+                title="Achievement"
+                variant="secondary"
+                size="small"
+                onPress={() => showToast({ type: "achievement", title: "Achievement Unlocked", message: "Cafe Explorer" })}
+                style={{ flex: 1 }}
+              />
+            </View>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              <LiquidGlassButton
+                title="Error"
+                variant="secondary"
+                size="small"
+                onPress={() => showToast({ type: "error", message: "Something went wrong" })}
+                style={{ flex: 1 }}
+              />
+              <LiquidGlassButton
+                title="Notification"
+                variant="secondary"
+                size="small"
+                onPress={() => showToast({ type: "notification", message: "Someone liked your post", avatarUrl: currentUser.avatarUrl })}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </View>
+        )}
       </View>
 
       <UpcomingEvents events={userEvents} />
