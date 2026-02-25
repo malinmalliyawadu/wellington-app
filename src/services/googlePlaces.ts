@@ -133,7 +133,7 @@ export async function searchNearbyPlaces(
   latitude: number,
   longitude: number,
   radius: number = 200
-): Promise<Array<Omit<Place, "id">>> {
+): Promise<Omit<Place, "id">[]> {
   if (!GOOGLE_PLACES_API_KEY) {
     console.warn("Google Places API key not configured");
     return [];
@@ -227,7 +227,7 @@ export async function searchGooglePlaces(
   query: string,
   latitude: number = WELLINGTON_COORDS.latitude,
   longitude: number = WELLINGTON_COORDS.longitude
-): Promise<Array<Omit<Place, "id">>> {
+): Promise<Omit<Place, "id">[]> {
   if (!query.trim() || query.trim().length < 2) {
     return [];
   }
@@ -310,9 +310,7 @@ export async function searchGooglePlaces(
     );
 
     const results = await Promise.all(detailsPromises);
-    const mappedResults = results.filter((r) => r !== null) as Array<
-      Omit<Place, "id">
-    >;
+    const mappedResults = results.filter((r) => r !== null) as Omit<Place, "id">[];
 
     console.log("Final mapped results count:", mappedResults.length);
 

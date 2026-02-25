@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import MapView, { Marker, Region } from "react-native-maps";
 import { useLocation } from "../context/LocationContext";
-import { useNavigation } from "expo-router";
+import { useNavigation , useRouter } from "expo-router";
 import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
@@ -30,7 +30,6 @@ import { useMarkerAnimation } from "../hooks/useMarkerAnimation";
 import { useExplorationTracking } from "../hooks/useExplorationTracking";
 import { WELLINGTON_REGION, isInWellington } from "../constants/wellington";
 import { Place } from "../types";
-import { useRouter } from "expo-router";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";

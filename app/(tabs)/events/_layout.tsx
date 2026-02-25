@@ -1,7 +1,6 @@
 import { Stack, useRouter } from "expo-router";
-import { EventFilterProvider } from "../../../src/context/EventFilterContext";
+import { EventFilterProvider , useEventFilters } from "../../../src/context/EventFilterContext";
 import { ErrorScreen } from "../../../src/components/ErrorScreen";
-import { useEventFilters } from "../../../src/context/EventFilterContext";
 import { HapticPressable } from "../../../src/components/HapticPressable";
 import { SFIcon } from "../../../src/components/SFIcon";
 import { useTheme } from "../../../src/theme/ThemeContext";

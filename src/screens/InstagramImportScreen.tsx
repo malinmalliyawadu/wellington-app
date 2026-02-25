@@ -61,10 +61,10 @@ export function InstagramImportScreen() {
   const handleImport = useCallback(async (post: InstagramMedia) => {
     setImporting(true);
     try {
-      let mediaFiles: Array<{
+      let mediaFiles: {
         uri: string;
         type: "photo" | "video";
-      }> = [];
+      }[] = [];
 
       if (post.media_type === "CAROUSEL_ALBUM") {
         const children = await fetchCarouselChildren(post.id);

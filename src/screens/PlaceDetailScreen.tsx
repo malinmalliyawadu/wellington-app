@@ -8,7 +8,7 @@ import { SFIcon } from '../components/SFIcon';
 import { useQuery } from '../hooks/useQuery';
 import { getPlaceById } from '../services/places';
 import { getPostsByPlaceId as getPostsByPlaceIdAsync } from '../services/posts';
-import { getProfilesByIds } from '../services/users';
+import { getProfilesByIds , getProfileByUsername } from '../services/users';
 import { fetchPlaceDetails } from '../services/googlePlaceDetails';
 import { formatNumber } from '../utils/formatNumber';
 import { sortPosts } from '../utils/postSorting';
@@ -21,7 +21,6 @@ import type { PlaceCategory } from '../types';
 import { fonts } from "../theme/fonts";
 import { HapticPressable } from 'src/components/HapticPressable';
 import { HashtagText } from '../components/HashtagText';
-import { getProfileByUsername } from '../services/users';
 import { LiquidGlassButton } from '../components/LiquidGlassButton';
 import { QueryErrorState } from '../components/QueryErrorState';
 

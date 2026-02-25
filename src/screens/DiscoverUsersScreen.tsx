@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator , Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter, usePathname, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,7 +9,6 @@ import { useAuth } from '../context/AuthContext';
 import { FollowButton } from '../components/FollowButton';
 import { fonts } from "../theme/fonts";
 import { useTheme, type Colors } from '../theme/ThemeContext';
-import { Pressable } from 'react-native';
 import { useQuery } from '../hooks/useQuery';
 import { getOtherProfiles } from '../services/users';
 import { HapticPressable } from 'src/components/HapticPressable';

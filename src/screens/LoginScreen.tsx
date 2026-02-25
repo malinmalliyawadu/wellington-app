@@ -31,7 +31,7 @@ import { HapticPressable } from "src/components/HapticPressable";
 
 const glassEnabled = isLiquidGlassAvailable();
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const splashBg = require("../../assets/splash-bg.png");
 
 const SEED_USERS = [

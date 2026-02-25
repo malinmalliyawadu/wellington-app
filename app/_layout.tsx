@@ -220,12 +220,12 @@ function AuthGate({ children }: { children: React.ReactNode }) {
         videoUri?: string;
         mediaWidth?: number;
         mediaHeight?: number;
-        mediaFiles?: Array<{
+        mediaFiles?: {
           uri: string;
           type: "photo" | "video";
           width?: number;
           height?: number;
-        }>;
+        }[];
       } = {};
 
       if (shareIntent.type === "weburl" && shareIntent.webUrl) {

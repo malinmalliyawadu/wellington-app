@@ -132,14 +132,14 @@ export async function createPost(post: {
   thumbnailUrl?: string;
   mediaWidth?: number;
   mediaHeight?: number;
-  mediaItems?: Array<{
+  mediaItems?: {
     mediaUrl: string;
     thumbnailUrl?: string;
     mediaType: 'photo' | 'video';
     mediaWidth?: number;
     mediaHeight?: number;
     sortOrder: number;
-  }>;
+  }[];
 }): Promise<Post> {
   const { data, error } = await supabase
     .from('posts')
@@ -253,7 +253,7 @@ function mapPost(row: {
   media_height?: number | null;
   likes: number;
   created_at: string;
-  post_media?: Array<{
+  post_media?: {
     id: string;
     media_url: string;
     thumbnail_url: string | null;
@@ -261,10 +261,10 @@ function mapPost(row: {
     media_width: number | null;
     media_height: number | null;
     sort_order: number;
-  }>;
-  post_hashtags?: Array<{
+  }[];
+  post_hashtags?: {
     hashtags: { name: string } | null;
-  }>;
+  }[];
 }): Post {
   const mediaRows = row.post_media ?? [];
   const media = mediaRows

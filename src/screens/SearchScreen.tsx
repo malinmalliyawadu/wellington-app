@@ -103,7 +103,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
   const [hashtagResults, setHashtagResults] = useState<Hashtag[]>([]);
 
   // Google Places search state
-  const [googleResults, setGoogleResults] = useState<Array<Omit<Place, "id">>>(
+  const [googleResults, setGoogleResults] = useState<Omit<Place, "id">[]>(
     []
   );
   const [googleLoading, setGoogleLoading] = useState(false);

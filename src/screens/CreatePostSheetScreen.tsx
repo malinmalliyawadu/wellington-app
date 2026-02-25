@@ -276,12 +276,12 @@ export function CreatePostSheetScreen() {
           videoUri?: string;
           mediaWidth?: number;
           mediaHeight?: number;
-          mediaFiles?: Array<{
+          mediaFiles?: {
             uri: string;
             type: 'photo' | 'video';
             width?: number;
             height?: number;
-          }>;
+          }[];
         }
       | undefined;
     if (!shared) return;
@@ -449,14 +449,14 @@ export function CreatePostSheetScreen() {
         let coverThumbnailUrl: string | undefined;
         let coverWidth: number | undefined;
         let coverHeight: number | undefined;
-        let uploadedMediaItems: Array<{
+        let uploadedMediaItems: {
           mediaUrl: string;
           thumbnailUrl?: string;
           mediaType: 'photo' | 'video';
           mediaWidth?: number;
           mediaHeight?: number;
           sortOrder: number;
-        }> | undefined;
+        }[] | undefined;
 
         const postType = getPostType();
 

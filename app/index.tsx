@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../src/context/AuthContext';
 import { fonts } from '../src/theme/fonts';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
+ 
 const splashBg = require('../assets/splash-bg.png');
 
 export default function Index() {
