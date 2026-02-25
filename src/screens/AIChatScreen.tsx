@@ -128,6 +128,8 @@ export function AIChatScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const inputRef = useRef<TextInput>(null);
   const lastResponseY = useRef(0);
+  const contentHeight = useRef(0);
+  const scrollViewHeight = useRef(0);
 
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardWillShow", () =>
@@ -142,18 +144,28 @@ export function AIChatScreen() {
     };
   }, []);
 
-  const scrollToBottom = useCallback(() => {
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+  const isContentScrollable = useCallback(() => {
+    return contentHeight.current > scrollViewHeight.current;
   }, []);
+
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      if (isContentScrollable()) {
+        scrollRef.current?.scrollToEnd({ animated: true });
+      }
+    }, 100);
+  }, [isContentScrollable]);
 
   const scrollToLastResponse = useCallback(() => {
     setTimeout(() => {
-      scrollRef.current?.scrollTo({
-        y: lastResponseY.current - 200,
-        animated: true,
-      });
+      if (isContentScrollable()) {
+        scrollRef.current?.scrollTo({
+          y: lastResponseY.current - 200,
+          animated: true,
+        });
+      }
     }, 150);
-  }, []);
+  }, [isContentScrollable]);
 
   // Load persisted chat history on mount
   useEffect(() => {
@@ -213,7 +225,7 @@ export function AIChatScreen() {
               name="plus.message"
               fallback="chatbubble"
               size={22}
-              color={isLoading ? colors.gray300 : colors.primary}
+              color={isLoading ? colors.gray300 : colors.text}
             />
           </HapticPressable>
         ) : null,
@@ -358,8 +370,8 @@ export function AIChatScreen() {
   const tabPrefix = pathname.startsWith("/feed")
     ? "/feed"
     : pathname.startsWith("/events")
-      ? "/events"
-      : "/map";
+    ? "/events"
+    : "/map";
 
   const handlePlacePress = useCallback(
     (placeId: string) => {
@@ -437,6 +449,12 @@ export function AIChatScreen() {
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
+        onContentSizeChange={(_w, h) => {
+          contentHeight.current = h;
+        }}
+        onLayout={(e) => {
+          scrollViewHeight.current = e.nativeEvent.layout.height;
+        }}
       >
         {!hasMessages && (
           <View style={styles.idleContainer}>
@@ -512,7 +530,9 @@ export function AIChatScreen() {
                 <Text style={styles.aiLabel}>Welly</Text>
               </View>
 
-              <Markdown style={mdStyles} onLinkPress={handleLinkPress}>{msg.content}</Markdown>
+              <Markdown style={mdStyles} onLinkPress={handleLinkPress}>
+                {msg.content}
+              </Markdown>
 
               {msg.aiResponse && msg.aiResponse.places.length > 0 && (
                 <View style={styles.cardsSection}>
@@ -539,17 +559,19 @@ export function AIChatScreen() {
                 </View>
               )}
 
-              {msg.aiResponse && msg.aiResponse.guides && msg.aiResponse.guides.length > 0 && (
-                <View style={styles.cardsSection}>
-                  {msg.aiResponse.guides.map((guide) => (
-                    <GuideRecommendationCard
-                      key={guide.guideId}
-                      recommendation={guide}
-                      onPress={() => handleGuidePress(guide.guideId)}
-                    />
-                  ))}
-                </View>
-              )}
+              {msg.aiResponse &&
+                msg.aiResponse.guides &&
+                msg.aiResponse.guides.length > 0 && (
+                  <View style={styles.cardsSection}>
+                    {msg.aiResponse.guides.map((guide) => (
+                      <GuideRecommendationCard
+                        key={guide.guideId}
+                        recommendation={guide}
+                        onPress={() => handleGuidePress(guide.guideId)}
+                      />
+                    ))}
+                  </View>
+                )}
             </View>
           );
         })}
@@ -690,7 +712,10 @@ function EventRecommendationCard({
         <Text style={styles.recCardTitle} numberOfLines={1}>
           {recommendation.eventTitle}
         </Text>
-        <Text style={styles.recCardDate}>{dateLabel}{timeLabel}</Text>
+        <Text style={styles.recCardDate}>
+          {dateLabel}
+          {timeLabel}
+        </Text>
         <Text style={styles.recCardReason} numberOfLines={2}>
           {recommendation.reason}
         </Text>
@@ -750,229 +775,231 @@ function GuideRecommendationCard({
   );
 }
 
-const createMarkdownStyles = (colors: Colors) => StyleSheet.create({
-  body: {
-    fontSize: 15,
-    fontFamily: fonts.medium,
-    color: colors.text,
-    lineHeight: 22,
-  },
-  strong: {
-    fontFamily: fonts.bold,
-  },
-  em: {
-    fontStyle: "italic",
-  },
-  bullet_list: {
-    marginVertical: 4,
-  },
-  ordered_list: {
-    marginVertical: 4,
-  },
-  list_item: {
-    marginVertical: 2,
-  },
-  paragraph: {
-    marginTop: 0,
-    marginBottom: 8,
-  },
-  link: {
-    color: colors.primary,
-  },
-});
+const createMarkdownStyles = (colors: Colors) =>
+  StyleSheet.create({
+    body: {
+      fontSize: 15,
+      fontFamily: fonts.medium,
+      color: colors.text,
+      lineHeight: 22,
+    },
+    strong: {
+      fontFamily: fonts.bold,
+    },
+    em: {
+      fontStyle: "italic",
+    },
+    bullet_list: {
+      marginVertical: 4,
+    },
+    ordered_list: {
+      marginVertical: 4,
+    },
+    list_item: {
+      marginVertical: 2,
+    },
+    paragraph: {
+      marginTop: 0,
+      marginBottom: 8,
+    },
+    link: {
+      color: colors.primary,
+    },
+  });
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  headerButton: {
-    width: 36,
-    height: 36,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 16,
-    gap: 16,
-  },
-  // Idle state
-  idleContainer: {
-    paddingBottom: 8,
-  },
-  welcomeText: {
-    fontSize: 24,
-    fontFamily: fonts.bold,
-    color: colors.text,
-    textAlign: "center",
-    marginBottom: 32,
-  },
-  chipsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
-    gap: 10,
-  },
-  chip: {
-    backgroundColor: colors.primary + "12",
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: colors.primary + "30",
-  },
-  chipText: {
-    fontSize: 15,
-    fontFamily: fonts.semiBold,
-    color: colors.primary,
-  },
-  // Message bubbles
-  questionBubble: {
-    alignSelf: "flex-end",
-    backgroundColor: colors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 18,
-    borderBottomRightRadius: 4,
-    maxWidth: "80%",
-  },
-  questionText: {
-    fontSize: 15,
-    fontFamily: fonts.medium,
-    color: "#FFFFFF",
-  },
-  aiLoadingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    paddingVertical: 12,
-  },
-  loadingText: {
-    fontSize: 14,
-    fontFamily: fonts.medium,
-    color: colors.textSecondary,
-  },
-  // AI response
-  aiResponseSection: {
-    gap: 12,
-  },
-  aiAvatarRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  aiAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  aiLabel: {
-    fontSize: 14,
-    fontFamily: fonts.semiBold,
-    color: colors.textSecondary,
-  },
-  aiMessage: {
-    fontSize: 15,
-    fontFamily: fonts.medium,
-    color: colors.text,
-    lineHeight: 22,
-  },
-  cardsSection: {
-    gap: 8,
-    marginTop: 4,
-  },
-  // Error state
-  errorBox: {
-    alignItems: "center",
-    gap: 12,
-    paddingVertical: 24,
-  },
-  errorText: {
-    fontSize: 14,
-    fontFamily: fonts.medium,
-    color: colors.textSecondary,
-    textAlign: "center",
-  },
-  retryButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  retryButtonText: {
-    fontSize: 14,
-    fontFamily: fonts.semiBold,
-    color: "#FFFFFF",
-  },
-  // Input bar
-  inputBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.background,
-    gap: 8,
-  },
-  textInput: {
-    flex: 1,
-    fontSize: 15,
-    fontFamily: fonts.medium,
-    color: colors.text,
-    backgroundColor: colors.gray100,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    maxHeight: 40,
-  },
-  sendButton: {
-    padding: 2,
-  },
-  sendButtonDisabled: {
-    opacity: 0.5,
-  },
-  // Recommendation cards
-  recCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.gray100,
-    borderRadius: 14,
-    padding: 12,
-    gap: 12,
-  },
-  recIconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  recCardContent: {
-    flex: 1,
-    gap: 2,
-  },
-  recCardTitle: {
-    fontSize: 15,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-  },
-  recCardDate: {
-    fontSize: 12,
-    fontFamily: fonts.medium,
-    color: colors.primary,
-  },
-  recCardReason: {
-    fontSize: 13,
-    fontFamily: fonts.medium,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-});
+const createStyles = (colors: Colors) =>
+  StyleSheet.create({
+    headerButton: {
+      width: 36,
+      height: 36,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      padding: 20,
+      paddingBottom: 16,
+      gap: 16,
+    },
+    // Idle state
+    idleContainer: {
+      paddingBottom: 8,
+    },
+    welcomeText: {
+      fontSize: 24,
+      fontFamily: fonts.bold,
+      color: colors.text,
+      textAlign: "center",
+      marginBottom: 32,
+    },
+    chipsContainer: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      justifyContent: "center",
+      gap: 10,
+    },
+    chip: {
+      backgroundColor: colors.primary + "12",
+      paddingHorizontal: 18,
+      paddingVertical: 12,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: colors.primary + "30",
+    },
+    chipText: {
+      fontSize: 15,
+      fontFamily: fonts.semiBold,
+      color: colors.primary,
+    },
+    // Message bubbles
+    questionBubble: {
+      alignSelf: "flex-end",
+      backgroundColor: colors.primary,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderRadius: 18,
+      borderBottomRightRadius: 4,
+      maxWidth: "80%",
+    },
+    questionText: {
+      fontSize: 15,
+      fontFamily: fonts.medium,
+      color: "#FFFFFF",
+    },
+    aiLoadingRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      paddingVertical: 12,
+    },
+    loadingText: {
+      fontSize: 14,
+      fontFamily: fonts.medium,
+      color: colors.textSecondary,
+    },
+    // AI response
+    aiResponseSection: {
+      gap: 12,
+    },
+    aiAvatarRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    aiAvatar: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+      backgroundColor: colors.primary,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    aiLabel: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+      color: colors.textSecondary,
+    },
+    aiMessage: {
+      fontSize: 15,
+      fontFamily: fonts.medium,
+      color: colors.text,
+      lineHeight: 22,
+    },
+    cardsSection: {
+      gap: 8,
+      marginTop: 4,
+    },
+    // Error state
+    errorBox: {
+      alignItems: "center",
+      gap: 12,
+      paddingVertical: 24,
+    },
+    errorText: {
+      fontSize: 14,
+      fontFamily: fonts.medium,
+      color: colors.textSecondary,
+      textAlign: "center",
+    },
+    retryButton: {
+      backgroundColor: colors.primary,
+      paddingHorizontal: 24,
+      paddingVertical: 10,
+      borderRadius: 20,
+    },
+    retryButtonText: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+      color: "#FFFFFF",
+    },
+    // Input bar
+    inputBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 12,
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+      backgroundColor: colors.background,
+      gap: 8,
+    },
+    textInput: {
+      flex: 1,
+      fontSize: 15,
+      fontFamily: fonts.medium,
+      color: colors.text,
+      backgroundColor: colors.gray100,
+      borderRadius: 20,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      maxHeight: 40,
+    },
+    sendButton: {
+      padding: 2,
+    },
+    sendButtonDisabled: {
+      opacity: 0.5,
+    },
+    // Recommendation cards
+    recCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.gray100,
+      borderRadius: 14,
+      padding: 12,
+      gap: 12,
+    },
+    recIconCircle: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    recCardContent: {
+      flex: 1,
+      gap: 2,
+    },
+    recCardTitle: {
+      fontSize: 15,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+    },
+    recCardDate: {
+      fontSize: 12,
+      fontFamily: fonts.medium,
+      color: colors.primary,
+    },
+    recCardReason: {
+      fontSize: 13,
+      fontFamily: fonts.medium,
+      color: colors.textSecondary,
+      lineHeight: 18,
+    },
+  });

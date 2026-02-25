@@ -252,6 +252,15 @@ export default function ProfileLayout() {
         }}
       />
       <Stack.Screen
+        name="notification-preferences"
+        options={{
+          headerShown: true,
+          headerTitle: "Notification Settings",
+          headerBackTitle: "Back",
+          headerTransparent: true,
+        }}
+      />
+      <Stack.Screen
         name="settings"
         options={{
           headerShown: true,

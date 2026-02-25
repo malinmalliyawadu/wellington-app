@@ -120,6 +120,7 @@ export type Database = {
           category: EventCategory;
           ticket_url: string | null;
           price: number | null;
+          creator_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -134,6 +135,7 @@ export type Database = {
           category: EventCategory;
           ticket_url?: string | null;
           price?: number | null;
+          creator_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -147,6 +149,7 @@ export type Database = {
           category?: EventCategory;
           ticket_url?: string | null;
           price?: number | null;
+          creator_id?: string | null;
         };
         Relationships: [
           {
@@ -519,6 +522,8 @@ export type Database = {
           type: NotificationType;
           post_id: string | null;
           guide_id: string | null;
+          event_id: string | null;
+          comment_id: string | null;
           read: boolean;
           created_at: string;
         };
@@ -529,6 +534,8 @@ export type Database = {
           type: NotificationType;
           post_id?: string | null;
           guide_id?: string | null;
+          event_id?: string | null;
+          comment_id?: string | null;
           read?: boolean;
           created_at?: string;
         };
@@ -554,6 +561,20 @@ export type Database = {
             foreignKeyName: 'notifications_post_id_fkey';
             columns: ['post_id'];
             referencedRelation: 'posts';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+          {
+            foreignKeyName: 'notifications_event_id_fkey';
+            columns: ['event_id'];
+            referencedRelation: 'events';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+          {
+            foreignKeyName: 'notifications_comment_id_fkey';
+            columns: ['comment_id'];
+            referencedRelation: 'comments';
             referencedColumns: ['id'];
             isOneToOne: false;
           },
@@ -786,6 +807,83 @@ export type Database = {
           },
         ];
       };
+      push_tokens: {
+        Row: {
+          user_id: string;
+          token: string;
+          platform: 'ios' | 'android';
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          token: string;
+          platform: 'ios' | 'android';
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          token?: string;
+          platform?: 'ios' | 'android';
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'push_tokens_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+            isOneToOne: false;
+          },
+        ];
+      };
+      notification_preferences: {
+        Row: {
+          user_id: string;
+          push_enabled: boolean;
+          likes: boolean;
+          comments: boolean;
+          follows: boolean;
+          comment_replies: boolean;
+          event_attendance: boolean;
+          event_reminders: boolean;
+          guide_likes: boolean;
+          guide_comments: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          push_enabled?: boolean;
+          likes?: boolean;
+          comments?: boolean;
+          follows?: boolean;
+          comment_replies?: boolean;
+          event_attendance?: boolean;
+          event_reminders?: boolean;
+          guide_likes?: boolean;
+          guide_comments?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          push_enabled?: boolean;
+          likes?: boolean;
+          comments?: boolean;
+          follows?: boolean;
+          comment_replies?: boolean;
+          event_attendance?: boolean;
+          event_reminders?: boolean;
+          guide_likes?: boolean;
+          guide_comments?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'notification_preferences_user_id_fkey';
+            columns: ['user_id'];
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+            isOneToOne: true;
+          },
+        ];
+      };
     };
     Views: {};
     Functions: {
@@ -812,7 +910,7 @@ export type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'co
 export type TrailDifficulty = 'easy' | 'moderate' | 'hard';
 export type ExplorationMethod = 'viewed' | 'posted';
 export type AchievementType = 'category' | 'milestone' | 'neighborhood' | 'social';
-export type NotificationType = 'like' | 'comment' | 'follow' | 'guide_like' | 'guide_comment';
+export type NotificationType = 'like' | 'comment' | 'follow' | 'guide_like' | 'guide_comment' | 'event_attendance' | 'event_reminder' | 'comment_reply';
 export type SavedItemType = 'post' | 'place' | 'event' | 'guide';
 
 export type Tables<T extends keyof Database['public']['Tables']> =

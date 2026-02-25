@@ -25,6 +25,7 @@ Welly is a map-based social platform for discovering things to do in Wellington,
 - **react-native-reanimated** + **react-native-gesture-handler** - Animations and gestures
 - **@shopify/react-native-skia** - Fog-of-war canvas rendering
 - **expo-share-intent** - Share extension (receive content from other apps)
+- **expo-notifications** - Push notifications and local scheduled notifications
 
 ## App Structure
 
@@ -93,6 +94,7 @@ app/
       achievements.tsx
       saved.tsx
       notifications.tsx
+      notification-preferences.tsx
       place/[placeId].tsx
       post/[postId].tsx
       create-post.tsx
@@ -124,7 +126,8 @@ Route files are thin re-exports: `export { ScreenName as default } from '../../s
 | `LikesListScreen`        | List of users who liked a post                                                                     |
 | `SavedScreen`            | Saved posts, places, and events (tabbed)                                                           |
 | `AchievementsScreen`     | Exploration achievements and progress                                                              |
-| `NotificationsScreen`    | Notification list with unread indicators                                                           |
+| `NotificationsScreen`    | Notification list with unread indicators, settings gear link                                       |
+| `NotificationPreferencesScreen` | Toggle push/in-app notifications per type (likes, comments, events, etc.)                   |
 | `LoginScreen`            | Supabase auth with Apple Sign-In                                                                   |
 | `OnboardingScreen`       | New user onboarding flow                                                                           |
 
@@ -169,11 +172,11 @@ Route files are thin re-exports: `export { ScreenName as default } from '../../s
 | `LikeContext`         | Like state: `isLiked()`, `toggleLike()`, `getLikeCount()`    |
 | `SaveContext`         | Saved items: `isSaved()`, `toggleSave()`, `getSavedIds()`    |
 | `ExplorationContext`  | Explored places tracking, achievement unlocking              |
-| `NotificationContext` | Notifications list, unread count, mark-as-read               |
+| `NotificationContext` | Supabase Realtime notifications, unread count, mark-as-read, in-app banner callback |
 | `LocationContext`     | User geolocation via expo-location                           |
 | `MapFilterContext`    | Map filter state (categories, following, trails, events)     |
 | `EventFilterContext`  | Event filter state (date range, categories, free, following) |
-| `ToastContext`        | Toast notification display with haptics                      |
+| `ToastContext`        | Toast display with haptics (default, achievement, error, notification types) |
 | `ZoomOverlayContext`  | Shared zoom state for zoomable images                        |
 
 ### Services (`src/services/`)
@@ -193,7 +196,9 @@ Supabase API layer. Each service handles CRUD operations for its domain:
 | `saves.ts`              | Saved items (posts, places, events)  |
 | `explorations.ts`       | Place exploration tracking           |
 | `achievements.ts`       | Achievement checking and unlocking   |
-| `notifications.ts`      | Notification fetching and management |
+| `notifications.ts`      | Notification CRUD (like, comment, follow, event_attendance, comment_reply, guide_like, guide_comment) |
+| `notificationPreferences.ts` | Per-user notification preference toggles |
+| `pushTokens.ts`         | Expo push token registration/removal |
 | `trails.ts`             | Trail data fetching                  |
 | `storage.ts`            | Supabase storage (media uploads)     |
 | `googlePlaces.ts`       | Google Places API search             |
@@ -211,6 +216,7 @@ Supabase API layer. Each service handles CRUD operations for its domain:
 | `useExplorationTracking.ts` | Tracks when user visits a place                               |
 | `useLocationTrail.ts`       | Records user's location trail for fog-of-war                  |
 | `useMarkerAnimation.ts`     | Animated marker entrance effects                              |
+| `usePushNotifications.ts`   | Push permission, token registration, tap-to-navigate handler  |
 
 ### Data (`src/data/`)
 
@@ -243,6 +249,7 @@ Supabase API layer. Each service handles CRUD operations for its domain:
 | `addToCalendar.ts`      | Add events to device calendar via expo-calendar                                                |
 | `compressMedia.ts`      | Image/video compression before upload                                                          |
 | `formatNumber.ts`       | Number formatting (1.2k, 3.4M, etc.)                                                           |
+| `eventReminders.ts`     | Schedule/cancel local push notifications for event reminders (1hr before)                       |
 
 ### Theme (`src/theme/`)
 
@@ -258,11 +265,14 @@ Supabase API layer. Each service handles CRUD operations for its domain:
 
 ### Backend (`supabase/`)
 
-- `schema.sql` - Full database schema (users, posts, places, events, comments, likes, follows, saves, explorations, achievements, notifications, trails)
+- `schema.sql` - Full database schema (users, posts, places, events, comments, likes, follows, saves, explorations, achievements, notifications, trails, push_tokens, notification_preferences)
 - `seed.sql` - Seed data for development
 - `migrations/` - Database migrations
 - `create-seed-users.mjs` - Script to create seed auth users
 - `run-sql.mjs` - Remote SQL execution helper
+- `functions/send-push-notification/` - Edge function: sends Expo push notifications on notification INSERT (triggered via Database Webhook)
+- `functions/ai-chat/` - Edge function: AI chat with Anthropic SDK
+- `functions/instagram-token/` - Edge function: Instagram OAuth token exchange
 
 ## CI / Quality
 
@@ -287,6 +297,8 @@ Supabase API layer. Each service handles CRUD operations for its domain:
 - **Auth flow**: Login → Onboarding → App. `AuthGate` in root layout handles routing based on session and onboarding state.
 - **Create from anywhere**: `FloatingCreateButton` + `create-post` routes in each tab allow post creation without leaving the current tab
 - **Media handling**: Multi-photo/video posts with carousel display, compression before upload, Supabase Storage for hosting
+- **Notifications**: Supabase Realtime subscription (replaces polling) for instant in-app updates. Push notifications via Expo Push API (edge function triggered by DB webhook on INSERT). In-app banners via `NotificationBannerBridge` → `ToastContext`. 8 notification types: like, comment, follow, guide_like, guide_comment, event_attendance, event_reminder, comment_reply. User preferences table controls which types trigger push. Local scheduled notifications for event reminders (1hr before).
+- **Notification preferences**: Per-user boolean toggles stored in `notification_preferences` table, accessible from gear icon on NotificationsScreen
 
 ## Design Principles
 

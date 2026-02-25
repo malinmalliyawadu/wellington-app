@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { AppState } from "react-native";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../src/lib/queryClient";
 import { setupNetworkManager } from "../src/lib/networkManager";
@@ -9,6 +10,7 @@ import { useShareIntent } from "expo-share-intent";
 import * as SplashScreen from "expo-splash-screen";
 import { ErrorScreen } from "../src/components/ErrorScreen";
 import { OfflineBanner } from "../src/components/OfflineBanner";
+import { usePushNotifications } from "../src/hooks/usePushNotifications";
 import {
   useFonts,
   PlusJakartaSans_500Medium,
@@ -24,13 +26,15 @@ import { NetworkProvider } from "../src/context/NetworkContext";
 import { FollowProvider } from "../src/context/FollowContext";
 import { LikeProvider } from "../src/context/LikeContext";
 import { SaveProvider } from "../src/context/SaveContext";
-import { ToastProvider } from "../src/context/ToastContext";
-import { NotificationProvider } from "../src/context/NotificationContext";
+import { ToastProvider, useToast } from "../src/context/ToastContext";
+import { NotificationProvider, useNotifications } from "../src/context/NotificationContext";
 import { ExplorationProvider } from "../src/context/ExplorationContext";
 import { LocationProvider } from "../src/context/LocationContext";
 import { ZoomOverlayProvider } from "../src/context/ZoomOverlayContext";
 import { StatusBar } from "expo-status-bar";
 import { useOTAUpdates } from "../src/hooks/useOTAUpdates";
+import { getProfileById } from "../src/services/users";
+import type { Notification, NotificationType } from "../src/services/notifications";
 
 export function ErrorBoundary({
   error,
@@ -89,6 +93,66 @@ function parseShareIntentRoute(url: string): string | null {
     const mapper = WEBSITE_PATH_MAP[type];
     if (mapper) return mapper(id);
   }
+
+  return null;
+}
+
+const NOTIFICATION_MESSAGES: Record<NotificationType, string> = {
+  like: "liked your post",
+  comment: "commented on your post",
+  follow: "started following you",
+  guide_like: "liked your guide",
+  guide_comment: "commented on your guide",
+  event_attendance: "is going to your event",
+  event_reminder: "Event starting soon",
+  comment_reply: "replied to your comment",
+};
+
+function NotificationBannerBridge() {
+  const { onNewNotificationRef } = useNotifications();
+  const { showToast } = useToast();
+  const router = useRouter();
+
+  useEffect(() => {
+    onNewNotificationRef.current = (notification: Notification) => {
+      // Only show when app is in foreground
+      if (AppState.currentState !== 'active') return;
+
+      const message = NOTIFICATION_MESSAGES[notification.type] ?? "sent you a notification";
+
+      // Look up actor info asynchronously, show toast with whatever we get
+      getProfileById(notification.actorId)
+        .then((actor) => {
+          const displayName = actor?.displayName ?? "Someone";
+          showToast({
+            message: `${displayName} ${message}`,
+            type: 'notification',
+            avatarUrl: actor?.avatarUrl || undefined,
+            duration: 4000,
+            onPress: () => {
+              if (notification.type === 'follow') {
+                router.push(`/profile/user/${notification.actorId}` as any);
+              } else if (notification.eventId) {
+                router.push(`/events/${notification.eventId}` as any);
+              } else if (notification.postId) {
+                router.push(`/feed/post/${notification.postId}` as any);
+              }
+            },
+          });
+        })
+        .catch(() => {
+          showToast({
+            message: `Someone ${message}`,
+            type: 'notification',
+            duration: 4000,
+          });
+        });
+    };
+
+    return () => {
+      onNewNotificationRef.current = null;
+    };
+  }, [onNewNotificationRef, showToast, router]);
 
   return null;
 }
@@ -210,7 +274,15 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     resetShareIntent();
   }, [hasShareIntent, shareIntent, session]);
 
-  return <>{children}</>;
+  // Set up push notifications
+  usePushNotifications();
+
+  return (
+    <>
+      <NotificationBannerBridge />
+      {children}
+    </>
+  );
 }
 
 export default function RootLayout() {

@@ -92,6 +92,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           androidIntentFilters: ["text/*", "image/*", "video/*"],
         },
       ],
+      [
+        "expo-notifications",
+        {
+          icon: "./assets/icon.png",
+          color: "#F5A623",
+        },
+      ],
       "@react-native-community/datetimepicker",
       [
         "expo-updates",

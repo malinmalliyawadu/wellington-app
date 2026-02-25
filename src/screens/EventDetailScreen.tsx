@@ -40,6 +40,11 @@ import { useQuery } from "../hooks/useQuery";
 import { useAuth } from "../context/AuthContext";
 import { useFollow } from "../context/FollowContext";
 import { addToCalendar } from "../utils/addToCalendar";
+import { scheduleEventReminder, cancelEventReminder } from "../utils/eventReminders";
+import {
+  createEventAttendanceNotification,
+  deleteNotificationForEventAttendance,
+} from "../services/notifications";
 import { useToast } from "../context/ToastContext";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import type { Event } from "../types";
@@ -436,8 +441,16 @@ export function EventDetailScreen() {
                   onPress={async () => {
                     setTogglingAttendance(true);
                     try {
-                      await toggleAttendance(event.id, currentUserId);
+                      const nowAttending = await toggleAttendance(event.id, currentUserId);
                       refetchAttendees();
+
+                      if (nowAttending) {
+                        createEventAttendanceNotification(currentUserId, event.id).catch(() => {});
+                        scheduleEventReminder(event).catch(() => {});
+                      } else {
+                        deleteNotificationForEventAttendance(currentUserId, event.id).catch(() => {});
+                        cancelEventReminder(event.id).catch(() => {});
+                      }
                     } catch {
                       Alert.alert(
                         "Error",

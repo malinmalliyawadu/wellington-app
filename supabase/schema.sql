@@ -320,9 +320,11 @@ create table notifications (
   id uuid default gen_random_uuid() primary key,
   recipient_id uuid not null references profiles(id) on delete cascade,
   actor_id uuid not null references profiles(id) on delete cascade,
-  type text not null check (type in ('like', 'comment', 'follow', 'guide_like', 'guide_comment')),
+  type text not null check (type in ('like', 'comment', 'follow', 'guide_like', 'guide_comment', 'event_attendance', 'event_reminder', 'comment_reply')),
   post_id uuid references posts(id) on delete cascade,
   guide_id uuid references guides(id) on delete cascade,
+  event_id uuid references events(id) on delete cascade,
+  comment_id uuid references comments(id) on delete cascade,
   read boolean not null default false,
   created_at timestamptz not null default now()
 );
@@ -332,6 +334,7 @@ create index idx_notifications_unread on notifications(recipient_id, read) where
 create unique index idx_notifications_like_unique on notifications(actor_id, post_id, type) where type = 'like';
 create unique index idx_notifications_follow_unique on notifications(actor_id, recipient_id, type) where type = 'follow';
 create unique index idx_notifications_guide_like_unique on notifications(actor_id, guide_id, type) where type = 'guide_like';
+create unique index idx_notifications_event_attendance_unique on notifications(actor_id, event_id, type) where type = 'event_attendance';
 
 -- Row Level Security: explorations
 alter table user_explorations enable row level security;
@@ -369,8 +372,57 @@ create policy "Users can create notifications as actor"
 create policy "Users can update own notifications"
   on notifications for update using (auth.uid() = recipient_id);
 
-create policy "Users can delete own actor notifications"
-  on notifications for delete using (auth.uid() = actor_id);
+create policy "Users can delete own notifications"
+  on notifications for delete using (auth.uid() = actor_id or auth.uid() = recipient_id);
+
+-- Push tokens for push notifications
+create table push_tokens (
+  user_id uuid not null references profiles(id) on delete cascade,
+  token text not null,
+  platform text not null check (platform in ('ios', 'android')),
+  created_at timestamptz not null default now(),
+  unique (user_id, token)
+);
+
+alter table push_tokens enable row level security;
+
+create policy "Users can view own push tokens"
+  on push_tokens for select using (auth.uid() = user_id);
+
+create policy "Users can insert own push tokens"
+  on push_tokens for insert with check (auth.uid() = user_id);
+
+create policy "Users can delete own push tokens"
+  on push_tokens for delete using (auth.uid() = user_id);
+
+-- Notification preferences
+create table notification_preferences (
+  user_id uuid primary key references profiles(id) on delete cascade,
+  push_enabled boolean not null default true,
+  likes boolean not null default true,
+  comments boolean not null default true,
+  follows boolean not null default true,
+  comment_replies boolean not null default true,
+  event_attendance boolean not null default true,
+  event_reminders boolean not null default true,
+  guide_likes boolean not null default true,
+  guide_comments boolean not null default true,
+  updated_at timestamptz not null default now()
+);
+
+alter table notification_preferences enable row level security;
+
+create policy "Users can view own notification preferences"
+  on notification_preferences for select using (auth.uid() = user_id);
+
+create policy "Users can insert own notification preferences"
+  on notification_preferences for insert with check (auth.uid() = user_id);
+
+create policy "Users can update own notification preferences"
+  on notification_preferences for update using (auth.uid() = user_id);
+
+-- Enable Supabase Realtime for notifications
+alter publication supabase_realtime add table notifications;
 
 -- Storage bucket for post media
 insert into storage.buckets (id, name, public) values ('post-media', 'post-media', true)

@@ -1,17 +1,29 @@
 import { supabase } from '../lib/supabase';
 
+export type NotificationType =
+  | 'like'
+  | 'comment'
+  | 'follow'
+  | 'guide_like'
+  | 'guide_comment'
+  | 'event_attendance'
+  | 'event_reminder'
+  | 'comment_reply';
+
 export interface Notification {
   id: string;
   recipientId: string;
   actorId: string;
-  type: 'like' | 'comment' | 'follow' | 'guide_like' | 'guide_comment';
+  type: NotificationType;
   postId: string | null;
   guideId: string | null;
+  eventId: string | null;
+  commentId: string | null;
   read: boolean;
   createdAt: string;
 }
 
-function mapRow(row: any): Notification {
+export function mapRow(row: any): Notification {
   return {
     id: row.id,
     recipientId: row.recipient_id,
@@ -19,6 +31,8 @@ function mapRow(row: any): Notification {
     type: row.type,
     postId: row.post_id ?? null,
     guideId: row.guide_id ?? null,
+    eventId: row.event_id ?? null,
+    commentId: row.comment_id ?? null,
     read: row.read,
     createdAt: row.created_at,
   };
@@ -221,6 +235,68 @@ export async function createGuideCommentNotification(actorId: string, guideId: s
 
   if (error) {
     console.error('createGuideCommentNotification error:', error);
+    throw error;
+  }
+}
+
+export async function createEventAttendanceNotification(actorId: string, eventId: string): Promise<void> {
+  // Look up the event creator
+  const { data: event, error: eventError } = await supabase
+    .from('events')
+    .select('creator_id')
+    .eq('id', eventId)
+    .single();
+
+  if (eventError || !event || !event.creator_id) return;
+
+  // Don't notify yourself
+  if (event.creator_id === actorId) return;
+
+  const { error } = await supabase
+    .from('notifications')
+    .insert({
+      recipient_id: event.creator_id,
+      actor_id: actorId,
+      type: 'event_attendance' as const,
+      event_id: eventId,
+    });
+
+  // Ignore unique violation (duplicate attendance notification)
+  if (error && error.code !== '23505') throw error;
+}
+
+export async function deleteNotificationForEventAttendance(actorId: string, eventId: string): Promise<void> {
+  const { error } = await supabase
+    .from('notifications')
+    .delete()
+    .eq('actor_id', actorId)
+    .eq('event_id', eventId)
+    .eq('type', 'event_attendance');
+
+  if (error) throw error;
+}
+
+export async function createCommentReplyNotification(
+  actorId: string,
+  parentCommentUserId: string,
+  postId: string,
+  commentId: string,
+): Promise<void> {
+  // Don't notify yourself
+  if (parentCommentUserId === actorId) return;
+
+  const { error } = await supabase
+    .from('notifications')
+    .insert({
+      recipient_id: parentCommentUserId,
+      actor_id: actorId,
+      type: 'comment_reply' as const,
+      post_id: postId,
+      comment_id: commentId,
+    });
+
+  if (error) {
+    console.error('createCommentReplyNotification error:', error);
     throw error;
   }
 }
