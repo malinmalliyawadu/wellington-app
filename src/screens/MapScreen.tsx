@@ -230,8 +230,9 @@ export function MapScreen() {
 
       const trail = trails?.find((t) => t.id === trailId);
       if (trail && trail.coordinates.length > 0) {
+        const sheetHeight = mapLayout.height * 0.5;
         mapRef.current?.fitToCoordinates(trail.coordinates, {
-          edgePadding: { top: 100, right: 60, bottom: 300, left: 60 },
+          edgePadding: { top: 100, right: 60, bottom: sheetHeight + 40, left: 60 },
           animated: true,
         });
       }

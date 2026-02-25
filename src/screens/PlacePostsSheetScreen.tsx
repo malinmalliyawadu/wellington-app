@@ -18,7 +18,7 @@ import { useQuery } from "../hooks/useQuery";
 import { getPlaceById } from "../services/places";
 import { getPostsByPlaceId } from "../services/posts";
 import { getUpcomingEvents } from "../services/events";
-import { getProfileById , getProfileByUsername } from "../services/users";
+import { getProfileById, getProfileByUsername } from "../services/users";
 import { fetchPlaceDetails } from "../services/googlePlaceDetails";
 import { formatNumber } from "../utils/formatNumber";
 import { sortPosts } from "../utils/postSorting";
@@ -76,17 +76,17 @@ export function PlacePostsSheetScreen() {
     loading: placeLoading,
     error: placeError,
     refetch: refetchPlace,
-  } = useQuery(fetchPlace, ['place', placeId]);
+  } = useQuery(fetchPlace, ["place", placeId]);
   const {
     data: posts,
     loading: postsLoading,
     error: postsError,
     refetch: refetchPosts,
-  } = useQuery(fetchPosts, ['posts', 'place', placeId]);
-  const {
-    data: allUpcomingEvents,
-    refetch: refetchEvents,
-  } = useQuery(getUpcomingEvents, "upcoming-events");
+  } = useQuery(fetchPosts, ["posts", "place", placeId]);
+  const { data: allUpcomingEvents, refetch: refetchEvents } = useQuery(
+    getUpcomingEvents,
+    "upcoming-events"
+  );
 
   const placeEvents = useMemo(() => {
     if (!allUpcomingEvents) return [];
@@ -177,7 +177,13 @@ export function PlacePostsSheetScreen() {
   if ((placeError || postsError) && !place) {
     return (
       <View style={styles.container}>
-        <QueryErrorState message={placeError || postsError} onRetry={() => { refetchPlace(); refetchPosts(); }} />
+        <QueryErrorState
+          message={placeError || postsError}
+          onRetry={() => {
+            refetchPlace();
+            refetchPosts();
+          }}
+        />
       </View>
     );
   }
@@ -246,7 +252,12 @@ export function PlacePostsSheetScreen() {
                 </View>
                 {placeDetails.rating && (
                   <View style={styles.ratingContainer}>
-                    <SFIcon name="star.fill" fallback="star" size={14} color="#FFA500" />
+                    <SFIcon
+                      name="star.fill"
+                      fallback="star"
+                      size={14}
+                      color="#FFA500"
+                    />
                     <Text style={styles.ratingText}>
                       {placeDetails.rating.toFixed(1)}
                     </Text>
@@ -257,9 +268,6 @@ export function PlacePostsSheetScreen() {
                     )}
                   </View>
                 )}
-                <Text style={styles.address} numberOfLines={1}>
-                  {place.address}
-                </Text>
               </View>
               <View style={styles.statsRow}>
                 <View style={styles.stat}>
@@ -286,7 +294,12 @@ export function PlacePostsSheetScreen() {
                   style={styles.directionsButton}
                   onPress={handleOpenDirections}
                 >
-                  <SFIcon name="location.fill" fallback="navigate" size={14} color={colors.primary} />
+                  <SFIcon
+                    name="location.fill"
+                    fallback="navigate"
+                    size={14}
+                    color={colors.primary}
+                  />
                   <Text style={styles.directionsText}>Directions</Text>
                 </HapticPressable>
               </View>
@@ -296,10 +309,13 @@ export function PlacePostsSheetScreen() {
           {placeEvents.length > 0 && (
             <View style={styles.eventsSection}>
               <View style={styles.eventsSectionHeader}>
-                <SFIcon name="calendar" fallback="calendar" size={16} color={colors.category.venue} />
-                <Text style={styles.eventsSectionTitle}>
-                  Events this week
-                </Text>
+                <SFIcon
+                  name="calendar"
+                  fallback="calendar"
+                  size={16}
+                  color={colors.category.venue}
+                />
+                <Text style={styles.eventsSectionTitle}>Events this week</Text>
               </View>
               {placeEvents.map((event) => (
                 <EventCard
@@ -380,20 +396,33 @@ export function PlacePostsSheetScreen() {
   );
 }
 
-function PostRow({ post, isFollowed, onPressMention }: { post: Post; isFollowed: boolean; onPressMention?: (username: string) => void }) {
+function PostRow({
+  post,
+  isFollowed,
+  onPressMention,
+}: {
+  post: Post;
+  isFollowed: boolean;
+  onPressMention?: (username: string) => void;
+}) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const fetchUser = useCallback(
     () => getProfileById(post.userId),
     [post.userId]
   );
-  const { data: user } = useQuery(fetchUser, ['user', post.userId]);
+  const { data: user } = useQuery(fetchUser, ["user", post.userId]);
   const { isLiked, toggleLike, getLikeCount } = useLike();
   const liked = isLiked(post.id);
 
   return (
     <View style={styles.postRow}>
-      <Image source={{ uri: user?.avatarUrl }} style={styles.avatar} contentFit="cover" transition={200} />
+      <Image
+        source={{ uri: user?.avatarUrl }}
+        style={styles.avatar}
+        contentFit="cover"
+        transition={200}
+      />
       <View style={styles.postContent}>
         <View style={styles.postHeader}>
           <Text style={styles.displayName} numberOfLines={1}>
@@ -439,249 +468,255 @@ function PostRow({ post, isFollowed, onPressMention }: { post: Post; isFollowed:
             style={styles.thumbnail}
           />
         ) : (
-          <Image source={{ uri: post.mediaUrl }} style={styles.thumbnail} contentFit="cover" transition={200} />
+          <Image
+            source={{ uri: post.mediaUrl }}
+            style={styles.thumbnail}
+            contentFit="cover"
+            transition={200}
+          />
         ))}
     </View>
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "transparent",
-  },
-  blurContainer: {
-    flex: 1,
-    overflow: "hidden",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingBottom: 32,
-  },
-  loading: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "transparent",
-    paddingTop: 100,
-  },
-  header: {
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  headerContent: {
-    paddingTop: 24,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-    backgroundColor: "transparent",
-  },
-  headerContentScrolled: {
-    backgroundColor: colors.background,
-  },
-  nameButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  name: {
-    fontSize: 22,
-    fontFamily: fonts.bold,
-    color: colors.text,
-    flexShrink: 1,
-  },
-  metaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  categoryBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.4)",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  categoryText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-  },
-  ratingContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    marginRight: 8,
-  },
-  ratingText: {
-    fontSize: 13,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-  },
-  reviewCountText: {
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  address: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    flex: 1,
-  },
-  statsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
-  stat: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  statText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-  },
-  directionsButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginLeft: "auto",
-  },
-  directionsText: {
-    fontSize: 13,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.primary,
-  },
-  eventsSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    gap: 8,
-  },
-  eventsSectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 4,
-  },
-  eventsSectionTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-  },
-  postList: {
-    paddingHorizontal: 8,
-    paddingBottom: 8,
-  },
-  postRow: {
-    flexDirection: "row",
-    paddingVertical: 12,
-    paddingHorizontal: 0,
-    marginVertical: 4,
-    marginHorizontal: 8,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  avatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.gray200,
-    marginRight: 10,
-    borderWidth: 2,
-    borderColor: "rgba(255, 255, 255, 0.6)",
-  },
-  postContent: {
-    flex: 1,
-    marginRight: 8,
-  },
-  postHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 2,
-  },
-  displayName: {
-    fontSize: 14,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-    marginRight: 6,
-  },
-  followBadge: {
-    backgroundColor: colors.primary + "20",
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.primary + "40",
-  },
-  followBadgeText: {
-    fontSize: 10,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.primary,
-  },
-  postText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    lineHeight: 18,
-  },
-  postMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-    marginTop: 4,
-  },
-  likesText: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  thumbnail: {
-    width: 48,
-    height: 48,
-    borderRadius: 8,
-    backgroundColor: colors.gray200,
-    borderWidth: 1.5,
-    borderColor: "rgba(255, 255, 255, 0.6)",
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: "transparent",
-    margin: 16,
-  },
-  emptyStateText: {
-    fontSize: 16,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-    marginTop: 12,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  listCreateButton: {
-    marginTop: 12,
-    marginBottom: 16,
-  },
-});
+const createStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: "transparent",
+    },
+    blurContainer: {
+      flex: 1,
+      overflow: "hidden",
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingBottom: 32,
+    },
+    loading: {
+      flex: 1,
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: "transparent",
+      paddingTop: 100,
+    },
+    header: {
+      overflow: "hidden",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 8,
+      elevation: 3,
+    },
+    headerContent: {
+      paddingTop: 24,
+      paddingHorizontal: 16,
+      paddingBottom: 16,
+      backgroundColor: "transparent",
+    },
+    headerContentScrolled: {
+      backgroundColor: colors.background,
+    },
+    nameButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    name: {
+      fontSize: 22,
+      fontFamily: fonts.bold,
+      color: colors.text,
+      flexShrink: 1,
+    },
+    metaRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 8,
+    },
+    categoryBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: 12,
+      marginRight: 8,
+      borderWidth: 1,
+      borderColor: "rgba(255, 255, 255, 0.4)",
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 4,
+      elevation: 2,
+    },
+    categoryText: {
+      color: "#FFFFFF",
+      fontSize: 11,
+      fontWeight: "600",
+      fontFamily: fonts.semiBold,
+    },
+    ratingContainer: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 3,
+      marginRight: 8,
+    },
+    ratingText: {
+      fontSize: 13,
+      fontWeight: "600",
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+    },
+    reviewCountText: {
+      fontSize: 12,
+      color: colors.textSecondary,
+    },
+    address: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      flex: 1,
+    },
+    statsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 16,
+    },
+    stat: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    statText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+    },
+    directionsButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      marginLeft: "auto",
+    },
+    directionsText: {
+      fontSize: 13,
+      fontWeight: "600",
+      fontFamily: fonts.semiBold,
+      color: colors.primary,
+    },
+    eventsSection: {
+      paddingHorizontal: 16,
+      paddingBottom: 8,
+      gap: 8,
+    },
+    eventsSectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginBottom: 4,
+    },
+    eventsSectionTitle: {
+      fontSize: 15,
+      fontWeight: "600",
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+    },
+    postList: {
+      paddingHorizontal: 8,
+      paddingBottom: 8,
+    },
+    postRow: {
+      flexDirection: "row",
+      paddingVertical: 12,
+      paddingHorizontal: 0,
+      marginVertical: 4,
+      marginHorizontal: 8,
+      borderRadius: 12,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.08,
+      shadowRadius: 6,
+      elevation: 2,
+    },
+    avatar: {
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: colors.gray200,
+      marginRight: 10,
+      borderWidth: 2,
+      borderColor: "rgba(255, 255, 255, 0.6)",
+    },
+    postContent: {
+      flex: 1,
+      marginRight: 8,
+    },
+    postHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 2,
+    },
+    displayName: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+      marginRight: 6,
+    },
+    followBadge: {
+      backgroundColor: colors.primary + "20",
+      paddingHorizontal: 6,
+      paddingVertical: 1,
+      borderRadius: 4,
+      borderWidth: 1,
+      borderColor: colors.primary + "40",
+    },
+    followBadgeText: {
+      fontSize: 10,
+      fontWeight: "600",
+      fontFamily: fonts.semiBold,
+      color: colors.primary,
+    },
+    postText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      lineHeight: 18,
+    },
+    postMeta: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 3,
+      marginTop: 4,
+    },
+    likesText: {
+      fontSize: 12,
+      color: colors.textMuted,
+    },
+    thumbnail: {
+      width: 48,
+      height: 48,
+      borderRadius: 8,
+      backgroundColor: colors.gray200,
+      borderWidth: 1.5,
+      borderColor: "rgba(255, 255, 255, 0.6)",
+    },
+    emptyState: {
+      alignItems: "center",
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      backgroundColor: "transparent",
+      margin: 16,
+    },
+    emptyStateText: {
+      fontSize: 16,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+      marginTop: 12,
+    },
+    emptyStateSubtext: {
+      fontSize: 14,
+      color: colors.textSecondary,
+      marginTop: 4,
+      marginBottom: 20,
+    },
+    listCreateButton: {
+      marginTop: 12,
+      marginBottom: 16,
+    },
+  });
