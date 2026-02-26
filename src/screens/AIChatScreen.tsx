@@ -22,6 +22,8 @@ import Animated, {
   withTiming,
   withSequence,
   Easing,
+  FadeInUp,
+  FadeOut,
 } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useNavigation, usePathname } from "expo-router";
@@ -189,7 +191,11 @@ function trimIncompleteMarkdown(text: string): string {
   // 3. Incomplete italic: trailing single * (not ** and not a bullet)
   // Check for a trailing * that isn't closed
   const lastStar = result.lastIndexOf("*");
-  if (lastStar !== -1 && result[lastStar - 1] !== "*" && result[lastStar + 1] !== "*") {
+  if (
+    lastStar !== -1 &&
+    result[lastStar - 1] !== "*" &&
+    result[lastStar + 1] !== "*"
+  ) {
     const afterStar = result.slice(lastStar + 1);
     if (!afterStar.includes("*")) {
       result = result.slice(0, lastStar);
@@ -326,6 +332,41 @@ const heroStyles = StyleSheet.create({
     marginTop: 2,
   },
 });
+
+function StreamingSparkle({ color }: { color: string }) {
+  const scale = useSharedValue(1);
+  const opacity = useSharedValue(0.6);
+
+  useEffect(() => {
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(1.3, { duration: 600, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, { duration: 600, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
+    );
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 600, easing: Easing.inOut(Easing.ease) }),
+        withTiming(0.4, { duration: 600, easing: Easing.inOut(Easing.ease) })
+      ),
+      -1,
+      false
+    );
+  }, []);
+
+  const style = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View style={style}>
+      <SFIcon name="sparkles" fallback="sparkles" size={14} color={color} />
+    </Animated.View>
+  );
+}
 
 export function AIChatScreen() {
   const { colors } = useTheme();
@@ -605,7 +646,7 @@ export function AIChatScreen() {
               scrollToLastResponse();
             },
           },
-          abortController.signal,
+          abortController.signal
         );
       } catch (err: any) {
         if (abortController.signal.aborted) return;
@@ -753,9 +794,7 @@ export function AIChatScreen() {
                   <Text style={styles.chipLabel}>
                     {chip.emoji} {chip.label}
                   </Text>
-                  <Text style={styles.chipDescription}>
-                    {chip.description}
-                  </Text>
+                  <Text style={styles.chipDescription}>{chip.description}</Text>
                 </HapticPressable>
               ))}
             </View>
@@ -887,10 +926,17 @@ export function AIChatScreen() {
           );
         })}
 
-        {isLoading && <AIThinkingAnimation />}
+        {isLoading && (
+          <Animated.View exiting={FadeOut.duration(200)}>
+            <AIThinkingAnimation />
+          </Animated.View>
+        )}
 
         {isStreaming && streamingText.length > 0 && (
-          <View style={styles.aiResponseSection}>
+          <Animated.View
+            entering={FadeInUp.duration(400)}
+            style={styles.aiResponseSection}
+          >
             <View style={styles.aiAvatarRow}>
               <View style={styles.aiAvatar}>
                 <SFIcon
@@ -902,10 +948,15 @@ export function AIChatScreen() {
               </View>
               <Text style={styles.aiLabel}>Welly</Text>
             </View>
-            <Markdown style={mdStyles} onLinkPress={handleLinkPress}>
-              {trimIncompleteMarkdown(streamingText)}
-            </Markdown>
-          </View>
+            <View style={styles.streamingTextRow}>
+              <View style={styles.streamingMarkdown}>
+                <Markdown style={mdStyles} onLinkPress={handleLinkPress}>
+                  {trimIncompleteMarkdown(streamingText)}
+                </Markdown>
+              </View>
+              <StreamingSparkle color={colors.primary} />
+            </View>
+          </Animated.View>
         )}
       </ScrollView>
 
@@ -918,7 +969,9 @@ export function AIChatScreen() {
         <TextInput
           ref={inputRef}
           style={styles.textInput}
-          placeholder={hasMessages ? "Reply..." : "Ask me anything about Wellington..."}
+          placeholder={
+            hasMessages ? "Reply..." : "Ask me anything about Wellington..."
+          }
           placeholderTextColor={colors.textMuted}
           value={inputText}
           onChangeText={setInputText}
@@ -1206,6 +1259,14 @@ const createStyles = (colors: Colors) =>
     // AI response
     aiResponseSection: {
       gap: 12,
+    },
+    streamingTextRow: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      alignItems: "flex-end",
+    },
+    streamingMarkdown: {
+      flexShrink: 1,
     },
     aiAvatarRow: {
       flexDirection: "row",

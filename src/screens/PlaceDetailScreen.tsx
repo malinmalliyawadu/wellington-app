@@ -60,7 +60,7 @@ export function PlaceDetailScreen() {
     () => (isTrail && placeId ? getTrailByPlaceId(placeId) : Promise.resolve(null)),
     [isTrail, placeId]
   );
-  const { data: trail } = useQuery(fetchTrail, ['trail', 'place', placeId]);
+  const { data: trail, loading: loadingTrail } = useQuery(fetchTrail, ['trail', 'place', placeId, isTrail]);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
@@ -76,7 +76,7 @@ export function PlaceDetailScreen() {
   const fetchUsers = useCallback(() => getProfilesByIds(userIds), [userIds]);
   const { data: users } = useQuery(fetchUsers, userIds);
 
-  const loading = loadingPlace || loadingPosts;
+  const loading = loadingPlace || loadingPosts || (isTrail && loadingTrail);
 
   const [placeDetails, setPlaceDetails] = useState<{ rating?: number; userRatingsTotal?: number }>({});
 
