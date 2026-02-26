@@ -1,12 +1,17 @@
-import React, { useCallback, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View,
-  Image,
   FlatList,
   StyleSheet,
   Dimensions,
   ViewToken,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+} from "react-native-reanimated";
 import { VideoPlayer } from "./VideoPlayer";
 import { ZoomableImage } from "./ZoomableImage";
 import { useTheme, type Colors } from "../theme/ThemeContext";
@@ -21,6 +26,30 @@ interface MediaCarouselProps {
   videoMuted?: boolean;
   videoControls?: boolean;
 }
+
+const DOT_TIMING = { duration: 250, easing: Easing.out(Easing.ease) };
+
+function AnimatedDot({ isActive }: { isActive: boolean }) {
+  const width = useSharedValue(isActive ? 18 : 6);
+  const opacity = useSharedValue(isActive ? 1 : 0.4);
+
+  useEffect(() => {
+    width.value = withTiming(isActive ? 18 : 6, DOT_TIMING);
+    opacity.value = withTiming(isActive ? 1 : 0.4, DOT_TIMING);
+  }, [isActive]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    width: width.value,
+    backgroundColor: `rgba(255,255,255,${opacity.value})`,
+  }));
+
+  return <Animated.View style={[dotBaseStyle, animatedStyle]} />;
+}
+
+const dotBaseStyle = {
+  height: 6,
+  borderRadius: 3,
+} as const;
 
 export function MediaCarousel({
   mediaItems,
@@ -126,9 +155,9 @@ export function MediaCarousel({
       {showDots && (
         <View style={styles.dotsContainer} pointerEvents="none">
           {mediaItems.map((item, index) => (
-            <View
+            <AnimatedDot
               key={item.id}
-              style={[styles.dot, index === activeIndex && styles.dotActive]}
+              isActive={index === activeIndex}
             />
           ))}
         </View>
@@ -150,15 +179,5 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     gap: 5,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: "rgba(255,255,255,0.4)",
-  },
-  dotActive: {
-    backgroundColor: "#FFFFFF",
-    width: 18,
   },
 });
