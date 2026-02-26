@@ -35,7 +35,7 @@ export function TrailOverlay({
               strokeColor={
                 isDimmed ? "rgba(45, 106, 79, 0.08)" : "rgba(45, 106, 79, 0.3)"
               }
-              strokeWidth={8}
+              strokeWidth={4}
               lineCap="round"
               lineJoin="round"
               tappable={false}
@@ -45,8 +45,8 @@ export function TrailOverlay({
               strokeColor={
                 isDimmed ? "rgba(45, 106, 79, 0.15)" : colors.category.park
               }
-              strokeWidth={3}
-              lineDashPattern={[8, 5]}
+              strokeWidth={2}
+              lineDashPattern={[6, 4]}
               lineCap="round"
               lineJoin="round"
               tappable={false}

@@ -173,8 +173,9 @@ export function MapScreen() {
   );
 
   const handleClusterPress = useCallback(
-    (latitude: number, longitude: number, expansionZoom: number) => {
+    async (latitude: number, longitude: number, expansionZoom: number) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const camera = await mapRef.current?.getCamera();
       const delta = 360 / Math.pow(2, expansionZoom);
       mapRef.current?.animateToRegion(
         {
@@ -227,9 +228,12 @@ export function MapScreen() {
     setMapLayout({ width, height });
   }, []);
 
+  const hasSetInitialCamera = useRef(false);
   useEffect(() => {
+    if (hasSetInitialCamera.current) return;
     if (!userCoords) return;
     if (!isInWellington(userCoords.latitude, userCoords.longitude)) return;
+    hasSetInitialCamera.current = true;
     mapRef.current?.animateToRegion({
       latitude: userCoords.latitude,
       longitude: userCoords.longitude,

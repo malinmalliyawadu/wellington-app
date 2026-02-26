@@ -8,6 +8,7 @@ import { CATEGORY_COLORS } from './EventCard';
 import { useEventFilters } from '../context/EventFilterContext';
 import { useTheme, type Colors } from '../theme/ThemeContext';
 import { HapticPressable } from './HapticPressable';
+import { LiquidGlassButton } from './LiquidGlassButton';
 import { SFIcon } from './SFIcon';
 import { fonts } from "../theme/fonts";
 
@@ -175,12 +176,13 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
         </HapticPressable>
       </ScrollView>
 
-      <HapticPressable
-        style={styles.doneButton}
+      <LiquidGlassButton
+        title="Show results"
         onPress={() => navigation.closeDrawer()}
-      >
-        <Text style={styles.doneText}>Show results</Text>
-      </HapticPressable>
+        fullWidth
+        size="large"
+        style={styles.doneButton}
+      />
     </View>
   );
 }
@@ -261,16 +263,6 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     marginLeft: 'auto',
   },
   doneButton: {
-    backgroundColor: colors.primary,
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
     marginTop: 12,
-  },
-  doneText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-    fontFamily: fonts.semiBold,
   },
 });
