@@ -14,7 +14,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
-  ActivityIndicator,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useNavigation, usePathname } from "expo-router";
@@ -23,10 +22,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
 import { useFollow } from "../context/FollowContext";
 import { useLocation } from "../context/LocationContext";
-import { askAI } from "../services/ai";
+import { askAIStreaming } from "../services/ai";
 import { getGuidesWithPlaces } from "../services/guides";
 import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
+import { AIThinkingAnimation } from "../components/AIThinkingAnimation";
 import Markdown from "react-native-markdown-display";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
@@ -36,6 +36,7 @@ import type {
   Post,
   User,
   Hashtag,
+  AIResponse,
   AIPlaceRecommendation,
   AIEventRecommendation,
   AIGuideRecommendation,
@@ -106,6 +107,45 @@ function getSuggestionChips(): { label: string; question: string }[] {
   return chips.slice(0, 4);
 }
 
+/**
+ * Trim incomplete markdown syntax from the end of streaming text
+ * so partial tokens like `[Cafe Po` or `**bol` don't render broken.
+ */
+function trimIncompleteMarkdown(text: string): string {
+  let result = text;
+
+  // 1. Incomplete link: unmatched [ possibly followed by partial ](url
+  const lastOpen = result.lastIndexOf("[");
+  if (lastOpen !== -1) {
+    const afterOpen = result.slice(lastOpen);
+    // If there's no complete [text](url) after this bracket, trim it
+    if (!/^\[[^\]]*\]\([^)]*\)/.test(afterOpen)) {
+      result = result.slice(0, lastOpen);
+    }
+  }
+
+  // 2. Incomplete bold: trailing ** without closing pair
+  const lastBold = result.lastIndexOf("**");
+  if (lastBold !== -1) {
+    const afterBold = result.slice(lastBold + 2);
+    if (!afterBold.includes("**")) {
+      result = result.slice(0, lastBold);
+    }
+  }
+
+  // 3. Incomplete italic: trailing single * (not ** and not a bullet)
+  // Check for a trailing * that isn't closed
+  const lastStar = result.lastIndexOf("*");
+  if (lastStar !== -1 && result[lastStar - 1] !== "*" && result[lastStar + 1] !== "*") {
+    const afterStar = result.slice(lastStar + 1);
+    if (!afterStar.includes("*")) {
+      result = result.slice(0, lastStar);
+    }
+  }
+
+  return result;
+}
+
 const CHAT_STORAGE_KEY = "ai_chat_history";
 let msgId = 0;
 
@@ -122,6 +162,8 @@ export function AIChatScreen() {
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingText, setStreamingText] = useState("");
   const [inputText, setInputText] = useState("");
   const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -130,6 +172,7 @@ export function AIChatScreen() {
   const lastResponseY = useRef(0);
   const contentHeight = useRef(0);
   const scrollViewHeight = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardWillShow", () =>
@@ -209,8 +252,15 @@ export function AIChatScreen() {
   const hasMessages = messages.length > 0;
 
   const handleNewChat = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setIsLoading(false);
+    setIsStreaming(false);
+    setStreamingText("");
     setMessages([]);
   }, []);
+
+  const isBusy = isLoading || isStreaming;
 
   useEffect(() => {
     navigation.setOptions({
@@ -218,19 +268,19 @@ export function AIChatScreen() {
         hasMessages ? (
           <HapticPressable
             onPress={handleNewChat}
-            disabled={isLoading}
+            disabled={isBusy}
             style={styles.headerButton}
           >
             <SFIcon
               name="plus.message"
               fallback="chatbubble"
               size={22}
-              color={isLoading ? colors.gray300 : colors.text}
+              color={isBusy ? colors.gray300 : colors.text}
             />
           </HapticPressable>
         ) : null,
     });
-  }, [navigation, hasMessages, isLoading, handleNewChat]);
+  }, [navigation, hasMessages, isBusy, handleNewChat]);
 
   const suggestionChips = useMemo(() => getSuggestionChips(), []);
 
@@ -244,8 +294,18 @@ export function AIChatScreen() {
     return map;
   }, [queryClient]);
 
+  // Cleanup abort controller on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
   const handleAsk = useCallback(
     async (question: string) => {
+      // Abort any existing stream
+      abortControllerRef.current?.abort();
+
       const userMsg: ChatMessage = {
         id: String(++msgId),
         role: "user",
@@ -254,8 +314,13 @@ export function AIChatScreen() {
 
       setMessages((prev) => [...prev, userMsg]);
       setIsLoading(true);
+      setIsStreaming(false);
+      setStreamingText("");
       setInputText("");
       scrollToBottom();
+
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
 
       try {
         const cachedPlaces: Place[] =
@@ -311,26 +376,60 @@ export function AIChatScreen() {
 
         const guides = await getGuidesWithPlaces();
 
-        const aiResponse = await askAI(conversationHistory, {
-          places: cachedPlaces,
-          events: cachedEvents,
-          feedPosts,
-          userPosts,
-          followingUsers,
-          userLocation,
-          trendingHashtags,
-          guides,
-        });
-
-        const assistantMsg: ChatMessage = {
-          id: String(++msgId),
-          role: "assistant",
-          content: aiResponse.message,
-          aiResponse,
-        };
-
-        setMessages((prev) => [...prev, assistantMsg]);
+        await askAIStreaming(
+          conversationHistory,
+          {
+            places: cachedPlaces,
+            events: cachedEvents,
+            feedPosts,
+            userPosts,
+            followingUsers,
+            userLocation,
+            trendingHashtags,
+            guides,
+          },
+          {
+            onTextChunk: (text) => {
+              // Transition from THINKING → STREAMING on first chunk
+              setIsLoading(false);
+              setIsStreaming(true);
+              setStreamingText((prev) => prev + text);
+              scrollToBottom();
+            },
+            onComplete: (response: AIResponse) => {
+              const assistantMsg: ChatMessage = {
+                id: String(++msgId),
+                role: "assistant",
+                content: response.message,
+                aiResponse: response,
+              };
+              setMessages((prev) => [...prev, assistantMsg]);
+              setIsStreaming(false);
+              setStreamingText("");
+              abortControllerRef.current = null;
+              scrollToLastResponse();
+            },
+            onError: (error: string) => {
+              // Don't show error if we were aborted
+              if (abortController.signal.aborted) return;
+              const errorMsg: ChatMessage = {
+                id: String(++msgId),
+                role: "assistant",
+                content: "",
+                error,
+              };
+              setMessages((prev) => [...prev, errorMsg]);
+              setIsLoading(false);
+              setIsStreaming(false);
+              setStreamingText("");
+              abortControllerRef.current = null;
+              scrollToLastResponse();
+            },
+          },
+          abortController.signal,
+        );
       } catch (err: any) {
+        if (abortController.signal.aborted) return;
         const errorMsg: ChatMessage = {
           id: String(++msgId),
           role: "assistant",
@@ -338,8 +437,10 @@ export function AIChatScreen() {
           error: err.message ?? "Something went wrong",
         };
         setMessages((prev) => [...prev, errorMsg]);
-      } finally {
         setIsLoading(false);
+        setIsStreaming(false);
+        setStreamingText("");
+        abortControllerRef.current = null;
         scrollToLastResponse();
       }
     },
@@ -362,9 +463,9 @@ export function AIChatScreen() {
 
   const handleSend = useCallback(() => {
     const q = inputText.trim();
-    if (!q || isLoading) return;
+    if (!q || isBusy) return;
     handleAsk(q);
-  }, [inputText, isLoading, handleAsk]);
+  }, [inputText, isBusy, handleAsk]);
 
   const pathname = usePathname();
   const tabPrefix = pathname.startsWith("/feed")
@@ -576,10 +677,24 @@ export function AIChatScreen() {
           );
         })}
 
-        {isLoading && (
-          <View style={styles.aiLoadingRow}>
-            <ActivityIndicator size="small" color={colors.primary} />
-            <Text style={styles.loadingText}>Thinking...</Text>
+        {isLoading && <AIThinkingAnimation />}
+
+        {isStreaming && streamingText.length > 0 && (
+          <View style={styles.aiResponseSection}>
+            <View style={styles.aiAvatarRow}>
+              <View style={styles.aiAvatar}>
+                <SFIcon
+                  name="sparkles"
+                  fallback="sparkles"
+                  size={14}
+                  color="#FFFFFF"
+                />
+              </View>
+              <Text style={styles.aiLabel}>Welly</Text>
+            </View>
+            <Markdown style={mdStyles} onLinkPress={handleLinkPress}>
+              {trimIncompleteMarkdown(streamingText)}
+            </Markdown>
           </View>
         )}
       </ScrollView>
@@ -600,22 +715,22 @@ export function AIChatScreen() {
           onSubmitEditing={handleSend}
           returnKeyType="send"
           multiline={false}
-          editable={!isLoading}
+          editable={!isBusy}
         />
         <HapticPressable
           style={[
             styles.sendButton,
-            (!inputText.trim() || isLoading) && styles.sendButtonDisabled,
+            (!inputText.trim() || isBusy) && styles.sendButtonDisabled,
           ]}
           onPress={handleSend}
-          disabled={!inputText.trim() || isLoading}
+          disabled={!inputText.trim() || isBusy}
         >
           <SFIcon
             name="arrow.up.circle.fill"
             fallback="arrow-up-circle"
             size={32}
             color={
-              inputText.trim() && !isLoading ? colors.primary : colors.gray300
+              inputText.trim() && !isBusy ? colors.primary : colors.gray300
             }
           />
         </HapticPressable>
@@ -871,17 +986,6 @@ const createStyles = (colors: Colors) =>
       fontSize: 15,
       fontFamily: fonts.medium,
       color: "#FFFFFF",
-    },
-    aiLoadingRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 8,
-      paddingVertical: 12,
-    },
-    loadingText: {
-      fontSize: 14,
-      fontFamily: fonts.medium,
-      color: colors.textSecondary,
     },
     // AI response
     aiResponseSection: {

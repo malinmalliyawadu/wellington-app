@@ -184,7 +184,7 @@ function buildSystemPrompt(ctx: AIContext, weather: string): string {
     )
     .join("\n");
 
-  return `You are Welly, a friendly AI assistant for the Welly app — a map-based social platform for discovering things to do in Wellington, New Zealand.
+  return `You are Welly, a friendly AI assistant for the Welly app — a map-based social platform for discovering things to do in Wellington, New Zealand. You're a true local Wellingtonian with a warm Kiwi personality. Use natural New Zealand slang and expressions (e.g. "sweet as", "heaps good", "keen", "mate", "brekkie", "arvo", "choice", "chur") — but keep it natural, not over the top. You love Wellington and it comes through in how you talk about the city.
 
 Current date/time: ${dateStr}, ${timeStr}
 ${locationStr}
@@ -284,6 +284,52 @@ function parseAIResponse(text: string): AIResponse {
   };
 }
 
+/**
+ * Extract the value of the "message" key from a partial/growing JSON string.
+ * Works even when the JSON is incomplete, by finding `"message":"` and reading
+ * the string value (handling escaped characters) up to the current buffer end.
+ */
+function extractPartialMessageValue(json: string): string | null {
+  const key = '"message"';
+  const idx = json.indexOf(key);
+  if (idx === -1) return null;
+
+  // Find the opening quote of the value
+  let i = idx + key.length;
+  while (i < json.length && json[i] !== '"') i++;
+  if (i >= json.length) return null;
+  i++; // skip opening quote
+
+  let result = "";
+  while (i < json.length) {
+    if (json[i] === "\\") {
+      // Handle escape sequences
+      if (i + 1 >= json.length) break;
+      const next = json[i + 1];
+      if (next === '"') result += '"';
+      else if (next === "\\") result += "\\";
+      else if (next === "n") result += "\n";
+      else if (next === "t") result += "\t";
+      else if (next === "r") result += "\r";
+      else if (next === "/") result += "/";
+      else result += "\\" + next;
+      i += 2;
+    } else if (json[i] === '"') {
+      // Closing quote — message value is complete
+      return result;
+    } else {
+      result += json[i];
+      i++;
+    }
+  }
+  // Incomplete string — return what we have so far
+  return result;
+}
+
+function sseEvent(event: string, data: unknown): string {
+  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -340,29 +386,62 @@ Deno.serve(async (req) => {
     const weather = await fetchWeather();
     const systemPrompt = buildSystemPrompt(context, weather);
 
-    const response = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    // Create a streaming response using SSE
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        let fullText = "";
+        let lastSentLength = 0;
+
+        try {
+          // Use create() with stream: true — returns an async iterable
+          const response = await client.messages.create({
+            model: "claude-sonnet-4-20250514",
+            max_tokens: 1024,
+            system: systemPrompt,
+            messages: messages.map((m) => ({ role: m.role, content: m.content })),
+            stream: true,
+          });
+
+          for await (const event of response) {
+            if (
+              event.type === "content_block_delta" &&
+              event.delta.type === "text_delta"
+            ) {
+              fullText += event.delta.text;
+
+              // Try to extract the growing "message" value from the partial JSON
+              const partialMessage = extractPartialMessageValue(fullText);
+              if (partialMessage !== null && partialMessage.length > lastSentLength) {
+                const newText = partialMessage.slice(lastSentLength);
+                lastSentLength = partialMessage.length;
+                controller.enqueue(encoder.encode(sseEvent("text", { text: newText })));
+              }
+            }
+          }
+
+          // Stream finished — parse the full response
+          const aiResponse = parseAIResponse(fullText);
+          controller.enqueue(encoder.encode(sseEvent("done", aiResponse)));
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Stream error";
+          console.error("[ai-chat] Stream error:", message);
+          controller.enqueue(
+            encoder.encode(sseEvent("error", { error: message }))
+          );
+        } finally {
+          controller.close();
+        }
+      },
     });
 
-    const textBlock = response.content.find(
-      (block: { type: string }) => block.type === "text"
-    );
-    if (!textBlock || textBlock.type !== "text") {
-      return new Response(JSON.stringify({ error: "No text response from AI" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const aiResponse = parseAIResponse(
-      (textBlock as { type: "text"; text: string }).text
-    );
-
-    return new Response(JSON.stringify(aiResponse), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Internal server error";
