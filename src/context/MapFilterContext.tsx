@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState } from 'react';
-import { PlaceCategory } from '../types';
+import React, { createContext, useCallback, useContext, useState } from 'react';
+import { PlaceCategory, TrailDifficulty } from '../types';
 
 interface MapFilterContextType {
   selectedCategories: PlaceCategory[];
@@ -11,6 +11,9 @@ interface MapFilterContextType {
   setShowTrails: (show: boolean) => void;
   showEvents: boolean;
   setShowEvents: (show: boolean) => void;
+  selectedTrailDifficulties: TrailDifficulty[];
+  toggleTrailDifficulty: (d: TrailDifficulty) => void;
+  clearTrailDifficulties: () => void;
 }
 
 const MapFilterContext = createContext<MapFilterContextType | null>(null);
@@ -20,6 +23,7 @@ export function MapFilterProvider({ children }: { children: React.ReactNode }) {
   const [showFollowingOnly, setShowFollowingOnly] = useState(false);
   const [showTrails, setShowTrails] = useState(true);
   const [showEvents, setShowEvents] = useState(true);
+  const [selectedTrailDifficulties, setSelectedTrailDifficulties] = useState<TrailDifficulty[]>(['easy', 'moderate', 'hard']);
 
   const toggleCategory = (category: PlaceCategory) => {
     setSelectedCategories((prev) =>
@@ -28,6 +32,14 @@ export function MapFilterProvider({ children }: { children: React.ReactNode }) {
   };
 
   const clearCategories = () => setSelectedCategories([]);
+
+  const toggleTrailDifficulty = (d: TrailDifficulty) => {
+    setSelectedTrailDifficulties((prev) =>
+      prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d],
+    );
+  };
+
+  const clearTrailDifficulties = () => setSelectedTrailDifficulties(['easy', 'moderate', 'hard']);
 
   return (
     <MapFilterContext.Provider
@@ -38,9 +50,16 @@ export function MapFilterProvider({ children }: { children: React.ReactNode }) {
         showFollowingOnly,
         setShowFollowingOnly,
         showTrails,
-        setShowTrails,
+        setShowTrails: useCallback((show: boolean) => {
+          setShowTrails(show);
+          if (!show) setSelectedTrailDifficulties([]);
+          else setSelectedTrailDifficulties(['easy', 'moderate', 'hard']);
+        }, []),
         showEvents,
         setShowEvents,
+        selectedTrailDifficulties,
+        toggleTrailDifficulty,
+        clearTrailDifficulties,
       }}
     >
       {children}

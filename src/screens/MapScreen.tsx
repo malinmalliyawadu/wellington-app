@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -108,7 +108,7 @@ export function MapScreen() {
   const insets = useSafeAreaInsets();
   const { selectPlace, sheetOpenRef } = useMapPlaceSelection();
   const { followingIds } = useFollow();
-  const { selectedCategories, showFollowingOnly, showTrails, showEvents } =
+  const { selectedCategories, showFollowingOnly, showTrails, showEvents, selectedTrailDifficulties } =
     useMapFilters();
 
   const [visibleRegion, setVisibleRegion] = useState<Region>(WELLINGTON_REGION);
@@ -138,9 +138,14 @@ export function MapScreen() {
     mapLayout,
   });
 
+  const filteredTrails = useMemo(() => {
+    if (!trails || selectedTrailDifficulties.length === 0) return trails ?? [];
+    return trails.filter((t) => selectedTrailDifficulties.includes(t.difficulty));
+  }, [trails, selectedTrailDifficulties]);
+
   const { mapItems, clusteredTrailIds } = useMarkerClustering({
     filteredPlaces,
-    trails,
+    trails: filteredTrails,
     showTrails,
     zoom: currentZoom,
   });
@@ -292,7 +297,8 @@ export function MapScreen() {
     (selectedCategories.length > 0 ? 1 : 0) +
     (showFollowingOnly ? 1 : 0) +
     (!showTrails ? 1 : 0) +
-    (!showEvents ? 1 : 0);
+    (!showEvents ? 1 : 0) +
+    (showTrails && selectedTrailDifficulties.length > 0 && selectedTrailDifficulties.length < 3 ? 1 : 0);
 
   const styles = createStyles(colors);
 
@@ -322,7 +328,7 @@ export function MapScreen() {
         />
         {showTrails && (
           <TrailOverlay
-            trails={trails ?? []}
+            trails={filteredTrails}
             activeTrailId={activeTrailId}
             onTrailPress={handleTrailPress}
             clusteredTrailIds={clusteredTrailIds}

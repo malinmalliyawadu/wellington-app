@@ -137,8 +137,8 @@ const quickStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    height: 48,
-    borderRadius: 14,
+    height: 42,
+    borderRadius: 21,
     overflow: "hidden",
   },
   badge: {
@@ -150,7 +150,7 @@ const quickStyles = StyleSheet.create({
     borderRadius: 3.5,
   },
   label: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: fonts.semiBold,
   },
 });
