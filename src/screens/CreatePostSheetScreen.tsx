@@ -108,6 +108,8 @@ export function CreatePostSheetScreen() {
   // Shared state
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
   const [posting, setPosting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState("");
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -430,6 +432,8 @@ export function CreatePostSheetScreen() {
     }
 
     setPosting(true);
+    setUploadProgress(0);
+    setUploadStage("");
     try {
       let placeId = selectedPlace.id;
       if (!placeId) {
@@ -461,37 +465,59 @@ export function CreatePostSheetScreen() {
         const postType = getPostType();
 
         if (mediaItems.length > 0 && postType !== "text") {
-          // Compress and upload all media in parallel
-          const uploadResults = await Promise.all(
-            mediaItems.map(async (item, index) => {
-              const compressedUri = await compressMedia(item.uri, item.type);
-              const extension = item.type === "video" ? "mp4" : "jpg";
-              const mimeType = item.type === "video" ? "video/mp4" : "image/jpeg";
-              const fileName = `${profile.id}-${Date.now()}-${index}.${extension}`;
-              const url = await uploadMedia(profile.id, compressedUri, fileName, mimeType);
+          const totalItems = mediaItems.length;
+          const hasVideo = mediaItems.some((item) => item.type === "video");
 
-              // Generate and upload thumbnail for video items
-              let thumbnailUrl: string | undefined;
-              if (item.type === "video") {
-                try {
-                  const { uri: thumbUri } = await ExpoVideoThumbnails.getThumbnailAsync(item.uri, { time: 500 });
-                  const thumbFileName = `${profile.id}-${Date.now()}-${index}-thumb.jpg`;
-                  thumbnailUrl = await uploadMedia(profile.id, thumbUri, thumbFileName, "image/jpeg");
-                } catch {
-                  // Thumbnail generation failed, will fall back to placeholder
-                }
+          // Process media items sequentially for accurate progress tracking
+          const uploadResults: typeof uploadedMediaItems & {} = [];
+          for (let index = 0; index < mediaItems.length; index++) {
+            const item = mediaItems[index];
+
+            // Compress
+            if (item.type === "video") {
+              setUploadStage(totalItems > 1 ? `Compressing video ${index + 1}/${totalItems}` : "Compressing video");
+            } else if (hasVideo) {
+              setUploadStage(totalItems > 1 ? `Compressing photo ${index + 1}/${totalItems}` : "Compressing photo");
+            } else {
+              setUploadStage(totalItems > 1 ? `Compressing ${index + 1}/${totalItems}` : "Compressing");
+            }
+            const compressWeight = 0.7; // compression is ~70% of the work
+            const itemBase = index / totalItems;
+            const itemSlice = 1 / totalItems;
+            const compressedUri = await compressMedia(item.uri, item.type, (p) => {
+              setUploadProgress(itemBase + itemSlice * compressWeight * p);
+            });
+
+            // Upload
+            setUploadStage(totalItems > 1 ? `Uploading ${index + 1}/${totalItems}` : "Uploading");
+            const extension = item.type === "video" ? "mp4" : "jpg";
+            const mimeType = item.type === "video" ? "video/mp4" : "image/jpeg";
+            const fileName = `${profile.id}-${Date.now()}-${index}.${extension}`;
+            const url = await uploadMedia(profile.id, compressedUri, fileName, mimeType);
+            setUploadProgress(itemBase + itemSlice * 0.9);
+
+            // Generate and upload thumbnail for video items
+            let thumbnailUrl: string | undefined;
+            if (item.type === "video") {
+              try {
+                const { uri: thumbUri } = await ExpoVideoThumbnails.getThumbnailAsync(item.uri, { time: 500 });
+                const thumbFileName = `${profile.id}-${Date.now()}-${index}-thumb.jpg`;
+                thumbnailUrl = await uploadMedia(profile.id, thumbUri, thumbFileName, "image/jpeg");
+              } catch {
+                // Thumbnail generation failed, will fall back to placeholder
               }
+            }
+            setUploadProgress((index + 1) / totalItems);
 
-              return {
-                mediaUrl: url,
-                thumbnailUrl,
-                mediaType: item.type,
-                mediaWidth: item.width,
-                mediaHeight: item.height,
-                sortOrder: index,
-              };
-            })
-          );
+            uploadResults.push({
+              mediaUrl: url,
+              thumbnailUrl,
+              mediaType: item.type,
+              mediaWidth: item.width,
+              mediaHeight: item.height,
+              sortOrder: index,
+            });
+          }
 
           // Set cover to first item
           coverMediaUrl = uploadResults[0].mediaUrl;
@@ -804,11 +830,22 @@ export function CreatePostSheetScreen() {
       <Modal visible={posting} transparent animationType="fade" statusBarTranslucent>
         <View style={styles.progressOverlay}>
           <View style={styles.progressContent}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.progressText}>
-              {createType === "post" ? "Posting..." : isEditingEvent ? "Saving..." : "Creating event..."}
-            </Text>
-            <Text style={styles.progressSubtext}>This may take a moment</Text>
+            {mediaItems.length > 0 && uploadStage ? (
+              <>
+                <Text style={styles.progressText}>{uploadStage}</Text>
+                <View style={styles.progressBarContainer}>
+                  <View style={[styles.progressBarFill, { width: `${Math.round(uploadProgress * 100)}%` }]} />
+                </View>
+                <Text style={styles.progressSubtext}>{Math.round(uploadProgress * 100)}%</Text>
+              </>
+            ) : (
+              <>
+                <ActivityIndicator size="large" color={colors.primary} />
+                <Text style={styles.progressText}>
+                  {createType === "post" ? "Posting..." : isEditingEvent ? "Saving..." : "Creating event..."}
+                </Text>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -919,8 +956,21 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     fontFamily: fonts.semiBold,
     color: colors.text,
   },
+  progressBarContainer: {
+    width: "100%",
+    height: 6,
+    backgroundColor: colors.gray100,
+    borderRadius: 3,
+    marginTop: 16,
+    overflow: "hidden",
+  },
+  progressBarFill: {
+    height: "100%",
+    backgroundColor: colors.primary,
+    borderRadius: 3,
+  },
   progressSubtext: {
-    marginTop: 6,
+    marginTop: 8,
     fontSize: 14,
     color: colors.textMuted,
   },

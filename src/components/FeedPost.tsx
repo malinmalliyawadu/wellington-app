@@ -298,7 +298,7 @@ export const FeedPost = React.memo(function FeedPost({
           </HapticPressable>
           <HapticPressable
             style={styles.actionButton}
-            onPress={() => sharePost(post.id, place.name, post.content)}
+            onPress={() => sharePost(post.id)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <SFIcon

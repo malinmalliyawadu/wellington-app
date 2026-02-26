@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import { useVideoPlayer, VideoView } from 'expo-video';
-import { useTheme, type Colors } from '../theme/ThemeContext';
+import React, { useEffect } from "react";
+import { View, StyleSheet, StyleProp, ViewStyle } from "react-native";
+import { useVideoPlayer, VideoView } from "expo-video";
+import { useTheme, type Colors } from "../theme/ThemeContext";
 
 interface VideoPlayerProps {
   uri: string;
@@ -18,7 +18,7 @@ export function VideoPlayer({
   style,
   shouldPlay = false,
   isMuted = true,
-  isLooping = false,
+  isLooping = true,
   useNativeControls = false,
   onLoad,
 }: VideoPlayerProps) {
@@ -44,8 +44,8 @@ export function VideoPlayer({
   useEffect(() => {
     if (!onLoad || !player) return;
 
-    const subscription = player.addListener('statusChange', (status) => {
-      if (status.status === 'readyToPlay' && player.currentTime === 0) {
+    const subscription = player.addListener("statusChange", (status) => {
+      if (status.status === "readyToPlay" && player.currentTime === 0) {
         // Get video dimensions from the player
         const width = (player as any).videoWidth;
         const height = (player as any).videoHeight;
@@ -63,21 +63,22 @@ export function VideoPlayer({
       <VideoView
         player={player}
         style={styles.video}
-        contentFit="cover"
+        contentFit="contain"
         nativeControls={useNativeControls}
       />
     </View>
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  container: {
-    width: '100%',
-    backgroundColor: colors.gray200,
-    overflow: 'hidden',
-  },
-  video: {
-    width: '100%',
-    height: '100%',
-  },
-});
+const createStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      width: "100%",
+      backgroundColor: colors.gray200,
+      overflow: "hidden",
+    },
+    video: {
+      width: "100%",
+      height: "100%",
+    },
+  });

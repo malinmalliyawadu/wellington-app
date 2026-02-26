@@ -365,13 +365,7 @@ export function EventDetailScreen() {
                 </HapticPressable>
                 <HapticPressable
                   onPress={() =>
-                    shareEvent(
-                      event.id,
-                      event.title,
-                      formatDate(event.date),
-                      place?.name ?? "Wellington",
-                      event.description
-                    )
+                    shareEvent(event.id)
                   }
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={styles.shareButton}

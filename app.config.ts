@@ -87,8 +87,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           iosActivationRules: {
             NSExtensionActivationSupportsWebURLWithMaxCount: 1,
             NSExtensionActivationSupportsWebPageWithMaxCount: 1,
-            NSExtensionActivationSupportsImageWithMaxCount: 1,
-            NSExtensionActivationSupportsMovieWithMaxCount: 1,
+            NSExtensionActivationSupportsImageWithMaxCount: 10,
+            NSExtensionActivationSupportsMovieWithMaxCount: 3,
           },
           androidIntentFilters: ["text/*", "image/*", "video/*"],
         },

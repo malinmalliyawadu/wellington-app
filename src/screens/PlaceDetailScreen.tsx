@@ -346,7 +346,7 @@ function PlaceTrailHeader({
         </View>
         <HapticPressable
           style={styles.trailShareButton}
-          onPress={() => shareTrail(trail.id, trail.name)}
+          onPress={() => shareTrail(trail.id)}
         >
           <SFIcon name="square.and.arrow.up" fallback="share-outline" size={16} color={colors.primary} />
           <Text style={styles.directionsText}>Share</Text>

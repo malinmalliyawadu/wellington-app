@@ -542,9 +542,7 @@ export function PostDetailScreen() {
             </HapticPressable>
             <HapticPressable
               style={styles.actionButton}
-              onPress={() =>
-                sharePost(post.id, place?.name ?? "a place", post.content)
-              }
+              onPress={() => sharePost(post.id)}
             >
               <SFIcon
                 name="paperplane"

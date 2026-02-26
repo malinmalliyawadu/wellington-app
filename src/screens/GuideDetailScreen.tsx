@@ -401,7 +401,7 @@ export function GuideDetailScreen() {
                 </HapticPressable>
                 <HapticPressable
                   style={styles.stat}
-                  onPress={() => shareGuide(guide.id, guide.title)}
+                  onPress={() => shareGuide(guide.id)}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <SFIcon

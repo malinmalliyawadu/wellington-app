@@ -268,7 +268,7 @@ export function TrailDetailSheetScreen() {
               </HapticPressable>
               <HapticPressable
                 style={styles.directionsButton}
-                onPress={() => shareTrail(trail.id, trail.name)}
+                onPress={() => shareTrail(trail.id)}
               >
                 <SFIcon
                   name="square.and.arrow.up"

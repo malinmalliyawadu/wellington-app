@@ -323,7 +323,7 @@ export const FeedGuideCard = React.memo(function FeedGuideCard({
             <Text style={styles.actionCount}>{commentCount}</Text>
           </HapticPressable>
           <HapticPressable
-            onPress={() => shareGuide(guide.id, guide.title)}
+            onPress={() => shareGuide(guide.id)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
             <SFIcon
