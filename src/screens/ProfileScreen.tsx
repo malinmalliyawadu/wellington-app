@@ -2,7 +2,6 @@ import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
-  FlatList,
   ScrollView,
   StyleSheet,
   RefreshControl,
@@ -10,7 +9,6 @@ import {
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "../context/AuthContext";
 import { useQuery } from "../hooks/useQuery";
@@ -37,7 +35,6 @@ type Tab = "posts" | "events" | "guides";
 export function ProfileScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const router = useRouter();
   const { profile } = useAuth();
 
@@ -104,7 +101,13 @@ export function ProfileScreen() {
       refetchCounts();
       refetchEvents();
       refetchGuides();
-    }, [refetchPosts, refetchPlaces, refetchCounts, refetchEvents, refetchGuides])
+    }, [
+      refetchPosts,
+      refetchPlaces,
+      refetchCounts,
+      refetchEvents,
+      refetchGuides,
+    ])
   );
 
   const [avatarError, setAvatarError] = useState(!currentUser.avatarUrl);
@@ -123,7 +126,13 @@ export function ProfileScreen() {
     } finally {
       setRefreshing(false);
     }
-  }, [refetchPosts, refetchPlaces, refetchCounts, refetchEvents, refetchGuides]);
+  }, [
+    refetchPosts,
+    refetchPlaces,
+    refetchCounts,
+    refetchEvents,
+    refetchGuides,
+  ]);
 
   const postCount = posts?.length ?? 0;
   const followerCount = counts?.followers ?? 0;
@@ -201,7 +210,9 @@ export function ProfileScreen() {
                   <EventCard
                     event={event}
                     place={event.place}
-                    onPress={() => router.push(`/profile/event/${event.id}` as any)}
+                    onPress={() =>
+                      router.push(`/profile/event/${event.id}` as any)
+                    }
                     compact
                   />
                 </View>
@@ -240,194 +251,183 @@ export function ProfileScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        testID="profile-screen"
-        data={[]}
-        renderItem={null}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-        contentInset={{ top: headerHeight }}
-        contentOffset={{ x: 0, y: -headerHeight }}
-        scrollIndicatorInsets={{ top: headerHeight }}
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + 60,
-        }}
-        ListHeaderComponent={
-          <>
-            {/* Compact header */}
-            <View style={styles.headerSection}>
-              <View style={styles.headerRow}>
-                {avatarError ? (
-                  <View style={[styles.avatar, styles.avatarFallback]}>
-                    <Ionicons name="person" size={28} color={colors.textMuted} />
-                  </View>
-                ) : (
-                  <Image
-                    source={{ uri: currentUser.avatarUrl }}
-                    style={styles.avatar}
-                    contentFit="cover"
-                    transition={200}
-                    onError={() => setAvatarError(true)}
-                  />
-                )}
-                <View style={styles.identityColumn}>
-                  <Text
-                    testID="profile-display-name"
-                    style={styles.displayName}
-                    numberOfLines={1}
-                  >
-                    {currentUser.displayName}
-                  </Text>
-                  <Text
-                    testID="profile-username"
-                    style={styles.username}
-                    numberOfLines={1}
-                  >
-                    @{currentUser.username}
-                  </Text>
-                  <View testID="profile-stats" style={styles.inlineStats}>
-                    <Text style={styles.statText}>
-                      <Text style={styles.statNumber}>
-                        {formatNumber(postCount)}
-                      </Text>{" "}
-                      posts
-                    </Text>
-                    <Text style={styles.statDot}>·</Text>
-                    <HapticPressable
-                      onPress={() =>
-                        router.push({
-                          pathname: "/profile/follow-list",
-                          params: { userId: currentUser.id, tab: "followers" },
-                        })
-                      }
-                    >
-                      <Text style={styles.statText}>
-                        <Text style={styles.statNumber}>
-                          {formatNumber(followerCount)}
-                        </Text>{" "}
-                        followers
-                      </Text>
-                    </HapticPressable>
-                    <Text style={styles.statDot}>·</Text>
-                    <HapticPressable
-                      onPress={() =>
-                        router.push({
-                          pathname: "/profile/follow-list",
-                          params: { userId: currentUser.id, tab: "following" },
-                        })
-                      }
-                    >
-                      <Text style={styles.statText}>
-                        <Text style={styles.statNumber}>
-                          {formatNumber(followingCount)}
-                        </Text>{" "}
-                        following
-                      </Text>
-                    </HapticPressable>
-                  </View>
-                </View>
-              </View>
-
-              {currentUser.bio ? (
-                <Text style={styles.bio}>{currentUser.bio}</Text>
-              ) : null}
-
-              <SocialLinks
-                instagramUsername={currentUser.instagramUsername}
-                tiktokUsername={currentUser.tiktokUsername}
-                xUsername={currentUser.xUsername}
-              />
-
-              {/* Action row */}
-              <View style={styles.actionRow}>
-                <LiquidGlassButton
-                  title="Edit Profile"
-                  variant="secondary"
-                  size="small"
-                  onPress={() => router.push("/profile/edit-profile")}
-                  style={styles.editButton}
-                />
-                <LiquidGlassButton
-                  icon="trophy"
-                  iconOnly
-                  variant="secondary"
-                  size="small"
-                  onPress={() => router.push("/profile/achievements")}
-                />
-                <LiquidGlassButton
-                  icon="bookmark"
-                  iconOnly
-                  variant="secondary"
-                  size="small"
-                  onPress={() => router.push("/profile/saved")}
-                />
-                {igConnected && (
-                  <LiquidGlassButton
-                    icon="logo-instagram"
-                    iconOnly
-                    variant="secondary"
-                    size="small"
-                    onPress={() => router.push("/profile/instagram-import")}
-                  />
-                )}
-              </View>
+    <ScrollView
+      testID="profile-screen"
+      style={styles.container}
+      showsVerticalScrollIndicator={false}
+      automaticallyAdjustContentInsets={false}
+      contentInsetAdjustmentBehavior="never"
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={colors.primary}
+          colors={[colors.primary]}
+        />
+      }
+      contentContainerStyle={{
+        paddingBottom: insets.bottom + 60,
+      }}
+    >
+      {/* Compact header */}
+      <View style={styles.headerSection}>
+        <View style={styles.headerRow}>
+          {avatarError ? (
+            <View style={[styles.avatar, styles.avatarFallback]}>
+              <Ionicons name="person" size={28} color={colors.textMuted} />
             </View>
-
-            {/* Tab bar */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.tabBar}
+          ) : (
+            <Image
+              source={{ uri: currentUser.avatarUrl }}
+              style={styles.avatar}
+              contentFit="cover"
+              transition={200}
+              onError={() => setAvatarError(true)}
+            />
+          )}
+          <View style={styles.identityColumn}>
+            <Text
+              testID="profile-display-name"
+              style={styles.displayName}
+              numberOfLines={1}
             >
-              {tabs.map((tab) => (
-                <HapticPressable
-                  key={tab.key}
-                  style={[
-                    styles.tab,
-                    activeTab === tab.key && styles.tabActive,
-                  ]}
-                  onPress={() => setActiveTab(tab.key)}
-                >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      activeTab === tab.key && styles.tabTextActive,
-                    ]}
-                  >
-                    {tab.label}
-                  </Text>
-                  <View
-                    style={[
-                      styles.tabCount,
-                      activeTab === tab.key && styles.tabCountActive,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.tabCountText,
-                        activeTab === tab.key && styles.tabCountTextActive,
-                      ]}
-                    >
-                      {tab.count}
-                    </Text>
-                  </View>
-                </HapticPressable>
-              ))}
-            </ScrollView>
+              {currentUser.displayName}
+            </Text>
+            <Text
+              testID="profile-username"
+              style={styles.username}
+              numberOfLines={1}
+            >
+              @{currentUser.username}
+            </Text>
+            <View testID="profile-stats" style={styles.inlineStats}>
+              <Text style={styles.statText}>
+                <Text style={styles.statNumber}>{formatNumber(postCount)}</Text>{" "}
+                posts
+              </Text>
+              <Text style={styles.statDot}>·</Text>
+              <HapticPressable
+                onPress={() =>
+                  router.push({
+                    pathname: "/profile/follow-list",
+                    params: { userId: currentUser.id, tab: "followers" },
+                  })
+                }
+              >
+                <Text style={styles.statText}>
+                  <Text style={styles.statNumber}>
+                    {formatNumber(followerCount)}
+                  </Text>{" "}
+                  followers
+                </Text>
+              </HapticPressable>
+              <Text style={styles.statDot}>·</Text>
+              <HapticPressable
+                onPress={() =>
+                  router.push({
+                    pathname: "/profile/follow-list",
+                    params: { userId: currentUser.id, tab: "following" },
+                  })
+                }
+              >
+                <Text style={styles.statText}>
+                  <Text style={styles.statNumber}>
+                    {formatNumber(followingCount)}
+                  </Text>{" "}
+                  following
+                </Text>
+              </HapticPressable>
+            </View>
+          </View>
+        </View>
 
-            {/* Tab content */}
-            {renderContent()}
-          </>
-        }
-      />
-    </View>
+        {currentUser.bio ? (
+          <Text style={styles.bio}>{currentUser.bio}</Text>
+        ) : null}
+
+        <SocialLinks
+          instagramUsername={currentUser.instagramUsername}
+          tiktokUsername={currentUser.tiktokUsername}
+          xUsername={currentUser.xUsername}
+        />
+
+        {/* Action row */}
+        <View style={styles.actionRow}>
+          <LiquidGlassButton
+            title="Edit Profile"
+            variant="secondary"
+            size="small"
+            onPress={() => router.push("/profile/edit-profile")}
+            style={styles.editButton}
+          />
+          <LiquidGlassButton
+            icon="trophy"
+            iconOnly
+            variant="secondary"
+            size="small"
+            onPress={() => router.push("/profile/achievements")}
+          />
+          <LiquidGlassButton
+            icon="bookmark"
+            iconOnly
+            variant="secondary"
+            size="small"
+            onPress={() => router.push("/profile/saved")}
+          />
+          {igConnected && (
+            <LiquidGlassButton
+              icon="logo-instagram"
+              iconOnly
+              variant="secondary"
+              size="small"
+              onPress={() => router.push("/profile/instagram-import")}
+            />
+          )}
+        </View>
+      </View>
+
+      {/* Tab bar */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabBar}
+      >
+        {tabs.map((tab) => (
+          <HapticPressable
+            key={tab.key}
+            style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+            onPress={() => setActiveTab(tab.key)}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === tab.key && styles.tabTextActive,
+              ]}
+            >
+              {tab.label}
+            </Text>
+            <View
+              style={[
+                styles.tabCount,
+                activeTab === tab.key && styles.tabCountActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.tabCountText,
+                  activeTab === tab.key && styles.tabCountTextActive,
+                ]}
+              >
+                {tab.count}
+              </Text>
+            </View>
+          </HapticPressable>
+        ))}
+      </ScrollView>
+
+      {/* Tab content */}
+      {renderContent()}
+    </ScrollView>
   );
 }
 
