@@ -5,14 +5,15 @@ import {
   StyleSheet,
   ScrollView,
   SectionList,
-  ActivityIndicator,
+  LayoutAnimation,
+  UIManager,
+  Platform,
 } from "react-native";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { SFSymbol } from "expo-symbols";
 import { SFIcon } from "../components/SFIcon";
-import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { useQuery } from "../hooks/useQuery";
@@ -29,6 +30,15 @@ import { HapticPressable } from "../components/HapticPressable";
 import { getTrendingHashtags, searchHashtags } from "../services/hashtags";
 import { QueryErrorState } from "../components/QueryErrorState";
 import { formatNumber } from "../utils/formatNumber";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 import type {
   Place,
   Post,
@@ -38,6 +48,15 @@ import type {
   PlaceCategory,
   Hashtag,
 } from "../types";
+
+if (
+  Platform.OS === "android" &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+// ─── Constants ───────────────────────────────────────────────────────────────
 
 const CATEGORY_ICONS: Record<
   PlaceCategory,
@@ -72,6 +91,49 @@ const ALL_CATEGORIES: PlaceCategory[] = [
   "trail",
 ];
 
+type FilterType =
+  | "all"
+  | "places"
+  | "people"
+  | "events"
+  | "guides"
+  | "hashtags";
+
+const FILTER_CHIPS: {
+  key: FilterType;
+  label: string;
+  icon: SFSymbol;
+  fallback: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { key: "all", label: "All", icon: "sparkle", fallback: "sparkles" },
+  { key: "places", label: "Places", icon: "mappin", fallback: "location" },
+  { key: "people", label: "People", icon: "person.fill", fallback: "person" },
+  {
+    key: "events",
+    label: "Events",
+    icon: "calendar",
+    fallback: "calendar",
+  },
+  { key: "guides", label: "Guides", icon: "book.fill", fallback: "book" },
+  {
+    key: "hashtags",
+    label: "Hashtags",
+    icon: "number",
+    fallback: "pricetag",
+  },
+];
+
+const FILTER_TO_SECTION: Record<FilterType, string | null> = {
+  all: null,
+  places: "Places",
+  people: "People",
+  events: "Events",
+  guides: "Guides",
+  hashtags: "Hashtags",
+};
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
 interface SearchResult {
   id: string;
   type: "place" | "post" | "user" | "event" | "hashtag" | "guide";
@@ -84,12 +146,120 @@ interface SearchScreenProps {
   onQueryChange?: (query: string) => void;
 }
 
+// ─── Shimmer Block ───────────────────────────────────────────────────────────
+
+function ShimmerBlock({
+  width,
+  height,
+  borderRadius = 8,
+  style,
+  colors,
+}: {
+  width: number | string;
+  height: number;
+  borderRadius?: number;
+  style?: any;
+  colors: Colors;
+}) {
+  const opacity = useSharedValue(0.3);
+
+  React.useEffect(() => {
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: 800 }),
+        withTiming(0.3, { duration: 800 })
+      ),
+      -1,
+      false
+    );
+  }, [opacity]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width: width as any,
+          height,
+          borderRadius,
+          backgroundColor: colors.gray200,
+        },
+        animatedStyle,
+        style,
+      ]}
+    />
+  );
+}
+
+// ─── Section Header ──────────────────────────────────────────────────────────
+
+function BrowseSectionHeader({
+  title,
+  onSeeAll,
+  colors,
+}: {
+  title: string;
+  onSeeAll?: () => void;
+  colors: Colors;
+}) {
+  return (
+    <View style={browseSectionHeaderStyles(colors).container}>
+      <Text style={browseSectionHeaderStyles(colors).title}>{title}</Text>
+      {onSeeAll && (
+        <HapticPressable onPress={onSeeAll}>
+          <Text style={browseSectionHeaderStyles(colors).seeAll}>See All</Text>
+        </HapticPressable>
+      )}
+    </View>
+  );
+}
+
+const browseSectionHeaderStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 16,
+      marginBottom: 12,
+    },
+    title: {
+      fontSize: 20,
+      fontFamily: fonts.bold,
+      color: colors.text,
+    },
+    seeAll: {
+      fontSize: 15,
+      fontFamily: fonts.semiBold,
+      color: colors.primary,
+    },
+  });
+
+// ─── Main Component ──────────────────────────────────────────────────────────
+
 export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
   const { colors } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all");
 
-  const { data: places, error: placesError, refetch: refetchPlaces } = useQuery(getPlaces, "places");
+  // Reset filter when query clears
+  useEffect(() => {
+    if (!query.trim()) {
+      setActiveFilter("all");
+    }
+  }, [query]);
+
+  // ─── Data Queries ────────────────────────────────────────────────────────
+
+  const {
+    data: places,
+    error: placesError,
+    refetch: refetchPlaces,
+  } = useQuery(getPlaces, "places");
   const { data: posts } = useQuery(getPosts, "posts");
   const { data: users } = useQuery(getProfiles, "profiles");
   const { data: events } = useQuery(getUpcomingEvents, "events");
@@ -99,17 +269,41 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
   );
   const { data: guides } = useQuery(getGuides, "guides");
 
-  // Hashtag search state
+  // ─── Hashtag Search ──────────────────────────────────────────────────────
+
   const [hashtagResults, setHashtagResults] = useState<Hashtag[]>([]);
 
-  // Google Places search state
-  const [googleResults, setGoogleResults] = useState<Omit<Place, "id">[]>(
-    []
-  );
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed.startsWith("#") || trimmed.length < 2) {
+      setHashtagResults([]);
+      return;
+    }
+
+    let stale = false;
+    const prefix = trimmed.slice(1);
+
+    const timer = setTimeout(async () => {
+      try {
+        const results = await searchHashtags(prefix);
+        if (!stale) setHashtagResults(results);
+      } catch {
+        if (!stale) setHashtagResults([]);
+      }
+    }, 200);
+
+    return () => {
+      stale = true;
+      clearTimeout(timer);
+    };
+  }, [query]);
+
+  // ─── Google Places Search ────────────────────────────────────────────────
+
+  const [googleResults, setGoogleResults] = useState<Omit<Place, "id">[]>([]);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [creatingPlaceId, setCreatingPlaceId] = useState<string | null>(null);
 
-  // Debounced Google Places search
   useEffect(() => {
     if (!query.trim() || query.trim().length < 2) {
       setGoogleResults([]);
@@ -144,31 +338,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
     };
   }, [query]);
 
-  // Debounced hashtag search
-  useEffect(() => {
-    const trimmed = query.trim();
-    if (!trimmed.startsWith("#") || trimmed.length < 2) {
-      setHashtagResults([]);
-      return;
-    }
-
-    let stale = false;
-    const prefix = trimmed.slice(1);
-
-    const timer = setTimeout(async () => {
-      try {
-        const results = await searchHashtags(prefix);
-        if (!stale) setHashtagResults(results);
-      } catch {
-        if (!stale) setHashtagResults([]);
-      }
-    }, 200);
-
-    return () => {
-      stale = true;
-      clearTimeout(timer);
-    };
-  }, [query]);
+  // ─── Navigation Handlers ─────────────────────────────────────────────────
 
   const handleGooglePlacePress = useCallback(
     async (placeData: Omit<Place, "id">) => {
@@ -187,39 +357,68 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
     [creatingPlaceId, router]
   );
 
-  // Trending places (most posts)
-  const trendingPlaces = useMemo(() => {
-    if (!places || !posts) return [];
+  const handlePlacePress = (placeId: string) => {
+    router.push(`/search/place/${placeId}`);
+  };
 
-    const placePostCounts = new Map<string, number>();
+  const handleUserPress = (userId: string) => {
+    router.push(`/search/user/${userId}`);
+  };
+
+  const handlePostPress = (postId: string) => {
+    router.push(`/search/post/${postId}`);
+  };
+
+  const handleEventPress = (eventId: string) => {
+    router.push(`/search/event/${eventId}`);
+  };
+
+  const handleGuidePress = (guideId: string) => {
+    router.push(`/search/guide/${guideId}`);
+  };
+
+  const handleHashtagPress = (tagName: string) => {
+    router.push(`/search/hashtag/${tagName}` as any);
+  };
+
+  // ─── Computed Data ───────────────────────────────────────────────────────
+
+  const postCountByPlace = useMemo(() => {
+    if (!posts) return new Map<string, number>();
+    const counts = new Map<string, number>();
     posts.forEach((post) => {
-      const count = placePostCounts.get(post.placeId) || 0;
-      placePostCounts.set(post.placeId, count + 1);
+      counts.set(post.placeId, (counts.get(post.placeId) || 0) + 1);
     });
+    return counts;
+  }, [posts]);
+
+  const trendingPlaces = useMemo(() => {
+    if (!places) return [];
 
     return places
       .map((place) => ({
         ...place,
-        postCount: placePostCounts.get(place.id) || 0,
+        postCount: postCountByPlace.get(place.id) || 0,
       }))
       .filter((p) => p.postCount > 0)
       .sort((a, b) => b.postCount - a.postCount)
       .slice(0, 8);
-  }, [places, posts]);
+  }, [places, postCountByPlace]);
 
-  // Upcoming events (next 2 days)
   const upcomingEvents = useMemo(() => {
     if (!events) return [];
 
     const now = new Date();
-    const twoDaysFromNow = new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000);
+    const fiveDaysFromNow = new Date(
+      now.getTime() + 5 * 24 * 60 * 60 * 1000
+    );
 
     return events
       .filter((event) => {
         const eventDate = new Date(event.date);
-        return eventDate >= now && eventDate <= twoDaysFromNow;
+        return eventDate >= now && eventDate <= fiveDaysFromNow;
       })
-      .slice(0, 3);
+      .slice(0, 6);
   }, [events]);
 
   const eventPlaces = useMemo(() => {
@@ -227,17 +426,8 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
     return new Map(places.map((p) => [p.id, p]));
   }, [places]);
 
-  // Place counts by category
-  const categoryCounts = useMemo(() => {
-    if (!places) return new Map<PlaceCategory, number>();
-    const counts = new Map<PlaceCategory, number>();
-    places.forEach((p) => {
-      counts.set(p.category, (counts.get(p.category) || 0) + 1);
-    });
-    return counts;
-  }, [places]);
+  // ─── Search Results ──────────────────────────────────────────────────────
 
-  // Search results
   const searchResults = useMemo(() => {
     if (!query.trim() || !places || !posts || !users || !events) return [];
 
@@ -248,7 +438,8 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
       if (
         place.name.toLowerCase().includes(q) ||
         place.address.toLowerCase().includes(q) ||
-        place.category.toLowerCase().includes(q)
+        place.category.toLowerCase().includes(q) ||
+        CATEGORY_LABELS[place.category].toLowerCase().includes(q)
       ) {
         results.push({ id: `place-${place.id}`, type: "place", data: place });
       }
@@ -300,7 +491,6 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
     return results;
   }, [query, places, posts, users, events, guides]);
 
-  // Group search results by type, merging Google Places into the Places section
   const groupedResults = useMemo(() => {
     const sections = [];
 
@@ -322,12 +512,15 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
 
     // Deduplicate: skip Google results that already exist locally
     const localGooglePlaceIds = new Set(
-      placeResults.map((r) => (r.data as Place).googlePlaceId).filter(Boolean)
+      placeResults
+        .map((r) => (r.data as Place).googlePlaceId)
+        .filter(Boolean)
     );
 
     const uniqueGoogleResults: SearchResult[] = googleResults
       .filter(
-        (gp) => gp.googlePlaceId && !localGooglePlaceIds.has(gp.googlePlaceId)
+        (gp) =>
+          gp.googlePlaceId && !localGooglePlaceIds.has(gp.googlePlaceId)
       )
       .map((gp) => ({
         id: `google-${gp.googlePlaceId}`,
@@ -352,29 +545,24 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
     return sections;
   }, [searchResults, googleResults, googleLoading, hashtagResults]);
 
-  const handlePlacePress = (placeId: string) => {
-    router.push(`/search/place/${placeId}`);
-  };
+  // Filtered sections based on active filter chip
+  const filteredSections = useMemo(() => {
+    if (activeFilter === "all") return groupedResults;
+    const targetTitle = FILTER_TO_SECTION[activeFilter];
+    return groupedResults.filter((s) => s.title === targetTitle);
+  }, [groupedResults, activeFilter]);
 
-  const handleUserPress = (userId: string) => {
-    router.push(`/search/user/${userId}`);
-  };
+  const handleFilterChange = useCallback(
+    (filter: FilterType) => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setActiveFilter(filter);
+    },
+    []
+  );
 
-  const handlePostPress = (postId: string) => {
-    router.push(`/search/post/${postId}`);
-  };
+  // ─── Render Helpers ──────────────────────────────────────────────────────
 
-  const handleEventPress = (eventId: string) => {
-    router.push(`/search/event/${eventId}`);
-  };
-
-  const handleGuidePress = (guideId: string) => {
-    router.push(`/search/guide/${guideId}`);
-  };
-
-  const handleHashtagPress = (tagName: string) => {
-    router.push(`/search/hashtag/${tagName}` as any);
-  };
+  const styles = createStyles(colors);
 
   const renderSearchResult = ({ item }: { item: SearchResult }) => {
     switch (item.type) {
@@ -387,14 +575,14 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
           >
             <View
               style={[
-                styles.resultIcon,
-                { backgroundColor: colors.primary + "20" },
+                styles.resultIconRect,
+                { backgroundColor: colors.primary + "18" },
               ]}
             >
               <SFIcon
                 name="number"
                 fallback="pricetag"
-                size={18}
+                size={20}
                 color={colors.primary}
               />
             </View>
@@ -408,7 +596,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
             <SFIcon
               name="chevron.right"
               fallback="chevron-forward"
-              size={18}
+              size={16}
               color={colors.gray300}
             />
           </HapticPressable>
@@ -418,7 +606,8 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
       case "place": {
         const isGoogle = item.source === "google";
         const place = item.data as Place & Omit<Place, "id">;
-        const isCreating = isGoogle && creatingPlaceId === place.googlePlaceId;
+        const isCreating =
+          isGoogle && creatingPlaceId === place.googlePlaceId;
         return (
           <HapticPressable
             style={styles.resultItem}
@@ -430,14 +619,14 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
           >
             <View
               style={[
-                styles.resultIcon,
+                styles.resultIconRect,
                 { backgroundColor: colors.category[place.category] },
               ]}
             >
               <SFIcon
                 name={CATEGORY_ICONS[place.category].sf}
                 fallback={CATEGORY_ICONS[place.category].fallback}
-                size={18}
+                size={20}
                 color="#FFFFFF"
               />
             </View>
@@ -449,23 +638,38 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
                 >
                   {place.name}
                 </Text>
-                {isGoogle && (
-                  <View style={styles.googleBadge}>
-                    <Text style={styles.googleBadgeText}>Google</Text>
-                  </View>
-                )}
               </View>
-              <Text style={styles.resultSubtitle}>{place.address}</Text>
+              <Text style={styles.resultSubtitle} numberOfLines={1}>
+                {place.address}
+              </Text>
             </View>
             {isCreating ? (
-              <ActivityIndicator size="small" color={colors.primary} />
-            ) : (
-              <SFIcon
-                name="chevron.right"
-                fallback="chevron-forward"
-                size={18}
-                color={colors.gray300}
+              <ShimmerBlock
+                width={16}
+                height={16}
+                borderRadius={8}
+                colors={colors}
               />
+            ) : (
+              <View style={styles.resultTrailing}>
+                <View
+                  style={[
+                    styles.categoryPill,
+                    {
+                      backgroundColor: colors.category[place.category] + "18",
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.categoryPillText,
+                      { color: colors.category[place.category] },
+                    ]}
+                  >
+                    {CATEGORY_LABELS[place.category]}
+                  </Text>
+                </View>
+              </View>
             )}
           </HapticPressable>
         );
@@ -491,7 +695,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
             <SFIcon
               name="chevron.right"
               fallback="chevron-forward"
-              size={18}
+              size={16}
               color={colors.gray300}
             />
           </HapticPressable>
@@ -515,12 +719,15 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
               />
             ) : (
               <View
-                style={[styles.resultIcon, { backgroundColor: colors.gray200 }]}
+                style={[
+                  styles.resultIconRect,
+                  { backgroundColor: colors.gray200 },
+                ]}
               >
                 <SFIcon
                   name="doc.text.fill"
                   fallback="document-text"
-                  size={18}
+                  size={20}
                   color={colors.gray400}
                 />
               </View>
@@ -529,14 +736,30 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
               <Text style={styles.resultTitle} numberOfLines={1}>
                 {post.content}
               </Text>
-              {place && <Text style={styles.resultSubtitle}>{place.name}</Text>}
+              <View style={styles.postMeta}>
+                {place && (
+                  <Text
+                    style={styles.resultSubtitle}
+                    numberOfLines={1}
+                  >
+                    {place.name}
+                  </Text>
+                )}
+              </View>
             </View>
-            <SFIcon
-              name="chevron.right"
-              fallback="chevron-forward"
-              size={18}
-              color={colors.gray300}
-            />
+            {post.likes > 0 && (
+              <View style={styles.likeCount}>
+                <SFIcon
+                  name="heart.fill"
+                  fallback="heart"
+                  size={12}
+                  color={colors.liked}
+                />
+                <Text style={styles.likeCountText}>
+                  {formatNumber(post.likes)}
+                </Text>
+              </View>
+            )}
           </HapticPressable>
         );
       }
@@ -546,11 +769,14 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
         const place = eventPlaces.get(event.placeId);
         if (!place) return null;
         return (
-          <EventCard
-            event={event}
-            place={place}
-            onPress={() => handleEventPress(event.id)}
-          />
+          <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+            <EventCard
+              event={event}
+              place={place}
+              compact
+              onPress={() => handleEventPress(event.id)}
+            />
+          </View>
         );
       }
 
@@ -560,6 +786,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
           <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
             <GuideCard
               guide={guide}
+              compact
               onPress={() => handleGuidePress(guide.id)}
             />
           </View>
@@ -571,18 +798,23 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
     }
   };
 
-  const styles = createStyles(colors);
+  // ─── Error State ─────────────────────────────────────────────────────────
 
   if (placesError && !places) {
     return <QueryErrorState message={placesError} onRetry={refetchPlaces} />;
   }
 
-  // Search results view
+  // ─── Search Mode ─────────────────────────────────────────────────────────
+
   if (query.trim()) {
     return (
-      <View style={styles.container}>
+      <Animated.View
+        style={styles.container}
+        entering={FadeIn.duration(200)}
+        exiting={FadeOut.duration(150)}
+      >
         <SectionList
-          sections={groupedResults}
+          sections={filteredSections}
           keyExtractor={(item) => item.id}
           renderItem={renderSearchResult}
           keyboardDismissMode="on-drag"
@@ -599,11 +831,28 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
           renderSectionFooter={({ section }) => {
             if (section.title === "Places" && googleLoading) {
               return (
-                <View style={styles.googleLoadingRow}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={styles.googleLoadingText}>
-                    Searching Google Places...
-                  </Text>
+                <View style={styles.shimmerRow}>
+                  <ShimmerBlock
+                    width={44}
+                    height={44}
+                    borderRadius={10}
+                    colors={colors}
+                  />
+                  <View style={styles.shimmerTextCol}>
+                    <ShimmerBlock
+                      width={160}
+                      height={14}
+                      borderRadius={4}
+                      colors={colors}
+                    />
+                    <ShimmerBlock
+                      width={100}
+                      height={12}
+                      borderRadius={4}
+                      colors={colors}
+                      style={{ marginTop: 6 }}
+                    />
+                  </View>
                 </View>
               );
             }
@@ -614,22 +863,47 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
             { paddingTop: insets.top },
           ]}
           ListHeaderComponent={
-            onQueryChange ? (
-              <View style={styles.activeFilterBar}>
-                <HapticPressable
-                  style={styles.activeFilterChip}
-                  onPress={() => onQueryChange("")}
-                >
-                  <Text style={styles.activeFilterText}>{query}</Text>
-                  <SFIcon
-                    name="xmark"
-                    fallback="close"
-                    size={16}
-                    color={colors.primary}
-                  />
-                </HapticPressable>
-              </View>
-            ) : null
+            <View>
+              {/* Filter Chip Bar */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterChipBar}
+              >
+                {FILTER_CHIPS.map((chip) => {
+                  const isActive = activeFilter === chip.key;
+                  return (
+                    <HapticPressable
+                      key={chip.key}
+                      style={[
+                        styles.filterChip,
+                        isActive
+                          ? { backgroundColor: colors.primary }
+                          : { backgroundColor: colors.gray100 },
+                      ]}
+                      onPress={() => handleFilterChange(chip.key)}
+                    >
+                      <SFIcon
+                        name={chip.icon}
+                        fallback={chip.fallback}
+                        size={14}
+                        color={isActive ? "#FFFFFF" : colors.textSecondary}
+                      />
+                      <Text
+                        style={[
+                          styles.filterChipText,
+                          isActive
+                            ? { color: "#FFFFFF" }
+                            : { color: colors.text },
+                        ]}
+                      >
+                        {chip.label}
+                      </Text>
+                    </HapticPressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
@@ -639,414 +913,572 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
                 size={48}
                 color={colors.gray300}
               />
-              <Text style={styles.emptyTitle}>No results found</Text>
+              <Text style={styles.emptyTitle}>
+                No results for &ldquo;{query}&rdquo;
+              </Text>
               <Text style={styles.emptySubtext}>
                 Try searching for places, people, or events
               </Text>
             </View>
           }
         />
-      </View>
+      </Animated.View>
     );
   }
 
-  // Browse / discovery view
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={[styles.scrollContent, { paddingTop: insets.top }]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Trending Hashtags */}
-      {(trendingHashtags?.length ?? 0) > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Trending</Text>
-          <View style={styles.chipGrid}>
-            {(trendingHashtags ?? []).map((hashtag) => (
-              <HapticPressable
-                key={hashtag.id}
-                style={styles.trendingChip}
-                onPress={() => handleHashtagPress(hashtag.name)}
-              >
-                <SFIcon
-                  name="number"
-                  fallback="pricetag"
-                  size={14}
-                  color={colors.primary}
-                />
-                <Text style={styles.trendingText}>{hashtag.name}</Text>
-              </HapticPressable>
-            ))}
-          </View>
-        </View>
-      )}
+  // ─── Browse Mode ─────────────────────────────────────────────────────────
 
-      {/* Browse by Category */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Browse by Category</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoryRow}
-        >
-          {ALL_CATEGORIES.map((cat) => (
-            <HapticPressable
-              key={cat}
-              style={styles.categoryCard}
-              onPress={() => onQueryChange?.(cat)}
-            >
-              <View
+  return (
+    <Animated.View
+      style={styles.container}
+      entering={FadeIn.duration(200)}
+      exiting={FadeOut.duration(150)}
+    >
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top },
+        ]}
+        showsVerticalScrollIndicator={false}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+      >
+        {/* ── Quick Categories ─────────────────────────────────────────── */}
+        <View style={styles.section}>
+          <BrowseSectionHeader title="Browse" colors={colors} />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.categoryScrollContent}
+          >
+            {ALL_CATEGORIES.map((cat) => (
+              <HapticPressable
+                key={cat}
                 style={[
-                  styles.categoryIcon,
-                  { backgroundColor: colors.category[cat] },
+                  styles.quickCategoryCard,
+                  {
+                    backgroundColor: colors.category[cat] + "10",
+                    borderColor: colors.category[cat] + "30",
+                  },
                 ]}
+                onPress={() => onQueryChange?.(CATEGORY_LABELS[cat])}
               >
                 <SFIcon
                   name={CATEGORY_ICONS[cat].sf}
                   fallback={CATEGORY_ICONS[cat].fallback}
-                  size={20}
-                  color="#FFFFFF"
+                  size={18}
+                  color={colors.category[cat]}
                 />
-              </View>
-              <Text style={styles.categoryLabel}>{CATEGORY_LABELS[cat]}</Text>
-              <Text style={styles.categoryCount}>
-                {categoryCounts.get(cat) ?? 0}
-              </Text>
-            </HapticPressable>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* Popular Places */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Popular Places</Text>
-        {trendingPlaces.map((place) => (
-          <HapticPressable
-            key={place.id}
-            style={styles.placeRow}
-            onPress={() => handlePlacePress(place.id)}
-          >
-            <View
-              style={[
-                styles.placeRowIcon,
-                { backgroundColor: colors.category[place.category] },
-              ]}
-            >
-              <SFIcon
-                name={CATEGORY_ICONS[place.category].sf}
-                fallback={CATEGORY_ICONS[place.category].fallback}
-                size={18}
-                color="#FFFFFF"
-              />
-            </View>
-            <View style={styles.placeRowText}>
-              <Text style={styles.placeRowName}>{place.name}</Text>
-              <Text style={styles.placeRowAddress} numberOfLines={1}>
-                {place.address}
-              </Text>
-            </View>
-            <View style={styles.placeRowMeta}>
-              <SFIcon
-                name="photo"
-                fallback="image-outline"
-                size={14}
-                color={colors.textMuted}
-              />
-              <Text style={styles.placeRowCount}>{place.postCount}</Text>
-            </View>
-          </HapticPressable>
-        ))}
-      </View>
-
-      {/* Upcoming Events */}
-      {upcomingEvents.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Coming Up</Text>
-          {upcomingEvents.map((event) => {
-            const place = eventPlaces.get(event.placeId);
-            if (!place) return null;
-            return (
-              <EventCard
-                key={event.id}
-                event={event}
-                place={place}
-                onPress={() => handleEventPress(event.id)}
-              />
-            );
-          })}
+                <Text
+                  style={[
+                    styles.quickCategoryLabel,
+                    { color: colors.category[cat] },
+                  ]}
+                >
+                  {CATEGORY_LABELS[cat]}
+                </Text>
+              </HapticPressable>
+            ))}
+          </ScrollView>
         </View>
-      )}
-    </ScrollView>
+
+        {/* ── Trending Hashtags ────────────────────────────────────────── */}
+        {(trendingHashtags?.length ?? 0) > 0 && (
+          <View style={styles.section}>
+            <BrowseSectionHeader title="Trending" colors={colors} />
+            <View style={styles.chipGrid}>
+              {(trendingHashtags ?? []).map((hashtag, index) => (
+                <HapticPressable
+                  key={hashtag.id}
+                  style={styles.trendingChip}
+                  onPress={() => handleHashtagPress(hashtag.name)}
+                >
+                  {index < 3 && (
+                    <SFIcon
+                      name="flame.fill"
+                      fallback="flame"
+                      size={14}
+                      color={colors.primary}
+                    />
+                  )}
+                  <Text style={styles.trendingName}>#{hashtag.name}</Text>
+                  <Text style={styles.trendingCount}>
+                    {formatNumber(hashtag.postCount)}
+                  </Text>
+                </HapticPressable>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* ── Popular Places ───────────────────────────────────────────── */}
+        {trendingPlaces.length > 0 && (
+          <View style={styles.section}>
+            <BrowseSectionHeader title="Popular Places" colors={colors} />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScrollContent}
+            >
+              {trendingPlaces.map((place) => (
+                <HapticPressable
+                  key={place.id}
+                  style={styles.placeCard}
+                  onPress={() => handlePlacePress(place.id)}
+                >
+                  <View
+                    style={[
+                      styles.placeCardAccent,
+                      { backgroundColor: colors.category[place.category] },
+                    ]}
+                  />
+                  <View style={styles.placeCardContent}>
+                    <View style={styles.placeCardHeader}>
+                      <View
+                        style={[
+                          styles.placeCardIcon,
+                          {
+                            backgroundColor:
+                              colors.category[place.category] + "18",
+                          },
+                        ]}
+                      >
+                        <SFIcon
+                          name={CATEGORY_ICONS[place.category].sf}
+                          fallback={CATEGORY_ICONS[place.category].fallback}
+                          size={14}
+                          color={colors.category[place.category]}
+                        />
+                      </View>
+                      <Text
+                        style={[
+                          styles.placeCardCategory,
+                          { color: colors.category[place.category] },
+                        ]}
+                      >
+                        {CATEGORY_LABELS[place.category]}
+                      </Text>
+                    </View>
+                    <Text
+                      style={styles.placeCardName}
+                      numberOfLines={2}
+                    >
+                      {place.name}
+                    </Text>
+                    <Text
+                      style={styles.placeCardAddress}
+                      numberOfLines={1}
+                    >
+                      {place.address}
+                    </Text>
+                    <View style={styles.placeCardFooter}>
+                      <View style={styles.placeCardStat}>
+                        <SFIcon
+                          name="photo"
+                          fallback="image-outline"
+                          size={12}
+                          color={colors.textMuted}
+                        />
+                        <Text style={styles.placeCardStatText}>
+                          {place.postCount}{" "}
+                          {place.postCount === 1 ? "post" : "posts"}
+                        </Text>
+                      </View>
+                      {place.rating != null && (
+                        <View style={styles.placeCardStat}>
+                          <SFIcon
+                            name="star.fill"
+                            fallback="star"
+                            size={12}
+                            color={colors.primary}
+                          />
+                          <Text style={styles.placeCardStatText}>
+                            {place.rating.toFixed(1)}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </HapticPressable>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* ── Upcoming Events ──────────────────────────────────────────── */}
+        {upcomingEvents.length > 0 && (
+          <View style={styles.section}>
+            <BrowseSectionHeader title="Coming Up" colors={colors} />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScrollContent}
+            >
+              {upcomingEvents.map((event) => {
+                const place = eventPlaces.get(event.placeId);
+                if (!place) return null;
+                return (
+                  <View key={event.id} style={styles.eventCardWrapper}>
+                    <EventCard
+                      event={event}
+                      place={place}
+                      compact
+                      onPress={() => handleEventPress(event.id)}
+                    />
+                  </View>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* ── Recent Guides ────────────────────────────────────────────── */}
+        {(guides?.length ?? 0) > 0 && (
+          <View style={styles.section}>
+            <BrowseSectionHeader title="Guides" colors={colors} />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.horizontalScrollContent}
+            >
+              {(guides ?? []).slice(0, 6).map((guide) => (
+                <View key={guide.id} style={styles.guideCardWrapper}>
+                  <GuideCard
+                    guide={guide}
+                    compact
+                    onPress={() => handleGuidePress(guide.id)}
+                  />
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
+      </ScrollView>
+    </Animated.View>
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollContent: {
-    paddingBottom: 100,
-  },
+// ─── Styles ──────────────────────────────────────────────────────────────────
 
-  // Sections
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
+const createStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollContent: {
+      paddingBottom: 100,
+    },
 
-  // Active filter bar
-  activeFilterBar: {
-    flexDirection: "row",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  activeFilterChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.gray100,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 6,
-  },
-  activeFilterText: {
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.primary,
-  },
+    // ── Browse Sections ──────────────────────────────────────────────────
 
-  // Search results section header
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: colors.gray100,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  sectionHeaderText: {
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.textSecondary,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  sectionHeaderCount: {
-    fontSize: 13,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.textMuted,
-  },
+    section: {
+      marginBottom: 28,
+    },
 
-  // Trending chips
-  chipGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    paddingHorizontal: 16,
-    gap: 8,
-  },
-  trendingChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.gray100,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
-  },
-  trendingText: {
-    fontSize: 14,
-    fontWeight: "500",
-    fontFamily: fonts.medium,
-    color: colors.text,
-  },
+    // Quick Categories
+    categoryScrollContent: {
+      paddingHorizontal: 16,
+      gap: 10,
+    },
+    quickCategoryCard: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      borderRadius: 14,
+      gap: 8,
+      borderWidth: 1,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.06,
+      shadowRadius: 4,
+      elevation: 1,
+    },
+    quickCategoryLabel: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+    },
 
-  // Category row
-  categoryRow: {
-    paddingHorizontal: 16,
-    gap: 10,
-  },
-  categoryCard: {
-    alignItems: "center",
-    width: 80,
-  },
-  categoryIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 8,
-  },
-  categoryLabel: {
-    fontSize: 13,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-    textAlign: "center",
-  },
-  categoryCount: {
-    fontSize: 12,
-    color: colors.textMuted,
-    marginTop: 2,
-  },
+    // Trending Hashtags
+    chipGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      paddingHorizontal: 16,
+      gap: 8,
+    },
+    trendingChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      backgroundColor: colors.gray100,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      borderRadius: 20,
+      gap: 6,
+    },
+    trendingName: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+    },
+    trendingCount: {
+      fontSize: 12,
+      fontFamily: fonts.medium,
+      color: colors.textMuted,
+    },
 
-  // Popular places list
-  placeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  placeRowIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  placeRowText: {
-    flex: 1,
-  },
-  placeRowName: {
-    fontSize: 15,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-    marginBottom: 2,
-  },
-  placeRowAddress: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  placeRowMeta: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    marginLeft: 8,
-  },
-  placeRowCount: {
-    fontSize: 13,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.textMuted,
-  },
+    // Popular Places - Horizontal Cards
+    horizontalScrollContent: {
+      paddingHorizontal: 16,
+      gap: 12,
+    },
+    placeCard: {
+      width: 240,
+      backgroundColor: colors.cardBackground,
+      borderRadius: 14,
+      overflow: "hidden",
+      flexDirection: "row",
+      borderWidth: 1,
+      borderColor: colors.border,
+      shadowColor: "#000",
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.06,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    placeCardAccent: {
+      width: 4,
+    },
+    placeCardContent: {
+      flex: 1,
+      padding: 12,
+    },
+    placeCardHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginBottom: 6,
+    },
+    placeCardIcon: {
+      width: 24,
+      height: 24,
+      borderRadius: 6,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    placeCardCategory: {
+      fontSize: 11,
+      fontFamily: fonts.semiBold,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    placeCardName: {
+      fontSize: 15,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+      marginBottom: 2,
+    },
+    placeCardAddress: {
+      fontSize: 12,
+      fontFamily: fonts.medium,
+      color: colors.textMuted,
+      marginBottom: 8,
+    },
+    placeCardFooter: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+    },
+    placeCardStat: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    placeCardStatText: {
+      fontSize: 12,
+      fontFamily: fonts.medium,
+      color: colors.textMuted,
+    },
 
-  // Search results
-  searchResults: {
-    paddingBottom: 100,
-  },
-  resultItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.cardBackground,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  resultIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-  userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 12,
-    backgroundColor: colors.gray200,
-  },
-  postThumbnail: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    marginRight: 12,
-    backgroundColor: colors.gray200,
-  },
-  resultText: {
-    flex: 1,
-  },
-  resultTitle: {
-    fontSize: 15,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-    marginBottom: 2,
-  },
-  resultSubtitle: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
+    // Event Cards
+    eventCardWrapper: {
+      width: 280,
+      borderRadius: 14,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
 
-  // Google Places
-  resultTitleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 2,
-  },
-  googleBadge: {
-    backgroundColor: colors.gray100,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
-    borderRadius: 4,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.gray300,
-  },
-  googleBadgeText: {
-    fontSize: 10,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.textMuted,
-    letterSpacing: 0.3,
-  },
-  googleLoadingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 12,
-    gap: 8,
-    backgroundColor: colors.cardBackground,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-  },
-  googleLoadingText: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
+    // Guide Cards
+    guideCardWrapper: {
+      width: 200,
+    },
 
-  // Empty state
-  emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingTop: 80,
-    gap: 12,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: colors.textMuted,
-    textAlign: "center",
-  },
-});
+    // ── Filter Chips ─────────────────────────────────────────────────────
+
+    filterChipBar: {
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      gap: 8,
+    },
+    filterChip: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 20,
+      gap: 6,
+    },
+    filterChipText: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+    },
+
+    // ── Search Section Headers ───────────────────────────────────────────
+
+    sectionHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      backgroundColor: colors.gray100,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+    },
+    sectionHeaderText: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    },
+    sectionHeaderCount: {
+      fontSize: 13,
+      fontFamily: fonts.semiBold,
+      color: colors.textMuted,
+    },
+
+    // ── Search Results ───────────────────────────────────────────────────
+
+    searchResults: {
+      paddingBottom: 100,
+    },
+    resultItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: colors.cardBackground,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+      gap: 12,
+    },
+    resultIconRect: {
+      width: 44,
+      height: 44,
+      borderRadius: 10,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    userAvatar: {
+      width: 44,
+      height: 44,
+      borderRadius: 22,
+      backgroundColor: colors.gray200,
+    },
+    postThumbnail: {
+      width: 44,
+      height: 44,
+      borderRadius: 10,
+      backgroundColor: colors.gray200,
+    },
+    resultText: {
+      flex: 1,
+    },
+    resultTitle: {
+      fontSize: 15,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+      marginBottom: 2,
+    },
+    resultSubtitle: {
+      fontSize: 13,
+      fontFamily: fonts.medium,
+      color: colors.textMuted,
+    },
+    resultTitleRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginBottom: 2,
+    },
+    resultTrailing: {
+      alignItems: "flex-end",
+    },
+    postMeta: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    likeCount: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    likeCountText: {
+      fontSize: 12,
+      fontFamily: fonts.semiBold,
+      color: colors.textMuted,
+    },
+
+    // Category pill badge
+    categoryPill: {
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
+    },
+    categoryPillText: {
+      fontSize: 11,
+      fontFamily: fonts.semiBold,
+      letterSpacing: 0.3,
+    },
+
+
+    // Shimmer loading row
+    shimmerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      backgroundColor: colors.cardBackground,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.border,
+      gap: 12,
+    },
+    shimmerTextCol: {
+      flex: 1,
+    },
+
+    // ── Empty State ──────────────────────────────────────────────────────
+
+    emptyState: {
+      alignItems: "center",
+      justifyContent: "center",
+      paddingTop: 80,
+      gap: 12,
+    },
+    emptyTitle: {
+      fontSize: 18,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+    },
+    emptySubtext: {
+      fontSize: 14,
+      fontFamily: fonts.medium,
+      color: colors.textMuted,
+      textAlign: "center",
+    },
+  });
