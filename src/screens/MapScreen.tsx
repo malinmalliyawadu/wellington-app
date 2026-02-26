@@ -14,12 +14,17 @@ import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { PopularityMarker, MarkerEvent } from "../components/PopularityMarker";
+import { ClusterMarker } from "../components/ClusterMarker";
 import { NeighborhoodOverlay } from "../components/NeighborhoodOverlay";
 import { TrailOverlay } from "../components/TrailOverlay";
 import { MapControls } from "../components/MapControls";
 import { useFollow } from "../context/FollowContext";
 import { useMapFilters } from "../context/MapFilterContext";
 import { useMapData } from "../hooks/useMapData";
+import {
+  useMarkerClustering,
+  regionToZoom,
+} from "../hooks/useMarkerClustering";
 import { useMarkerAnimation } from "../hooks/useMarkerAnimation";
 import { useExplorationTracking } from "../hooks/useExplorationTracking";
 import { WELLINGTON_REGION, isInWellington } from "../constants/wellington";
@@ -107,6 +112,9 @@ export function MapScreen() {
     useMapFilters();
 
   const [visibleRegion, setVisibleRegion] = useState<Region>(WELLINGTON_REGION);
+  const [currentZoom, setCurrentZoom] = useState(() =>
+    regionToZoom(WELLINGTON_REGION.longitudeDelta)
+  );
   const [mapLayout, setMapLayout] = useState<{ width: number; height: number }>(
     { width: 0, height: 0 }
   );
@@ -130,7 +138,15 @@ export function MapScreen() {
     mapLayout,
   });
 
-  const { getMarkerScale, animateMarkerAppear, animateMarkerPress } = useMarkerAnimation();
+  const { mapItems, clusteredTrailIds } = useMarkerClustering({
+    filteredPlaces,
+    trails,
+    showTrails,
+    zoom: currentZoom,
+  });
+
+  const { getMarkerScale, animateMarkerAppear, animateMarkerPress } =
+    useMarkerAnimation();
 
   useExplorationTracking(userCoords, places, true);
 
@@ -156,12 +172,32 @@ export function MapScreen() {
     [animateMarkerPress, openPlaceSheet]
   );
 
+  const handleClusterPress = useCallback(
+    (latitude: number, longitude: number, expansionZoom: number) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      const delta = 360 / Math.pow(2, expansionZoom);
+      mapRef.current?.animateToRegion(
+        {
+          latitude,
+          longitude,
+          latitudeDelta: delta,
+          longitudeDelta: delta,
+        },
+        300
+      );
+    },
+    []
+  );
+
   const regionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleRegionChangeComplete = useCallback((region: Region) => {
+    // Update zoom immediately so clustering responds without delay
+    setCurrentZoom(regionToZoom(region.longitudeDelta));
+    // Debounce the full region (used by annotatedPlaceIds, etc.)
     if (regionTimerRef.current) clearTimeout(regionTimerRef.current);
     regionTimerRef.current = setTimeout(() => {
       setVisibleRegion(region);
-    }, 150);
+    }, 50);
   }, []);
 
   useEffect(() => {
@@ -285,10 +321,42 @@ export function MapScreen() {
             trails={trails ?? []}
             activeTrailId={activeTrailId}
             onTrailPress={handleTrailPress}
+            clusteredTrailIds={clusteredTrailIds}
           />
         )}
         {!isInitialLoad &&
-          filteredPlaces.map((place) => {
+          mapItems.map((item) => {
+            if (item.kind === "cluster") {
+              return (
+                <Marker
+                  key={`cluster-${item.category}-${item.id}`}
+                  coordinate={{
+                    latitude: item.latitude,
+                    longitude: item.longitude,
+                  }}
+                  anchor={{ x: 0.5, y: 0.5 }}
+                  tracksViewChanges={false}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    handleClusterPress(
+                      item.latitude,
+                      item.longitude,
+                      item.expansionZoom
+                    );
+                  }}
+                >
+                  <ClusterMarker category={item.category} count={item.count} />
+                </Marker>
+              );
+            }
+
+            if (item.kind === "trail") {
+              // Trail markers are rendered by TrailOverlay
+              return null;
+            }
+
+            // kind === "place"
+            const place = item.place;
             const data = baseMarkerDataMap.get(place.id);
             if (!data) return null;
             return (

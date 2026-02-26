@@ -11,12 +11,14 @@ interface TrailOverlayProps {
   trails: Trail[];
   activeTrailId: string | null;
   onTrailPress: (trailId: string) => void;
+  clusteredTrailIds?: Set<string>;
 }
 
 export function TrailOverlay({
   trails,
   activeTrailId,
   onTrailPress,
+  clusteredTrailIds,
 }: TrailOverlayProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -25,6 +27,7 @@ export function TrailOverlay({
     <>
       {trails.map((trail) => {
         const isDimmed = activeTrailId !== null && activeTrailId !== trail.id;
+        const isClustered = clusteredTrailIds?.has(trail.id) ?? false;
         return (
           <React.Fragment key={trail.id}>
             <Polyline
@@ -48,49 +51,53 @@ export function TrailOverlay({
               lineJoin="round"
               tappable={false}
             />
-            <Marker
-              coordinate={trail.coordinates[0]}
-              anchor={{ x: 0.5, y: 0 }}
-              opacity={isDimmed ? 0.1 : 1}
-              zIndex={activeTrailId === trail.id ? 999 : 1}
-              tracksViewChanges={false}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onTrailPress(trail.id);
-              }}
-            >
-              <View style={styles.trailMarker}>
-                <View style={styles.trailMarkerPin}>
-                  <SFIcon
-                    name="figure.hiking"
-                    fallback="walk"
-                    size={16}
-                    color="#FFFFFF"
-                  />
+            {!isClustered && (
+              <Marker
+                coordinate={trail.coordinates[0]}
+                anchor={{ x: 0.5, y: 0 }}
+                opacity={isDimmed ? 0.1 : 1}
+                zIndex={activeTrailId === trail.id ? 999 : 1}
+                tracksViewChanges={false}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onTrailPress(trail.id);
+                }}
+              >
+                <View style={styles.trailMarker}>
+                  <View style={styles.trailMarkerPin}>
+                    <SFIcon
+                      name="figure.hiking"
+                      fallback="walk"
+                      size={16}
+                      color="#FFFFFF"
+                    />
+                  </View>
+                  <View style={styles.trailMarkerLabel}>
+                    <Text style={styles.trailMarkerName}>{trail.name}</Text>
+                    <Text style={styles.trailMarkerInfo}>
+                      {trail.elevation} · {trail.distance}
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.trailMarkerLabel}>
-                  <Text style={styles.trailMarkerName}>{trail.name}</Text>
-                  <Text style={styles.trailMarkerInfo}>
-                    {trail.elevation} · {trail.distance}
-                  </Text>
+              </Marker>
+            )}
+            {!isClustered && (
+              <Marker
+                coordinate={trail.coordinates[trail.coordinates.length - 1]}
+                anchor={{ x: 0.5, y: 0.5 }}
+                opacity={isDimmed ? 0.1 : 1}
+                zIndex={activeTrailId === trail.id ? 998 : 1}
+                tracksViewChanges={false}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  onTrailPress(trail.id);
+                }}
+              >
+                <View style={styles.trailheadDot}>
+                  <View style={styles.trailheadDotInner} />
                 </View>
-              </View>
-            </Marker>
-            <Marker
-              coordinate={trail.coordinates[trail.coordinates.length - 1]}
-              anchor={{ x: 0.5, y: 0.5 }}
-              opacity={isDimmed ? 0.1 : 1}
-              zIndex={activeTrailId === trail.id ? 998 : 1}
-              tracksViewChanges={false}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onTrailPress(trail.id);
-              }}
-            >
-              <View style={styles.trailheadDot}>
-                <View style={styles.trailheadDotInner} />
-              </View>
-            </Marker>
+              </Marker>
+            )}
           </React.Fragment>
         );
       })}
