@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { View, Text, FlatList, StyleSheet, RefreshControl, Platform } from "react-native";
+import { View, Text, FlatList, StyleSheet, RefreshControl, Platform, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useHeaderHeight } from "@react-navigation/elements";
@@ -9,12 +9,12 @@ import { useFollow } from "../context/FollowContext";
 import { useAuth } from "../context/AuthContext";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { useQuery } from "../hooks/useQuery";
-import { useQueryClient } from "@tanstack/react-query";
-import { getFeedPosts } from "../services/posts";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { getFeedPostsPaginated } from "../services/posts";
 import { getFeedGuides } from "../services/guides";
 import { getProfilesByIds, getProfileByUsername } from "../services/users";
 import { getPlaces } from "../services/places";
-import { sortPosts } from "../utils/postSorting";
+import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 import { QueryErrorState } from "../components/QueryErrorState";
@@ -30,15 +30,26 @@ export function FeedScreen() {
   const queryClient = useQueryClient();
   const headerHeight = useHeaderHeight();
 
-  const fetchFeedPosts = useCallback(
-    () => getFeedPosts(followingIds, profile?.id),
-    [followingIds, profile?.id]
-  );
   const {
-    data: feedPosts,
-    error: feedError,
+    data: postsData,
+    error: postsError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     refetch: refetchPosts,
-  } = useQuery(fetchFeedPosts, [followingIds, profile?.id], { staleTime: 60_000 });
+  } = useInfiniteQuery({
+    queryKey: ['feedPosts', followingIds, profile?.id],
+    queryFn: ({ pageParam }) =>
+      getFeedPostsPaginated(followingIds, profile?.id, pageParam),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    staleTime: 60_000,
+  });
+
+  const feedPosts = useMemo(
+    () => postsData?.pages.flatMap((page) => page.posts) ?? [],
+    [postsData]
+  );
 
   const fetchFeedGuidesData = useCallback(
     () => getFeedGuides(followingIds, profile?.id),
@@ -51,12 +62,12 @@ export function FeedScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
 
-  // Refetch data when screen comes into focus (e.g., after creating a new post)
+  // Invalidate data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
     useCallback(() => {
-      refetchPosts();
+      queryClient.invalidateQueries({ queryKey: ['feedPosts'] });
       refetchGuides();
-    }, [refetchPosts, refetchGuides])
+    }, [queryClient, refetchGuides])
   );
 
   const onRefresh = useCallback(async () => {
@@ -68,9 +79,15 @@ export function FeedScreen() {
     }
   }, [refetchPosts, refetchGuides]);
 
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   // Fetch all users and places for the feed
   const userIds = useMemo(() => {
-    const postUserIds = (feedPosts ?? []).map((p) => p.userId);
+    const postUserIds = feedPosts.map((p) => p.userId);
     const guideUserIds = (feedGuides ?? []).map((g) => g.userId);
     return [...new Set([...postUserIds, ...guideUserIds])];
   }, [feedPosts, feedGuides]);
@@ -82,10 +99,8 @@ export function FeedScreen() {
   // Pre-populate per-post and per-user cache entries so navigating to
   // PostDetailScreen or UserProfileScreen returns data instantly (no "Unknown" flash)
   useEffect(() => {
-    if (feedPosts) {
-      for (const post of feedPosts) {
-        queryClient.setQueryData(['q', ['post', post.id]], post);
-      }
+    for (const post of feedPosts) {
+      queryClient.setQueryData(['q', ['post', post.id]], post);
     }
   }, [feedPosts, queryClient]);
 
@@ -112,9 +127,8 @@ export function FeedScreen() {
 
     const items: FeedItem[] = [];
 
-    // Add posts
-    const sorted = sortPosts(feedPosts ?? []);
-    for (const post of sorted) {
+    // Add posts (already in chronological order from pagination)
+    for (const post of feedPosts) {
       const user = userMap.get(post.userId);
       const place = placeMap.get(post.placeId);
       if (user && place) {
@@ -122,19 +136,25 @@ export function FeedScreen() {
       }
     }
 
-    // Add guides
+    // Add guides — only include guides within the loaded date range
+    // to avoid chronological gaps when more posts haven't loaded yet
+    const oldestPostDate = feedPosts.length > 0
+      ? feedPosts[feedPosts.length - 1].createdAt
+      : null;
+
     for (const guide of feedGuides ?? []) {
       const user = userMap.get(guide.userId);
-      if (user) {
-        items.push({ type: 'guide', guide, user, sortDate: guide.createdAt });
-      }
+      if (!user) continue;
+      // If there are more post pages to load, only show guides newer than the oldest loaded post
+      if (hasNextPage && oldestPostDate && guide.createdAt < oldestPostDate) continue;
+      items.push({ type: 'guide', guide, user, sortDate: guide.createdAt });
     }
 
     // Sort combined feed by date descending
     items.sort((a, b) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime());
 
     return items;
-  }, [feedPosts, feedGuides, users, places]);
+  }, [feedPosts, feedGuides, users, places, hasNextPage]);
 
   const handlePressUser = useCallback(
     (userId: string) => router.push(`/feed/user/${userId}`),
@@ -211,8 +231,32 @@ export function FeedScreen() {
 
   const styles = createStyles(colors);
 
-  if (feedError && !feedPosts) {
-    return <QueryErrorState message={feedError} onRetry={refetchPosts} />;
+  const renderFooter = useCallback(() => {
+    if (isFetchingNextPage) {
+      return (
+        <View style={styles.footerContainer}>
+          <ActivityIndicator size="small" color={colors.primary} />
+        </View>
+      );
+    }
+    if (!hasNextPage && feedItems.length > 0) {
+      return (
+        <View style={styles.footerContainer}>
+          <SFIcon name="checkmark.circle.fill" fallback="checkmark-circle" size={28} color={colors.gray300} />
+          <Text style={styles.footerText}>You're all caught up</Text>
+        </View>
+      );
+    }
+    return null;
+  }, [isFetchingNextPage, hasNextPage, feedItems.length, colors.primary, styles]);
+
+  if (postsError && feedPosts.length === 0) {
+    return (
+      <QueryErrorState
+        message={postsError.message}
+        onRetry={() => refetchPosts()}
+      />
+    );
   }
 
   return (
@@ -226,6 +270,9 @@ export function FeedScreen() {
         maxToRenderPerBatch={5}
         initialNumToRender={3}
         removeClippedSubviews={Platform.OS === "android"}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -296,5 +343,15 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     fontFamily: fonts.semiBold,
+  },
+  footerContainer: {
+    alignItems: "center",
+    paddingVertical: 28,
+    gap: 8,
+  },
+  footerText: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.textMuted,
   },
 });

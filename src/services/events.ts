@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import type { Event } from '../types';
+import type { Event, EventCategory } from '../types';
 
 export async function getUpcomingEvents(): Promise<Event[]> {
   const today = new Date().toISOString().split('T')[0];
@@ -36,6 +36,87 @@ export async function getUpcomingEvents(): Promise<Event[]> {
   }
 
   return events;
+}
+
+const EVENTS_PAGE_SIZE = 20;
+
+export async function getUpcomingEventsPaginated(params: {
+  offset: number;
+  limit?: number;
+  dateRange?: { start: string; end: string };
+  categories?: EventCategory[];
+  freeOnly?: boolean;
+  followingUserIds?: string[];
+}): Promise<{ events: Event[]; hasMore: boolean }> {
+  const limit = params.limit ?? EVENTS_PAGE_SIZE;
+
+  let query = supabase.from('events').select('*');
+
+  // Date filter
+  if (params.dateRange) {
+    query = query
+      .gte('date', params.dateRange.start)
+      .lte('date', params.dateRange.end);
+  } else {
+    const today = new Date().toISOString().split('T')[0];
+    query = query.gte('date', today);
+  }
+
+  // Category filter
+  if (params.categories && params.categories.length > 0) {
+    query = query.in('category', params.categories);
+  }
+
+  // Free-only filter
+  if (params.freeOnly) {
+    query = query.or('price.is.null,price.eq.0');
+  }
+
+  // Following-only filter: pre-fetch event IDs attended by followed users
+  if (params.followingUserIds && params.followingUserIds.length > 0) {
+    const { data: attendedRows } = await supabase
+      .from('event_attendees')
+      .select('event_id')
+      .in('user_id', params.followingUserIds);
+
+    const attendedEventIds = [
+      ...new Set((attendedRows ?? []).map((r) => r.event_id)),
+    ];
+    if (attendedEventIds.length === 0) return { events: [], hasMore: false };
+    query = query.in('id', attendedEventIds);
+  }
+
+  query = query
+    .order('date', { ascending: true })
+    .range(params.offset, params.offset + limit - 1);
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const events = (data ?? []).map(mapEvent);
+
+  // Batch-fetch attendees for this page
+  if (events.length > 0) {
+    const eventIds = events.map((e) => e.id);
+    const { data: attendeeRows } = await supabase
+      .from('event_attendees')
+      .select('event_id, user_id')
+      .in('event_id', eventIds);
+
+    if (attendeeRows) {
+      const attendeeMap = new Map<string, string[]>();
+      for (const row of attendeeRows) {
+        const list = attendeeMap.get(row.event_id) ?? [];
+        list.push(row.user_id);
+        attendeeMap.set(row.event_id, list);
+      }
+      for (const event of events) {
+        event.attendeeIds = attendeeMap.get(event.id) ?? [];
+      }
+    }
+  }
+
+  return { events, hasMore: events.length === limit };
 }
 
 export async function getEventById(eventId: string): Promise<Event | null> {

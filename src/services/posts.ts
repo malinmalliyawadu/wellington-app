@@ -93,6 +93,41 @@ export async function getFeedPosts(followingIds: string[], currentUserId?: strin
   return (data ?? []).map(mapPost);
 }
 
+const FEED_PAGE_SIZE = 15;
+
+export async function getFeedPostsPaginated(
+  followingIds: string[],
+  currentUserId: string | undefined,
+  cursor: string | null,
+  limit: number = FEED_PAGE_SIZE
+): Promise<{ posts: Post[]; nextCursor: string | null }> {
+  const userIds = currentUserId
+    ? [...new Set([...followingIds, currentUserId])]
+    : followingIds;
+
+  if (userIds.length === 0) return { posts: [], nextCursor: null };
+
+  let query = supabase
+    .from('posts')
+    .select(POST_SELECT)
+    .in('user_id', userIds)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (cursor) {
+    query = query.lt('created_at', cursor);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+
+  const posts = (data ?? []).map(mapPost);
+  const nextCursor =
+    posts.length === limit ? posts[posts.length - 1].createdAt : null;
+
+  return { posts, nextCursor };
+}
+
 export async function updatePost(id: string, content: string): Promise<void> {
   const { error } = await supabase
     .from('posts')

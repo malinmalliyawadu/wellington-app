@@ -15,9 +15,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { SFSymbol } from "expo-symbols";
 import { SFIcon } from "../components/SFIcon";
 import { EventCard } from "../components/EventCard";
-import { getUpcomingEvents } from "../services/events";
+import { getUpcomingEventsPaginated } from "../services/events";
 import { getPlaces } from "../services/places";
 import { useQuery } from "../hooks/useQuery";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useFollow } from "../context/FollowContext";
 import { useEventFilters } from "../context/EventFilterContext";
 import { useTheme, type Colors } from "../theme/ThemeContext";
@@ -148,8 +149,9 @@ export function EventsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const navigation = useNavigation();
-  const { isFollowing } = useFollow();
+  const { followingIds } = useFollow();
   const headerHeight = useHeaderHeight();
+  const queryClient = useQueryClient();
   const {
     selectedDateRange,
     selectedCategories,
@@ -162,13 +164,51 @@ export function EventsScreen() {
     registerOpenDrawer(() => navigation.dispatch(DrawerActions.openDrawer()));
   }, [navigation, registerOpenDrawer]);
 
-  const fetchEvents = useCallback(() => getUpcomingEvents(), []);
+  // Build filter params for the query key and function
+  const dateRangeParam = selectedDateRange
+    ? getDateRange(selectedDateRange)
+    : undefined;
+  const categoriesParam =
+    selectedCategories.length > 0 ? selectedCategories : undefined;
+  const followingParam =
+    showFollowingOnly && followingIds.length > 0 ? followingIds : undefined;
+
   const {
-    data: events,
-    loading: loadingEvents,
+    data: eventsData,
+    isPending: loadingEvents,
     error: eventsError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     refetch: refetchEvents,
-  } = useQuery(fetchEvents, "events");
+  } = useInfiniteQuery({
+    queryKey: [
+      'events',
+      dateRangeParam,
+      categoriesParam,
+      showFreeOnly,
+      followingParam,
+    ],
+    queryFn: ({ pageParam }) =>
+      getUpcomingEventsPaginated({
+        offset: pageParam,
+        dateRange: dateRangeParam,
+        categories: categoriesParam,
+        freeOnly: showFreeOnly,
+        followingUserIds: followingParam,
+      }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage.hasMore) return undefined;
+      return allPages.reduce((sum, page) => sum + page.events.length, 0);
+    },
+    staleTime: 60_000,
+  });
+
+  const events = useMemo(
+    () => eventsData?.pages.flatMap((page) => page.events) ?? [],
+    [eventsData]
+  );
 
   const fetchPlaces = useCallback(() => getPlaces(), []);
   const { data: places, refetch: refetchPlaces } = useQuery(
@@ -176,11 +216,11 @@ export function EventsScreen() {
     "places"
   );
 
-  // Refetch when screen comes into focus
+  // Invalidate when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      refetchEvents();
-    }, [refetchEvents])
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    }, [queryClient])
   );
 
   const [refreshing, setRefreshing] = useState(false);
@@ -193,6 +233,12 @@ export function EventsScreen() {
     }
   }, [refetchEvents, refetchPlaces]);
 
+  const handleLoadMore = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const placeMap = useMemo(
     () => new Map((places ?? []).map((p) => [p.id, p])),
     [places]
@@ -200,7 +246,7 @@ export function EventsScreen() {
 
   const eventsWithPlaces = useMemo(
     () =>
-      (events ?? [])
+      events
         .map((event) => {
           const place = placeMap.get(event.placeId);
           if (!place) return null;
@@ -210,41 +256,9 @@ export function EventsScreen() {
     [events, placeMap]
   );
 
-  const filteredEvents = useMemo(() => {
-    return eventsWithPlaces.filter(({ event }) => {
-      if (selectedDateRange) {
-        const { start, end } = getDateRange(selectedDateRange);
-        if (event.date < start || event.date > end) return false;
-      }
-      if (
-        selectedCategories.length > 0 &&
-        !selectedCategories.includes(event.category)
-      ) {
-        return false;
-      }
-      if (
-        showFollowingOnly &&
-        !(event.attendeeIds ?? []).some((id) => isFollowing(id))
-      ) {
-        return false;
-      }
-      if (showFreeOnly && event.price != null && event.price > 0) {
-        return false;
-      }
-      return true;
-    });
-  }, [
-    eventsWithPlaces,
-    selectedDateRange,
-    selectedCategories,
-    showFollowingOnly,
-    showFreeOnly,
-    isFollowing,
-  ]);
-
   const sections = useMemo(() => {
-    const grouped = new Map<TimeSection, typeof filteredEvents>();
-    for (const item of filteredEvents) {
+    const grouped = new Map<TimeSection, typeof eventsWithPlaces>();
+    for (const item of eventsWithPlaces) {
       const section = getEventSection(item.event.date, item.event.startTime);
       if (!grouped.has(section)) grouped.set(section, []);
       grouped.get(section)!.push(item);
@@ -257,7 +271,7 @@ export function EventsScreen() {
       isFirst: index === 0,
       data: grouped.get(k)!,
     }));
-  }, [filteredEvents]);
+  }, [eventsWithPlaces]);
 
   const activeFilterCount =
     (selectedDateRange ? 1 : 0) +
@@ -284,6 +298,25 @@ export function EventsScreen() {
 
   const styles = createStyles(colors);
 
+  const renderFooter = useCallback(() => {
+    if (isFetchingNextPage) {
+      return (
+        <View style={styles.footerContainer}>
+          <ActivityIndicator size="small" color={colors.primary} />
+        </View>
+      );
+    }
+    if (!hasNextPage && events.length > 0) {
+      return (
+        <View style={styles.footerContainer}>
+          <SFIcon name="sparkles" fallback="sparkles" size={28} color={colors.gray300} />
+          <Text style={styles.footerText}>That's everything for now</Text>
+        </View>
+      );
+    }
+    return null;
+  }, [isFetchingNextPage, hasNextPage, events.length, colors.primary, styles]);
+
   if (loadingEvents) {
     return (
       <View
@@ -301,8 +334,13 @@ export function EventsScreen() {
     );
   }
 
-  if (eventsError && !events) {
-    return <QueryErrorState message={eventsError} onRetry={refetchEvents} />;
+  if (eventsError && events.length === 0) {
+    return (
+      <QueryErrorState
+        message={eventsError.message}
+        onRetry={() => refetchEvents()}
+      />
+    );
   }
 
   return (
@@ -339,6 +377,9 @@ export function EventsScreen() {
             </View>
           </View>
         )}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -452,5 +493,15 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     fontWeight: "600",
     fontFamily: fonts.semiBold,
     color: colors.primary,
+  },
+  footerContainer: {
+    alignItems: "center",
+    paddingVertical: 28,
+    gap: 8,
+  },
+  footerText: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.textMuted,
   },
 });

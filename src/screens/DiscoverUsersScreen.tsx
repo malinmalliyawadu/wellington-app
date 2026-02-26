@@ -36,12 +36,15 @@ export function DiscoverUsersScreen() {
     }, [refetchUsers])
   );
 
-  // Show unfollowed users first, then followed users
-  const sorted = useMemo(() => allUsers.slice().sort((a, b) => {
-    const aFollowed = isFollowing(a.id) ? 1 : 0;
-    const bFollowed = isFollowing(b.id) ? 1 : 0;
-    return aFollowed - bFollowed;
-  }), [allUsers, isFollowing]);
+  // Filter out private profiles unless the current user follows them
+  // Then show unfollowed users first, followed users last
+  const sorted = useMemo(() => allUsers
+    .filter((u) => u.profileVisibility !== 'private' || isFollowing(u.id))
+    .sort((a, b) => {
+      const aFollowed = isFollowing(a.id) ? 1 : 0;
+      const bFollowed = isFollowing(b.id) ? 1 : 0;
+      return aFollowed - bFollowed;
+    }), [allUsers, isFollowing]);
 
   if (usersError && !otherUsers) {
     return <QueryErrorState message={usersError} onRetry={refetchUsers} />;
