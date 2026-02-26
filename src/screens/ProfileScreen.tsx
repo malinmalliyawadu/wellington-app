@@ -2,6 +2,7 @@ import React, { useCallback, useMemo, useState } from "react";
 import {
   View,
   Text,
+  FlatList,
   ScrollView,
   StyleSheet,
   RefreshControl,
@@ -9,6 +10,7 @@ import {
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useAuth } from "../context/AuthContext";
 import { useQuery } from "../hooks/useQuery";
@@ -16,9 +18,11 @@ import { getPostsByUserId } from "../services/posts";
 import { getPlaces } from "../services/places";
 import { getFollowCounts } from "../services/follows";
 import { getEventsByUserId } from "../services/events";
+import { getGuidesByUserId } from "../services/guides";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { PostsGrid } from "../components/PostsGrid";
-import { UpcomingEvents } from "../components/UpcomingEvents";
+import { EventCard } from "../components/EventCard";
+import { GuideCard } from "../components/GuideCard";
 import { fonts } from "../theme/fonts";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { useInstagramConnection } from "../hooks/useInstagramConnection";
@@ -26,142 +30,20 @@ import { HapticPressable } from "src/components/HapticPressable";
 import { QueryErrorState } from "../components/QueryErrorState";
 import { SFIcon } from "../components/SFIcon";
 import { SocialLinks } from "../components/SocialLinks";
-import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
-import { useSave } from "../context/SaveContext";
+import { formatNumber } from "../utils/formatNumber";
 
-const glassEnabled = isLiquidGlassAvailable();
-
-const QUICK_ACTIONS = [
-  {
-    label: "Awards",
-    icon: "trophy" as const,
-    fallback: "trophy-outline" as const,
-    tint: "#F5A623",
-    route: "/profile/achievements" as const,
-  },
-  {
-    label: "Guides",
-    icon: "book" as const,
-    fallback: "book-outline" as const,
-    tint: "#0077B6",
-    route: "/profile/guides" as const,
-  },
-  {
-    label: "Saved",
-    icon: "bookmark" as const,
-    fallback: "bookmark-outline" as const,
-    tint: "#E8962E",
-    route: "/profile/saved" as const,
-  },
-] as const;
-
-function QuickActions() {
-  const { colors } = useTheme();
-  const router = useRouter();
-  const { profile } = useAuth();
-  const { getSavedIds } = useSave();
-
-  const totalSaved =
-    getSavedIds("post").length +
-    getSavedIds("place").length +
-    getSavedIds("event").length;
-
-  return (
-    <View style={quickStyles.row}>
-      {QUICK_ACTIONS.map((action) => {
-        const hasBadge = action.label === "Saved" && totalSaved > 0;
-        const tileStyle = [
-          quickStyles.tile,
-          { backgroundColor: action.tint + "1F" },
-        ];
-        const content = (
-          <>
-            <SFIcon
-              name={action.icon}
-              fallback={action.fallback}
-              size={18}
-              color={action.tint}
-            />
-            <Text style={[quickStyles.label, { color: colors.text }]}>
-              {action.label}
-            </Text>
-          </>
-        );
-        return (
-          <HapticPressable
-            key={action.label}
-            style={quickStyles.tileWrapper}
-            onPress={() => {
-              if (action.label === "Guides") {
-                router.push({
-                  pathname: action.route as any,
-                  params: { userId: profile?.id },
-                });
-              } else {
-                router.push(action.route as any);
-              }
-            }}
-          >
-            {glassEnabled ? (
-              <GlassView glassEffectStyle="regular" style={tileStyle}>
-                {content}
-              </GlassView>
-            ) : (
-              <View style={tileStyle}>{content}</View>
-            )}
-            {hasBadge && (
-              <View
-                style={[quickStyles.badge, { backgroundColor: colors.error }]}
-              />
-            )}
-          </HapticPressable>
-        );
-      })}
-    </View>
-  );
-}
-
-const quickStyles = StyleSheet.create({
-  row: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 16,
-    width: "100%",
-  },
-  tileWrapper: {
-    flex: 1,
-    position: "relative",
-  },
-  tile: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 6,
-    height: 42,
-    borderRadius: 21,
-    overflow: "hidden",
-  },
-  badge: {
-    position: "absolute",
-    top: -2,
-    right: -2,
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
-  },
-  label: {
-    fontSize: 14,
-    fontFamily: fonts.semiBold,
-  },
-});
+type Tab = "posts" | "events" | "guides";
 
 export function ProfileScreen() {
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const router = useRouter();
   const { profile } = useAuth();
 
   const { isConnected: igConnected } = useInstagramConnection();
+
+  const [activeTab, setActiveTab] = useState<Tab>("posts");
 
   const currentUser = profile ?? {
     id: "",
@@ -180,10 +62,12 @@ export function ProfileScreen() {
     error: postsError,
     refetch: refetchPosts,
   } = useQuery(fetchPosts, ["posts", "user", currentUser.id]);
+
   const { data: allPlaces, refetch: refetchPlaces } = useQuery(
     getPlaces,
     "places"
   );
+
   const fetchCounts = useCallback(
     () => getFollowCounts(currentUser.id),
     [currentUser.id]
@@ -192,6 +76,7 @@ export function ProfileScreen() {
     "follow-counts",
     currentUser.id,
   ]);
+
   const fetchEvents = useCallback(
     () => getEventsByUserId(currentUser.id),
     [currentUser.id]
@@ -201,14 +86,25 @@ export function ProfileScreen() {
     "user",
     currentUser.id,
   ]);
-  // Refetch data when screen comes into focus (e.g., after creating a new post)
+
+  const fetchGuides = useCallback(
+    () => getGuidesByUserId(currentUser.id),
+    [currentUser.id]
+  );
+  const { data: guides, refetch: refetchGuides } = useQuery(fetchGuides, [
+    "guides",
+    "user",
+    currentUser.id,
+  ]);
+
   useFocusEffect(
     useCallback(() => {
       refetchPosts();
       refetchPlaces();
       refetchCounts();
       refetchEvents();
-    }, [refetchPosts, refetchPlaces, refetchCounts, refetchEvents])
+      refetchGuides();
+    }, [refetchPosts, refetchPlaces, refetchCounts, refetchEvents, refetchGuides])
   );
 
   const [avatarError, setAvatarError] = useState(!currentUser.avatarUrl);
@@ -222,11 +118,12 @@ export function ProfileScreen() {
         refetchPlaces(),
         refetchCounts(),
         refetchEvents(),
+        refetchGuides(),
       ]);
     } finally {
       setRefreshing(false);
     }
-  }, [refetchPosts, refetchPlaces, refetchCounts, refetchEvents]);
+  }, [refetchPosts, refetchPlaces, refetchCounts, refetchEvents, refetchGuides]);
 
   const postCount = posts?.length ?? 0;
   const followerCount = counts?.followers ?? 0;
@@ -255,119 +152,282 @@ export function ProfileScreen() {
 
   const styles = createStyles(colors);
 
-  if (postsError && !posts) {
-    return <QueryErrorState message={postsError} onRetry={refetchPosts} />;
-  }
+  const tabs: { key: Tab; label: string; count: number }[] = [
+    { key: "posts", label: "Posts", count: postCount },
+    { key: "events", label: "Events", count: userEvents.length },
+    { key: "guides", label: "Guides", count: guides?.length ?? 0 },
+  ];
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case "posts":
+        if (postsError && !posts) {
+          return (
+            <QueryErrorState
+              message={postsError}
+              onRetry={refetchPosts}
+              fullScreen={false}
+            />
+          );
+        }
+        return (
+          <PostsGrid
+            posts={userPosts}
+            onPostPress={(postId) => router.push(`/profile/post/${postId}`)}
+            emptyText="No posts yet"
+          />
+        );
+
+      case "events":
+        if (!userEvents || userEvents.length === 0) {
+          return (
+            <View style={styles.emptyState}>
+              <SFIcon
+                name="calendar"
+                fallback="calendar-outline"
+                size={40}
+                color={colors.gray300}
+              />
+              <Text style={styles.emptyText}>No events yet</Text>
+            </View>
+          );
+        }
+        return (
+          <View style={styles.eventsList}>
+            {userEvents.map((event) => {
+              if (!event.place) return null;
+              return (
+                <View key={event.id} style={styles.eventCardWrapper}>
+                  <EventCard
+                    event={event}
+                    place={event.place}
+                    onPress={() => router.push(`/profile/event/${event.id}` as any)}
+                    compact
+                  />
+                </View>
+              );
+            })}
+          </View>
+        );
+
+      case "guides":
+        if (!guides || guides.length === 0) {
+          return (
+            <View style={styles.emptyState}>
+              <SFIcon
+                name="book"
+                fallback="book-outline"
+                size={40}
+                color={colors.gray300}
+              />
+              <Text style={styles.emptyText}>No guides yet</Text>
+            </View>
+          );
+        }
+        return (
+          <View style={styles.guidesList}>
+            {guides.map((guide) => (
+              <View key={guide.id} style={styles.guideCardWrapper}>
+                <GuideCard
+                  guide={guide}
+                  onPress={() => router.push(`/profile/guide/${guide.id}`)}
+                />
+              </View>
+            ))}
+          </View>
+        );
+    }
+  };
 
   return (
-    <ScrollView
-      testID="profile-screen"
-      style={styles.container}
-      showsVerticalScrollIndicator={false}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor={colors.primary}
-          colors={[colors.primary]}
-        />
-      }
-      contentContainerStyle={{
-        paddingBottom: insets.bottom,
-      }}
-    >
-      <View style={styles.profileSection}>
-        {avatarError ? (
-          <View style={[styles.avatar, styles.avatarFallback]}>
-            <Ionicons name="person" size={40} color={colors.textMuted} />
-          </View>
-        ) : (
-          <Image
-            source={{ uri: currentUser.avatarUrl }}
-            style={styles.avatar}
-            contentFit="cover"
-            transition={200}
-            onError={() => setAvatarError(true)}
+    <View style={styles.container}>
+      <FlatList
+        testID="profile-screen"
+        data={[]}
+        renderItem={null}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
           />
-        )}
-        <Text testID="profile-display-name" style={styles.displayName}>
-          {currentUser.displayName}
-        </Text>
-        <Text testID="profile-username" style={styles.username}>
-          @{currentUser.username}
-        </Text>
-        {currentUser.bio && <Text style={styles.bio}>{currentUser.bio}</Text>}
-        <SocialLinks
-          instagramUsername={currentUser.instagramUsername}
-          tiktokUsername={currentUser.tiktokUsername}
-          xUsername={currentUser.xUsername}
-        />
+        }
+        contentInset={{ top: headerHeight }}
+        contentOffset={{ x: 0, y: -headerHeight }}
+        scrollIndicatorInsets={{ top: headerHeight }}
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 60,
+        }}
+        ListHeaderComponent={
+          <>
+            {/* Compact header */}
+            <View style={styles.headerSection}>
+              <View style={styles.headerRow}>
+                {avatarError ? (
+                  <View style={[styles.avatar, styles.avatarFallback]}>
+                    <Ionicons name="person" size={28} color={colors.textMuted} />
+                  </View>
+                ) : (
+                  <Image
+                    source={{ uri: currentUser.avatarUrl }}
+                    style={styles.avatar}
+                    contentFit="cover"
+                    transition={200}
+                    onError={() => setAvatarError(true)}
+                  />
+                )}
+                <View style={styles.identityColumn}>
+                  <Text
+                    testID="profile-display-name"
+                    style={styles.displayName}
+                    numberOfLines={1}
+                  >
+                    {currentUser.displayName}
+                  </Text>
+                  <Text
+                    testID="profile-username"
+                    style={styles.username}
+                    numberOfLines={1}
+                  >
+                    @{currentUser.username}
+                  </Text>
+                  <View testID="profile-stats" style={styles.inlineStats}>
+                    <Text style={styles.statText}>
+                      <Text style={styles.statNumber}>
+                        {formatNumber(postCount)}
+                      </Text>{" "}
+                      posts
+                    </Text>
+                    <Text style={styles.statDot}>·</Text>
+                    <HapticPressable
+                      onPress={() =>
+                        router.push({
+                          pathname: "/profile/follow-list",
+                          params: { userId: currentUser.id, tab: "followers" },
+                        })
+                      }
+                    >
+                      <Text style={styles.statText}>
+                        <Text style={styles.statNumber}>
+                          {formatNumber(followerCount)}
+                        </Text>{" "}
+                        followers
+                      </Text>
+                    </HapticPressable>
+                    <Text style={styles.statDot}>·</Text>
+                    <HapticPressable
+                      onPress={() =>
+                        router.push({
+                          pathname: "/profile/follow-list",
+                          params: { userId: currentUser.id, tab: "following" },
+                        })
+                      }
+                    >
+                      <Text style={styles.statText}>
+                        <Text style={styles.statNumber}>
+                          {formatNumber(followingCount)}
+                        </Text>{" "}
+                        following
+                      </Text>
+                    </HapticPressable>
+                  </View>
+                </View>
+              </View>
 
-        <View testID="profile-stats" style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={styles.statNumber}>{postCount}</Text>
-            <Text style={styles.statLabel}>Posts</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <HapticPressable
-            style={styles.stat}
-            onPress={() =>
-              router.push({
-                pathname: "/profile/follow-list",
-                params: { userId: currentUser.id, tab: "followers" },
-              })
-            }
-          >
-            <Text style={styles.statNumber}>{followerCount}</Text>
-            <Text style={styles.statLabel}>Followers</Text>
-          </HapticPressable>
-          <View style={styles.statDivider} />
-          <HapticPressable
-            style={styles.stat}
-            onPress={() =>
-              router.push({
-                pathname: "/profile/follow-list",
-                params: { userId: currentUser.id, tab: "following" },
-              })
-            }
-          >
-            <Text style={styles.statNumber}>{followingCount}</Text>
-            <Text style={styles.statLabel}>Following</Text>
-          </HapticPressable>
-        </View>
+              {currentUser.bio ? (
+                <Text style={styles.bio}>{currentUser.bio}</Text>
+              ) : null}
 
-        <LiquidGlassButton
-          title="Edit Profile"
-          variant="secondary"
-          size="medium"
-          onPress={() => router.push("/profile/edit-profile")}
-          style={{ marginTop: 20 }}
-        />
+              <SocialLinks
+                instagramUsername={currentUser.instagramUsername}
+                tiktokUsername={currentUser.tiktokUsername}
+                xUsername={currentUser.xUsername}
+              />
 
-        {igConnected && (
-          <LiquidGlassButton
-            title="Import from Instagram"
-            variant="secondary"
-            size="medium"
-            icon="logo-instagram"
-            onPress={() => router.push("/profile/instagram-import")}
-            style={{ marginTop: 10 }}
-          />
-        )}
+              {/* Action row */}
+              <View style={styles.actionRow}>
+                <LiquidGlassButton
+                  title="Edit Profile"
+                  variant="secondary"
+                  size="small"
+                  onPress={() => router.push("/profile/edit-profile")}
+                  style={styles.editButton}
+                />
+                <LiquidGlassButton
+                  icon="trophy"
+                  iconOnly
+                  variant="secondary"
+                  size="small"
+                  onPress={() => router.push("/profile/achievements")}
+                />
+                <LiquidGlassButton
+                  icon="bookmark"
+                  iconOnly
+                  variant="secondary"
+                  size="small"
+                  onPress={() => router.push("/profile/saved")}
+                />
+                {igConnected && (
+                  <LiquidGlassButton
+                    icon="logo-instagram"
+                    iconOnly
+                    variant="secondary"
+                    size="small"
+                    onPress={() => router.push("/profile/instagram-import")}
+                  />
+                )}
+              </View>
+            </View>
 
-        <QuickActions />
-      </View>
+            {/* Tab bar */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tabBar}
+            >
+              {tabs.map((tab) => (
+                <HapticPressable
+                  key={tab.key}
+                  style={[
+                    styles.tab,
+                    activeTab === tab.key && styles.tabActive,
+                  ]}
+                  onPress={() => setActiveTab(tab.key)}
+                >
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === tab.key && styles.tabTextActive,
+                    ]}
+                  >
+                    {tab.label}
+                  </Text>
+                  <View
+                    style={[
+                      styles.tabCount,
+                      activeTab === tab.key && styles.tabCountActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.tabCountText,
+                        activeTab === tab.key && styles.tabCountTextActive,
+                      ]}
+                    >
+                      {tab.count}
+                    </Text>
+                  </View>
+                </HapticPressable>
+              ))}
+            </ScrollView>
 
-      <UpcomingEvents events={userEvents} />
-
-      <View style={styles.gridDivider} />
-
-      <PostsGrid
-        posts={userPosts}
-        title="Your Posts"
-        onPostPress={(postId) => router.push(`/profile/post/${postId}`)}
+            {/* Tab content */}
+            {renderContent()}
+          </>
+        }
       />
-    </ScrollView>
+    </View>
   );
 }
 
@@ -377,77 +437,151 @@ const createStyles = (colors: Colors) =>
       flex: 1,
       backgroundColor: colors.background,
     },
-    profileSection: {
-      alignItems: "center",
-      paddingVertical: 24,
+    // Header
+    headerSection: {
       paddingHorizontal: 16,
-      backgroundColor: colors.background,
+      paddingTop: 12,
+      paddingBottom: 4,
+    },
+    headerRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 14,
     },
     avatar: {
-      width: 100,
-      height: 100,
-      borderRadius: 50,
+      width: 60,
+      height: 60,
+      borderRadius: 30,
       backgroundColor: colors.gray200,
-      marginBottom: 12,
-      shadowColor: "#000",
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.12,
-      shadowRadius: 8,
-      elevation: 4,
     },
     avatarFallback: {
       justifyContent: "center",
       alignItems: "center",
     },
+    identityColumn: {
+      flex: 1,
+    },
     displayName: {
-      fontSize: 22,
+      fontSize: 20,
       fontFamily: fonts.bold,
       color: colors.text,
     },
     username: {
-      fontSize: 15,
+      fontSize: 14,
       color: colors.textMuted,
-      marginTop: 2,
+      marginTop: 1,
+    },
+    inlineStats: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginTop: 4,
+      gap: 4,
+      flexWrap: "wrap",
+    },
+    statText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      fontFamily: fonts.medium,
+    },
+    statNumber: {
+      fontFamily: fonts.bold,
+      color: colors.text,
+    },
+    statDot: {
+      fontSize: 13,
+      color: colors.textMuted,
     },
     bio: {
       fontSize: 14,
       color: colors.textSecondary,
-      textAlign: "center",
-      marginTop: 8,
-      paddingHorizontal: 32,
+      marginTop: 10,
       lineHeight: 20,
     },
-    statsRow: {
+    // Action row
+    actionRow: {
       flexDirection: "row",
       alignItems: "center",
-      marginTop: 20,
-      paddingHorizontal: 20,
+      gap: 8,
+      marginTop: 14,
     },
-    stat: {
+    editButton: {
+      flex: 1,
+    },
+    // Tab bar (matches SavedScreen)
+    tabBar: {
+      flexDirection: "row",
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      gap: 8,
+    },
+    tab: {
+      flexDirection: "row",
       alignItems: "center",
-      paddingHorizontal: 20,
-    },
-    statNumber: {
-      fontSize: 24,
-      fontFamily: fonts.extraBold,
-      color: colors.text,
-    },
-    statLabel: {
-      fontSize: 11,
-      color: colors.textMuted,
-      marginTop: 2,
-      textTransform: "uppercase",
-      letterSpacing: 0.5,
-      fontWeight: "600",
-      fontFamily: fonts.semiBold,
-    },
-    statDivider: {
-      width: 1,
-      height: 30,
-      backgroundColor: colors.gray200,
-    },
-    gridDivider: {
-      height: 1,
+      paddingHorizontal: 14,
       paddingVertical: 8,
+      borderRadius: 20,
+      backgroundColor: colors.gray100,
+      gap: 6,
+    },
+    tabActive: {
+      backgroundColor: colors.text,
+    },
+    tabText: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+      color: colors.textSecondary,
+    },
+    tabTextActive: {
+      color: colors.background,
+    },
+    tabCount: {
+      backgroundColor: colors.gray200,
+      borderRadius: 10,
+      minWidth: 20,
+      height: 20,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 6,
+    },
+    tabCountActive: {
+      backgroundColor: colors.overlay,
+    },
+    tabCountText: {
+      fontSize: 11,
+      fontFamily: fonts.semiBold,
+      color: colors.textMuted,
+    },
+    tabCountTextActive: {
+      color: colors.background,
+    },
+    // Events list
+    eventsList: {
+      paddingHorizontal: 16,
+      gap: 12,
+    },
+    eventCardWrapper: {
+      borderRadius: 12,
+      overflow: "hidden",
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    // Guides list
+    guidesList: {
+      paddingHorizontal: 16,
+      gap: 12,
+    },
+    guideCardWrapper: {
+      borderRadius: 12,
+      overflow: "hidden",
+    },
+    // Empty state
+    emptyState: {
+      alignItems: "center",
+      paddingVertical: 60,
+      gap: 12,
+    },
+    emptyText: {
+      fontSize: 15,
+      color: colors.textMuted,
     },
   });
