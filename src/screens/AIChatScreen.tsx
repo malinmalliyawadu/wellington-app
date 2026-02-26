@@ -333,40 +333,6 @@ const heroStyles = StyleSheet.create({
   },
 });
 
-function StreamingSparkle({ color }: { color: string }) {
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(0.6);
-
-  useEffect(() => {
-    scale.value = withRepeat(
-      withSequence(
-        withTiming(1.3, { duration: 600, easing: Easing.inOut(Easing.ease) }),
-        withTiming(1, { duration: 600, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      false
-    );
-    opacity.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 600, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0.4, { duration: 600, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      false
-    );
-  }, []);
-
-  const style = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
-
-  return (
-    <Animated.View style={style}>
-      <SFIcon name="sparkles" fallback="sparkles" size={14} color={color} />
-    </Animated.View>
-  );
-}
 
 export function AIChatScreen() {
   const { colors } = useTheme();
@@ -934,7 +900,7 @@ export function AIChatScreen() {
 
         {isStreaming && streamingText.length > 0 && (
           <Animated.View
-            entering={FadeInUp.duration(400)}
+            entering={FadeInUp.duration(300)}
             style={styles.aiResponseSection}
           >
             <View style={styles.aiAvatarRow}>
@@ -948,14 +914,10 @@ export function AIChatScreen() {
               </View>
               <Text style={styles.aiLabel}>Welly</Text>
             </View>
-            <View style={styles.streamingTextRow}>
-              <View style={styles.streamingMarkdown}>
-                <Markdown style={mdStyles} onLinkPress={handleLinkPress}>
-                  {trimIncompleteMarkdown(streamingText)}
-                </Markdown>
-              </View>
-              <StreamingSparkle color={colors.primary} />
-            </View>
+            <Markdown style={mdStyles} onLinkPress={handleLinkPress}>
+              {trimIncompleteMarkdown(streamingText)}
+            </Markdown>
+            <AIThinkingAnimation showLabel={false} />
           </Animated.View>
         )}
       </ScrollView>
@@ -1259,14 +1221,6 @@ const createStyles = (colors: Colors) =>
     // AI response
     aiResponseSection: {
       gap: 12,
-    },
-    streamingTextRow: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      alignItems: "flex-end",
-    },
-    streamingMarkdown: {
-      flexShrink: 1,
     },
     aiAvatarRow: {
       flexDirection: "row",
