@@ -12,6 +12,21 @@ export async function getTrails(): Promise<Trail[]> {
   return (data ?? []).map(mapTrail);
 }
 
+export async function getTrailByPlaceId(placeId: string): Promise<Trail | null> {
+  const { data, error } = await supabase
+    .from('trails')
+    .select('*')
+    .eq('place_id', placeId)
+    .single();
+
+  if (error) {
+    if (error.code === 'PGRST116') return null;
+    throw error;
+  }
+
+  return mapTrail(data);
+}
+
 export async function getTrailById(id: string): Promise<Trail | null> {
   const { data, error } = await supabase
     .from('trails')

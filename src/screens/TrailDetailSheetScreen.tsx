@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Image } from "expo-image";
-import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import { useLocalSearchParams, usePathname, useRouter, useFocusEffect } from "expo-router";
 import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
 import { VideoThumbnail } from "../components/VideoThumbnail";
@@ -46,6 +46,8 @@ export function TrailDetailSheetScreen() {
   };
   const { trailId } = useLocalSearchParams<{ trailId: string }>();
   const router = useRouter();
+  const pathname = usePathname();
+  const tabBase = '/' + pathname.split('/')[1];
   const { followingIds } = useFollow();
   const { getLikeCount } = useLike();
 
@@ -324,7 +326,7 @@ export function TrailDetailSheetScreen() {
                 compact
                 hasBorder
                 onPress={() => {
-                  router.push(`/map/event/${event.id}`);
+                  router.push(`${tabBase}/event/${event.id}`);
                 }}
               />
             ))}
@@ -348,7 +350,7 @@ export function TrailDetailSheetScreen() {
                   style={styles.postCard}
                   onPress={() => {
                     router.dismiss();
-                    router.push(`/map/post/${post.id}`);
+                    router.push(`${tabBase}/post/${post.id}`);
                   }}
                 >
                   <PostCardContent
@@ -367,7 +369,7 @@ export function TrailDetailSheetScreen() {
                 onPress={() => {
                   router.dismiss();
                   router.push({
-                    pathname: "/map/create-post",
+                    pathname: `${tabBase}/create-post`,
                     params: { placeId: trail.placeId },
                   });
                 }}
@@ -393,7 +395,7 @@ export function TrailDetailSheetScreen() {
               onPress={() => {
                 router.dismiss();
                 router.push({
-                  pathname: "/map/create-post",
+                  pathname: `${tabBase}/create-post`,
                   params: { placeId: trail.placeId },
                 });
               }}

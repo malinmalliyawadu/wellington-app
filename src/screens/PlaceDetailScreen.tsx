@@ -9,6 +9,8 @@ import { useQuery } from '../hooks/useQuery';
 import { getPlaceById } from '../services/places';
 import { getPostsByPlaceId as getPostsByPlaceIdAsync } from '../services/posts';
 import { getProfilesByIds , getProfileByUsername } from '../services/users';
+import { getTrailByPlaceId } from '../services/trails';
+import { shareTrail } from '../utils/sharing';
 import { fetchPlaceDetails } from '../services/googlePlaceDetails';
 import { formatNumber } from '../utils/formatNumber';
 import { sortPosts } from '../utils/postSorting';
@@ -17,7 +19,7 @@ import { useLike } from '../context/LikeContext';
 import { useSave } from '../context/SaveContext';
 import { VideoThumbnail } from '../components/VideoThumbnail';
 import { useTheme, type Colors } from '../theme/ThemeContext';
-import type { PlaceCategory } from '../types';
+import type { PlaceCategory, TrailDifficulty } from '../types';
 import { fonts } from "../theme/fonts";
 import { HapticPressable } from 'src/components/HapticPressable';
 import { HashtagText } from '../components/HashtagText';
@@ -52,6 +54,14 @@ export function PlaceDetailScreen() {
   const fetchPosts = useCallback(() => getPostsByPlaceIdAsync(placeId), [placeId]);
   const { data: posts, loading: loadingPosts, refetch: refetchPosts } = useQuery(fetchPosts, ['posts', 'place', placeId]);
 
+  // Fetch trail data if this place is a trail
+  const isTrail = place?.category === 'trail';
+  const fetchTrail = useCallback(
+    () => (isTrail && placeId ? getTrailByPlaceId(placeId) : Promise.resolve(null)),
+    [isTrail, placeId]
+  );
+  const { data: trail } = useQuery(fetchTrail, ['trail', 'place', placeId]);
+
   // Refetch data when screen comes into focus (e.g., after creating a new post)
   useFocusEffect(
     useCallback(() => {
@@ -70,9 +80,9 @@ export function PlaceDetailScreen() {
 
   const [placeDetails, setPlaceDetails] = useState<{ rating?: number; userRatingsTotal?: number }>({});
 
-  // Fetch place details from Google Places API
+  // Fetch place details from Google Places API (skip for trails)
   useEffect(() => {
-    if (place && !place.rating) {
+    if (place && place.category !== 'trail' && !place.rating) {
       fetchPlaceDetails(place.latitude, place.longitude, place.name).then(details => {
         if (details.rating) {
           setPlaceDetails(details);
@@ -141,30 +151,42 @@ export function PlaceDetailScreen() {
         contentContainerStyle={{ paddingTop: headerHeight, paddingBottom: insets.bottom + 60 }}
         ListHeaderComponent={
           <View style={styles.header}>
-            <Text style={styles.name}>{place.name}</Text>
-            <View style={styles.metaRow}>
-              <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
-                <Text style={styles.categoryText}>
-                  {CATEGORY_LABELS[place.category]}
-                </Text>
-              </View>
-              {placeDetails.rating && (
-                <View style={styles.ratingContainer}>
-                  <SFIcon name="star.fill" fallback="star" size={14} color="#FFA500" />
-                  <Text style={styles.ratingText}>
-                    {placeDetails.rating.toFixed(1)}
-                  </Text>
-                  {placeDetails.userRatingsTotal && (
-                    <Text style={styles.reviewCountText}>
-                      ({formatNumber(placeDetails.userRatingsTotal)})
+            {trail ? (
+              <PlaceTrailHeader
+                trail={trail}
+                postCount={allPosts.length}
+                totalLikes={totalLikes}
+                isSaved={isSaved('place', place.id)}
+                onToggleSave={() => toggleSave('place', place.id)}
+              />
+            ) : (
+              <>
+                <Text style={styles.name}>{place.name}</Text>
+                <View style={styles.metaRow}>
+                  <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
+                    <Text style={styles.categoryText}>
+                      {CATEGORY_LABELS[place.category]}
                     </Text>
+                  </View>
+                  {placeDetails.rating && (
+                    <View style={styles.ratingContainer}>
+                      <SFIcon name="star.fill" fallback="star" size={14} color="#FFA500" />
+                      <Text style={styles.ratingText}>
+                        {placeDetails.rating.toFixed(1)}
+                      </Text>
+                      {placeDetails.userRatingsTotal && (
+                        <Text style={styles.reviewCountText}>
+                          ({formatNumber(placeDetails.userRatingsTotal)})
+                        </Text>
+                      )}
+                    </View>
                   )}
+                  <Text style={styles.address} numberOfLines={1}>
+                    {place.address}
+                  </Text>
                 </View>
-              )}
-              <Text style={styles.address} numberOfLines={1}>
-                {place.address}
-              </Text>
-            </View>
+              </>
+            )}
             <View style={styles.statsRow}>
               <View style={styles.stat}>
                 <SFIcon name="bubble.left" fallback="chatbubble-outline" size={16} color={colors.textSecondary} />
@@ -259,6 +281,88 @@ export function PlaceDetailScreen() {
         }
       />
     </View>
+  );
+}
+
+const DIFFICULTY_LABELS: Record<TrailDifficulty, string> = {
+  easy: 'Easy',
+  moderate: 'Moderate',
+  hard: 'Hard',
+};
+
+function PlaceTrailHeader({
+  trail,
+  postCount,
+  totalLikes,
+  isSaved: saved,
+  onToggleSave,
+}: {
+  trail: { name: string; id: string; elevation: string; distance: string; duration: string; difficulty: TrailDifficulty; trailhead: { latitude: number; longitude: number; label: string }; highlights: string[] };
+  postCount: number;
+  totalLikes: number;
+  isSaved: boolean;
+  onToggleSave: () => void;
+}) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+  const trailColor = colors.category.trail;
+  const DIFFICULTY_COLORS: Record<TrailDifficulty, string> = {
+    easy: colors.success,
+    moderate: '#F59E0B',
+    hard: colors.error,
+  };
+
+  return (
+    <>
+      <View style={styles.trailTitleRow}>
+        <View style={[styles.trailIconCircle, { backgroundColor: trailColor }]}>
+          <SFIcon name="figure.hiking" fallback="walk" size={22} color="#FFFFFF" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.name}>{trail.name}</Text>
+          <Text style={styles.trailhead}>{trail.trailhead.label}</Text>
+        </View>
+      </View>
+      <View style={styles.trailStatsRow}>
+        <View style={[styles.trailStatCard, { backgroundColor: trailColor + '10', borderColor: trailColor + '20' }]}>
+          <SFIcon name="mountain.2" fallback="trending-up" size={16} color={trailColor} />
+          <Text style={styles.trailStatValue}>{trail.elevation}</Text>
+          <Text style={styles.trailStatLabel}>Elevation</Text>
+        </View>
+        <View style={[styles.trailStatCard, { backgroundColor: trailColor + '10', borderColor: trailColor + '20' }]}>
+          <SFIcon name="point.topleft.down.to.point.bottomright.curvepath" fallback="trail-sign" size={16} color={trailColor} />
+          <Text style={styles.trailStatValue}>{trail.distance}</Text>
+          <Text style={styles.trailStatLabel}>Distance</Text>
+        </View>
+        <View style={[styles.trailStatCard, { backgroundColor: trailColor + '10', borderColor: trailColor + '20' }]}>
+          <SFIcon name="clock" fallback="time-outline" size={16} color={trailColor} />
+          <Text style={styles.trailStatValue}>{trail.duration}</Text>
+          <Text style={styles.trailStatLabel}>Duration</Text>
+        </View>
+      </View>
+      <View style={styles.trailDifficultyRow}>
+        <View style={[styles.trailDifficultyBadge, { backgroundColor: DIFFICULTY_COLORS[trail.difficulty] }]}>
+          <Text style={styles.categoryText}>{DIFFICULTY_LABELS[trail.difficulty]}</Text>
+        </View>
+        <HapticPressable
+          style={styles.trailShareButton}
+          onPress={() => shareTrail(trail.id, trail.name)}
+        >
+          <SFIcon name="square.and.arrow.up" fallback="share-outline" size={16} color={colors.primary} />
+          <Text style={styles.directionsText}>Share</Text>
+        </HapticPressable>
+      </View>
+      {trail.highlights.length > 0 && (
+        <View style={styles.trailHighlights}>
+          {trail.highlights.map((highlight, i) => (
+            <View key={i} style={styles.trailHighlightRow}>
+              <SFIcon name="leaf.fill" fallback="leaf" size={14} color={trailColor} />
+              <Text style={styles.trailHighlightText}>{highlight}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </>
   );
 }
 
@@ -442,5 +546,80 @@ const createStyles = (colors: Colors) => StyleSheet.create({
   emptyText: {
     fontSize: 15,
     color: colors.textMuted,
+  },
+  // Trail header styles
+  trailTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  trailIconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  trailhead: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  trailStatsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 12,
+  },
+  trailStatCard: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    gap: 4,
+    borderWidth: 1,
+  },
+  trailStatValue: {
+    fontSize: 14,
+    fontFamily: fonts.bold,
+    color: colors.text,
+    textAlign: 'center',
+  },
+  trailStatLabel: {
+    fontSize: 11,
+    fontFamily: fonts.medium,
+    color: colors.textSecondary,
+  },
+  trailDifficultyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+    marginBottom: 12,
+  },
+  trailDifficultyBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  trailShareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginLeft: 'auto',
+  },
+  trailHighlights: {
+    marginBottom: 8,
+  },
+  trailHighlightRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 4,
+  },
+  trailHighlightText: {
+    fontSize: 14,
+    color: colors.text,
+    flex: 1,
   },
 });
