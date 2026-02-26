@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, Pressable, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { SFSymbol } from 'expo-symbols';
@@ -15,10 +15,11 @@ import { fonts } from "../theme/fonts";
 type DateRange = 'today' | 'tomorrow' | 'weekend' | 'month';
 type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community' | 'quiz' | 'craft' | 'kids' | 'cultural';
 
-const DATE_RANGES: { key: DateRange; label: string; icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap } }[] = [
+const DATE_OPTIONS: { key: DateRange | null; label: string; icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap } }[] = [
+  { key: null, label: 'Any time', icon: { sf: 'infinity', fallback: 'infinite' } },
   { key: 'today', label: 'Today', icon: { sf: 'calendar.badge.clock', fallback: 'today' } },
   { key: 'tomorrow', label: 'Tomorrow', icon: { sf: 'arrow.right', fallback: 'arrow-forward' } },
-  { key: 'weekend', label: 'This Weekend', icon: { sf: 'sun.max.fill', fallback: 'sunny' } },
+  { key: 'weekend', label: 'Weekend', icon: { sf: 'sun.max.fill', fallback: 'sunny' } },
   { key: 'month', label: 'This Month', icon: { sf: 'calendar', fallback: 'calendar' } },
 ];
 
@@ -49,6 +50,36 @@ const CATEGORY_ICONS: Record<EventCategory, { sf: SFSymbol; fallback: keyof type
   kids: { sf: 'figure.and.child.holdinghands', fallback: 'happy' },
   cultural: { sf: 'building.columns', fallback: 'globe' },
 };
+
+function ToggleSwitchRow({
+  icon,
+  label,
+  value,
+  onValueChange,
+  iconColor,
+  colors,
+}: {
+  icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap };
+  label: string;
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+  iconColor: string;
+  colors: Colors;
+}) {
+  const styles = createStyles(colors);
+  return (
+    <HapticPressable style={styles.toggleRow} onPress={() => onValueChange(!value)}>
+      <SFIcon name={icon.sf} fallback={icon.fallback} size={20} color={iconColor} />
+      <Text style={styles.toggleLabel}>{label}</Text>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: colors.gray300, true: colors.primary }}
+        thumbColor="#FFFFFF"
+      />
+    </HapticPressable>
+  );
+}
 
 export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
   const { colors } = useTheme();
@@ -87,37 +118,41 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
-        {/* Date Range Section */}
+        {/* Date Range — Horizontal Scrolling Chips */}
         <Text style={styles.sectionTitle}>When</Text>
-        <HapticPressable
-          style={[styles.option, selectedDateRange === null && styles.optionActive]}
-          onPress={() => setSelectedDateRange(null)}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.dateChipRow}
         >
-          <SFIcon name="infinity" fallback="infinite" size={20} color={selectedDateRange === null ? colors.primary : colors.text} />
-          <Text style={[styles.optionLabel, selectedDateRange === null && styles.optionLabelActive]}>
-            Any time
-          </Text>
-          {selectedDateRange === null && (
-            <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />
-          )}
-        </HapticPressable>
+          {DATE_OPTIONS.map(({ key, label, icon }) => {
+            const active = selectedDateRange === key;
+            return (
+              <HapticPressable
+                key={key ?? 'any'}
+                style={[
+                  styles.dateChip,
+                  active
+                    ? { backgroundColor: colors.primary }
+                    : { backgroundColor: colors.background, borderColor: colors.gray300, borderWidth: 1 },
+                ]}
+                onPress={() => setSelectedDateRange(key)}
+              >
+                <SFIcon
+                  name={icon.sf}
+                  fallback={icon.fallback}
+                  size={14}
+                  color={active ? '#FFFFFF' : colors.text}
+                />
+                <Text style={[styles.dateChipLabel, active && styles.dateChipLabelActive]}>
+                  {label}
+                </Text>
+              </HapticPressable>
+            );
+          })}
+        </ScrollView>
 
-        {DATE_RANGES.map(({ key, label, icon }) => {
-          const active = selectedDateRange === key;
-          return (
-            <HapticPressable
-              key={key}
-              style={[styles.option, active && styles.optionActive]}
-              onPress={() => setSelectedDateRange(key)}
-            >
-              <SFIcon name={icon.sf} fallback={icon.fallback} size={20} color={active ? colors.primary : colors.text} />
-              <Text style={[styles.optionLabel, active && styles.optionLabelActive]}>{label}</Text>
-              {active && <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />}
-            </HapticPressable>
-          );
-        })}
-
-        {/* Category Section */}
+        {/* Category Chips */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Category</Text>
           {selectedCategories.length > 0 && (
@@ -127,53 +162,56 @@ export function EventFilterDrawer({ navigation }: DrawerContentComponentProps) {
           )}
         </View>
 
-        {ALL_CATEGORIES.map((cat) => {
-          const active = selectedCategories.includes(cat);
-          const catColor = CATEGORY_COLORS[cat];
-          return (
-            <HapticPressable
-              key={cat}
-              style={[styles.option, active && styles.optionActive]}
-              onPress={() => toggleCategory(cat)}
-            >
-              <SFIcon name={CATEGORY_ICONS[cat].sf} fallback={CATEGORY_ICONS[cat].fallback} size={20} color={catColor} />
-              <Text style={[styles.optionLabel, active && styles.optionLabelActive]}>
-                {CATEGORY_LABELS[cat]}
-              </Text>
-              {active && <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />}
-            </HapticPressable>
-          );
-        })}
+        <View style={styles.chipGrid}>
+          {ALL_CATEGORIES.map((cat) => {
+            const active = selectedCategories.includes(cat);
+            const catColor = CATEGORY_COLORS[cat];
+            return (
+              <HapticPressable
+                key={cat}
+                style={[
+                  styles.chip,
+                  active
+                    ? { backgroundColor: catColor }
+                    : { backgroundColor: colors.background, borderColor: colors.gray300, borderWidth: 1 },
+                ]}
+                onPress={() => toggleCategory(cat)}
+              >
+                <SFIcon
+                  name={CATEGORY_ICONS[cat].sf}
+                  fallback={CATEGORY_ICONS[cat].fallback}
+                  size={16}
+                  color={active ? '#FFFFFF' : catColor}
+                />
+                <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>
+                  {CATEGORY_LABELS[cat]}
+                </Text>
+              </HapticPressable>
+            );
+          })}
+        </View>
 
-        {/* Price Section */}
-        <Text style={styles.sectionTitle}>Price</Text>
-        <HapticPressable
-          style={[styles.option, showFreeOnly && styles.optionActive]}
-          onPress={() => setShowFreeOnly(!showFreeOnly)}
-        >
-          <SFIcon name="dollarsign.circle" fallback="cash-outline" size={20} color={showFreeOnly ? colors.primary : colors.text} />
-          <Text style={[styles.optionLabel, showFreeOnly && styles.optionLabelActive]}>
-            Free events only
-          </Text>
-          {showFreeOnly && (
-            <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />
-          )}
-        </HapticPressable>
-
-        {/* Following Section */}
-        <Text style={styles.sectionTitle}>People</Text>
-        <HapticPressable
-          style={[styles.option, showFollowingOnly && styles.optionActive]}
-          onPress={() => setShowFollowingOnly(!showFollowingOnly)}
-        >
-          <SFIcon name="person.2" fallback="people" size={20} color={showFollowingOnly ? colors.primary : colors.text} />
-          <Text style={[styles.optionLabel, showFollowingOnly && styles.optionLabelActive]}>
-            Following only
-          </Text>
-          {showFollowingOnly && (
-            <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />
-          )}
-        </HapticPressable>
+        {/* Toggle Switches */}
+        <Text style={styles.sectionTitle}>Options</Text>
+        <View style={styles.toggleCard}>
+          <ToggleSwitchRow
+            icon={{ sf: 'dollarsign.circle', fallback: 'cash-outline' }}
+            label="Free events only"
+            value={showFreeOnly}
+            onValueChange={setShowFreeOnly}
+            iconColor={showFreeOnly ? colors.primary : colors.textMuted}
+            colors={colors}
+          />
+          <View style={styles.toggleDivider} />
+          <ToggleSwitchRow
+            icon={{ sf: 'person.2', fallback: 'people' }}
+            label="Following only"
+            value={showFollowingOnly}
+            onValueChange={setShowFollowingOnly}
+            iconColor={showFollowingOnly ? colors.primary : colors.textMuted}
+            colors={colors}
+          />
+        </View>
       </ScrollView>
 
       <LiquidGlassButton
@@ -237,30 +275,73 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     marginTop: 24,
     marginBottom: 8,
   },
-  option: {
+  dateChipRow: {
+    gap: 8,
+    paddingRight: 4,
+  },
+  dateChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    gap: 6,
+  },
+  dateChipLabel: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.text,
+  },
+  dateChipLabelActive: {
+    color: '#FFFFFF',
+    fontFamily: fonts.semiBold,
+  },
+  chipGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    gap: 6,
+  },
+  chipLabel: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.text,
+  },
+  chipLabelActive: {
+    color: '#FFFFFF',
+    fontFamily: fonts.semiBold,
+  },
+  toggleCard: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    paddingHorizontal: 14,
     gap: 12,
-    marginBottom: 2,
   },
-  optionActive: {
-    backgroundColor: colors.primary + '10',
-  },
-  optionLabel: {
+  toggleLabel: {
     fontSize: 15,
+    fontFamily: fonts.medium,
     color: colors.text,
     flex: 1,
   },
-  optionLabelActive: {
-    fontWeight: '600',
-    fontFamily: fonts.semiBold,
-    color: colors.primary,
-  },
-  check: {
-    marginLeft: 'auto',
+  toggleDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginLeft: 46,
   },
   doneButton: {
     marginTop: 12,

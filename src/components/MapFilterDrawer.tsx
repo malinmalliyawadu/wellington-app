@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Switch } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { SFSymbol } from 'expo-symbols';
@@ -41,6 +41,36 @@ const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof type
   trail: { sf: 'figure.hiking', fallback: 'walk' },
 };
 
+function ToggleSwitchRow({
+  icon,
+  label,
+  value,
+  onValueChange,
+  iconColor,
+  colors,
+}: {
+  icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap };
+  label: string;
+  value: boolean;
+  onValueChange: (v: boolean) => void;
+  iconColor: string;
+  colors: Colors;
+}) {
+  const styles = createStyles(colors);
+  return (
+    <HapticPressable style={styles.toggleRow} onPress={() => onValueChange(!value)}>
+      <SFIcon name={icon.sf} fallback={icon.fallback} size={20} color={iconColor} />
+      <Text style={styles.toggleLabel}>{label}</Text>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: colors.gray300, true: colors.primary }}
+        thumbColor="#FFFFFF"
+      />
+    </HapticPressable>
+  );
+}
+
 export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -78,7 +108,7 @@ export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
-        {/* Category Section */}
+        {/* Category Chips */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Category</Text>
           {selectedCategories.length > 0 && (
@@ -88,68 +118,65 @@ export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
           )}
         </View>
 
-        {ALL_CATEGORIES.map((cat) => {
-          const active = selectedCategories.includes(cat);
-          const catColor = colors.category[cat];
-          return (
-            <HapticPressable
-              key={cat}
-              style={[styles.option, active && styles.optionActive]}
-              onPress={() => toggleCategory(cat)}
-            >
-              <SFIcon name={CATEGORY_ICONS[cat].sf} fallback={CATEGORY_ICONS[cat].fallback} size={20} color={catColor} />
-              <Text style={[styles.optionLabel, active && styles.optionLabelActive]}>
-                {CATEGORY_LABELS[cat]}
-              </Text>
-              {active && <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />}
-            </HapticPressable>
-          );
-        })}
+        <View style={styles.chipGrid}>
+          {ALL_CATEGORIES.map((cat) => {
+            const active = selectedCategories.includes(cat);
+            const catColor = colors.category[cat];
+            return (
+              <HapticPressable
+                key={cat}
+                style={[
+                  styles.chip,
+                  active
+                    ? { backgroundColor: catColor }
+                    : { backgroundColor: colors.background, borderColor: colors.gray300, borderWidth: 1 },
+                ]}
+                onPress={() => toggleCategory(cat)}
+              >
+                <SFIcon
+                  name={CATEGORY_ICONS[cat].sf}
+                  fallback={CATEGORY_ICONS[cat].fallback}
+                  size={16}
+                  color={active ? '#FFFFFF' : catColor}
+                />
+                <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>
+                  {CATEGORY_LABELS[cat]}
+                </Text>
+              </HapticPressable>
+            );
+          })}
+        </View>
 
-        {/* Following Section */}
-        <Text style={styles.sectionTitle}>People</Text>
-        <HapticPressable
-          style={[styles.option, showFollowingOnly && styles.optionActive]}
-          onPress={() => setShowFollowingOnly(!showFollowingOnly)}
-        >
-          <SFIcon name="person.2" fallback="people" size={20} color={showFollowingOnly ? colors.primary : colors.text} />
-          <Text style={[styles.optionLabel, showFollowingOnly && styles.optionLabelActive]}>
-            Following only
-          </Text>
-          {showFollowingOnly && (
-            <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />
-          )}
-        </HapticPressable>
-
-        {/* Events Section */}
-        <Text style={styles.sectionTitle}>Events</Text>
-        <HapticPressable
-          style={[styles.option, showEvents && styles.optionActive]}
-          onPress={() => setShowEvents(!showEvents)}
-        >
-          <SFIcon name="calendar" fallback="calendar" size={20} color={showEvents ? colors.category.venue : colors.text} />
-          <Text style={[styles.optionLabel, showEvents && styles.optionLabelActive]}>
-            Show this week&apos;s events
-          </Text>
-          {showEvents && (
-            <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />
-          )}
-        </HapticPressable>
-
-        {/* Trails Section */}
-        <Text style={styles.sectionTitle}>Trails</Text>
-        <HapticPressable
-          style={[styles.option, showTrails && styles.optionActive]}
-          onPress={() => setShowTrails(!showTrails)}
-        >
-          <SFIcon name="figure.hiking" fallback="walk" size={20} color={showTrails ? colors.category.park : colors.text} />
-          <Text style={[styles.optionLabel, showTrails && styles.optionLabelActive]}>
-            Show hiking trails
-          </Text>
-          {showTrails && (
-            <SFIcon name="checkmark" fallback="checkmark" size={18} color={colors.primary} style={styles.check} />
-          )}
-        </HapticPressable>
+        {/* Toggle Switches */}
+        <Text style={styles.sectionTitle}>Options</Text>
+        <View style={styles.toggleCard}>
+          <ToggleSwitchRow
+            icon={{ sf: 'person.2', fallback: 'people' }}
+            label="Following only"
+            value={showFollowingOnly}
+            onValueChange={setShowFollowingOnly}
+            iconColor={showFollowingOnly ? colors.primary : colors.textMuted}
+            colors={colors}
+          />
+          <View style={styles.toggleDivider} />
+          <ToggleSwitchRow
+            icon={{ sf: 'calendar', fallback: 'calendar' }}
+            label="Show events"
+            value={showEvents}
+            onValueChange={setShowEvents}
+            iconColor={showEvents ? colors.category.venue : colors.textMuted}
+            colors={colors}
+          />
+          <View style={styles.toggleDivider} />
+          <ToggleSwitchRow
+            icon={{ sf: 'figure.hiking', fallback: 'walk' }}
+            label="Show trails"
+            value={showTrails}
+            onValueChange={setShowTrails}
+            iconColor={showTrails ? colors.category.park : colors.textMuted}
+            colors={colors}
+          />
+        </View>
       </ScrollView>
 
       <LiquidGlassButton
@@ -212,30 +239,52 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     marginTop: 24,
     marginBottom: 8,
   },
-  option: {
+  chipGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    gap: 6,
+  },
+  chipLabel: {
+    fontSize: 14,
+    fontFamily: fonts.medium,
+    color: colors.text,
+  },
+  chipLabelActive: {
+    color: '#FFFFFF',
+    fontFamily: fonts.semiBold,
+  },
+  toggleCard: {
+    backgroundColor: colors.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+  },
+  toggleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 10,
+    paddingHorizontal: 14,
     gap: 12,
-    marginBottom: 2,
   },
-  optionActive: {
-    backgroundColor: colors.primary + '10',
-  },
-  optionLabel: {
+  toggleLabel: {
     fontSize: 15,
+    fontFamily: fonts.medium,
     color: colors.text,
     flex: 1,
   },
-  optionLabelActive: {
-    fontWeight: '600',
-    fontFamily: fonts.semiBold,
-    color: colors.primary,
-  },
-  check: {
-    marginLeft: 'auto',
+  toggleDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginLeft: 46,
   },
   doneButton: {
     marginTop: 12,
