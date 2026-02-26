@@ -20,7 +20,7 @@ function TabLayout() {
         <Label>Search</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="feed">
-        <Icon sf={{ default: "list.bullet", selected: "list.bullet" }} />
+        <Icon sf={{ default: "newspaper", selected: "newspaper.fill" }} />
         <Label>Feed</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="events">
@@ -28,7 +28,12 @@ function TabLayout() {
         <Label>Events</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
-        <Icon sf={{ default: "person", selected: "person.fill" }} />
+        <Icon
+          sf={{
+            default: "person.crop.circle",
+            selected: "person.crop.circle.fill",
+          }}
+        />
         <Label>Profile</Label>
         {unreadCount > 0 && (
           <Badge>{unreadCount > 99 ? "99+" : String(unreadCount)}</Badge>
