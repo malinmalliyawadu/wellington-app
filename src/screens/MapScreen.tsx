@@ -21,7 +21,10 @@ import { MapControls } from "../components/MapControls";
 import { useFollow } from "../context/FollowContext";
 import { useMapFilters } from "../context/MapFilterContext";
 import { useMapData } from "../hooks/useMapData";
-import { useMarkerClustering } from "../hooks/useMarkerClustering";
+import {
+  useMarkerClustering,
+  regionToZoom,
+} from "../hooks/useMarkerClustering";
 import { useMarkerAnimation } from "../hooks/useMarkerAnimation";
 import { useExplorationTracking } from "../hooks/useExplorationTracking";
 import { WELLINGTON_REGION, isInWellington } from "../constants/wellington";
@@ -109,6 +112,9 @@ export function MapScreen() {
     useMapFilters();
 
   const [visibleRegion, setVisibleRegion] = useState<Region>(WELLINGTON_REGION);
+  const [currentZoom, setCurrentZoom] = useState(() =>
+    regionToZoom(WELLINGTON_REGION.longitudeDelta)
+  );
   const [mapLayout, setMapLayout] = useState<{ width: number; height: number }>(
     { width: 0, height: 0 }
   );
@@ -136,10 +142,11 @@ export function MapScreen() {
     filteredPlaces,
     trails,
     showTrails,
-    visibleRegion,
+    zoom: currentZoom,
   });
 
-  const { getMarkerScale, animateMarkerAppear, animateMarkerPress } = useMarkerAnimation();
+  const { getMarkerScale, animateMarkerAppear, animateMarkerPress } =
+    useMarkerAnimation();
 
   useExplorationTracking(userCoords, places, true);
 
@@ -184,10 +191,13 @@ export function MapScreen() {
 
   const regionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleRegionChangeComplete = useCallback((region: Region) => {
+    // Update zoom immediately so clustering responds without delay
+    setCurrentZoom(regionToZoom(region.longitudeDelta));
+    // Debounce the full region (used by annotatedPlaceIds, etc.)
     if (regionTimerRef.current) clearTimeout(regionTimerRef.current);
     regionTimerRef.current = setTimeout(() => {
       setVisibleRegion(region);
-    }, 150);
+    }, 50);
   }, []);
 
   useEffect(() => {
@@ -335,10 +345,7 @@ export function MapScreen() {
                     );
                   }}
                 >
-                  <ClusterMarker
-                    category={item.category}
-                    count={item.count}
-                  />
+                  <ClusterMarker category={item.category} count={item.count} />
                 </Marker>
               );
             }

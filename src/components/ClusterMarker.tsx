@@ -1,6 +1,5 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
-import { BlurView } from "expo-blur";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { CATEGORY_ICONS } from "./PopularityMarker";
 import { SFIcon } from "./SFIcon";
@@ -42,32 +41,25 @@ function ClusterMarkerInner({ category, count }: ClusterMarkerProps) {
       );
     }
 
+    // Plain View fallback — no BlurView overhead for fast marker rendering
     return (
-      <BlurView
-        intensity={40}
-        tint={isDark ? "dark" : "light"}
-        style={styles.circle}
+      <View
+        style={[
+          styles.circle,
+          {
+            backgroundColor: isDark ? "rgba(30, 30, 30, 0.85)" : "rgba(255, 255, 255, 0.85)",
+            borderColor: color,
+            borderWidth: 2.5,
+          },
+        ]}
       >
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              backgroundColor: isDark
-                ? "rgba(30, 30, 30, 0.6)"
-                : "rgba(255, 255, 255, 0.4)",
-              borderRadius: CLUSTER_SIZE / 2,
-              borderWidth: 2.5,
-              borderColor: color,
-            },
-          ]}
-        />
         <SFIcon
           name={icon.sf}
           fallback={icon.fallback}
           size={ICON_SIZE}
           color={isDark ? "#E8E8E8" : color}
         />
-      </BlurView>
+      </View>
     );
   };
 
@@ -99,10 +91,10 @@ const createStyles = (colors: Colors) =>
       justifyContent: "center",
       overflow: "hidden",
       shadowColor: "#000",
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.2,
-      shadowRadius: 10,
-      elevation: 6,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 6,
+      elevation: 4,
     },
     badge: {
       position: "absolute",

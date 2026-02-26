@@ -1,5 +1,4 @@
 import { useMemo } from "react";
-import { Region } from "react-native-maps";
 import SuperclusterImport, { ClusterProperties } from "supercluster";
 import { Place, PlaceCategory, Trail } from "../types";
 import { WELLINGTON_BOUNDS } from "../constants/wellington";
@@ -51,24 +50,20 @@ const WELLINGTON_BBOX: [number, number, number, number] = [
 
 type PointProps = { placeId: string; category: PlaceCategory; trailId?: string };
 
-function regionToZoom(region: Region): number {
-  return Math.round(Math.log2(360 / Math.max(region.longitudeDelta, 0.0001)));
-}
-
 // --- Hook ---
 
 interface UseMarkerClusteringParams {
   filteredPlaces: Place[];
   trails: Trail[] | null | undefined;
   showTrails: boolean;
-  visibleRegion: Region;
+  zoom: number;
 }
 
 export function useMarkerClustering({
   filteredPlaces,
   trails,
   showTrails,
-  visibleRegion,
+  zoom,
 }: UseMarkerClusteringParams) {
   // Group places by category and build per-category supercluster indices
   const indices = useMemo(() => {
@@ -149,10 +144,7 @@ export function useMarkerClustering({
     return map;
   }, [trails]);
 
-  // Only recompute when zoom level actually changes (not on every pan)
-  const zoom = regionToZoom(visibleRegion);
-
-  // Produce the final mapItems and clusteredTrailIds
+  // Produce the final mapItems and clusteredTrailIds.
   // Uses fixed Wellington bbox so ALL markers are always in the React tree.
   // Only zoom changes trigger re-clustering; panning is handled natively.
   const result = useMemo(() => {
@@ -223,4 +215,9 @@ export function useMarkerClustering({
   }, [indices, zoom, placeMap, trailMap]);
 
   return result;
+}
+
+/** Convert a region's longitudeDelta to an integer zoom level. */
+export function regionToZoom(longitudeDelta: number): number {
+  return Math.round(Math.log2(360 / Math.max(longitudeDelta, 0.0001)));
 }
