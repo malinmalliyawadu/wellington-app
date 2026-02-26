@@ -13,7 +13,7 @@ import { useTheme, type Colors } from "../theme/ThemeContext";
 
 const glassEnabled = isLiquidGlassAvailable();
 
-const CATEGORY_ICONS: Record<
+export const CATEGORY_ICONS: Record<
   PlaceCategory,
   { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }
 > = {
