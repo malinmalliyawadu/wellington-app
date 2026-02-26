@@ -70,6 +70,8 @@ interface AIResponse {
   places: { placeId: string; placeName: string; category: string; reason: string }[];
   events: { eventId: string; eventTitle: string; date: string; startTime?: string; reason: string }[];
   guides: { guideId: string; guideTitle: string; creatorName: string; placeCount: number; reason: string }[];
+  followUp?: string;
+  followUpPrompts?: { label: string; prompt: string }[];
 }
 
 const WEATHER_CODES: Record<number, string> = {
@@ -235,8 +237,12 @@ INSTRUCTIONS:
   "message": "Your friendly response text here",
   "places": [{"placeId": "uuid", "placeName": "Name", "category": "cafe", "reason": "Short reason"}],
   "events": [{"eventId": "uuid", "eventTitle": "Title", "date": "2026-02-20", "startTime": "18:00", "reason": "Short reason"}],
-  "guides": [{"guideId": "uuid", "guideTitle": "Title", "creatorName": "Name", "placeCount": 5, "reason": "Short reason"}]
+  "guides": [{"guideId": "uuid", "guideTitle": "Title", "creatorName": "Name", "placeCount": 5, "reason": "Short reason"}],
+  "followUp": "A short follow-up question to keep the conversation going",
+  "followUpPrompts": [{"label": "Short chip text", "prompt": "Full question sent when tapped"}]
 }
+- Always include a "followUp" — a short conversational follow-up question from you to the user (max 15 words) that naturally continues the topic, e.g. "Want me to find spots with outdoor seating?" or "Keen to hear about weekend markets too?"
+- Include "followUpPrompts" — 0 to 3 tappable prompt chips. Each has a short "label" (max 4 words, shown on the chip) and a "prompt" (the full natural question sent when tapped). E.g. [{"label": "Outdoor spots", "prompt": "Yeah, show me cafes with outdoor seating!"}, {"label": "Show me bars", "prompt": "Nah, what are some good bars instead?"}]. Include 2-3 when there are natural options, 0 if the follow-up is open-ended
 - Only include places/events/guides that exist in the data above
 - Include 1-4 places, 0-3 events, and 0-2 guides as relevant to the question
 - Check the GUIDES section for relevant guides to recommend. If a guide's title, description, or places match the user's query, include it in the guides array
@@ -251,6 +257,8 @@ function normalizeResponse(parsed: Record<string, unknown>): AIResponse {
     places: Array.isArray(parsed.places) ? parsed.places : [],
     events: Array.isArray(parsed.events) ? parsed.events : [],
     guides: Array.isArray(parsed.guides) ? parsed.guides : [],
+    followUp: typeof parsed.followUp === "string" ? parsed.followUp : undefined,
+    followUpPrompts: Array.isArray(parsed.followUpPrompts) ? parsed.followUpPrompts : undefined,
   };
 }
 
@@ -336,6 +344,9 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Start weather fetch immediately — runs in parallel with auth + body parsing
+    const weatherPromise = fetchWeather();
+
     // Verify the user is authenticated
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
@@ -351,7 +362,11 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const [{ data: { user }, error: authError }, body] = await Promise.all([
+      supabase.auth.getUser(),
+      req.json() as Promise<{ messages: ConversationMessage[]; context: AIContext }>,
+    ]);
+
     if (authError || !user) {
       console.error("[ai-chat] Auth failed:", authError?.message ?? "no user");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -360,10 +375,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { messages, context } = (await req.json()) as {
-      messages: ConversationMessage[];
-      context: AIContext;
-    };
+    const { messages, context } = body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages are required" }), {
@@ -383,7 +395,7 @@ Deno.serve(async (req) => {
 
     const client = new Anthropic({ apiKey });
 
-    const weather = await fetchWeather();
+    const weather = await weatherPromise;
     const systemPrompt = buildSystemPrompt(context, weather);
 
     // Create a streaming response using SSE

@@ -15,6 +15,14 @@ import {
   Platform,
   Keyboard,
 } from "react-native";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  withSequence,
+  Easing,
+} from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter, useNavigation, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -53,54 +61,99 @@ const CATEGORY_ICONS: Record<string, { sf: any; fallback: any }> = {
   trail: { sf: "figure.hiking", fallback: "walk" },
 };
 
-function getSuggestionChips(): { label: string; question: string }[] {
+function getGreeting(): { text: string; emoji: string } {
+  const hour = new Date().getHours();
+  if (hour < 12) return { text: "Good morning!", emoji: "☀️" };
+  if (hour < 17) return { text: "Good afternoon!", emoji: "🌤️" };
+  return { text: "Good evening!", emoji: "🌙" };
+}
+
+function getSuggestionChips(): {
+  label: string;
+  emoji: string;
+  description: string;
+  question: string;
+}[] {
   const hour = new Date().getHours();
 
-  const chips: { label: string; question: string }[] = [];
+  const chips: {
+    label: string;
+    emoji: string;
+    description: string;
+    question: string;
+  }[] = [];
 
   chips.push({
     label: "Weekend plans",
+    emoji: "📅",
+    description: "Find things to do this weekend",
     question: "What should I do this weekend?",
   });
 
   if (hour < 11) {
     chips.push({
       label: "Coffee spot",
+      emoji: "☕",
+      description: "Find a cosy cafe nearby",
       question: "Where can I get a good coffee nearby?",
     });
     chips.push({
       label: "Breakfast",
+      emoji: "🍳",
+      description: "Start the day right",
       question: "What's a good breakfast spot?",
     });
   } else if (hour < 14) {
-    chips.push({ label: "Lunch", question: "Where's good for lunch?" });
+    chips.push({
+      label: "Lunch",
+      emoji: "🍽️",
+      description: "Great spots for a midday meal",
+      question: "Where's good for lunch?",
+    });
     chips.push({
       label: "Coffee spot",
+      emoji: "☕",
+      description: "Find a cosy cafe nearby",
       question: "Where can I get a good coffee nearby?",
     });
   } else if (hour < 17) {
     chips.push({
       label: "Afternoon out",
+      emoji: "🌿",
+      description: "Ideas for the afternoon",
       question: "What's good for an afternoon outing?",
     });
     chips.push({
       label: "Coffee spot",
+      emoji: "☕",
+      description: "Find a cosy cafe nearby",
       question: "Where can I get a good coffee nearby?",
     });
   } else {
     chips.push({
       label: "Dinner",
+      emoji: "🍽️",
+      description: "Where to eat tonight",
       question: "Where's good for dinner tonight?",
     });
     chips.push({
       label: "Drinks",
+      emoji: "🍻",
+      description: "Bars and nightlife nearby",
       question: "What's a good bar for drinks tonight?",
     });
   }
 
-  chips.push({ label: "Events", question: "What events are happening soon?" });
+  chips.push({
+    label: "Events",
+    emoji: "🎉",
+    description: "What's happening in Welly",
+    question: "What events are happening soon?",
+  });
   chips.push({
     label: "Hidden gems",
+    emoji: "💎",
+    description: "Off the beaten track spots",
     question: "Show me some hidden gems in Wellington",
   });
 
@@ -148,6 +201,131 @@ function trimIncompleteMarkdown(text: string): string {
 
 const CHAT_STORAGE_KEY = "ai_chat_history";
 let msgId = 0;
+
+function WellyHero({ colors }: { colors: Colors }) {
+  const glowOpacity = useSharedValue(0.15);
+  const scale = useSharedValue(1);
+
+  useEffect(() => {
+    glowOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0.45, {
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        withTiming(0.15, {
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+        })
+      ),
+      -1,
+      false
+    );
+    scale.value = withRepeat(
+      withSequence(
+        withTiming(1.05, {
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+        }),
+        withTiming(1.0, {
+          duration: 2000,
+          easing: Easing.inOut(Easing.ease),
+        })
+      ),
+      -1,
+      false
+    );
+  }, []);
+
+  const glowStyle = useAnimatedStyle(() => ({
+    opacity: glowOpacity.value,
+  }));
+
+  const avatarStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  const greeting = useMemo(() => getGreeting(), []);
+
+  return (
+    <View style={heroStyles.container}>
+      <View style={heroStyles.avatarWrapper}>
+        <Animated.View
+          style={[
+            heroStyles.glow,
+            { backgroundColor: colors.primary },
+            glowStyle,
+          ]}
+        />
+        <Animated.View
+          style={[
+            heroStyles.avatar,
+            { backgroundColor: colors.primary },
+            avatarStyle,
+          ]}
+        >
+          <SFIcon
+            name="sparkles"
+            fallback="sparkles"
+            size={22}
+            color="#FFFFFF"
+          />
+        </Animated.View>
+      </View>
+      <Text style={[heroStyles.brandName, { color: colors.text }]}>Welly</Text>
+      <Text style={heroStyles.greeting}>
+        {greeting.text} {greeting.emoji}
+      </Text>
+      <Text style={[heroStyles.subtitle, { color: colors.textSecondary }]}>
+        What are you keen to do in Wellington?
+      </Text>
+    </View>
+  );
+}
+
+const heroStyles = StyleSheet.create({
+  container: {
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 8,
+  },
+  avatarWrapper: {
+    width: 80,
+    height: 80,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  glow: {
+    position: "absolute",
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+  },
+  avatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 1,
+  },
+  brandName: {
+    fontSize: 28,
+    fontFamily: fonts.pacifico,
+  },
+  greeting: {
+    fontSize: 20,
+    fontFamily: fonts.bold,
+    color: "#333",
+    marginTop: 8,
+  },
+  subtitle: {
+    fontSize: 15,
+    fontFamily: fonts.medium,
+    marginTop: 2,
+  },
+});
 
 export function AIChatScreen() {
   const { colors } = useTheme();
@@ -312,12 +490,13 @@ export function AIChatScreen() {
         content: question,
       };
 
+      const hadMessages = messages.length > 0;
       setMessages((prev) => [...prev, userMsg]);
       setIsLoading(true);
       setIsStreaming(false);
       setStreamingText("");
       setInputText("");
-      scrollToBottom();
+      if (hadMessages) scrollToBottom();
 
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
@@ -546,10 +725,14 @@ export function AIChatScreen() {
       <ScrollView
         ref={scrollRef}
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          !hasMessages && styles.scrollContentIdle,
+        ]}
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
+        scrollEnabled={hasMessages}
         onContentSizeChange={(_w, h) => {
           contentHeight.current = h;
         }}
@@ -559,9 +742,7 @@ export function AIChatScreen() {
       >
         {!hasMessages && (
           <View style={styles.idleContainer}>
-            <Text style={styles.welcomeText}>
-              What would you like to do in Wellington?
-            </Text>
+            <WellyHero colors={colors} />
             <View style={styles.chipsContainer}>
               {suggestionChips.map((chip) => (
                 <HapticPressable
@@ -569,7 +750,12 @@ export function AIChatScreen() {
                   style={styles.chip}
                   onPress={() => handleChipPress(chip.question)}
                 >
-                  <Text style={styles.chipText}>{chip.label}</Text>
+                  <Text style={styles.chipLabel}>
+                    {chip.emoji} {chip.label}
+                  </Text>
+                  <Text style={styles.chipDescription}>
+                    {chip.description}
+                  </Text>
                 </HapticPressable>
               ))}
             </View>
@@ -673,6 +859,30 @@ export function AIChatScreen() {
                     ))}
                   </View>
                 )}
+
+              {msg.aiResponse?.followUp && !isBusy && (
+                <View style={styles.followUpSection}>
+                  <Text style={styles.followUpQuestion}>
+                    {msg.aiResponse.followUp}
+                  </Text>
+                  {msg.aiResponse.followUpPrompts &&
+                    msg.aiResponse.followUpPrompts.length > 0 && (
+                      <View style={styles.followUpChips}>
+                        {msg.aiResponse.followUpPrompts.map((fp) => (
+                          <HapticPressable
+                            key={fp.label}
+                            style={styles.followUpChip}
+                            onPress={() => handleAsk(fp.prompt)}
+                          >
+                            <Text style={styles.followUpChipText}>
+                              {fp.label}
+                            </Text>
+                          </HapticPressable>
+                        ))}
+                      </View>
+                    )}
+                </View>
+              )}
             </View>
           );
         })}
@@ -708,7 +918,7 @@ export function AIChatScreen() {
         <TextInput
           ref={inputRef}
           style={styles.textInput}
-          placeholder="Ask me anything about Wellington..."
+          placeholder={hasMessages ? "Reply..." : "Ask me anything about Wellington..."}
           placeholderTextColor={colors.textMuted}
           value={inputText}
           onChangeText={setInputText}
@@ -942,35 +1152,41 @@ const createStyles = (colors: Colors) =>
       paddingBottom: 16,
       gap: 16,
     },
+    scrollContentIdle: {
+      flexGrow: 1,
+    },
     // Idle state
     idleContainer: {
-      paddingBottom: 8,
-    },
-    welcomeText: {
-      fontSize: 24,
-      fontFamily: fonts.bold,
-      color: colors.text,
-      textAlign: "center",
-      marginBottom: 32,
+      flex: 1,
+      justifyContent: "center",
+      paddingBottom: 24,
     },
     chipsContainer: {
       flexDirection: "row",
       flexWrap: "wrap",
       justifyContent: "center",
       gap: 10,
+      marginTop: 24,
     },
     chip: {
       backgroundColor: colors.primary + "12",
-      paddingHorizontal: 18,
+      paddingHorizontal: 16,
       paddingVertical: 12,
-      borderRadius: 20,
+      borderRadius: 16,
       borderWidth: 1,
       borderColor: colors.primary + "30",
+      width: "47%",
     },
-    chipText: {
+    chipLabel: {
       fontSize: 15,
       fontFamily: fonts.semiBold,
       color: colors.primary,
+    },
+    chipDescription: {
+      fontSize: 12,
+      fontFamily: fonts.medium,
+      color: colors.textMuted,
+      marginTop: 2,
     },
     // Message bubbles
     questionBubble: {
@@ -1018,6 +1234,34 @@ const createStyles = (colors: Colors) =>
     cardsSection: {
       gap: 8,
       marginTop: 4,
+    },
+    followUpSection: {
+      gap: 10,
+      marginTop: 4,
+    },
+    followUpQuestion: {
+      fontSize: 15,
+      fontFamily: fonts.medium,
+      color: colors.textSecondary,
+      fontStyle: "italic",
+    },
+    followUpChips: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+    followUpChip: {
+      backgroundColor: colors.primary + "12",
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 18,
+      borderWidth: 1,
+      borderColor: colors.primary + "30",
+    },
+    followUpChipText: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+      color: colors.primary,
     },
     // Error state
     errorBox: {

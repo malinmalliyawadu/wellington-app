@@ -26,6 +26,8 @@ export interface AIResponse {
   places: AIPlaceRecommendation[];
   events: AIEventRecommendation[];
   guides: AIGuideRecommendation[];
+  followUp?: string;
+  followUpPrompts?: { label: string; prompt: string }[];
 }
 
 export interface ChatMessage {
