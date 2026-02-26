@@ -189,21 +189,9 @@ export function MapScreen() {
     []
   );
 
-  const regionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleRegionChangeComplete = useCallback((region: Region) => {
-    // Update zoom immediately so clustering responds without delay
     setCurrentZoom(regionToZoom(region.longitudeDelta));
-    // Debounce the full region (used by annotatedPlaceIds, etc.)
-    if (regionTimerRef.current) clearTimeout(regionTimerRef.current);
-    regionTimerRef.current = setTimeout(() => {
-      setVisibleRegion(region);
-    }, 50);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (regionTimerRef.current) clearTimeout(regionTimerRef.current);
-    };
+    setVisibleRegion(region);
   }, []);
 
   // Clear active trail highlight when trail sheet is dismissed
