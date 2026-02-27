@@ -12,12 +12,15 @@ import { useTheme, type Colors } from "../theme/ThemeContext";
 import { HapticPressable } from "./HapticPressable";
 import { fonts } from "../theme/fonts";
 
+type EventCardVariant = "default" | "featured" | "small";
+
 interface EventCardProps {
   event: Event;
   place: Place;
   onPress?: () => void;
   hasBorder?: boolean;
   compact?: boolean;
+  variant?: EventCardVariant;
 }
 
 export const CATEGORY_COLORS: Record<Event["category"], string> = {
@@ -81,6 +84,7 @@ export function EventCard({
   onPress,
   hasBorder,
   compact,
+  variant = "default",
 }: EventCardProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -110,6 +114,166 @@ export function EventCard({
   const totalCount = attendeeIds.length;
   const remainingCount = Math.max(0, totalCount - displayIds.length);
 
+  // --- Small variant ---
+  if (variant === "small") {
+    return (
+      <HapticPressable style={styles.smallContainer} onPress={onPress}>
+        <View style={styles.smallImageContainer}>
+          {event.imageUrl ? (
+            <Image source={{ uri: event.imageUrl }} style={styles.image} contentFit="cover" transition={200} />
+          ) : (
+            <LinearGradient
+              colors={[categoryColor, categoryColor + "88"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.image}
+            />
+          )}
+          <LinearGradient
+            colors={["transparent", "rgba(0,0,0,0.7)"]}
+            start={{ x: 0, y: 0.4 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.imageGradient}
+          />
+          <View style={[styles.smallCategoryBadge, { backgroundColor: categoryColor }]}>
+            <Text style={styles.smallCategoryText}>
+              {CATEGORY_LABELS[event.category]}
+            </Text>
+          </View>
+          {event.price == null || event.price === 0 ? (
+            <View style={styles.smallFreeBadge}>
+              <Text style={styles.smallFreeText}>Free</Text>
+            </View>
+          ) : null}
+          <Text style={styles.smallTitle} numberOfLines={2}>
+            {event.title}
+          </Text>
+        </View>
+        <View style={styles.smallFooter}>
+          <View style={styles.footerItem}>
+            <SFIcon name="mappin" fallback="location" size={12} color={colors.textSecondary} />
+            <Text style={styles.smallFooterText} numberOfLines={1}>
+              {place.name}
+            </Text>
+          </View>
+          <View style={styles.footerItem}>
+            <SFIcon name="clock" fallback="time" size={12} color={colors.textSecondary} />
+            <Text style={styles.smallFooterText}>
+              {formatTime(event.startTime)}
+            </Text>
+          </View>
+        </View>
+      </HapticPressable>
+    );
+  }
+
+  // --- Featured variant ---
+  if (variant === "featured") {
+    return (
+      <HapticPressable
+        style={styles.featuredContainer}
+        onPress={onPress}
+      >
+        <View style={styles.featuredImageContainer}>
+          {event.imageUrl ? (
+            <Image source={{ uri: event.imageUrl }} style={styles.image} contentFit="cover" transition={200} />
+          ) : (
+            <LinearGradient
+              colors={[categoryColor, categoryColor + "88"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.image}
+            />
+          )}
+          <LinearGradient
+            colors={["transparent", "rgba(0,0,0,0.75)"]}
+            start={{ x: 0, y: 0.3 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.imageGradient}
+          />
+          <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
+            <Text style={styles.categoryText}>
+              {CATEGORY_LABELS[event.category]}
+            </Text>
+          </View>
+          {event.price != null && event.price > 0 ? (
+            <View style={styles.priceBadge}>
+              <Text style={styles.priceText}>${event.price.toFixed(0)}</Text>
+            </View>
+          ) : (
+            <View style={[styles.priceBadge, styles.freeBadge]}>
+              <Text style={[styles.priceText, styles.freeText]}>Free</Text>
+            </View>
+          )}
+          {glassEnabled ? (
+            <GlassView glassEffectStyle="regular" style={styles.dateBadge}>
+              <Text style={[styles.dateMonth, styles.dateMonthGlass]}>
+                {getMonth(event.date)}
+              </Text>
+              <Text style={[styles.dateDay, styles.dateDayGlass]}>
+                {getDay(event.date)}
+              </Text>
+            </GlassView>
+          ) : (
+            <View style={[styles.dateBadge, styles.dateBadgeFallback]}>
+              <Text style={styles.dateMonth}>{getMonth(event.date)}</Text>
+              <Text style={styles.dateDay}>{getDay(event.date)}</Text>
+            </View>
+          )}
+          {totalCount > 0 && (
+            <View style={styles.featuredAttendeeBadge}>
+              <SFIcon name="person.2.fill" fallback="people" size={12} color="#FFFFFF" />
+              <Text style={styles.featuredAttendeeText}>{totalCount} going</Text>
+            </View>
+          )}
+          <Text style={styles.featuredTitle} numberOfLines={2}>
+            {event.title}
+          </Text>
+        </View>
+        <View style={styles.footer}>
+          <View style={styles.footerInfo}>
+            <View style={styles.footerItem}>
+              <SFIcon name="mappin" fallback="location" size={14} color={colors.textSecondary} />
+              <Text style={styles.footerText} numberOfLines={1}>
+                {place.name}
+              </Text>
+            </View>
+            <View style={styles.footerDot} />
+            <View style={styles.footerItem}>
+              <SFIcon name="clock" fallback="time" size={14} color={colors.textSecondary} />
+              <Text style={styles.footerText}>
+                {formatTime(event.startTime, event.endTime)}
+              </Text>
+            </View>
+          </View>
+          {totalCount > 0 && (
+            <View style={styles.attendeeSection}>
+              <View style={styles.avatarStack}>
+                {displayAttendees.map((user, index) => (
+                  <Image
+                    key={user.id}
+                    source={{ uri: user.avatarUrl }}
+                    style={[
+                      styles.attendeeAvatar,
+                      { marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP },
+                      { zIndex: displayAttendees.length - index },
+                    ]}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                ))}
+              </View>
+              {remainingCount > 0 && (
+                <Text style={styles.attendeeCount}>+{remainingCount}</Text>
+              )}
+            </View>
+          )}
+        </View>
+      </HapticPressable>
+    );
+  }
+
+  // --- Default variant ---
   return (
     <HapticPressable
       style={[
@@ -452,5 +616,109 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     fontFamily: fonts.semiBold,
     color: colors.textSecondary,
     marginTop: 3,
+  },
+  // --- Featured variant styles ---
+  featuredContainer: {
+    backgroundColor: colors.cardBackground,
+    borderRadius: 16,
+    marginHorizontal: 16,
+    overflow: "hidden",
+  },
+  featuredImageContainer: {
+    height: 280,
+    position: "relative",
+  },
+  featuredTitle: {
+    position: "absolute",
+    bottom: 14,
+    left: 14,
+    right: 14,
+    fontSize: 24,
+    fontFamily: fonts.extraBold,
+    color: "#FFFFFF",
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+  },
+  featuredAttendeeBadge: {
+    position: "absolute",
+    bottom: 56,
+    left: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  featuredAttendeeText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontFamily: fonts.semiBold,
+  },
+  // --- Small variant styles ---
+  smallContainer: {
+    width: 160,
+    backgroundColor: colors.cardBackground,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  smallImageContainer: {
+    height: 180,
+    position: "relative",
+  },
+  smallCategoryBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  smallCategoryText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "700",
+    fontFamily: fonts.bold,
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  smallFreeBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    backgroundColor: "#059669",
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  smallFreeText: {
+    color: "#FFFFFF",
+    fontSize: 9,
+    fontWeight: "700",
+    fontFamily: fonts.bold,
+  },
+  smallTitle: {
+    position: "absolute",
+    bottom: 8,
+    left: 8,
+    right: 8,
+    fontSize: 14,
+    fontFamily: fonts.semiBold,
+    color: "#FFFFFF",
+    textShadowColor: "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
+  },
+  smallFooter: {
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    gap: 3,
+  },
+  smallFooterText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    fontFamily: fonts.medium,
   },
 });

@@ -16,7 +16,7 @@ interface QueryResult<T> {
 export function useQuery<T>(
   queryFn: () => Promise<T>,
   key?: unknown,
-  options?: { staleTime?: number }
+  options?: { staleTime?: number; enabled?: boolean }
 ): QueryResult<T> {
   // Keyless calls get a stable unique number — never shares cache with other call sites
   const fallbackKey = useRef(_keylessId++).current;
@@ -34,6 +34,7 @@ export function useQuery<T>(
     staleTime: effectiveStaleTime,
     // Keyless entries are ephemeral — remove from cache immediately on unmount
     gcTime: key !== undefined ? (options?.staleTime ?? STALE_TIME) : 0,
+    enabled: options?.enabled,
   });
 
   const refetch = useCallback(async (): Promise<T> => {
