@@ -413,10 +413,7 @@ export function CreatePostSheetScreen() {
     }
 
     if (createType === "post") {
-      if (!content.trim()) {
-        Alert.alert("Add content", "Please write something about this place");
-        return;
-      }
+      // No content requirement - posts can be media-only
     } else {
       if (!eventTitle.trim()) {
         Alert.alert("Add title", "Please add an event title");
@@ -665,7 +662,7 @@ export function CreatePostSheetScreen() {
   const isFormValid = () => {
     if (!selectedPlace) return false;
     if (createType === "post") {
-      return content.trim().length > 0;
+      return true;
     } else {
       return (
         eventTitle.trim().length > 0 &&
