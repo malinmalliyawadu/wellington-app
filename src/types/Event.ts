@@ -14,4 +14,5 @@ export interface Event {
   ticketUrl?: string;
   price?: number | null;
   creatorId?: string;
+  eventfindaUrl?: string;
 }

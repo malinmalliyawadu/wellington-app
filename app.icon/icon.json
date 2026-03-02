@@ -1,0 +1,122 @@
+{
+  "fill" : {
+    "linear-gradient" : [
+      "display-p3:0.56078,0.83922,1.00000,1.00000",
+      "srgb:0.18431,0.64314,0.78824,1.00000"
+    ],
+    "orientation" : {
+      "start" : {
+        "x" : 0.5,
+        "y" : 0
+      },
+      "stop" : {
+        "x" : 0.5,
+        "y" : 0.7
+      }
+    }
+  },
+  "groups" : [
+    {
+      "blur-material" : 0.5,
+      "hidden" : false,
+      "layers" : [
+        {
+          "glass" : false,
+          "hidden" : false,
+          "image-name" : "ChatGPT Image Feb 27, 2026 at 02_15_56 PM.png",
+          "name" : "ChatGPT Image Feb 27, 2026 at 02_15_56 PM",
+          "position" : {
+            "scale" : 1.1,
+            "translation-in-points" : [
+              -19.6171875,
+              103.40000000000009
+            ]
+          }
+        }
+      ],
+      "lighting" : "individual",
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "specular" : false,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    },
+    {
+      "blur-material" : 0.5,
+      "hidden" : false,
+      "layers" : [
+        {
+          "glass" : true,
+          "image-name" : "ChatGPT Image Feb 27, 2026 at 02_18_16 PM.png",
+          "name" : "ChatGPT Image Feb 27, 2026 at 02_18_16 PM",
+          "opacity" : 0.8,
+          "position" : {
+            "scale" : 1.1900000000000002,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "glass" : false,
+          "hidden" : true,
+          "image-name" : "ChatGPT Image Feb 27, 2026 at 02_13_37 PM.png",
+          "name" : "ChatGPT Image Feb 27, 2026 at 02_13_37 PM",
+          "position" : {
+            "scale" : 1.2,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "layer-color",
+        "opacity" : 0.5
+      },
+      "specular" : false,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    },
+    {
+      "blur-material" : null,
+      "layers" : [
+        {
+          "hidden" : true,
+          "image-name" : "ChatGPT Image Feb 27, 2026 at 02_35_31 PM.png",
+          "name" : "ChatGPT Image Feb 27, 2026 at 02_35_31 PM",
+          "position" : {
+            "scale" : 1.8,
+            "translation-in-points" : [
+              -35.0546875,
+              57.4609375
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "specular" : false,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}

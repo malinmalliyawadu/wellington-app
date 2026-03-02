@@ -103,10 +103,13 @@ create table events (
   category event_category not null,
   ticket_url text,
   price numeric(8,2),
+  eventfinda_id integer unique,
+  eventfinda_url text,
   created_at timestamptz not null default now()
 );
 
 create index events_date_idx on events(date);
+create index events_eventfinda_id_idx on events(eventfinda_id) where eventfinda_id is not null;
 
 -- Event attendees (join table)
 create table event_attendees (

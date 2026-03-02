@@ -120,7 +120,12 @@ export function EventCard({
       <HapticPressable style={styles.smallContainer} onPress={onPress}>
         <View style={styles.smallImageContainer}>
           {event.imageUrl ? (
-            <Image source={{ uri: event.imageUrl }} style={styles.image} contentFit="cover" transition={200} />
+            <Image
+              source={{ uri: event.imageUrl }}
+              style={styles.image}
+              contentFit="cover"
+              transition={200}
+            />
           ) : (
             <LinearGradient
               colors={[categoryColor, categoryColor + "88"]}
@@ -135,7 +140,12 @@ export function EventCard({
             end={{ x: 0, y: 1 }}
             style={styles.imageGradient}
           />
-          <View style={[styles.smallCategoryBadge, { backgroundColor: categoryColor }]}>
+          <View
+            style={[
+              styles.smallCategoryBadge,
+              { backgroundColor: categoryColor },
+            ]}
+          >
             <Text style={styles.smallCategoryText}>
               {CATEGORY_LABELS[event.category]}
             </Text>
@@ -151,13 +161,23 @@ export function EventCard({
         </View>
         <View style={styles.smallFooter}>
           <View style={styles.footerItem}>
-            <SFIcon name="mappin" fallback="location" size={12} color={colors.textSecondary} />
+            <SFIcon
+              name="mappin"
+              fallback="location"
+              size={12}
+              color={colors.textSecondary}
+            />
             <Text style={styles.smallFooterText} numberOfLines={1}>
               {place.name}
             </Text>
           </View>
           <View style={styles.footerItem}>
-            <SFIcon name="clock" fallback="time" size={12} color={colors.textSecondary} />
+            <SFIcon
+              name="clock"
+              fallback="time"
+              size={12}
+              color={colors.textSecondary}
+            />
             <Text style={styles.smallFooterText}>
               {formatTime(event.startTime)}
             </Text>
@@ -170,13 +190,15 @@ export function EventCard({
   // --- Featured variant ---
   if (variant === "featured") {
     return (
-      <HapticPressable
-        style={styles.featuredContainer}
-        onPress={onPress}
-      >
+      <HapticPressable style={styles.featuredContainer} onPress={onPress}>
         <View style={styles.featuredImageContainer}>
           {event.imageUrl ? (
-            <Image source={{ uri: event.imageUrl }} style={styles.image} contentFit="cover" transition={200} />
+            <Image
+              source={{ uri: event.imageUrl }}
+              style={styles.image}
+              contentFit="cover"
+              transition={200}
+            />
           ) : (
             <LinearGradient
               colors={[categoryColor, categoryColor + "88"]}
@@ -191,7 +213,9 @@ export function EventCard({
             end={{ x: 0, y: 1 }}
             style={styles.imageGradient}
           />
-          <View style={[styles.categoryBadge, { backgroundColor: categoryColor }]}>
+          <View
+            style={[styles.categoryBadge, { backgroundColor: categoryColor }]}
+          >
             <Text style={styles.categoryText}>
               {CATEGORY_LABELS[event.category]}
             </Text>
@@ -222,8 +246,15 @@ export function EventCard({
           )}
           {totalCount > 0 && (
             <View style={styles.featuredAttendeeBadge}>
-              <SFIcon name="person.2.fill" fallback="people" size={12} color="#FFFFFF" />
-              <Text style={styles.featuredAttendeeText}>{totalCount} going</Text>
+              <SFIcon
+                name="person.2.fill"
+                fallback="people"
+                size={12}
+                color="#FFFFFF"
+              />
+              <Text style={styles.featuredAttendeeText}>
+                {totalCount} going
+              </Text>
             </View>
           )}
           <Text style={styles.featuredTitle} numberOfLines={2}>
@@ -233,14 +264,24 @@ export function EventCard({
         <View style={styles.footer}>
           <View style={styles.footerInfo}>
             <View style={styles.footerItem}>
-              <SFIcon name="mappin" fallback="location" size={14} color={colors.textSecondary} />
+              <SFIcon
+                name="mappin"
+                fallback="location"
+                size={14}
+                color={colors.textSecondary}
+              />
               <Text style={styles.footerText} numberOfLines={1}>
                 {place.name}
               </Text>
             </View>
             <View style={styles.footerDot} />
             <View style={styles.footerItem}>
-              <SFIcon name="clock" fallback="time" size={14} color={colors.textSecondary} />
+              <SFIcon
+                name="clock"
+                fallback="time"
+                size={14}
+                color={colors.textSecondary}
+              />
               <Text style={styles.footerText}>
                 {formatTime(event.startTime, event.endTime)}
               </Text>
@@ -285,7 +326,12 @@ export function EventCard({
       {/* Image area with overlays */}
       <View style={styles.imageContainer}>
         {event.imageUrl ? (
-          <Image source={{ uri: event.imageUrl }} style={styles.image} contentFit="cover" transition={200} />
+          <Image
+            source={{ uri: event.imageUrl }}
+            style={styles.image}
+            contentFit="cover"
+            transition={200}
+          />
         ) : (
           <LinearGradient
             colors={[categoryColor, categoryColor + "88"]}
@@ -351,13 +397,23 @@ export function EventCard({
         <View style={styles.footerCompact}>
           <View style={styles.footerInfoStacked}>
             <View style={styles.footerItem}>
-              <SFIcon name="mappin" fallback="location" size={14} color={colors.textSecondary} />
+              <SFIcon
+                name="mappin"
+                fallback="location"
+                size={14}
+                color={colors.textSecondary}
+              />
               <Text style={styles.footerText} numberOfLines={1}>
                 {place.name}
               </Text>
             </View>
             <View style={styles.footerItem}>
-              <SFIcon name="clock" fallback="time" size={14} color={colors.textSecondary} />
+              <SFIcon
+                name="clock"
+                fallback="time"
+                size={14}
+                color={colors.textSecondary}
+              />
               <Text style={styles.footerText}>
                 {formatTime(event.startTime, event.endTime)}
               </Text>
@@ -390,14 +446,24 @@ export function EventCard({
         <View style={styles.footer}>
           <View style={styles.footerInfo}>
             <View style={styles.footerItem}>
-              <SFIcon name="mappin" fallback="location" size={14} color={colors.textSecondary} />
+              <SFIcon
+                name="mappin"
+                fallback="location"
+                size={14}
+                color={colors.textSecondary}
+              />
               <Text style={styles.footerText} numberOfLines={1}>
                 {place.name}
               </Text>
             </View>
             <View style={styles.footerDot} />
             <View style={styles.footerItem}>
-              <SFIcon name="clock" fallback="time" size={14} color={colors.textSecondary} />
+              <SFIcon
+                name="clock"
+                fallback="time"
+                size={14}
+                color={colors.textSecondary}
+              />
               <Text style={styles.footerText}>
                 {formatTime(event.startTime, event.endTime)}
               </Text>
@@ -431,294 +497,295 @@ export function EventCard({
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  container: {
-    backgroundColor: colors.cardBackground,
-  },
-  imageContainer: {
-    height: 220,
-    position: "relative",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: colors.gray200,
-  },
-  imageGradient: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: "60%",
-  },
-  // Category badge (top-left)
-  categoryBadge: {
-    position: "absolute",
-    top: 12,
-    left: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 8,
-  },
-  categoryText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "700",
-    fontFamily: fonts.bold,
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
-  priceBadge: {
-    position: "absolute",
-    top: 42,
-    left: 12,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  freeBadge: {
-    backgroundColor: "#059669",
-  },
-  priceText: {
-    color: "#FFFFFF",
-    fontSize: 11,
-    fontWeight: "700",
-    fontFamily: fonts.bold,
-  },
-  freeText: {
-    color: "#FFFFFF",
-  },
-  // Date badge (top-right)
-  dateBadge: {
-    position: "absolute",
-    top: 12,
-    right: 12,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    alignItems: "center",
-    minWidth: 48,
-    overflow: "hidden",
-  },
-  dateBadgeFallback: {
-    backgroundColor: colors.cardBackground,
-  },
-  dateMonth: {
-    fontSize: 10,
-    fontWeight: "700",
-    fontFamily: fonts.bold,
-    color: colors.primary,
-    letterSpacing: 0.5,
-  },
-  dateMonthGlass: {
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  dateDay: {
-    fontSize: 20,
-    fontFamily: fonts.extraBold,
-    color: colors.text,
-    lineHeight: 24,
-  },
-  dateDayGlass: {
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0,0,0,0.3)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
-  },
-  // Title overlaid on image
-  title: {
-    position: "absolute",
-    bottom: 14,
-    left: 14,
-    right: 14,
-    fontSize: 20,
-    fontFamily: fonts.bold,
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0,0,0,0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-  footer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  footerCompact: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  footerInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    marginRight: 8,
-  },
-  footerInfoStacked: {
-    flex: 1,
-    gap: 4,
-    marginRight: 8,
-  },
-  footerItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  footerDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: colors.gray400,
-    marginHorizontal: 8,
-  },
-  footerText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    fontWeight: "500",
-    fontFamily: fonts.medium,
-  },
-  attendeeSection: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  attendeeSectionCompact: {
-    alignItems: "center",
-  },
-  avatarStack: {
-    flexDirection: "row",
-  },
-  attendeeAvatar: {
-    width: AVATAR_SIZE,
-    height: AVATAR_SIZE,
-    borderRadius: AVATAR_SIZE / 2,
-    borderWidth: 2,
-    borderColor: colors.cardBackground,
-    backgroundColor: colors.gray200,
-  },
-  attendeeCount: {
-    fontSize: 12,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.textSecondary,
-    marginLeft: 4,
-  },
-  attendeeCountCompact: {
-    fontSize: 11,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.textSecondary,
-    marginTop: 3,
-  },
-  // --- Featured variant styles ---
-  featuredContainer: {
-    backgroundColor: colors.cardBackground,
-    borderRadius: 16,
-    marginHorizontal: 16,
-    overflow: "hidden",
-  },
-  featuredImageContainer: {
-    height: 280,
-    position: "relative",
-  },
-  featuredTitle: {
-    position: "absolute",
-    bottom: 14,
-    left: 14,
-    right: 14,
-    fontSize: 24,
-    fontFamily: fonts.extraBold,
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0,0,0,0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-  featuredAttendeeBadge: {
-    position: "absolute",
-    bottom: 56,
-    left: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  featuredAttendeeText: {
-    color: "#FFFFFF",
-    fontSize: 12,
-    fontFamily: fonts.semiBold,
-  },
-  // --- Small variant styles ---
-  smallContainer: {
-    width: 160,
-    backgroundColor: colors.cardBackground,
-    borderRadius: 12,
-    overflow: "hidden",
-  },
-  smallImageContainer: {
-    height: 180,
-    position: "relative",
-  },
-  smallCategoryBadge: {
-    position: "absolute",
-    top: 8,
-    left: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  smallCategoryText: {
-    color: "#FFFFFF",
-    fontSize: 9,
-    fontWeight: "700",
-    fontFamily: fonts.bold,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  smallFreeBadge: {
-    position: "absolute",
-    top: 8,
-    right: 8,
-    backgroundColor: "#059669",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  smallFreeText: {
-    color: "#FFFFFF",
-    fontSize: 9,
-    fontWeight: "700",
-    fontFamily: fonts.bold,
-  },
-  smallTitle: {
-    position: "absolute",
-    bottom: 8,
-    left: 8,
-    right: 8,
-    fontSize: 14,
-    fontFamily: fonts.semiBold,
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0,0,0,0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  smallFooter: {
-    paddingHorizontal: 8,
-    paddingVertical: 8,
-    gap: 3,
-  },
-  smallFooterText: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    fontFamily: fonts.medium,
-  },
-});
+const createStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      backgroundColor: colors.cardBackground,
+    },
+    imageContainer: {
+      height: 220,
+      position: "relative",
+    },
+    image: {
+      width: "100%",
+      height: "100%",
+      backgroundColor: colors.gray200,
+    },
+    imageGradient: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: "60%",
+    },
+    // Category badge (top-left)
+    categoryBadge: {
+      position: "absolute",
+      top: 12,
+      left: 12,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderRadius: 100,
+    },
+    categoryText: {
+      color: "#FFFFFF",
+      fontSize: 11,
+      fontWeight: "700",
+      fontFamily: fonts.bold,
+      letterSpacing: 0.8,
+      textTransform: "uppercase",
+    },
+    priceBadge: {
+      position: "absolute",
+      top: 42,
+      left: 12,
+      backgroundColor: "rgba(0,0,0,0.6)",
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 100,
+    },
+    freeBadge: {
+      backgroundColor: "#059669",
+    },
+    priceText: {
+      color: "#FFFFFF",
+      fontSize: 11,
+      fontWeight: "700",
+      fontFamily: fonts.bold,
+    },
+    freeText: {
+      color: "#FFFFFF",
+    },
+    // Date badge (top-right)
+    dateBadge: {
+      position: "absolute",
+      top: 12,
+      right: 12,
+      borderRadius: 18,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+      alignItems: "center",
+      minWidth: 48,
+      overflow: "hidden",
+    },
+    dateBadgeFallback: {
+      backgroundColor: colors.cardBackground,
+    },
+    dateMonth: {
+      fontSize: 10,
+      fontWeight: "700",
+      fontFamily: fonts.bold,
+      color: colors.primary,
+      letterSpacing: 0.5,
+    },
+    dateMonthGlass: {
+      color: "#FFFFFF",
+      textShadowColor: "rgba(0,0,0,0.3)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
+    },
+    dateDay: {
+      fontSize: 20,
+      fontFamily: fonts.extraBold,
+      color: colors.text,
+      lineHeight: 24,
+    },
+    dateDayGlass: {
+      color: "#FFFFFF",
+      textShadowColor: "rgba(0,0,0,0.3)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 2,
+    },
+    // Title overlaid on image
+    title: {
+      position: "absolute",
+      bottom: 14,
+      left: 14,
+      right: 14,
+      fontSize: 20,
+      fontFamily: fonts.bold,
+      color: "#FFFFFF",
+      textShadowColor: "rgba(0,0,0,0.5)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 4,
+    },
+    footer: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+    },
+    footerCompact: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+    },
+    footerInfo: {
+      flexDirection: "row",
+      alignItems: "center",
+      flex: 1,
+      marginRight: 8,
+    },
+    footerInfoStacked: {
+      flex: 1,
+      gap: 4,
+      marginRight: 8,
+    },
+    footerItem: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+    },
+    footerDot: {
+      width: 3,
+      height: 3,
+      borderRadius: 1.5,
+      backgroundColor: colors.gray400,
+      marginHorizontal: 8,
+    },
+    footerText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      fontWeight: "500",
+      fontFamily: fonts.medium,
+    },
+    attendeeSection: {
+      flexDirection: "row",
+      alignItems: "center",
+    },
+    attendeeSectionCompact: {
+      alignItems: "center",
+    },
+    avatarStack: {
+      flexDirection: "row",
+    },
+    attendeeAvatar: {
+      width: AVATAR_SIZE,
+      height: AVATAR_SIZE,
+      borderRadius: AVATAR_SIZE / 2,
+      borderWidth: 2,
+      borderColor: colors.cardBackground,
+      backgroundColor: colors.gray200,
+    },
+    attendeeCount: {
+      fontSize: 12,
+      fontWeight: "600",
+      fontFamily: fonts.semiBold,
+      color: colors.textSecondary,
+      marginLeft: 4,
+    },
+    attendeeCountCompact: {
+      fontSize: 11,
+      fontWeight: "600",
+      fontFamily: fonts.semiBold,
+      color: colors.textSecondary,
+      marginTop: 3,
+    },
+    // --- Featured variant styles ---
+    featuredContainer: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 24,
+      marginHorizontal: 16,
+      overflow: "hidden",
+    },
+    featuredImageContainer: {
+      height: 280,
+      position: "relative",
+    },
+    featuredTitle: {
+      position: "absolute",
+      bottom: 16,
+      left: 18,
+      right: 18,
+      fontSize: 24,
+      fontFamily: fonts.extraBold,
+      color: "#FFFFFF",
+      textShadowColor: "rgba(0,0,0,0.5)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 4,
+    },
+    featuredAttendeeBadge: {
+      position: "absolute",
+      bottom: 56,
+      left: 18,
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 4,
+      backgroundColor: "rgba(0,0,0,0.5)",
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 100,
+    },
+    featuredAttendeeText: {
+      color: "#FFFFFF",
+      fontSize: 12,
+      fontFamily: fonts.semiBold,
+    },
+    // --- Small variant styles ---
+    smallContainer: {
+      width: 160,
+      backgroundColor: colors.cardBackground,
+      borderRadius: 20,
+      overflow: "hidden",
+    },
+    smallImageContainer: {
+      height: 180,
+      position: "relative",
+    },
+    smallCategoryBadge: {
+      position: "absolute",
+      top: 12,
+      left: 12,
+      paddingHorizontal: 6,
+      paddingVertical: 3,
+      borderRadius: 100,
+    },
+    smallCategoryText: {
+      color: "#FFFFFF",
+      fontSize: 9,
+      fontWeight: "700",
+      fontFamily: fonts.bold,
+      letterSpacing: 0.5,
+      textTransform: "uppercase",
+    },
+    smallFreeBadge: {
+      position: "absolute",
+      top: 12,
+      right: 12,
+      backgroundColor: "#059669",
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 100,
+    },
+    smallFreeText: {
+      color: "#FFFFFF",
+      fontSize: 9,
+      fontWeight: "700",
+      fontFamily: fonts.bold,
+    },
+    smallTitle: {
+      position: "absolute",
+      bottom: 10,
+      left: 12,
+      right: 12,
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+      color: "#FFFFFF",
+      textShadowColor: "rgba(0,0,0,0.5)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 3,
+    },
+    smallFooter: {
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      gap: 3,
+    },
+    smallFooterText: {
+      fontSize: 11,
+      color: colors.textSecondary,
+      fontFamily: fonts.medium,
+    },
+  });

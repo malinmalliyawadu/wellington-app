@@ -336,6 +336,7 @@ function mapEvent(row: {
   price: number | null;
   created_at: string;
   creator_id?: string | null;
+  eventfinda_url?: string | null;
 }): Event {
   return {
     id: row.id,
@@ -350,5 +351,6 @@ function mapEvent(row: {
     ticketUrl: row.ticket_url ?? undefined,
     price: row.price,
     creatorId: row.creator_id ?? undefined,
+    eventfindaUrl: row.eventfinda_url ?? undefined,
   };
 }

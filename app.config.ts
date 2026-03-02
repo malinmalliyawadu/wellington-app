@@ -77,10 +77,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         {
           photosPermission:
             "Welly needs access to your photos to share recommendations.",
-          cameraPermission:
-            "Welly needs access to your camera to take photos.",
+          cameraPermission: "Welly needs access to your camera to take photos.",
         },
       ],
+      "./plugins/withIphoneOnly",
       [
         "expo-share-intent",
         {
