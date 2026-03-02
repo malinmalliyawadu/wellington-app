@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { fonts } from '../theme/fonts';
 import { LevelDefinition } from '../types/Exploration';
 import { useTheme, type Colors } from '../theme/ThemeContext';
@@ -12,6 +12,7 @@ interface LevelProgressRingProps {
   pointsToNext: number;
   levelColor: string;
   nextLevel: LevelDefinition | null;
+  illustration?: number;
 }
 
 const BAR_WIDTH = 260;
@@ -25,16 +26,25 @@ export function LevelProgressRing({
   pointsToNext,
   levelColor,
   nextLevel,
+  illustration,
 }: LevelProgressRingProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
 
   return (
     <View style={styles.container}>
-      {/* Level number with colored background */}
-      <View style={[styles.levelCircle, { backgroundColor: levelColor }]}>
-        <Text style={styles.levelNumber}>{level}</Text>
-      </View>
+      {illustration ? (
+        <View style={styles.illustrationContainer}>
+          <Image source={illustration} style={styles.illustration} />
+          <View style={[styles.levelBadge, { backgroundColor: levelColor }]}>
+            <Text style={styles.levelBadgeText}>Lv.{level}</Text>
+          </View>
+        </View>
+      ) : (
+        <View style={[styles.levelCircle, { backgroundColor: levelColor }]}>
+          <Text style={styles.levelNumber}>{level}</Text>
+        </View>
+      )}
 
       <Text style={styles.levelTitle}>{levelTitle}</Text>
       <Text style={styles.totalPoints}>{totalPoints.toLocaleString()} pts</Text>
@@ -72,6 +82,39 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 24,
     paddingHorizontal: 16,
+  },
+  illustrationContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  illustration: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+  },
+  levelBadge: {
+    position: 'absolute',
+    bottom: -4,
+    right: -8,
+    paddingHorizontal: 8,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2.5,
+    borderColor: colors.background,
+  },
+  levelBadgeText: {
+    fontSize: 12,
+    fontFamily: fonts.extraBold,
+    color: '#fff',
   },
   levelCircle: {
     width: 80,

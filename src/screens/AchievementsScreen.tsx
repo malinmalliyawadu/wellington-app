@@ -63,6 +63,7 @@ export function AchievementsScreen() {
           pointsToNext={pointsToNextLevel}
           levelColor={levelDefinition.color}
           nextLevel={next}
+          illustration={levelDefinition.illustration}
         />
 
         {/* Stats Row */}

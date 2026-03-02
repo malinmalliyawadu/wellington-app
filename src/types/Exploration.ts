@@ -79,6 +79,7 @@ export interface LevelDefinition {
   title: string;
   pointsRequired: number;
   color: string;
+  illustration?: number;
 }
 
 export type BadgeType = 'level' | 'activity' | 'wellington';

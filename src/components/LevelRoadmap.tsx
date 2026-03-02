@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Image, StyleSheet } from 'react-native';
 import { LEVEL_DEFINITIONS } from '../data/achievementDefinitions';
 import { fonts } from '../theme/fonts';
 import { useTheme, type Colors } from '../theme/ThemeContext';
@@ -22,7 +22,7 @@ export function LevelRoadmap({ currentLevel, totalPoints }: LevelRoadmapProps) {
 
         return (
           <View key={level.level} style={styles.row}>
-            {/* Connector line + dot */}
+            {/* Connector line + dot/illustration */}
             <View style={styles.timeline}>
               {index > 0 && (
                 <View
@@ -32,13 +32,24 @@ export function LevelRoadmap({ currentLevel, totalPoints }: LevelRoadmapProps) {
                   ]}
                 />
               )}
-              <View
-                style={[
-                  styles.dot,
-                  isReached && { backgroundColor: level.color, borderColor: level.color },
-                  isCurrent && styles.dotCurrent,
-                ]}
-              />
+              {level.illustration ? (
+                <Image
+                  source={level.illustration}
+                  style={[
+                    styles.illustrationDot,
+                    isCurrent && styles.illustrationDotCurrent,
+                    !isReached && styles.illustrationLocked,
+                  ]}
+                />
+              ) : (
+                <View
+                  style={[
+                    styles.dot,
+                    isReached && { backgroundColor: level.color, borderColor: level.color },
+                    isCurrent && styles.dotCurrent,
+                  ]}
+                />
+              )}
               {!isLast && (
                 <View
                   style={[
@@ -82,7 +93,7 @@ const createStyles = (colors: Colors) =>
       minHeight: 48,
     },
     timeline: {
-      width: 32,
+      width: 36,
       alignItems: 'center',
     },
     lineTop: {
@@ -108,6 +119,19 @@ const createStyles = (colors: Colors) =>
       height: 18,
       borderRadius: 9,
       borderWidth: 3,
+    },
+    illustrationDot: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
+    },
+    illustrationDotCurrent: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+    },
+    illustrationLocked: {
+      opacity: 0.35,
     },
     info: {
       flex: 1,

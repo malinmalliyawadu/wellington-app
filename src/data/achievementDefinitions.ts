@@ -45,16 +45,16 @@ export const POINT_VALUES: Record<PointActionType, number> = {
 };
 
 export const LEVEL_DEFINITIONS: LevelDefinition[] = [
-  { level: 1, title: 'Newcomer', pointsRequired: 0, color: '#95A5A6' },
-  { level: 2, title: 'Visitor', pointsRequired: 50, color: '#7F8C8D' },
-  { level: 3, title: 'Local', pointsRequired: 150, color: '#27AE60' },
-  { level: 4, title: 'Explorer', pointsRequired: 350, color: '#2980B9' },
-  { level: 5, title: 'Insider', pointsRequired: 700, color: '#8E44AD' },
-  { level: 6, title: 'Ambassador', pointsRequired: 1200, color: '#E67E22' },
-  { level: 7, title: 'Trailblazer', pointsRequired: 2000, color: '#E74C3C' },
-  { level: 8, title: 'Legend', pointsRequired: 3500, color: '#F39C12' },
-  { level: 9, title: 'Icon', pointsRequired: 6000, color: '#D4930D' },
-  { level: 10, title: 'Wellington Master', pointsRequired: 10000, color: '#FFD700' },
+  { level: 1, title: 'Fresh Arrival', pointsRequired: 0, color: '#95A5A6', illustration: require('../../assets/images/levels/level-1.png') },
+  { level: 2, title: 'Wayfarer', pointsRequired: 50, color: '#7F8C8D', illustration: require('../../assets/images/levels/level-2.png') },
+  { level: 3, title: 'Regular', pointsRequired: 150, color: '#27AE60', illustration: require('../../assets/images/levels/level-3.png') },
+  { level: 4, title: 'Wanderer', pointsRequired: 350, color: '#2980B9', illustration: require('../../assets/images/levels/level-4.png') },
+  { level: 5, title: 'In-the-Know', pointsRequired: 700, color: '#8E44AD', illustration: require('../../assets/images/levels/level-5.png') },
+  { level: 6, title: 'City Advocate', pointsRequired: 1200, color: '#E67E22', illustration: require('../../assets/images/levels/level-6.png') },
+  { level: 7, title: 'Pathfinder', pointsRequired: 2000, color: '#E74C3C', illustration: require('../../assets/images/levels/level-7.png') },
+  { level: 8, title: 'Wellington Legend', pointsRequired: 3500, color: '#F39C12', illustration: require('../../assets/images/levels/level-8.png') },
+  { level: 9, title: 'City Icon', pointsRequired: 6000, color: '#D4930D', illustration: require('../../assets/images/levels/level-9.png') },
+  { level: 10, title: 'Te Whanganui-a-Tara Master', pointsRequired: 10000, color: '#FFD700', illustration: require('../../assets/images/levels/level-10.png') },
 ];
 
 export function getLevelForPoints(points: number): LevelDefinition {
@@ -84,16 +84,16 @@ export function getPointsToNextLevel(points: number): { next: LevelDefinition | 
 
 export const BADGE_DEFINITIONS: BadgeDefinition[] = [
   // Level Badges (10)
-  { id: 'level_1', badgeType: 'level', title: 'Newcomer', description: 'Welcome to Wellington!', iconName: '👋', badgeColor: '#95A5A6', requirement: { type: 'level', level: 1 }, sortOrder: 1 },
-  { id: 'level_2', badgeType: 'level', title: 'Visitor', description: 'Reached Level 2', iconName: '🎒', badgeColor: '#7F8C8D', requirement: { type: 'level', level: 2 }, sortOrder: 2 },
-  { id: 'level_3', badgeType: 'level', title: 'Local', description: 'Reached Level 3', iconName: '🏠', badgeColor: '#27AE60', requirement: { type: 'level', level: 3 }, sortOrder: 3 },
-  { id: 'level_4', badgeType: 'level', title: 'Explorer', description: 'Reached Level 4', iconName: '🧭', badgeColor: '#2980B9', requirement: { type: 'level', level: 4 }, sortOrder: 4 },
-  { id: 'level_5', badgeType: 'level', title: 'Insider', description: 'Reached Level 5', iconName: '🔑', badgeColor: '#8E44AD', requirement: { type: 'level', level: 5 }, sortOrder: 5 },
-  { id: 'level_6', badgeType: 'level', title: 'Ambassador', description: 'Reached Level 6', iconName: '🌟', badgeColor: '#E67E22', requirement: { type: 'level', level: 6 }, sortOrder: 6 },
-  { id: 'level_7', badgeType: 'level', title: 'Trailblazer', description: 'Reached Level 7', iconName: '🔥', badgeColor: '#E74C3C', requirement: { type: 'level', level: 7 }, sortOrder: 7 },
-  { id: 'level_8', badgeType: 'level', title: 'Legend', description: 'Reached Level 8', iconName: '⚡', badgeColor: '#F39C12', requirement: { type: 'level', level: 8 }, sortOrder: 8 },
-  { id: 'level_9', badgeType: 'level', title: 'Icon', description: 'Reached Level 9', iconName: '💎', badgeColor: '#D4930D', requirement: { type: 'level', level: 9 }, sortOrder: 9 },
-  { id: 'level_10', badgeType: 'level', title: 'Wellington Master', description: 'Reached Level 10', iconName: '👑', badgeColor: '#FFD700', requirement: { type: 'level', level: 10 }, sortOrder: 10 },
+  { id: 'level_1', badgeType: 'level', title: 'Fresh Arrival', description: 'Welcome to Wellington!', iconName: '👋', badgeColor: '#95A5A6', requirement: { type: 'level', level: 1 }, sortOrder: 1 },
+  { id: 'level_2', badgeType: 'level', title: 'Wayfarer', description: 'Reached Level 2', iconName: '🎒', badgeColor: '#7F8C8D', requirement: { type: 'level', level: 2 }, sortOrder: 2 },
+  { id: 'level_3', badgeType: 'level', title: 'Regular', description: 'Reached Level 3', iconName: '🏠', badgeColor: '#27AE60', requirement: { type: 'level', level: 3 }, sortOrder: 3 },
+  { id: 'level_4', badgeType: 'level', title: 'Wanderer', description: 'Reached Level 4', iconName: '🧭', badgeColor: '#2980B9', requirement: { type: 'level', level: 4 }, sortOrder: 4 },
+  { id: 'level_5', badgeType: 'level', title: 'In-the-Know', description: 'Reached Level 5', iconName: '🔑', badgeColor: '#8E44AD', requirement: { type: 'level', level: 5 }, sortOrder: 5 },
+  { id: 'level_6', badgeType: 'level', title: 'City Advocate', description: 'Reached Level 6', iconName: '🌟', badgeColor: '#E67E22', requirement: { type: 'level', level: 6 }, sortOrder: 6 },
+  { id: 'level_7', badgeType: 'level', title: 'Pathfinder', description: 'Reached Level 7', iconName: '🔥', badgeColor: '#E74C3C', requirement: { type: 'level', level: 7 }, sortOrder: 7 },
+  { id: 'level_8', badgeType: 'level', title: 'Wellington Legend', description: 'Reached Level 8', iconName: '⚡', badgeColor: '#F39C12', requirement: { type: 'level', level: 8 }, sortOrder: 8 },
+  { id: 'level_9', badgeType: 'level', title: 'City Icon', description: 'Reached Level 9', iconName: '💎', badgeColor: '#D4930D', requirement: { type: 'level', level: 9 }, sortOrder: 9 },
+  { id: 'level_10', badgeType: 'level', title: 'Te Whanganui-a-Tara Master', description: 'Reached Level 10', iconName: '👑', badgeColor: '#FFD700', requirement: { type: 'level', level: 10 }, sortOrder: 10 },
 
   // Activity Badges (8)
   { id: 'first_post', badgeType: 'activity', title: 'First Post', description: 'Create your first post', iconName: '📝', badgeColor: '#3498DB', requirement: { type: 'action_count', actionType: 'post_photo', count: 1 }, sortOrder: 11 },

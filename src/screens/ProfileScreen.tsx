@@ -318,13 +318,16 @@ export function ProfileScreen() {
             />
           )}
           <View style={styles.identityColumn}>
-            <Text
-              testID="profile-display-name"
-              style={styles.displayName}
-              numberOfLines={1}
-            >
-              {currentUser.displayName}
-            </Text>
+            <View style={styles.nameRow}>
+              <Text
+                testID="profile-display-name"
+                style={styles.displayName}
+                numberOfLines={1}
+              >
+                {currentUser.displayName}
+              </Text>
+              <LevelBadge level={level} totalPoints={totalPoints} size="small" />
+            </View>
             <Text
               testID="profile-username"
               style={styles.username}
@@ -392,9 +395,13 @@ export function ProfileScreen() {
             onPress={() => router.push("/profile/edit-profile")}
             style={styles.editButton}
           />
-          <HapticPressable onPress={() => router.push("/profile/achievements")}>
-            <LevelBadge level={level} totalPoints={totalPoints} size="medium" />
-          </HapticPressable>
+          <LiquidGlassButton
+            icon="trophy"
+            iconOnly
+            variant="secondary"
+            size="small"
+            onPress={() => router.push("/profile/achievements")}
+          />
           <LiquidGlassButton
             icon="bookmark"
             iconOnly
@@ -489,10 +496,16 @@ const createStyles = (colors: Colors) =>
     identityColumn: {
       flex: 1,
     },
+    nameRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
     displayName: {
       fontSize: 20,
       fontFamily: fonts.bold,
       color: colors.text,
+      flexShrink: 1,
     },
     username: {
       fontSize: 14,

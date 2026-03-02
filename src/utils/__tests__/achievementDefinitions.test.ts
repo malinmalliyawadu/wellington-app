@@ -3,7 +3,7 @@ import { getLevelForPoints, getPointsToNextLevel, LEVEL_DEFINITIONS, POINT_VALUE
 describe('getLevelForPoints', () => {
   it('returns level 1 for 0 points', () => {
     expect(getLevelForPoints(0).level).toBe(1);
-    expect(getLevelForPoints(0).title).toBe('Newcomer');
+    expect(getLevelForPoints(0).title).toBe('Fresh Arrival');
   });
 
   it('returns level 2 at 50 points', () => {
@@ -12,7 +12,7 @@ describe('getLevelForPoints', () => {
 
   it('returns level 10 at 10000 points', () => {
     expect(getLevelForPoints(10000).level).toBe(10);
-    expect(getLevelForPoints(10000).title).toBe('Wellington Master');
+    expect(getLevelForPoints(10000).title).toBe('Te Whanganui-a-Tara Master');
   });
 
   it('returns level 10 for points above 10000', () => {
