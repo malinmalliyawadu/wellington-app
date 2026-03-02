@@ -280,7 +280,7 @@ function PopularityMarkerInner({
                     source={{ uri: avatarUrl }}
                     style={[styles.avatar, { left: i * 10 }]}
                     contentFit="cover"
-                    transition={200}
+                    transition={0}
                   />
                 ))}
               </View>
@@ -303,7 +303,7 @@ function PopularityMarkerInner({
                     source={{ uri: avatarUrl }}
                     style={[styles.avatar, { left: i * 10 }]}
                     contentFit="cover"
-                    transition={200}
+                    transition={0}
                   />
                 ))}
               </View>

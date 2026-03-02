@@ -492,15 +492,29 @@ Deno.serve(async (req) => {
       let placeId: string | null = null;
 
       if (!dryRun) {
-        // Case-insensitive name match — try both with and without ", Wellington"
-        const { data: existingPlaces } = await supabase
+        // Case-insensitive name match — try stripped name first, then raw
+        const { data: match1 } = await supabase
           .from("places")
           .select("id")
-          .or(`name.ilike.${venueName},name.ilike.${rawVenueName}`)
+          .ilike("name", venueName)
           .limit(1);
 
-        if (existingPlaces && existingPlaces.length > 0) {
-          placeId = existingPlaces[0].id;
+        if (match1 && match1.length > 0) {
+          placeId = match1[0].id;
+        } else if (rawVenueName !== venueName) {
+          // Try the original name with ", Wellington" suffix
+          const { data: match2 } = await supabase
+            .from("places")
+            .select("id")
+            .ilike("name", rawVenueName)
+            .limit(1);
+          if (match2 && match2.length > 0) {
+            placeId = match2[0].id;
+          }
+        }
+
+        if (placeId) {
+          // found existing place
         } else {
           // Create new place
           const lat = ef.point?.lat ?? -41.2924;

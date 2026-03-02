@@ -129,6 +129,10 @@ export function useMapData({
     return allPlaces.filter((place) => {
       // Exclude trail shadow places — trails have their own polyline overlay
       if (place.category === 'trail') return false;
+      // Only show places that have posts or upcoming events
+      const hasActivity =
+        popularityMap.has(place.id) || placeEventsMap.has(place.id);
+      if (!hasActivity) return false;
       if (
         selectedCategories.length > 0 &&
         !selectedCategories.includes(place.category)
@@ -148,6 +152,7 @@ export function useMapData({
     selectedCategories,
     showFollowingOnly,
     popularityMap,
+    placeEventsMap,
     followingSet,
   ]);
 

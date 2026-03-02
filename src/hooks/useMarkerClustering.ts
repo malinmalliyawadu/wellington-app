@@ -38,6 +38,7 @@ export type MapItem = MapItemPlace | MapItemCluster | MapItemTrail;
 
 const CLUSTER_RADIUS = 40;
 const MAX_ZOOM = 20;
+const MAX_PLACE_MARKERS = 80;
 
 // Fixed bbox covering all of Wellington — all markers are always returned,
 // react-native-maps handles viewport culling natively (same as pre-clustering).
@@ -147,8 +148,11 @@ export function useMarkerClustering({
   // Produce the final mapItems and clusteredTrailIds.
   // Uses fixed Wellington bbox so ALL markers are always in the React tree.
   // Only zoom changes trigger re-clustering; panning is handled natively.
+  // Place markers are capped at MAX_PLACE_MARKERS to prevent crashes from
+  // too many heavy BlurView/GlassView components rendering simultaneously.
   const result = useMemo(() => {
-    const items: MapItem[] = [];
+    const clusterItems: MapItem[] = [];
+    const placeItems: MapItemPlace[] = [];
     const clusteredTrails = new Set<string>();
 
     for (const [category, index] of indices) {
@@ -182,7 +186,7 @@ export function useMarkerClustering({
             }
           }
 
-          items.push({
+          clusterItems.push({
             kind: "cluster",
             id: clusterId,
             category,
@@ -198,19 +202,26 @@ export function useMarkerClustering({
           if (pointProps.trailId) {
             const trail = trailMap.get(pointProps.trailId);
             if (trail) {
-              items.push({ kind: "trail", trail });
+              clusterItems.push({ kind: "trail", trail });
             }
           } else {
             // Regular place
             const place = placeMap.get(pointProps.placeId);
             if (place) {
-              items.push({ kind: "place", place });
+              placeItems.push({ kind: "place", place });
             }
           }
         }
       }
     }
 
+    // Cap place markers to prevent too many heavy native views
+    const cappedPlaces =
+      placeItems.length <= MAX_PLACE_MARKERS
+        ? placeItems
+        : placeItems.slice(0, MAX_PLACE_MARKERS);
+
+    const items: MapItem[] = [...clusterItems, ...cappedPlaces];
     return { mapItems: items, clusteredTrailIds: clusteredTrails };
   }, [indices, zoom, placeMap, trailMap]);
 

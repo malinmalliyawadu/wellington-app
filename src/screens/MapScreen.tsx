@@ -150,8 +150,19 @@ export function MapScreen() {
     zoom: currentZoom,
   });
 
-  const { getMarkerScale, animateMarkerAppear, animateMarkerPress } =
+  const { getMarkerScale, animateMarkerAppear, animateMarkerPress, pruneMarkers } =
     useMarkerAnimation();
+
+  // Clean up animation state for markers no longer on the map
+  useEffect(() => {
+    const activePlaceIds = new Set<string>();
+    for (const item of mapItems) {
+      if (item.kind === "place") {
+        activePlaceIds.add(item.place.id);
+      }
+    }
+    pruneMarkers(activePlaceIds);
+  }, [mapItems, pruneMarkers]);
 
   useExplorationTracking(userCoords, places, true);
 
