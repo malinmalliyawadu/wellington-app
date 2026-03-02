@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { Place } from "../types";
 
 interface GooglePlaceResult {
@@ -36,11 +37,32 @@ const GOOGLE_PLACES_API_KEY =
   process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || "";
 
 const FETCH_TIMEOUT = 10000; // 10 seconds
+const CACHE_TTL = 1000 * 60 * 60 * 48; // 48 hours
+const SEARCH_CACHE_PREFIX = "places_search:";
+const NEARBY_CACHE_PREFIX = "places_nearby:";
 
 function fetchWithTimeout(url: string, timeout = FETCH_TIMEOUT): Promise<Response> {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(id));
+}
+
+async function getCached<T>(key: string): Promise<T | null> {
+  try {
+    const stored = await AsyncStorage.getItem(key);
+    if (stored) {
+      const parsed = JSON.parse(stored) as { data: T; timestamp: number };
+      if (Date.now() - parsed.timestamp < CACHE_TTL) {
+        return parsed.data;
+      }
+      AsyncStorage.removeItem(key);
+    }
+  } catch {}
+  return null;
+}
+
+function setCache<T>(key: string, data: T): void {
+  AsyncStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() })).catch(() => {});
 }
 
 // Calculate distance between two coordinates in meters
@@ -139,6 +161,14 @@ export async function searchNearbyPlaces(
     return [];
   }
 
+  // Round coords to ~100m for cache key (3 decimal places)
+  const cacheKey = `${NEARBY_CACHE_PREFIX}${latitude.toFixed(3)},${longitude.toFixed(3)},${radius}`;
+  const cached = await getCached<Omit<Place, "id">[]>(cacheKey);
+  if (cached) {
+    console.log("[NearbyPlaces] Returning cached results");
+    return cached;
+  }
+
   try {
     // Use Nearby Search API
     const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}&type=establishment&key=${GOOGLE_PLACES_API_KEY}`;
@@ -213,10 +243,13 @@ export async function searchNearbyPlaces(
     );
 
     // Remove extra properties before returning (keep rating and ratingsTotal)
-    return mappedResults.map(({ distance, popularityScore, ...place }: { distance: number; popularityScore: number; ratingsTotal?: number; [key: string]: unknown }) => ({
+    const results = mappedResults.map(({ distance, popularityScore, ...place }: { distance: number; popularityScore: number; ratingsTotal?: number; [key: string]: unknown }) => ({
       ...place,
       userRatingsTotal: place.ratingsTotal,
     }));
+
+    setCache(cacheKey, results);
+    return results;
   } catch (error) {
     console.error("Nearby search error:", error);
     return [];
@@ -235,6 +268,13 @@ export async function searchGooglePlaces(
   if (!GOOGLE_PLACES_API_KEY) {
     console.warn("Google Places API key not configured");
     return [];
+  }
+
+  const cacheKey = `${SEARCH_CACHE_PREFIX}${query.trim().toLowerCase()}`;
+  const cached = await getCached<Omit<Place, "id">[]>(cacheKey);
+  if (cached) {
+    console.log("[PlacesSearch] Returning cached results for:", query);
+    return cached;
   }
 
   try {
@@ -277,11 +317,12 @@ export async function searchGooglePlaces(
       return [];
     }
 
-    // Step 2: Fetch details for each prediction (limit to first 10)
-    const predictions = autocompleteData.predictions.slice(0, 10);
+    // Step 2: Fetch details for each prediction (limit to first 5)
+    // Only request Basic fields to avoid Atmosphere SKU charges
+    const predictions = autocompleteData.predictions.slice(0, 5);
     const detailsPromises = predictions.map(
       async (prediction: AutocompletePrediction) => {
-        const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=name,formatted_address,geometry,types,rating,user_ratings_total&key=${GOOGLE_PLACES_API_KEY}`;
+        const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${prediction.place_id}&fields=name,formatted_address,geometry,types&key=${GOOGLE_PLACES_API_KEY}`;
 
         const detailsResponse = await fetchWithTimeout(detailsUrl);
         const detailsData = await detailsResponse.json();
@@ -301,8 +342,6 @@ export async function searchGooglePlaces(
             longitude: result.geometry.location.lng,
             category: mapGoogleCategory(result.types || []),
             googlePlaceId: prediction.place_id,
-            rating: result.rating,
-            userRatingsTotal: result.user_ratings_total,
           };
         }
         return null;
@@ -314,6 +353,7 @@ export async function searchGooglePlaces(
 
     console.log("Final mapped results count:", mappedResults.length);
 
+    setCache(cacheKey, mappedResults);
     return mappedResults;
   } catch (error) {
     console.error("Google Places search error:", error);

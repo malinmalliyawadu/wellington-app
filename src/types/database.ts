@@ -41,6 +41,9 @@ export type Database = {
           address: string;
           latitude: number;
           longitude: number;
+          rating: number | null;
+          user_ratings_total: number | null;
+          rating_fetched_at: string | null;
           created_at: string;
         };
         Insert: {
@@ -50,6 +53,9 @@ export type Database = {
           address: string;
           latitude: number;
           longitude: number;
+          rating?: number | null;
+          user_ratings_total?: number | null;
+          rating_fetched_at?: string | null;
           created_at?: string;
         };
         Update: {
@@ -58,6 +64,9 @@ export type Database = {
           address?: string;
           latitude?: number;
           longitude?: number;
+          rating?: number | null;
+          user_ratings_total?: number | null;
+          rating_fetched_at?: string | null;
         };
         Relationships: [];
       };

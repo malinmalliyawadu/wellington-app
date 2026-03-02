@@ -208,7 +208,7 @@ function trimIncompleteMarkdown(text: string): string {
 const CHAT_STORAGE_KEY = "ai_chat_history";
 let msgId = 0;
 
-function WellyHero({ colors }: { colors: Colors }) {
+function WellyHero({ colors, userName }: { colors: Colors; userName?: string }) {
   const glowOpacity = useSharedValue(0.15);
   const scale = useSharedValue(1);
 
@@ -280,7 +280,7 @@ function WellyHero({ colors }: { colors: Colors }) {
       </View>
       <Text style={[heroStyles.brandName, { color: colors.text }]}>Welly</Text>
       <Text style={heroStyles.greeting}>
-        {greeting.text} {greeting.emoji}
+        {greeting.text}{userName ? ` ${userName}` : ""} {greeting.emoji}
       </Text>
       <Text style={[heroStyles.subtitle, { color: colors.textSecondary }]}>
         What are you keen to do in Wellington?
@@ -565,6 +565,7 @@ export function AIChatScreen() {
         await askAIStreaming(
           conversationHistory,
           {
+            userName: profile?.displayName,
             places: cachedPlaces,
             events: cachedEvents,
             feedPosts,
@@ -749,7 +750,7 @@ export function AIChatScreen() {
       >
         {!hasMessages && (
           <View style={styles.idleContainer}>
-            <WellyHero colors={colors} />
+            <WellyHero colors={colors} userName={profile?.displayName} />
             <View style={styles.chipsContainer}>
               {suggestionChips.map((chip) => (
                 <HapticPressable

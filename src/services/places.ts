@@ -37,6 +37,9 @@ export async function createPlace(place: Omit<Place, 'id'>): Promise<Place> {
       latitude: place.latitude,
       longitude: place.longitude,
       google_place_id: place.googlePlaceId,
+      rating: place.rating ?? null,
+      user_ratings_total: place.userRatingsTotal ?? null,
+      rating_fetched_at: place.rating ? new Date().toISOString() : null,
     })
     .select()
     .single();
@@ -44,6 +47,21 @@ export async function createPlace(place: Omit<Place, 'id'>): Promise<Place> {
   if (error) throw error;
 
   return mapPlace(data);
+}
+
+export async function updatePlaceRating(
+  placeId: string,
+  rating: number,
+  userRatingsTotal?: number
+): Promise<void> {
+  await supabase
+    .from('places')
+    .update({
+      rating,
+      user_ratings_total: userRatingsTotal ?? null,
+      rating_fetched_at: new Date().toISOString(),
+    })
+    .eq('id', placeId);
 }
 
 export async function getPlacesByIds(ids: string[]): Promise<Place[]> {
@@ -86,6 +104,8 @@ function mapPlace(row: {
   latitude: number;
   longitude: number;
   google_place_id?: string;
+  rating?: number | null;
+  user_ratings_total?: number | null;
 }): Place {
   return {
     id: row.id,
@@ -95,5 +115,7 @@ function mapPlace(row: {
     latitude: row.latitude,
     longitude: row.longitude,
     googlePlaceId: row.google_place_id,
+    rating: row.rating ?? undefined,
+    userRatingsTotal: row.user_ratings_total ?? undefined,
   };
 }

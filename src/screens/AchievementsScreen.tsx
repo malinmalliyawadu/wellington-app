@@ -50,7 +50,7 @@ export function AchievementsScreen() {
         style={styles.scrollView}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: headerHeight + 8, paddingBottom: 32 + insets.bottom },
+          { paddingTop: headerHeight + 8, paddingBottom: insets.bottom + 60 },
         ]}
         showsVerticalScrollIndicator={false}
       >

@@ -135,7 +135,7 @@ export function PlacePostsSheetScreen() {
   // Fetch place details from Google Places API (skip for trails)
   useEffect(() => {
     if (place && place.category !== 'trail' && !place.rating) {
-      fetchPlaceDetails(place.latitude, place.longitude, place.name).then(
+      fetchPlaceDetails(place.latitude, place.longitude, place.name, place.id).then(
         (details) => {
           if (details.rating) {
             setPlaceDetails(details);

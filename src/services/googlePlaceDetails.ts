@@ -1,7 +1,12 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { updatePlaceRating } from "./places";
+
 const GOOGLE_PLACES_API_KEY =
   process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || "";
 
 const FETCH_TIMEOUT = 10000;
+const CACHE_TTL = 1000 * 60 * 60 * 48; // 48 hours
+const CACHE_PREFIX = "place_details:";
 
 function fetchWithTimeout(url: string, timeout = FETCH_TIMEOUT): Promise<Response> {
   const controller = new AbortController();
@@ -14,9 +19,38 @@ interface PlaceDetails {
   userRatingsTotal?: number;
 }
 
-// Simple in-memory cache to avoid repeated API calls for the same place
-const detailsCache = new Map<string, { data: PlaceDetails; timestamp: number }>();
-const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+// In-memory cache (fast path), backed by AsyncStorage (persistent)
+const memoryCache = new Map<string, { data: PlaceDetails; timestamp: number }>();
+
+async function getCached(key: string): Promise<PlaceDetails | null> {
+  // Check memory first
+  const mem = memoryCache.get(key);
+  if (mem && Date.now() - mem.timestamp < CACHE_TTL) {
+    return mem.data;
+  }
+
+  // Check AsyncStorage
+  try {
+    const stored = await AsyncStorage.getItem(CACHE_PREFIX + key);
+    if (stored) {
+      const parsed = JSON.parse(stored) as { data: PlaceDetails; timestamp: number };
+      if (Date.now() - parsed.timestamp < CACHE_TTL) {
+        memoryCache.set(key, parsed);
+        return parsed.data;
+      }
+      // Expired — clean up
+      AsyncStorage.removeItem(CACHE_PREFIX + key);
+    }
+  } catch {}
+
+  return null;
+}
+
+function setCache(key: string, data: PlaceDetails): void {
+  const entry = { data, timestamp: Date.now() };
+  memoryCache.set(key, entry);
+  AsyncStorage.setItem(CACHE_PREFIX + key, JSON.stringify(entry)).catch(() => {});
+}
 
 /**
  * Fetches Google Places rating and review count for a place.
@@ -26,14 +60,15 @@ const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
 export async function fetchPlaceDetails(
   latitude: number,
   longitude: number,
-  name: string
+  name: string,
+  placeId?: string
 ): Promise<PlaceDetails> {
   const cacheKey = `${latitude},${longitude},${name}`;
 
-  // Check cache first
-  const cached = detailsCache.get(cacheKey);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.data;
+  // Check cache first (memory → AsyncStorage)
+  const cached = await getCached(cacheKey);
+  if (cached) {
+    return cached;
   }
 
   if (!GOOGLE_PLACES_API_KEY) {
@@ -96,30 +131,23 @@ export async function fetchPlaceDetails(
 
     const matchedPlace = scoredCandidates[0];
 
-    if (!matchedPlace?.place_id) {
+    if (!matchedPlace) {
       return {};
     }
 
-    // Step 2: Use Place Details API to get complete information
-    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${matchedPlace.place_id}&fields=rating,user_ratings_total&key=${GOOGLE_PLACES_API_KEY}`;
-
-    const detailsResponse = await fetchWithTimeout(detailsUrl);
-    const detailsData = await detailsResponse.json();
-
-    if (detailsData.status !== "OK") {
-      console.error("[PlaceDetails] Details API error:", detailsData.status, detailsData.error_message);
-      return {};
-    }
-
-    const result = detailsData.result;
-
+    // Use rating data already returned by Nearby Search (no extra API call needed)
     const details: PlaceDetails = {
-      rating: result.rating,
-      userRatingsTotal: result.user_ratings_total,
+      rating: matchedPlace.rating,
+      userRatingsTotal: matchedPlace.user_ratings_total,
     };
 
-    // Cache the result
-    detailsCache.set(cacheKey, { data: details, timestamp: Date.now() });
+    // Cache the result (memory + AsyncStorage)
+    setCache(cacheKey, details);
+
+    // Persist to DB so future loads skip Google entirely
+    if (placeId && details.rating) {
+      updatePlaceRating(placeId, details.rating, details.userRatingsTotal).catch(() => {});
+    }
 
     return details;
   } catch (error) {

@@ -72,7 +72,7 @@ export function PlacePostsSheet({
   // Fetch place details if not already present
   useEffect(() => {
     if (!place.rating) {
-      fetchPlaceDetails(place.latitude, place.longitude, place.name).then(
+      fetchPlaceDetails(place.latitude, place.longitude, place.name, place.id).then(
         (details) => {
           if (details.rating) {
             setPlaceDetails(details);

@@ -83,7 +83,7 @@ export function PlaceDetailScreen() {
   // Fetch place details from Google Places API (skip for trails)
   useEffect(() => {
     if (place && place.category !== 'trail' && !place.rating) {
-      fetchPlaceDetails(place.latitude, place.longitude, place.name).then(details => {
+      fetchPlaceDetails(place.latitude, place.longitude, place.name, place.id).then(details => {
         if (details.rating) {
           setPlaceDetails(details);
         }

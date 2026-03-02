@@ -1,7 +1,7 @@
--- Add new badge types to the achievement_type enum
-ALTER TYPE achievement_type ADD VALUE IF NOT EXISTS 'level';
-ALTER TYPE achievement_type ADD VALUE IF NOT EXISTS 'activity';
-ALTER TYPE achievement_type ADD VALUE IF NOT EXISTS 'wellington';
+-- Update check constraint to allow new badge types
+ALTER TABLE achievement_definitions DROP CONSTRAINT IF EXISTS achievement_definitions_type_check;
+ALTER TABLE achievement_definitions ADD CONSTRAINT achievement_definitions_type_check
+  CHECK (type IN ('category', 'milestone', 'neighborhood', 'social', 'level', 'activity', 'wellington'));
 
 -- Seed the 24 new badge definitions
 -- Level Badges (10)

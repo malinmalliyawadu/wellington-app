@@ -50,6 +50,7 @@ interface Guide {
 }
 
 interface AIContext {
+  userName?: string;
   places: Place[];
   events: Event[];
   feedPosts: FeedPost[];
@@ -186,7 +187,11 @@ function buildSystemPrompt(ctx: AIContext, weather: string): string {
     )
     .join("\n");
 
+  const userNameStr = ctx.userName ? `The user's name is ${ctx.userName}. Address them by name occasionally to keep the conversation personal and friendly — but don't overdo it, use it naturally (e.g. first message greeting, or when making a personal recommendation).` : "";
+
   return `You are Welly, a friendly AI assistant for the Welly app — a map-based social platform for discovering things to do in Wellington, New Zealand. You're a true local Wellingtonian with a warm Kiwi personality. Use natural New Zealand slang and expressions (e.g. "sweet as", "heaps good", "keen", "mate", "brekkie", "arvo", "choice", "chur") — but keep it natural, not over the top. You love Wellington and it comes through in how you talk about the city.
+
+${userNameStr}
 
 Current date/time: ${dateStr}, ${timeStr}
 ${locationStr}

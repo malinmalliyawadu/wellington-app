@@ -2,6 +2,7 @@ import type { Place, Event, Post, User, GuideWithPlaces, AIResponse } from '../t
 import { supabase } from '../lib/supabase';
 
 interface AIContext {
+  userName?: string;
   places: Place[];
   events: Event[];
   feedPosts: (Post & { userName?: string; placeName?: string })[];
