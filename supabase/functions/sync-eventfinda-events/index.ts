@@ -238,18 +238,49 @@ function inferPlaceCategory(venueName: string): string {
 }
 
 function stripHtml(html: string): string {
+  const NAMED_ENTITIES: Record<string, string> = {
+    amp: "&",
+    lt: "<",
+    gt: ">",
+    quot: '"',
+    apos: "'",
+    nbsp: " ",
+    ndash: "\u2013",
+    mdash: "\u2014",
+    lsquo: "\u2018",
+    rsquo: "\u2019",
+    ldquo: "\u201C",
+    rdquo: "\u201D",
+    bull: "\u2022",
+    hellip: "\u2026",
+    copy: "\u00A9",
+    reg: "\u00AE",
+    trade: "\u2122",
+    frac12: "\u00BD",
+    frac14: "\u00BC",
+    frac34: "\u00BE",
+    deg: "\u00B0",
+    times: "\u00D7",
+    divide: "\u00F7",
+    plusmn: "\u00B1",
+    cent: "\u00A2",
+    pound: "\u00A3",
+    euro: "\u20AC",
+    laquo: "\u00AB",
+    raquo: "\u00BB",
+  };
+
   return html
     .replace(/<br\s*\/?>/gi, "\n")
     .replace(/<[^>]+>/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'")
-    .replace(/&#x27;/g, "'")
-    .replace(/&#x2F;/g, "/")
-    .replace(/&apos;/g, "'")
-    .replace(/&nbsp;/g, " ")
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) =>
+      String.fromCharCode(parseInt(hex, 16))
+    )
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+    .replace(
+      /&([a-zA-Z]+);/g,
+      (match, name) => NAMED_ENTITIES[name] ?? NAMED_ENTITIES[name.toLowerCase()] ?? match
+    )
     .trim();
 }
 
@@ -561,7 +592,7 @@ Deno.serve(async (req) => {
 
       const row: Record<string, unknown> = {
         eventfinda_id: ef.id,
-        title: ef.name,
+        title: stripHtml(ef.name),
         description,
         date: dateStr,
         start_time: startTime,
