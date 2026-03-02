@@ -322,6 +322,31 @@ export async function deleteEvent(eventId: string): Promise<void> {
   if (error) throw error;
 }
 
+export async function enrichEventDescription(eventId: string, humanitixUrl: string): Promise<string | null> {
+  try {
+    const res = await fetch(humanitixUrl);
+    if (!res.ok) return null;
+
+    const html = await res.text();
+    const ldMatch = html.match(/<script type="application\/ld\+json">(\{.*?\})<\/script>/s);
+    if (!ldMatch) return null;
+
+    const ld = JSON.parse(ldMatch[1]);
+    const description = ld.description;
+    if (!description) return null;
+
+    // Cache in DB
+    await supabase
+      .from('events')
+      .update({ description })
+      .eq('id', eventId);
+
+    return description;
+  } catch {
+    return null;
+  }
+}
+
 function mapEvent(row: {
   id: string;
   title: string;
@@ -337,6 +362,8 @@ function mapEvent(row: {
   created_at: string;
   creator_id?: string | null;
   eventfinda_url?: string | null;
+  ticketmaster_url?: string | null;
+  humanitix_url?: string | null;
 }): Event {
   return {
     id: row.id,
@@ -352,5 +379,7 @@ function mapEvent(row: {
     price: row.price,
     creatorId: row.creator_id ?? undefined,
     eventfindaUrl: row.eventfinda_url ?? undefined,
+    ticketmasterUrl: row.ticketmaster_url ?? undefined,
+    humanitixUrl: row.humanitix_url ?? undefined,
   };
 }

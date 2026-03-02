@@ -1,16 +1,10 @@
-import type { Place, Event, Post, User, GuideWithPlaces, AIResponse } from '../types';
+import type { AIResponse } from '../types';
 import { supabase } from '../lib/supabase';
 
 interface AIContext {
   userName?: string;
-  places: Place[];
-  events: Event[];
-  feedPosts: (Post & { userName?: string; placeName?: string })[];
-  userPosts: (Post & { placeName?: string })[];
-  followingUsers: User[];
+  userId: string;
   userLocation: { latitude: number; longitude: number } | null;
-  trendingHashtags?: string[];
-  guides?: GuideWithPlaces[];
 }
 
 export interface ConversationMessage {
@@ -18,30 +12,11 @@ export interface ConversationMessage {
   content: string;
 }
 
-export async function askAI(
-  messages: ConversationMessage[],
-  ctx: AIContext,
-): Promise<AIResponse> {
-  const { data, error } = await supabase.functions.invoke('ai-chat', {
-    body: { messages, context: ctx },
-  });
-
-  if (error) {
-    const errorBody = await error.context?.json?.().catch(() => null);
-    throw new Error(errorBody?.error ?? error.message ?? 'AI request failed');
-  }
-
-  if (data?.error) {
-    throw new Error(data.error);
-  }
-
-  return data as AIResponse;
-}
-
 export interface StreamCallbacks {
   onTextChunk: (text: string) => void;
   onComplete: (response: AIResponse) => void;
   onError: (error: string) => void;
+  onStatus?: (text: string) => void;
 }
 
 /**
@@ -83,6 +58,9 @@ function parseSSEChunk(
       if (eventType === 'text') {
         console.log(`[ai-stream] text chunk: "${parsed.text}"`);
         callbacks.onTextChunk(parsed.text);
+      } else if (eventType === 'status') {
+        console.log(`[ai-stream] status: "${parsed.text}"`);
+        callbacks.onStatus?.(parsed.text);
       } else if (eventType === 'done') {
         console.log('[ai-stream] done — full response received');
         callbacks.onComplete(parsed as AIResponse);

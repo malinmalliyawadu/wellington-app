@@ -30,10 +30,8 @@ import { useRouter, useNavigation, usePathname } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
-import { useFollow } from "../context/FollowContext";
 import { useLocation } from "../context/LocationContext";
 import { askAIStreaming } from "../services/ai";
-import { getGuidesWithPlaces } from "../services/guides";
 import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
 import { AIThinkingAnimation } from "../components/AIThinkingAnimation";
@@ -42,10 +40,6 @@ import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import type {
   Place,
-  Event,
-  Post,
-  User,
-  Hashtag,
   AIResponse,
   AIPlaceRecommendation,
   AIEventRecommendation,
@@ -340,7 +334,6 @@ export function AIChatScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const { profile } = useAuth();
-  const { followingIds } = useFollow();
   const { location: userLocation } = useLocation();
   const styles = createStyles(colors);
   const mdStyles = createMarkdownStyles(colors);
@@ -349,6 +342,7 @@ export function AIChatScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState("");
+  const [statusText, setStatusText] = useState<string | undefined>(undefined);
   const [inputText, setInputText] = useState("");
   const [isHistoryLoaded, setIsHistoryLoaded] = useState(false);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -502,6 +496,7 @@ export function AIChatScreen() {
       setIsLoading(true);
       setIsStreaming(false);
       setStreamingText("");
+      setStatusText(undefined);
       setInputText("");
       if (hadMessages) scrollToBottom();
 
@@ -509,43 +504,6 @@ export function AIChatScreen() {
       abortControllerRef.current = abortController;
 
       try {
-        const cachedPlaces: Place[] =
-          queryClient.getQueryData(["q", "places"]) ?? [];
-        const cachedEvents: Event[] =
-          queryClient.getQueryData(["q", "upcoming-events"]) ?? [];
-        const cachedPosts: Post[] =
-          queryClient.getQueryData(["q", "posts"]) ?? [];
-        const cachedProfiles: User[] =
-          queryClient.getQueryData(["q", "profiles"]) ?? [];
-
-        const profileMap = new Map<string, User>();
-        for (const u of cachedProfiles) profileMap.set(u.id, u);
-
-        const placeNameMap = new Map<string, string>();
-        for (const p of cachedPlaces) placeNameMap.set(p.id, p.name);
-
-        const followingSet = new Set(followingIds);
-        const followingUsers = cachedProfiles.filter((u) =>
-          followingSet.has(u.id)
-        );
-
-        const feedPosts = cachedPosts
-          .filter((p) => followingSet.has(p.userId))
-          .slice(0, 50)
-          .map((p) => ({
-            ...p,
-            userName: profileMap.get(p.userId)?.displayName,
-            placeName: placeNameMap.get(p.placeId),
-          }));
-
-        const userPosts = cachedPosts
-          .filter((p) => p.userId === profile?.id)
-          .slice(0, 20)
-          .map((p) => ({
-            ...p,
-            placeName: placeNameMap.get(p.placeId),
-          }));
-
         // Build full conversation history for Claude
         const allMessages = [...messages, userMsg];
         const conversationHistory = allMessages.map((m) => ({
@@ -556,32 +514,24 @@ export function AIChatScreen() {
               : m.content,
         }));
 
-        const cachedHashtags: Hashtag[] =
-          queryClient.getQueryData(["q", "trending-hashtags"]) ?? [];
-        const trendingHashtags = cachedHashtags.map((h) => h.name);
-
-        const guides = await getGuidesWithPlaces();
-
         await askAIStreaming(
           conversationHistory,
           {
             userName: profile?.displayName,
-            places: cachedPlaces,
-            events: cachedEvents,
-            feedPosts,
-            userPosts,
-            followingUsers,
+            userId: profile?.id ?? "",
             userLocation,
-            trendingHashtags,
-            guides,
           },
           {
             onTextChunk: (text) => {
               // Transition from THINKING → STREAMING on first chunk
               setIsLoading(false);
               setIsStreaming(true);
+              setStatusText(undefined);
               setStreamingText((prev) => prev + text);
               scrollToBottom();
+            },
+            onStatus: (text) => {
+              setStatusText(text);
             },
             onComplete: (response: AIResponse) => {
               const assistantMsg: ChatMessage = {
@@ -593,6 +543,7 @@ export function AIChatScreen() {
               setMessages((prev) => [...prev, assistantMsg]);
               setIsStreaming(false);
               setStreamingText("");
+              setStatusText(undefined);
               abortControllerRef.current = null;
               scrollToLastResponse();
             },
@@ -609,6 +560,7 @@ export function AIChatScreen() {
               setIsLoading(false);
               setIsStreaming(false);
               setStreamingText("");
+              setStatusText(undefined);
               abortControllerRef.current = null;
               scrollToLastResponse();
             },
@@ -627,14 +579,14 @@ export function AIChatScreen() {
         setIsLoading(false);
         setIsStreaming(false);
         setStreamingText("");
+        setStatusText(undefined);
         abortControllerRef.current = null;
         scrollToLastResponse();
       }
     },
     [
-      queryClient,
-      followingIds,
       profile?.id,
+      profile?.displayName,
       userLocation,
       messages,
       scrollToBottom,
@@ -895,7 +847,7 @@ export function AIChatScreen() {
 
         {isLoading && (
           <Animated.View exiting={FadeOut.duration(200)}>
-            <AIThinkingAnimation />
+            <AIThinkingAnimation statusText={statusText} />
           </Animated.View>
         )}
 

@@ -62,8 +62,10 @@ function TypingDot({
 
 export function AIThinkingAnimation({
   showLabel = true,
+  statusText,
 }: {
   showLabel?: boolean;
+  statusText?: string;
 }) {
   const { colors } = useTheme();
 
@@ -89,6 +91,11 @@ export function AIThinkingAnimation({
               <TypingDot key={i} index={i} color={colors.textMuted} size={8} />
             ))}
           </View>
+          {statusText ? (
+            <Text style={[styles.statusText, { color: colors.textMuted }]}>
+              {statusText}
+            </Text>
+          ) : null}
         </View>
       </View>
     );
@@ -133,6 +140,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 5,
+  },
+  statusText: {
+    fontSize: 12,
+    fontFamily: fonts.medium,
+    marginTop: 6,
   },
   dotsRow: {
     flexDirection: "row",

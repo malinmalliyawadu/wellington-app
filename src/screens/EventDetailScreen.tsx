@@ -4,6 +4,7 @@ import React, {
   useMemo,
   useRef,
   useState,
+  useEffect,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -33,6 +34,7 @@ import {
   getEventAttendees,
   toggleAttendance,
   deleteEvent,
+  enrichEventDescription,
 } from "../services/events";
 import { getPlaceById } from "../services/places";
 import { getProfilesByIds } from "../services/users";
@@ -162,6 +164,24 @@ export function EventDetailScreen() {
     () => new Map((attendeeProfiles ?? []).map((u) => [u.id, u])),
     [attendeeProfiles]
   );
+
+  // Enrich Humanitix event descriptions on-demand
+  const [enrichedDescription, setEnrichedDescription] = useState<string | null>(null);
+  useEffect(() => {
+    if (!event?.humanitixUrl) return;
+    // Check if description is a placeholder ("{title} at {venue}")
+    const isPlaceholder =
+      event.description.startsWith(event.title + " at ") &&
+      !event.description.includes("\n") &&
+      event.description.length < 200;
+    if (!isPlaceholder) return;
+
+    let cancelled = false;
+    enrichEventDescription(event.id, event.humanitixUrl!).then((desc) => {
+      if (!cancelled && desc) setEnrichedDescription(desc);
+    });
+    return () => { cancelled = true; };
+  }, [event?.id, event?.humanitixUrl, event?.description, event?.title]);
 
   // Refetch when screen comes into focus
   useFocusEffect(
@@ -421,7 +441,7 @@ export function EventDetailScreen() {
             </View>
 
             <View style={styles.descriptionSection}>
-              <Text style={styles.descriptionText}>{event.description}</Text>
+              <Text style={styles.descriptionText}>{enrichedDescription ?? event.description}</Text>
             </View>
 
             {currentUserId && (

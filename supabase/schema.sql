@@ -105,11 +105,17 @@ create table events (
   price numeric(8,2),
   eventfinda_id integer unique,
   eventfinda_url text,
+  ticketmaster_id text unique,
+  ticketmaster_url text,
+  humanitix_id text unique,
+  humanitix_url text,
   created_at timestamptz not null default now()
 );
 
 create index events_date_idx on events(date);
 create index events_eventfinda_id_idx on events(eventfinda_id) where eventfinda_id is not null;
+create index events_ticketmaster_id_idx on events(ticketmaster_id) where ticketmaster_id is not null;
+create index events_humanitix_id_idx on events(humanitix_id) where humanitix_id is not null;
 
 -- Event attendees (join table)
 create table event_attendees (

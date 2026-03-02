@@ -15,4 +15,6 @@ export interface Event {
   price?: number | null;
   creatorId?: string;
   eventfindaUrl?: string;
+  ticketmasterUrl?: string;
+  humanitixUrl?: string;
 }
