@@ -184,6 +184,7 @@ export function ProfileScreen() {
             posts={userPosts}
             onPostPress={(postId) => router.push(`/profile/post/${postId}`)}
             emptyText="No posts yet"
+            onCreatePress={() => router.push("/profile/create-post")}
           />
         );
 
@@ -198,6 +199,13 @@ export function ProfileScreen() {
                 color={colors.gray300}
               />
               <Text style={styles.emptyText}>No events yet</Text>
+              <LiquidGlassButton
+                title="Create Event"
+                icon="add"
+                variant="primary"
+                size="small"
+                onPress={() => router.push("/profile/create-post")}
+              />
             </View>
           );
         }
@@ -218,6 +226,13 @@ export function ProfileScreen() {
                 </View>
               );
             })}
+            <HapticPressable
+              style={styles.createCell}
+              onPress={() => router.push("/profile/create-post")}
+            >
+              <Ionicons name="add" size={22} color={colors.textMuted} />
+              <Text style={styles.createCellText}>Create Event</Text>
+            </HapticPressable>
           </View>
         );
 
@@ -232,6 +247,13 @@ export function ProfileScreen() {
                 color={colors.gray300}
               />
               <Text style={styles.emptyText}>No guides yet</Text>
+              <LiquidGlassButton
+                title="Create Guide"
+                icon="add"
+                variant="primary"
+                size="small"
+                onPress={() => router.push("/profile/create-guide")}
+              />
             </View>
           );
         }
@@ -245,6 +267,13 @@ export function ProfileScreen() {
                 />
               </View>
             ))}
+            <HapticPressable
+              style={styles.createCell}
+              onPress={() => router.push("/profile/create-guide")}
+            >
+              <Ionicons name="add" size={22} color={colors.textMuted} />
+              <Text style={styles.createCellText}>Create Guide</Text>
+            </HapticPressable>
           </View>
         );
     }
@@ -553,6 +582,23 @@ const createStyles = (colors: Colors) =>
     },
     tabCountTextActive: {
       color: colors.background,
+    },
+    // Create cell
+    createCell: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 6,
+      paddingVertical: 14,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.gray200,
+      borderStyle: "dashed",
+    },
+    createCellText: {
+      fontSize: 14,
+      fontFamily: fonts.medium,
+      color: colors.textMuted,
     },
     // Events list
     eventsList: {

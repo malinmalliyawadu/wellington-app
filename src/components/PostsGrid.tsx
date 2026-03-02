@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { View, Text, FlatList, StyleSheet, Dimensions, Platform } from "react-native";
 import { Image } from "expo-image";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { VideoThumbnail } from "./VideoThumbnail";
 import { SFIcon } from "./SFIcon";
@@ -18,11 +19,16 @@ const CELL_SIZE = (SCREEN_WIDTH - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 
 type PostWithPlace = Post & { place?: Place };
 
+type GridItem =
+  | { type: "post"; data: PostWithPlace }
+  | { type: "create" };
+
 interface PostsGridProps {
   posts: PostWithPlace[];
   onPostPress: (postId: string) => void;
   title?: string;
   emptyText?: string;
+  onCreatePress?: () => void;
 }
 
 export function PostsGrid({
@@ -30,9 +36,19 @@ export function PostsGrid({
   onPostPress,
   title,
   emptyText = "No posts yet",
+  onCreatePress,
 }: PostsGridProps) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+
+  const gridItems: GridItem[] = React.useMemo(() => {
+    const items: GridItem[] = posts.map((p) => ({ type: "post" as const, data: p }));
+    if (onCreatePress) {
+      items.push({ type: "create" as const });
+    }
+    return items;
+  }, [posts, onCreatePress]);
+
   const getItemLayout = useCallback(
     (_: any, index: number) => ({
       length: CELL_SIZE,
@@ -43,28 +59,39 @@ export function PostsGrid({
   );
 
   const renderItem = useCallback(
-    ({ item }: { item: PostWithPlace }) => (
+    ({ item }: { item: GridItem }) => {
+      if (item.type === "create") {
+        return (
+          <HapticPressable
+            style={[styles.postTile, styles.createTile]}
+            onPress={onCreatePress}
+          >
+            <Ionicons name="add" size={28} color={colors.textMuted} />
+          </HapticPressable>
+        );
+      }
+      return (
       <HapticPressable
         style={styles.postTile}
-        onPress={() => onPostPress(item.id)}
+        onPress={() => onPostPress(item.data.id)}
       >
-        {item.mediaUrl ? (
+        {item.data.mediaUrl ? (
           <>
-            {item.type === "video" && !isMultiMediaPost(item) ? (
+            {item.data.type === "video" && !isMultiMediaPost(item.data) ? (
               <VideoThumbnail
-                thumbnailUrl={item.thumbnailUrl}
-                fallbackUrl={item.mediaUrl}
+                thumbnailUrl={item.data.thumbnailUrl}
+                fallbackUrl={item.data.mediaUrl}
                 style={styles.postImage}
               />
             ) : (
               <Image
-                source={{ uri: item.mediaUrl }}
+                source={{ uri: item.data.mediaUrl }}
                 style={styles.postImage}
                 contentFit="cover"
                 transition={200}
               />
             )}
-            {isMultiMediaPost(item) ? (
+            {isMultiMediaPost(item.data) ? (
               <View style={styles.multiMediaIndicator}>
                 <SFIcon
                   name="square.fill.on.square.fill"
@@ -73,7 +100,7 @@ export function PostsGrid({
                   color="rgba(255,255,255,0.9)"
                 />
               </View>
-            ) : item.type === "video" ? (
+            ) : item.data.type === "video" ? (
               <View style={styles.videoIndicator}>
                 <SFIcon
                   name="play.circle.fill"
@@ -92,11 +119,11 @@ export function PostsGrid({
             style={styles.textPostTile}
           >
             <Text style={styles.textPostContent} numberOfLines={4}>
-              {item.content}
+              {item.data.content}
             </Text>
           </LinearGradient>
         )}
-        {item.place && (
+        {item.data.place && (
           <GlassView
             style={styles.placeTag}
             colorScheme="light"
@@ -109,13 +136,14 @@ export function PostsGrid({
               color="rgba(255,255,255,0.85)"
             />
             <Text style={styles.placeText} numberOfLines={1}>
-              {item.place.name}
+              {item.data.place.name}
             </Text>
           </GlassView>
         )}
       </HapticPressable>
-    ),
-    [onPostPress]
+      );
+    },
+    [onPostPress, onCreatePress, colors]
   );
 
   if (posts.length === 0) {
@@ -130,8 +158,8 @@ export function PostsGrid({
     <View>
       {title && <Text style={styles.title}>{title}</Text>}
       <FlatList
-        data={posts}
-        keyExtractor={(item) => item.id}
+        data={gridItems}
+        keyExtractor={(item) => item.type === "create" ? "_create" : item.data.id}
         renderItem={renderItem}
         numColumns={NUM_COLUMNS}
         getItemLayout={getItemLayout}
@@ -161,6 +189,11 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     width: CELL_SIZE,
     aspectRatio: 1,
     overflow: "hidden",
+  },
+  createTile: {
+    backgroundColor: colors.gray100,
+    justifyContent: "center",
+    alignItems: "center",
   },
   postImage: {
     width: "100%",
