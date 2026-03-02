@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
-import { AchievementProgress } from '../types/Exploration';
-import { ACHIEVEMENT_DEFINITIONS } from '../data/achievementDefinitions';
+import { AchievementProgress, UserPointTotals, BadgeProgress, ExplorationStats } from '../types/Exploration';
+import { ACHIEVEMENT_DEFINITIONS, BADGE_DEFINITIONS, POINT_VALUES } from '../data/achievementDefinitions';
 import { getExplorationStats, hasFollowedUserExploredPlace, getRecentFollowedExplorations } from './explorations';
 import { getPlaces } from './places';
 import { getNeighborhood } from '../utils/neighborhoods';
@@ -222,4 +222,91 @@ async function getExploredPlaceIds(userId: string): Promise<string[]> {
 
   if (error) throw error;
   return (data ?? []).map((row) => row.place_id);
+}
+
+// --- New Badge System (purely calculated, no DB persistence) ---
+
+/**
+ * Check if a single badge is earned based on totals and exploration stats.
+ */
+function isBadgeEarned(
+  badge: (typeof BADGE_DEFINITIONS)[number],
+  totals: UserPointTotals,
+  stats?: ExplorationStats
+): { earned: boolean; currentProgress: number; requiredProgress: number } {
+  const req = badge.requirement;
+  let currentProgress = 0;
+  let requiredProgress = 0;
+
+  switch (req.type) {
+    case 'level':
+      currentProgress = totals.level;
+      requiredProgress = req.level ?? 0;
+      break;
+
+    case 'action_count': {
+      requiredProgress = req.count ?? 0;
+      const actionKey = req.actionType!;
+      if (actionKey === 'post_photo') {
+        const photoPoints = totals.pointsByAction['post_photo'] ?? 0;
+        const textPoints = totals.pointsByAction['post_text'] ?? 0;
+        currentProgress = Math.floor(photoPoints / POINT_VALUES.post_photo) + Math.floor(textPoints / POINT_VALUES.post_text);
+      } else {
+        const points = totals.pointsByAction[actionKey] ?? 0;
+        currentProgress = POINT_VALUES[actionKey] > 0 ? Math.floor(points / POINT_VALUES[actionKey]) : 0;
+      }
+      break;
+    }
+
+    case 'category_explore':
+      currentProgress = stats?.byCategory[req.category!] ?? 0;
+      requiredProgress = req.count ?? 0;
+      break;
+
+    case 'event_category': {
+      const attendPoints = totals.pointsByAction['event_attend'] ?? 0;
+      currentProgress = POINT_VALUES.event_attend > 0 ? Math.floor(attendPoints / POINT_VALUES.event_attend) : 0;
+      requiredProgress = req.count ?? 0;
+      break;
+    }
+
+    case 'all_actions': {
+      const allActionTypes = ['post_photo', 'post_text', 'comment', 'follow', 'event_attend', 'first_discover', 'event_create'];
+      currentProgress = allActionTypes.filter((a) => (totals.pointsByAction[a] ?? 0) > 0).length;
+      requiredProgress = allActionTypes.length;
+      break;
+    }
+  }
+
+  return { earned: currentProgress >= requiredProgress && requiredProgress > 0, currentProgress, requiredProgress };
+}
+
+/**
+ * Compute the set of earned badge IDs from totals alone (no DB call).
+ * Skips category_explore badges since those need exploration stats.
+ */
+export function computeEarnedBadgeIds(totals: UserPointTotals): Set<string> {
+  const earned = new Set<string>();
+  for (const badge of BADGE_DEFINITIONS) {
+    if (badge.requirement.type === 'category_explore') continue;
+    const { earned: isEarned } = isBadgeEarned(badge, totals);
+    if (isEarned) earned.add(badge.id);
+  }
+  return earned;
+}
+
+/**
+ * Get badge progress for all badges for a user.
+ * Badges are inferred/calculated from current totals and exploration stats.
+ */
+export async function getBadgeProgress(
+  userId: string,
+  totals: UserPointTotals
+): Promise<BadgeProgress[]> {
+  const stats = await getExplorationStats(userId);
+
+  return BADGE_DEFINITIONS.map((badge) => {
+    const { earned, currentProgress, requiredProgress } = isBadgeEarned(badge, totals, stats);
+    return { ...badge, unlocked: earned, currentProgress, requiredProgress };
+  });
 }

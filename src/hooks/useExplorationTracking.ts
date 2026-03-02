@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useExploration } from "../context/ExplorationContext";
+import { useExploration } from "../context/PointsContext";
 import { useToast } from "../context/ToastContext";
 import { createAchievementToast } from "../utils/achievementHelpers";
 import { Place } from "../types";

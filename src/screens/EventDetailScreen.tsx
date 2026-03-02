@@ -46,6 +46,7 @@ import {
   deleteNotificationForEventAttendance,
 } from "../services/notifications";
 import { useToast } from "../context/ToastContext";
+import { usePoints } from "../context/PointsContext";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import type { Event } from "../types";
 import { shareEvent } from "../utils/sharing";
@@ -117,6 +118,7 @@ export function EventDetailScreen() {
   const headerHeight = useHeaderHeight();
   const { session, profile } = useAuth();
   const { followingIds } = useFollow();
+  const { awardPointsForAction } = usePoints();
   const { isSaved, toggleSave } = useSave();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
@@ -441,6 +443,7 @@ export function EventDetailScreen() {
                       if (nowAttending) {
                         createEventAttendanceNotification(currentUserId, event.id).catch(() => {});
                         scheduleEventReminder(event).catch(() => {});
+                        awardPointsForAction('event_attend', event.id);
                       } else {
                         deleteNotificationForEventAttendance(currentUserId, event.id).catch(() => {});
                         cancelEventReminder(event.id).catch(() => {});

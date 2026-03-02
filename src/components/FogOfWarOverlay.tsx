@@ -1,6 +1,6 @@
 import React, { useMemo, useEffect, useState, useRef } from "react";
 import { Overlay } from "react-native-maps";
-import { useExploration } from "../context/ExplorationContext";
+import { useExploration } from "../context/PointsContext";
 import { useLocationTrail } from "../hooks/useLocationTrail";
 import { renderFogImage, FogBounds, ExploredPlace } from "../lib/fogRenderer";
 import { Place } from "../types";

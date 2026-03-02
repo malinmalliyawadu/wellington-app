@@ -31,7 +31,7 @@ const glassEnabled = isLiquidGlassAvailable();
 export interface ToastConfig {
   message: string;
   title?: string;
-  type?: "default" | "achievement" | "error" | "notification";
+  type?: "default" | "achievement" | "error" | "notification" | "level_up";
   duration?: number;
   icon?: keyof typeof Ionicons.glyphMap;
   sfIcon?: SFSymbol;
@@ -85,7 +85,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
       // Haptic feedback
       if (Platform.OS === "ios") {
-        if (toastConfig.type === "achievement") {
+        if (toastConfig.type === "achievement" || toastConfig.type === "level_up") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         } else if (toastConfig.type === "error") {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -304,7 +304,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             { transform: [{ translateY }] },
           ]}
         >
-          {config.type === "achievement"
+          {config.type === "achievement" || config.type === "level_up"
             ? renderAchievementToast()
             : config.type === "notification"
             ? renderNotificationToast()

@@ -28,7 +28,7 @@ import { LikeProvider } from "../src/context/LikeContext";
 import { SaveProvider } from "../src/context/SaveContext";
 import { ToastProvider, useToast } from "../src/context/ToastContext";
 import { NotificationProvider, useNotifications } from "../src/context/NotificationContext";
-import { ExplorationProvider } from "../src/context/ExplorationContext";
+import { PointsProvider } from "../src/context/PointsContext";
 import { LocationProvider } from "../src/context/LocationContext";
 import { ZoomOverlayProvider } from "../src/context/ZoomOverlayContext";
 import { StatusBar } from "expo-status-bar";
@@ -313,13 +313,13 @@ export default function RootLayout() {
                         <SaveProvider>
                           <NotificationProvider>
                             <ToastProvider>
-                              <ExplorationProvider>
+                              <PointsProvider>
                                 <AuthGate>
                                   <Slot />
                                   <OfflineBanner />
                                 </AuthGate>
                                 <StatusBar style="auto" />
-                              </ExplorationProvider>
+                              </PointsProvider>
                             </ToastProvider>
                           </NotificationProvider>
                         </SaveProvider>

@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from './AuthContext';
 import { getFollowingIds, followUser, unfollowUser } from '../services/follows';
 import { createFollowNotification, deleteNotificationForFollow } from '../services/notifications';
+import { awardPoints } from '../services/points';
 
 interface FollowContextType {
   followingIds: string[];
@@ -74,6 +75,7 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
             deleteNotificationForFollow(currentUserId, userId).catch(() => {});
           } else {
             createFollowNotification(currentUserId, userId).catch(() => {});
+            awardPoints(currentUserId, 'follow', userId).catch(() => {});
           }
         })
         .catch(() => {

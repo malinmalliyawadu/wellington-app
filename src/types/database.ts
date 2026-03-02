@@ -884,6 +884,57 @@ export type Database = {
           },
         ];
       };
+      user_points: {
+        Row: {
+          id: string;
+          user_id: string;
+          action_type: string;
+          points: number;
+          reference_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          action_type: string;
+          points: number;
+          reference_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          action_type?: string;
+          points?: number;
+          reference_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      user_point_totals: {
+        Row: {
+          user_id: string;
+          total_points: number;
+          level: number;
+          points_by_action: Record<string, unknown>;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          total_points?: number;
+          level?: number;
+          points_by_action?: Record<string, unknown>;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          total_points?: number;
+          level?: number;
+          points_by_action?: Record<string, unknown>;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {};
     Functions: {
@@ -909,7 +960,7 @@ export type PostType = 'photo' | 'video' | 'text';
 export type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community' | 'quiz' | 'craft' | 'kids' | 'cultural';
 export type TrailDifficulty = 'easy' | 'moderate' | 'hard';
 export type ExplorationMethod = 'viewed' | 'posted';
-export type AchievementType = 'category' | 'milestone' | 'neighborhood' | 'social';
+export type AchievementType = 'category' | 'milestone' | 'neighborhood' | 'social' | 'level' | 'activity' | 'wellington';
 export type NotificationType = 'like' | 'comment' | 'follow' | 'guide_like' | 'guide_comment' | 'event_attendance' | 'event_reminder' | 'comment_reply';
 export type SavedItemType = 'post' | 'place' | 'event' | 'guide';
 

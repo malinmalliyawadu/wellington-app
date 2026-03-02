@@ -28,6 +28,8 @@ import { HapticPressable } from "src/components/HapticPressable";
 import { QueryErrorState } from "../components/QueryErrorState";
 import { SFIcon } from "../components/SFIcon";
 import { SocialLinks } from "../components/SocialLinks";
+import { LevelBadge } from "../components/LevelBadge";
+import { usePoints } from "../context/PointsContext";
 import { formatNumber } from "../utils/formatNumber";
 
 type Tab = "posts" | "events" | "guides";
@@ -39,6 +41,7 @@ export function ProfileScreen() {
   const { profile } = useAuth();
 
   const { isConnected: igConnected } = useInstagramConnection();
+  const { level, totalPoints } = usePoints();
 
   const [activeTab, setActiveTab] = useState<Tab>("posts");
 
@@ -389,13 +392,9 @@ export function ProfileScreen() {
             onPress={() => router.push("/profile/edit-profile")}
             style={styles.editButton}
           />
-          <LiquidGlassButton
-            icon="trophy"
-            iconOnly
-            variant="secondary"
-            size="small"
-            onPress={() => router.push("/profile/achievements")}
-          />
+          <HapticPressable onPress={() => router.push("/profile/achievements")}>
+            <LevelBadge level={level} totalPoints={totalPoints} size="medium" />
+          </HapticPressable>
           <LiquidGlassButton
             icon="bookmark"
             iconOnly

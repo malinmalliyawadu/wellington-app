@@ -43,6 +43,8 @@ import { useAuth } from "../context/AuthContext";
 import { useReport } from "../hooks/useReport";
 import { SFIcon } from "../components/SFIcon";
 import { SocialLinks } from "../components/SocialLinks";
+import { LevelBadge } from "../components/LevelBadge";
+import { getUserPointTotals } from "../services/points";
 import { formatNumber } from "../utils/formatNumber";
 import { ContextMenu, Button as ExpoButton, Host } from "@expo/ui/swift-ui";
 
@@ -157,6 +159,12 @@ export function UserProfileScreen() {
   const { data: guides, refetch: refetchGuides } = useQuery(fetchGuides, [
     "guides",
     "user",
+    userId,
+  ]);
+
+  const fetchPointTotals = useCallback(() => getUserPointTotals(userId), [userId]);
+  const { data: userPointTotals } = useQuery(fetchPointTotals, [
+    "point-totals",
     userId,
   ]);
 
@@ -353,9 +361,14 @@ export function UserProfileScreen() {
               />
             </Pressable>
             <View style={styles.identityColumn}>
-              <Text style={styles.displayName} numberOfLines={1}>
-                {user.displayName}
-              </Text>
+              <View style={styles.nameRow}>
+                <Text style={styles.displayName} numberOfLines={1}>
+                  {user.displayName}
+                </Text>
+                {userPointTotals && (
+                  <LevelBadge level={userPointTotals.level} totalPoints={userPointTotals.totalPoints} size="small" />
+                )}
+              </View>
               <Text style={styles.username} numberOfLines={1}>
                 @{user.username}
               </Text>
@@ -520,10 +533,16 @@ const createStyles = (colors: Colors) =>
     identityColumn: {
       flex: 1,
     },
+    nameRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
     displayName: {
       fontSize: 20,
       fontFamily: fonts.bold,
       color: colors.text,
+      flexShrink: 1,
     },
     username: {
       fontSize: 14,

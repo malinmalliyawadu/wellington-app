@@ -22,7 +22,7 @@ import { Place, PostType, EventCategory } from "../types";
 import type { MediaPickerItem } from "../components/create/PostForm";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { useAuth } from "../context/AuthContext";
-import { useExploration } from "../context/ExplorationContext";
+import { useExploration, usePoints } from "../context/PointsContext";
 import { useToast } from "../context/ToastContext";
 import { findOrCreatePlace, getPlaceById } from "../services/places";
 import { createPost } from "../services/posts";
@@ -58,6 +58,7 @@ export function CreatePostSheetScreen() {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   const { markExplored } = useExploration();
+  const { awardPointsForAction } = usePoints();
   const { showToast } = useToast();
   const {
     placeId: placeIdParam,
@@ -548,6 +549,10 @@ export function CreatePostSheetScreen() {
           showToast(createAchievementToast(newAchievements[0]));
         }
 
+        // Award points for post creation
+        const pointAction = postType === 'text' ? 'post_text' as const : 'post_photo' as const;
+        awardPointsForAction(pointAction, newPost.id);
+
         // Send mention notifications
         const mentionedUsernames = extractMentions(content.trim());
         for (const username of mentionedUsernames) {
@@ -620,6 +625,9 @@ export function CreatePostSheetScreen() {
             creatorId: profile.id,
             price: eventPrice.trim() ? parseFloat(eventPrice) || null : null,
           });
+
+          // Award points for event creation
+          awardPointsForAction('event_create', undefined);
 
           // Invalidate event caches so events screen shows the new event
           queryClient.invalidateQueries({ queryKey: ['q', 'events'] });

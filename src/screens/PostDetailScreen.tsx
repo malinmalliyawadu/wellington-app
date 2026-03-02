@@ -59,6 +59,7 @@ import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import { sharePost } from "../utils/sharing";
 import { useSave } from "../context/SaveContext";
+import { usePoints } from "../context/PointsContext";
 import { useToast } from "../context/ToastContext";
 import { createCommentNotification, createMentionNotification } from "../services/notifications";
 import { ContextMenu, Button as ExpoButton, Host } from "@expo/ui/swift-ui";
@@ -91,6 +92,7 @@ export function PostDetailScreen() {
   const navigation = useNavigation();
   const pathname = usePathname();
   const { profile } = useAuth();
+  const { awardPointsForAction } = usePoints();
   const inputRef = useRef<TextInput>(null);
   const [commentText, setCommentText] = useState("");
   const [commentCursorPosition, setCommentCursorPosition] = useState(0);
@@ -307,12 +309,13 @@ export function PostDetailScreen() {
       if (editingCommentId) {
         await updateComment(editingCommentId, trimmed);
       } else {
-        await createComment({
+        const newComment = await createComment({
           postId: post.id,
           userId: profile.id,
           text: trimmed,
         });
         createCommentNotification(profile.id, post.id).catch(() => {});
+        awardPointsForAction('comment', newComment?.id);
         // Send mention notifications for mentioned users in the comment
         const mentionedUsernames = extractMentions(trimmed);
         for (const username of mentionedUsernames) {
