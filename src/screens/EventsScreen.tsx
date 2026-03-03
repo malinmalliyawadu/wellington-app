@@ -92,25 +92,39 @@ function classifySections(eventsWithPlaces: EventWithPlace[]) {
   const now = new Date();
   const fmt = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
   const todayStr = fmt(now);
-  const tomorrowDate = new Date(now);
-  tomorrowDate.setDate(now.getDate() + 1);
-  const tomorrowStr = fmt(tomorrowDate);
 
-  // Weekend dates
-  const day = now.getDay();
-  const daysUntilSat = day === 0 ? 6 : 6 - day;
-  const sat = new Date(now);
-  sat.setDate(now.getDate() + daysUntilSat);
-  const sun = new Date(sat);
-  sun.setDate(sat.getDate() + 1);
-  const satStr = fmt(sat);
-  const sunStr = fmt(sun);
-  const isCurrentlyWeekend = day === 0 || day === 6;
+  // Compute tomorrow/weekend using NZ date to avoid device-timezone mismatch.
+  // Parse the NZ-formatted date and do day arithmetic on that.
+  const [y, mo, d] = todayStr.split("-").map(Number);
+  const nzDate = new Date(y, mo - 1, d); // midnight local, but only used for day math
+  const addDays = (base: Date, n: number) => {
+    const r = new Date(base);
+    r.setDate(r.getDate() + n);
+    return r.toLocaleDateString("en-CA");
+  };
+  const tomorrowStr = addDays(nzDate, 1);
+
+  // Weekend dates (based on NZ day of week)
+  const nzDay = nzDate.getDay();
+  const daysUntilSat = nzDay === 0 ? 6 : 6 - nzDay;
+  const satStr = addDays(nzDate, daysUntilSat);
+  const sunStr = addDays(nzDate, daysUntilSat + 1);
+  const isCurrentlyWeekend = nzDay === 0 || nzDay === 6;
 
   const happeningNow: EventWithPlace[] = [];
   const weekend: EventWithPlace[] = [];
   const free: EventWithPlace[] = [];
   const comingUp: EventWithPlace[] = [];
+
+  // Current time in minutes since midnight (NZ timezone)
+  const nzTimeStr = now.toLocaleTimeString("en-GB", { timeZone: "Pacific/Auckland", hour12: false });
+  const [nowH, nowM] = nzTimeStr.split(":").map(Number);
+  const nowMinutes = nowH * 60 + nowM;
+
+  const toMinutes = (time: string) => {
+    const [h, m] = time.split(":").map(Number);
+    return h * 60 + m;
+  };
 
   for (const item of eventsWithPlaces) {
     const { event } = item;
@@ -120,7 +134,16 @@ function classifySections(eventsWithPlaces: EventWithPlace[]) {
       event.date === satStr || event.date === sunStr || (isCurrentlyWeekend && isToday);
     const isFree = event.price == null || event.price === 0;
 
-    if (isToday || isTomorrow) happeningNow.push(item);
+    // For "Happening Now": skip today's events that have already finished.
+    // Use endTime if available, otherwise assume ~3 hours after start.
+    let hasEnded = false;
+    if (isToday) {
+      const endMinutes = event.endTime
+        ? toMinutes(event.endTime)
+        : toMinutes(event.startTime) + 180;
+      hasEnded = endMinutes <= nowMinutes;
+    }
+    if (isToday && !hasEnded) happeningNow.push(item);
     if (isWeekend) weekend.push(item);
     if (isFree) free.push(item);
     comingUp.push(item);
