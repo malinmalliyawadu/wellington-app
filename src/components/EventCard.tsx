@@ -65,13 +65,13 @@ function formatTime(time: string, endTime?: string): string {
 }
 
 function getMonth(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-NZ", { month: "short" }).toUpperCase();
+  const date = new Date(dateString + "T00:00:00");
+  return date.toLocaleDateString("en-NZ", { month: "short", timeZone: "Pacific/Auckland" }).toUpperCase();
 }
 
 function getDay(dateString: string): string {
-  const date = new Date(dateString);
-  return date.getDate().toString();
+  const date = new Date(dateString + "T00:00:00");
+  return date.toLocaleDateString("en-NZ", { day: "numeric", timeZone: "Pacific/Auckland" });
 }
 
 const AVATAR_SIZE = 22;

@@ -157,33 +157,36 @@ function getSuggestionChips(): {
 }
 
 /**
- * Trim incomplete markdown syntax from the end of streaming text
- * so partial tokens like `[Cafe Po` or `**bol` don't render broken.
+ * Clean incomplete markdown syntax from the end of streaming text.
+ * Instead of stripping incomplete links (which hides lots of streamed text),
+ * convert them to plain text so content stays visible while streaming.
  */
 function trimIncompleteMarkdown(text: string): string {
   let result = text;
 
-  // 1. Incomplete link: unmatched [ possibly followed by partial ](url
+  // 1. Incomplete markdown links: convert partial `[text](url` to plain text
+  //    Find the last `[` that isn't part of a complete `[text](url)` link
   const lastOpen = result.lastIndexOf("[");
   if (lastOpen !== -1) {
     const afterOpen = result.slice(lastOpen);
-    // If there's no complete [text](url) after this bracket, trim it
     if (!/^\[[^\]]*\]\([^)]*\)/.test(afterOpen)) {
-      result = result.slice(0, lastOpen);
+      // Extract whatever link text exists and show it as plain text
+      const linkTextMatch = afterOpen.match(/^\[([^\]]*)/);
+      const plainText = linkTextMatch?.[1] ?? "";
+      result = result.slice(0, lastOpen) + plainText;
     }
   }
 
-  // 2. Incomplete bold: trailing ** without closing pair
+  // 2. Incomplete bold: trailing ** without closing pair — strip the **
   const lastBold = result.lastIndexOf("**");
   if (lastBold !== -1) {
     const afterBold = result.slice(lastBold + 2);
     if (!afterBold.includes("**")) {
-      result = result.slice(0, lastBold);
+      result = result.slice(0, lastBold) + afterBold;
     }
   }
 
-  // 3. Incomplete italic: trailing single * (not ** and not a bullet)
-  // Check for a trailing * that isn't closed
+  // 3. Incomplete italic: trailing single * without closing pair — strip the *
   const lastStar = result.lastIndexOf("*");
   if (
     lastStar !== -1 &&
@@ -192,7 +195,7 @@ function trimIncompleteMarkdown(text: string): string {
   ) {
     const afterStar = result.slice(lastStar + 1);
     if (!afterStar.includes("*")) {
-      result = result.slice(0, lastStar);
+      result = result.slice(0, lastStar) + afterStar;
     }
   }
 
@@ -870,7 +873,7 @@ export function AIChatScreen() {
             <Markdown style={mdStyles} onLinkPress={handleLinkPress}>
               {trimIncompleteMarkdown(streamingText)}
             </Markdown>
-            <AIThinkingAnimation showLabel={false} />
+            <AIThinkingAnimation showLabel={false} statusText={statusText} />
           </Animated.View>
         )}
       </ScrollView>

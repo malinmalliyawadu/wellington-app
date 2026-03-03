@@ -43,7 +43,7 @@ const DATE_RANGE_LABELS: Record<DateRange, string> = {
 
 function getDateRange(range: DateRange): { start: string; end: string } {
   const now = new Date();
-  const fmt = (d: Date) => d.toISOString().split("T")[0];
+  const fmt = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
 
   switch (range) {
     case "today":
@@ -90,7 +90,7 @@ type EventWithPlace = { event: Event; place: Place };
 
 function classifySections(eventsWithPlaces: EventWithPlace[]) {
   const now = new Date();
-  const fmt = (d: Date) => d.toISOString().split("T")[0];
+  const fmt = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
   const todayStr = fmt(now);
   const tomorrowDate = new Date(now);
   tomorrowDate.setDate(now.getDate() + 1);

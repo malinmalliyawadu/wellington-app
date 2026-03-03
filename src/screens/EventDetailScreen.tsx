@@ -85,12 +85,13 @@ const CATEGORY_LABELS: Record<Event["category"], string> = {
 };
 
 function formatDate(dateString: string): string {
-  const date = new Date(dateString);
+  const date = new Date(dateString + "T00:00:00");
   const options: Intl.DateTimeFormatOptions = {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
+    timeZone: "Pacific/Auckland",
   };
   return date.toLocaleDateString("en-NZ", options);
 }

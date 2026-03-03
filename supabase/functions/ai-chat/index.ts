@@ -49,6 +49,17 @@ interface AIContextNew {
   userLocation: { latitude: number; longitude: number } | null;
 }
 
+// Pre-fetched social context (loaded server-side to avoid a tool round-trip)
+interface PrefetchedSocialContext {
+  followingUsers: { id: string; name: string }[];
+  feedPosts: { userName: string; placeName: string | null; content: string }[];
+  userPosts: {
+    placeName: string | null;
+    placeCategory: string | null;
+    content: string;
+  }[];
+}
+
 // Legacy context (backward compat)
 interface AIContextLegacy {
   userName?: string;
@@ -125,6 +136,82 @@ async function fetchWeather(): Promise<string> {
   } catch {
     return "";
   }
+}
+
+// ---------------------------------------------------------------------------
+// Eager social context prefetch (runs in parallel with weather + auth)
+// ---------------------------------------------------------------------------
+
+async function prefetchSocialContext(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<PrefetchedSocialContext> {
+  // Get who the user follows
+  const { data: followRows } = await supabase
+    .from("follows")
+    .select(
+      "following_id, profiles!follows_following_id_fkey(display_name, username)"
+    )
+    .eq("follower_id", userId);
+
+  const followingUsers = (followRows ?? []).map(
+    (r: Record<string, unknown>) => {
+      const profile = r.profiles as Record<string, unknown> | null;
+      return {
+        id: r.following_id as string,
+        name:
+          (profile?.display_name as string) ??
+          (profile?.username as string) ??
+          "Unknown",
+      };
+    }
+  );
+
+  const followingIds = followingUsers.map((u) => u.id);
+
+  // Fetch feed posts and user posts in parallel
+  const [feedResult, userPostsResult] = await Promise.all([
+    followingIds.length > 0
+      ? supabase
+          .from("posts")
+          .select("content, user_id, place_id, places(name)")
+          .in("user_id", followingIds)
+          .order("created_at", { ascending: false })
+          .limit(30)
+      : Promise.resolve({ data: [] }),
+    supabase
+      .from("posts")
+      .select("content, place_id, places(name, category)")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(20),
+  ]);
+
+  const followMap = new Map(followingUsers.map((u) => [u.id, u.name]));
+
+  const feedPosts = (feedResult.data ?? []).map(
+    (p: Record<string, unknown>) => {
+      const place = p.places as Record<string, unknown> | null;
+      return {
+        userName: followMap.get(p.user_id as string) ?? "Someone",
+        placeName: (place?.name as string) ?? null,
+        content: (p.content as string)?.slice(0, 100) ?? "",
+      };
+    }
+  );
+
+  const userPosts = (userPostsResult.data ?? []).map(
+    (p: Record<string, unknown>) => {
+      const place = p.places as Record<string, unknown> | null;
+      return {
+        placeName: (place?.name as string) ?? null,
+        placeCategory: (place?.category as string) ?? null,
+        content: (p.content as string)?.slice(0, 100) ?? "",
+      };
+    }
+  );
+
+  return { followingUsers, feedPosts, userPosts };
 }
 
 // ---------------------------------------------------------------------------
@@ -259,7 +346,7 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
   {
     name: "get_user_social_context",
     description:
-      "Get the user's social context: who they follow, recent posts from followed users, and the user's own posting history. Use this to personalize recommendations based on the user's taste and social circle.",
+      "Refresh the user's social context with more posts than the summary already in the system prompt. Only use this if you need MORE data than what's already provided (e.g. the user asks a very specific question about what their friends have been up to).",
     input_schema: {
       type: "object" as const,
       properties: {
@@ -326,7 +413,7 @@ async function executeSearchEvents(
   let query = supabase
     .from("events")
     .select(
-      "id, title, description, date, start_time, end_time, category, price, ticket_url, place_id, places(name, address)"
+      "id, title, date, start_time, category, price, place_id, places(name)"
     )
     .gte("date", dateFrom)
     .lte("date", dateTo)
@@ -395,19 +482,16 @@ async function executeSearchEvents(
       weekday: "short",
       timeZone: "Pacific/Auckland",
     });
+    const attended = attendeeMap.get(eid);
     return {
       id: eid,
       title: e.title,
       date: `${e.date} (${dayOfWeek})`,
       startTime: e.start_time,
-      endTime: e.end_time ?? null,
       category: e.category,
       price: e.price ?? null,
-      ticketUrl: e.ticket_url ?? null,
-      venueName: place?.name ?? null,
-      venueAddress: place?.address ?? null,
-      description: (e.description as string)?.slice(0, 200) ?? null,
-      followedAttendees: attendeeMap.get(eid) ?? [],
+      venue: place?.name ?? null,
+      ...(attended?.length ? { followedAttendees: attended } : {}),
     };
   });
 }
@@ -450,25 +534,20 @@ async function executeSearchPlaces(
   );
   if (placeIds.length === 0) return [];
 
-  // Get post counts + top snippet for each place
+  // Get post counts per place + whether user has visited
   const { data: postRows } = await supabase
     .from("posts")
-    .select("place_id, content, likes, user_id")
+    .select("place_id, user_id")
     .in("place_id", placeIds)
-    .order("likes", { ascending: false })
     .limit(200);
 
   const placePostCounts = new Map<string, number>();
-  const placeTopSnippet = new Map<string, string>();
   const userVisited = new Set<string>();
 
   for (const row of postRows ?? []) {
     const r = row as Record<string, unknown>;
     const pid = r.place_id as string;
     placePostCounts.set(pid, (placePostCounts.get(pid) ?? 0) + 1);
-    if (!placeTopSnippet.has(pid) && r.content) {
-      placeTopSnippet.set(pid, (r.content as string).slice(0, 100));
-    }
     if ((r.user_id as string) === userId) {
       userVisited.add(pid);
     }
@@ -486,21 +565,17 @@ async function executeSearchPlaces(
       id: pid,
       name: p.name,
       category: p.category,
-      address: p.address,
-      postCount: placePostCounts.get(pid) ?? 0,
-      topSnippet: placeTopSnippet.get(pid) ?? null,
-      userHasVisited: userVisited.has(pid),
-      distanceMeters: distance != null ? Math.round(distance) : null,
+      posts: placePostCounts.get(pid) ?? 0,
+      visited: userVisited.has(pid) || undefined,
+      dist: distance != null ? Math.round(distance) : undefined,
     };
   });
 
   // Sort by proximity if coordinates provided, else by post count
   if (nearLat != null && nearLng != null) {
-    results.sort(
-      (a, b) => (a.distanceMeters ?? Infinity) - (b.distanceMeters ?? Infinity)
-    );
+    results.sort((a, b) => (a.dist ?? Infinity) - (b.dist ?? Infinity));
   } else {
-    results.sort((a, b) => b.postCount - a.postCount);
+    results.sort((a, b) => b.posts - a.posts);
   }
 
   return results;
@@ -516,7 +591,7 @@ async function executeSearchGuides(
 
   let query = supabase
     .from("guides")
-    .select("id, title, description, user_id, likes, created_at")
+    .select("id, title, description, user_id, likes")
     .order("likes", { ascending: false })
     .limit(limit);
 
@@ -577,28 +652,25 @@ async function executeSearchGuides(
     guidePlaces.set(gid, existing);
   }
 
-  // Filter by place category if requested
-  let results = guides.map((g: Record<string, unknown>) => {
-    const gid = g.id as string;
-    const places = guidePlaces.get(gid) ?? [];
-    return {
-      id: gid,
-      title: g.title,
-      description: (g.description as string)?.slice(0, 200) ?? null,
-      creatorName: profileMap.get(g.user_id as string) ?? "Unknown",
-      placeCount: places.length,
-      places: places.slice(0, 8),
-      likes: g.likes,
-    };
-  });
+  // Filter by place category if requested, then map to lean shape
+  let filtered = guides.map((g: Record<string, unknown>) => ({
+    g,
+    places: guidePlaces.get(g.id as string) ?? [],
+  }));
 
   if (placeCategory) {
-    results = results.filter((g) =>
-      g.places.some((p) => p.category === placeCategory)
+    filtered = filtered.filter((item) =>
+      item.places.some((p) => p.category === placeCategory)
     );
   }
 
-  return results;
+  return filtered.map(({ g, places }) => ({
+    id: g.id as string,
+    title: g.title,
+    creatorName: profileMap.get(g.user_id as string) ?? "Unknown",
+    placeCount: places.length,
+    places: places.slice(0, 5).map((p) => p.name),
+  }));
 }
 
 async function executeGetUserSocialContext(
@@ -770,7 +842,11 @@ function getToolStatusText(name: string): string {
 // System prompt (lightweight — no embedded data)
 // ---------------------------------------------------------------------------
 
-function buildToolSystemPrompt(ctx: AIContextNew, weather: string): string {
+function buildToolSystemPrompt(
+  ctx: AIContextNew,
+  weather: string,
+  social: PrefetchedSocialContext
+): string {
   const now = new Date();
   const dateStr = now.toLocaleDateString("en-NZ", {
     weekday: "long",
@@ -795,6 +871,31 @@ function buildToolSystemPrompt(ctx: AIContextNew, weather: string): string {
     ? `The user's name is ${ctx.userName}. Address them by name occasionally to keep the conversation personal and friendly — but don't overdo it, use it naturally (e.g. first message greeting, or when making a personal recommendation).`
     : "";
 
+  // Format pre-fetched social context
+  const followingStr =
+    social.followingUsers.length > 0
+      ? social.followingUsers.map((u) => `${u.id}|${u.name}`).join("\n")
+      : "Not following anyone yet.";
+
+  const userPostsStr =
+    social.userPosts.length > 0
+      ? social.userPosts
+          .map(
+            (p) =>
+              `${p.placeName ?? "unknown"}|${p.placeCategory ?? ""}|${
+                p.content
+              }`
+          )
+          .join("\n")
+      : "No posts yet.";
+
+  const feedPostsStr =
+    social.feedPosts.length > 0
+      ? social.feedPosts
+          .map((p) => `${p.userName}|${p.placeName ?? "unknown"}|${p.content}`)
+          .join("\n")
+      : "No recent posts.";
+
   return `You are Welly, a friendly AI assistant for the Welly app — a map-based social platform for discovering things to do in Wellington, New Zealand. You're a true local Wellingtonian with a warm Kiwi personality. Use natural New Zealand slang and expressions (e.g. "sweet as", "heaps good", "keen", "mate", "brekkie", "arvo", "choice", "chur") — but keep it natural, not over the top. You love Wellington and it comes through in how you talk about the city.
 
 ${userNameStr}
@@ -802,6 +903,15 @@ ${userNameStr}
 Current date/time: ${dateStr}, ${timeStr}
 ${locationStr}
 ${weather}
+
+FOLLOWED USERS (id|name):
+${followingStr}
+
+USER'S OWN POSTS (place|category|content) — places the user has already been to:
+${userPostsStr}
+
+RECENT POSTS FROM FOLLOWED USERS (user|place|content):
+${feedPostsStr}
 
 TOOL USAGE:
 - You have tools to search the Welly app database. Use them to find real data before answering.
@@ -811,11 +921,11 @@ TOOL USAGE:
   - "next week" = the Monday-to-Sunday after the current week
 - For questions about places (cafes, restaurants, bars, etc.): use search_places with category filters.
 - For questions about guides or curated lists: use search_guides.
-- For personalized recommendations or when you need to know the user's taste: use get_user_social_context.
 - For trending or popular content: use get_trending_content.
 - For general greetings or questions unrelated to Wellington activities, respond directly WITHOUT calling tools.
 - You may call multiple tools in parallel if needed (e.g. search_events + search_places for "what should I do this weekend?").
 - When the user's location is available, pass it to search_places for proximity sorting.
+- Social context (followed users, user's posts, feed posts) is ALREADY provided above — do NOT call get_user_social_context unless you need to refresh this data.
 
 RESPONSE FORMAT:
 - Use emojis naturally throughout your responses to keep things fun and friendly (e.g. ☕ for cafes, 🍕 for restaurants, 🎶 for music events, 🌿 for parks, etc.)
@@ -1060,8 +1170,11 @@ function parseAIResponse(text: string): AIResponse {
 
 /**
  * Extract the value of the "message" key from a partial/growing JSON string.
+ * Returns { text, complete } where complete=true when the closing quote is found.
  */
-function extractPartialMessageValue(json: string): string | null {
+function extractPartialMessageValue(
+  json: string
+): { text: string; complete: boolean } | null {
   const key = '"message"';
   const idx = json.indexOf(key);
   if (idx === -1) return null;
@@ -1085,13 +1198,14 @@ function extractPartialMessageValue(json: string): string | null {
       else result += "\\" + next;
       i += 2;
     } else if (json[i] === '"') {
-      return result;
+      return { text: result, complete: true };
     } else {
       result += json[i];
       i++;
     }
   }
-  return result;
+  // Incomplete string — still streaming
+  return { text: result, complete: false };
 }
 
 function sseEvent(event: string, data: unknown): string {
@@ -1159,6 +1273,16 @@ Deno.serve(async (req) => {
 
     const { messages, context } = body;
 
+    // Start social context prefetch as early as possible (right after auth)
+    // so it runs in parallel with validation + API key checks
+    const isLegacy = isLegacyContext(context);
+    const userId =
+      ((context as Record<string, unknown>).userId as string | undefined) ??
+      user.id;
+    const socialPromise = !isLegacy
+      ? prefetchSocialContext(supabase, userId)
+      : null;
+
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages are required" }), {
         status: 400,
@@ -1179,12 +1303,12 @@ Deno.serve(async (req) => {
     }
 
     const client = new Anthropic({ apiKey });
-    const weather = await weatherPromise;
 
     // -----------------------------------------------------------------------
     // Legacy path: old client sends full context with places/events arrays
     // -----------------------------------------------------------------------
     if (isLegacyContext(context)) {
+      const weather = await weatherPromise;
       const systemPrompt = buildLegacySystemPrompt(
         context as unknown as AIContextLegacy,
         weather
@@ -1196,8 +1320,14 @@ Deno.serve(async (req) => {
     // New path: tool-use agentic loop
     // -----------------------------------------------------------------------
     const ctx = context as unknown as AIContextNew;
-    const userId = ctx.userId ?? user.id;
-    const systemPrompt = buildToolSystemPrompt(ctx, weather);
+
+    // Await weather + social context (both started earlier, running in parallel)
+    const [weather, socialContext] = await Promise.all([
+      weatherPromise,
+      socialPromise!,
+    ]);
+
+    const systemPrompt = buildToolSystemPrompt(ctx, weather, socialContext);
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -1222,11 +1352,9 @@ Deno.serve(async (req) => {
               }ms)`
             );
 
-            // Stream every round — text deltas flow to client in real time,
-            // tool_use blocks are collected silently.
             const response = await client.messages.create({
-              model: "claude-haiku-4-5-20251001",
-              max_tokens: 1024,
+              model: "claude-sonnet-4-6",
+              max_tokens: 4096,
               system: systemPrompt,
               messages: apiMessages,
               stream: true,
@@ -1236,6 +1364,7 @@ Deno.serve(async (req) => {
             let fullText = "";
             let lastSentLength = 0;
             let stopReason = "";
+            let messageComplete = false;
 
             // Collect tool_use blocks from the stream
             const toolBlocks: { id: string; name: string; input: string }[] =
@@ -1262,10 +1391,10 @@ Deno.serve(async (req) => {
                   const partialMessage = extractPartialMessageValue(fullText);
                   if (
                     partialMessage !== null &&
-                    partialMessage.length > lastSentLength
+                    partialMessage.text.length > lastSentLength
                   ) {
-                    const newText = partialMessage.slice(lastSentLength);
-                    lastSentLength = partialMessage.length;
+                    const newText = partialMessage.text.slice(lastSentLength);
+                    lastSentLength = partialMessage.text.length;
                     if (!firstTextSent) {
                       firstTextSent = true;
                       console.log(
@@ -1276,6 +1405,17 @@ Deno.serve(async (req) => {
                     }
                     controller.enqueue(
                       encoder.encode(sseEvent("text", { text: newText }))
+                    );
+                  }
+                  // When message text is done, tell client we're building recs
+                  if (partialMessage?.complete && !messageComplete) {
+                    messageComplete = true;
+                    controller.enqueue(
+                      encoder.encode(
+                        sseEvent("status", {
+                          text: "Finding recommendations...",
+                        })
+                      )
                     );
                   }
                 } else if (
@@ -1421,11 +1561,12 @@ function streamSingleCall(
     async start(controller) {
       let fullText = "";
       let lastSentLength = 0;
+      let messageComplete = false;
 
       try {
         const response = await client.messages.create({
-          model: "claude-haiku-4-5-20251001",
-          max_tokens: 1024,
+          model: "claude-sonnet-4-6",
+          max_tokens: 8192,
           system: systemPrompt,
           messages: messages.map((m) => ({ role: m.role, content: m.content })),
           stream: true,
@@ -1440,12 +1581,20 @@ function streamSingleCall(
             const partialMessage = extractPartialMessageValue(fullText);
             if (
               partialMessage !== null &&
-              partialMessage.length > lastSentLength
+              partialMessage.text.length > lastSentLength
             ) {
-              const newText = partialMessage.slice(lastSentLength);
-              lastSentLength = partialMessage.length;
+              const newText = partialMessage.text.slice(lastSentLength);
+              lastSentLength = partialMessage.text.length;
               controller.enqueue(
                 encoder.encode(sseEvent("text", { text: newText }))
+              );
+            }
+            if (partialMessage?.complete && !messageComplete) {
+              messageComplete = true;
+              controller.enqueue(
+                encoder.encode(
+                  sseEvent("status", { text: "Finding recommendations..." })
+                )
               );
             }
           }

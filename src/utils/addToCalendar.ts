@@ -1,5 +1,6 @@
 import * as Calendar from 'expo-calendar';
 import { Platform, Alert } from 'react-native';
+import { nzDate } from './nzDate';
 
 interface AddToCalendarParams {
   title: string;
@@ -26,11 +27,7 @@ async function getDefaultCalendarId(): Promise<string | null> {
 }
 
 function buildDate(dateStr: string, timeStr: string): Date {
-  // Parse as local time in Pacific/Auckland
-  const [year, month, day] = dateStr.split('-').map(Number);
-  const [hours, minutes] = timeStr.split(':').map(Number);
-  const date = new Date(year, month - 1, day, hours, minutes);
-  return date;
+  return nzDate(dateStr, timeStr);
 }
 
 export async function addToCalendar(params: AddToCalendarParams): Promise<boolean> {

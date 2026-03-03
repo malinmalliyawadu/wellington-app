@@ -433,7 +433,7 @@ Deno.serve(async (req) => {
     }
 
     const basicAuth = btoa(`${efUsername}:${efPassword}`);
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date().toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
 
     // Fetch events from Eventfinda API with pagination
     const allEvents: EventfindaEvent[] = [];
@@ -497,7 +497,7 @@ Deno.serve(async (req) => {
 
       // Parse dates
       const startDt = new Date(ef.datetime_start);
-      const dateStr = startDt.toISOString().split("T")[0];
+      const dateStr = startDt.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
       // Format time as HH:MM in NZ timezone
       const startTime = startDt.toLocaleTimeString("en-NZ", {
         hour: "2-digit",
@@ -659,7 +659,7 @@ Deno.serve(async (req) => {
     let deletedCount = 0;
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - cleanupDays);
-    const cutoffStr = cutoffDate.toISOString().split("T")[0];
+    const cutoffStr = cutoffDate.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
 
     const { data: deletedRows, error: deleteErr } = await supabase
       .from("events")

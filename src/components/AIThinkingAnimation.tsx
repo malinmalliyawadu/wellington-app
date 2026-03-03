@@ -102,10 +102,17 @@ export function AIThinkingAnimation({
   }
 
   return (
-    <View style={styles.dotsRow}>
-      {[0, 1, 2].map((i) => (
-        <TypingDot key={i} index={i} color={colors.textMuted} />
-      ))}
+    <View style={styles.compactRow}>
+      <View style={styles.dotsRow}>
+        {[0, 1, 2].map((i) => (
+          <TypingDot key={i} index={i} color={colors.textMuted} />
+        ))}
+      </View>
+      {statusText ? (
+        <Text style={[styles.statusText, { color: colors.textMuted }]}>
+          {statusText}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -145,6 +152,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: fonts.medium,
     marginTop: 6,
+  },
+  compactRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
   },
   dotsRow: {
     flexDirection: "row",

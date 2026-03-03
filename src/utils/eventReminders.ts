@@ -1,14 +1,13 @@
 import * as Notifications from 'expo-notifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Event } from '../types';
+import { nzDate } from './nzDate';
 
 const REMINDER_KEY_PREFIX = 'event_reminder_';
 
 export async function scheduleEventReminder(event: Event): Promise<void> {
   // Calculate trigger time: 1 hour before the event start
-  const [year, month, day] = event.date.split('-').map(Number);
-  const [hours, minutes] = event.startTime.split(':').map(Number);
-  const eventDate = new Date(year, month - 1, day, hours, minutes);
+  const eventDate = nzDate(event.date, event.startTime);
   const triggerDate = new Date(eventDate.getTime() - 60 * 60 * 1000); // 1 hour before
 
   // Don't schedule if the reminder time is in the past
