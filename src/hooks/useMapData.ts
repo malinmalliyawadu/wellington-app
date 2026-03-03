@@ -63,18 +63,29 @@ export function useMapData({
 
   const error = placesError || postsError || usersError || trailsError || eventsError;
 
-  const todayEvents = useMemo(() => {
+  const happeningNowEvents = useMemo(() => {
     const now = new Date();
-    const today = now.toISOString().split("T")[0];
-    const day = now.getDay(); // 0=Sun, 6=Sat
-    // Include through this Sunday: days until end of weekend
-    const daysUntilSunday = day === 0 ? 0 : 7 - day;
-    const endDate = new Date(now);
-    endDate.setDate(endDate.getDate() + daysUntilSunday);
-    const end = endDate.toISOString().split("T")[0];
-    return (upcomingEvents ?? []).filter(
-      (e) => e.date >= today && e.date <= end
-    );
+    const todayStr = now
+      .toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" })
+    const nzTimeStr = now.toLocaleTimeString("en-GB", {
+      timeZone: "Pacific/Auckland",
+      hour12: false,
+    });
+    const [nowH, nowM] = nzTimeStr.split(":").map(Number);
+    const nowMinutes = nowH * 60 + nowM;
+
+    const toMinutes = (time: string) => {
+      const [h, m] = time.split(":").map(Number);
+      return h * 60 + m;
+    };
+
+    return (upcomingEvents ?? []).filter((e) => {
+      if (e.date !== todayStr) return false;
+      const endMinutes = e.endTime
+        ? toMinutes(e.endTime)
+        : toMinutes(e.startTime) + 180;
+      return endMinutes > nowMinutes;
+    });
   }, [upcomingEvents]);
 
   // Refetch data when screen comes into focus
@@ -106,7 +117,7 @@ export function useMapData({
   const placeEventsMap = useMemo(() => {
     if (!showEvents) return new Map<string, MarkerEvent[]>();
     const map = new Map<string, MarkerEvent[]>();
-    for (const event of todayEvents) {
+    for (const event of happeningNowEvents) {
       const list = map.get(event.placeId) ?? [];
       const attendeeAvatars = (event.attendeeIds ?? [])
         .slice(0, 8)
@@ -116,7 +127,7 @@ export function useMapData({
       map.set(event.placeId, list);
     }
     return map;
-  }, [todayEvents, showEvents, userMap]);
+  }, [happeningNowEvents, showEvents, userMap]);
 
   const popularityMap = useMemo(
     () => computePlacePopularity(allPosts ?? []),
