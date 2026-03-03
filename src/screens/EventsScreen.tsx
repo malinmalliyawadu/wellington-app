@@ -126,7 +126,16 @@ function classifySections(eventsWithPlaces: EventWithPlace[]) {
     comingUp.push(item);
   }
 
-  // Popular = top 10 by attendee count
+  // Sort sections by AI score (highest first), unscored events fall to end
+  const byScore = (a: EventWithPlace, b: EventWithPlace) =>
+    (b.event.aiScore ?? -1) - (a.event.aiScore ?? -1);
+
+  happeningNow.sort(byScore);
+  weekend.sort(byScore);
+  free.sort(byScore);
+  comingUp.sort(byScore);
+
+  // Popular = top 10 by attendee count (social signal, not AI score)
   const popular = [...eventsWithPlaces]
     .sort((a, b) => (b.event.attendeeIds?.length ?? 0) - (a.event.attendeeIds?.length ?? 0))
     .slice(0, 10)

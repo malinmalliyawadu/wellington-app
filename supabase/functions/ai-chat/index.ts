@@ -60,33 +60,6 @@ interface PrefetchedSocialContext {
   }[];
 }
 
-// Legacy context (backward compat)
-interface AIContextLegacy {
-  userName?: string;
-  places: { id: string; name: string; category: string }[];
-  events: {
-    id: string;
-    title: string;
-    date: string;
-    startTime: string;
-    category: string;
-    price?: number;
-    attendeeIds?: string[];
-  }[];
-  feedPosts: { content: string; userName?: string; placeName?: string }[];
-  userPosts?: { content: string; placeName?: string }[];
-  followingUsers: { id: string; username: string; displayName?: string }[];
-  userLocation: { latitude: number; longitude: number } | null;
-  trendingHashtags?: string[];
-  guides?: {
-    id: string;
-    title: string;
-    description?: string;
-    placeCount: number;
-    creatorName?: string;
-    places?: { name: string; category: string; note?: string }[];
-  }[];
-}
 
 // ---------------------------------------------------------------------------
 // Weather
@@ -914,7 +887,7 @@ RECENT POSTS FROM FOLLOWED USERS (user|place|content):
 ${feedPostsStr}
 
 TOOL USAGE:
-- You have tools to search the Welly app database. Use them to find real data before answering.
+- You have tools to search the Welly app database. Use them to find real data before answering. Call tools immediately without any preamble text.
 - For questions about events, things to do, or what's happening: use search_events with appropriate date filters.
   - "this weekend" = the upcoming Saturday and Sunday (check current day of week above)
   - "tonight" = today's date
@@ -956,169 +929,6 @@ RESPONSE FORMAT:
 - If the question is unrelated to Wellington activities, respond helpfully but keep places/events/guides arrays empty`;
 }
 
-// ---------------------------------------------------------------------------
-// Legacy system prompt (backward compatibility)
-// ---------------------------------------------------------------------------
-
-function buildLegacySystemPrompt(
-  ctx: AIContextLegacy,
-  weather: string
-): string {
-  const now = new Date();
-  const dateStr = now.toLocaleDateString("en-NZ", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    timeZone: "Pacific/Auckland",
-  });
-  const timeStr = now.toLocaleTimeString("en-NZ", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "Pacific/Auckland",
-  });
-  const locationStr = ctx.userLocation
-    ? `User is near (${ctx.userLocation.latitude.toFixed(
-        4
-      )}, ${ctx.userLocation.longitude.toFixed(4)}) in Wellington.`
-    : "User location unknown, assume they are in Wellington.";
-  const placesStr = ctx.places
-    .slice(0, 30)
-    .map((p) => `${p.id}|${p.name}|${p.category}`)
-    .join("\n");
-  const twoWeeks = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-  const filteredEvents = ctx.events.filter((e) => {
-    const eventDate = new Date(e.date);
-    return eventDate >= now && eventDate <= twoWeeks;
-  });
-  const eventsByDate = new Map<string, typeof ctx.events>();
-  for (const e of filteredEvents) {
-    const dateKey = e.date.slice(0, 10);
-    const group = eventsByDate.get(dateKey) ?? [];
-    group.push(e);
-    eventsByDate.set(dateKey, group);
-  }
-  const upcomingEvents: typeof ctx.events = [];
-  for (const dateKey of [...eventsByDate.keys()].sort()) {
-    upcomingEvents.push(...eventsByDate.get(dateKey)!.slice(0, 4));
-  }
-  upcomingEvents.splice(50);
-  const followingSet = new Set(ctx.followingUsers.map((u) => u.id));
-  const followingNameMap = new Map(
-    ctx.followingUsers.map((u) => [u.id, u.displayName ?? u.username])
-  );
-  const eventsStr = upcomingEvents
-    .map((e) => {
-      const attendingFollowed = (e.attendeeIds ?? [])
-        .filter((id) => followingSet.has(id))
-        .map((id) => followingNameMap.get(id))
-        .filter(Boolean);
-      const attendeeStr =
-        attendingFollowed.length > 0
-          ? `|attending: ${attendingFollowed.join(", ")}`
-          : "";
-      const dayOfWeek = new Date(e.date).toLocaleDateString("en-NZ", {
-        weekday: "short",
-        timeZone: "Pacific/Auckland",
-      });
-      return `${e.id}|${e.title}|${e.date} (${dayOfWeek})|${e.startTime}|${
-        e.category
-      }${e.price ? `|$${e.price}` : "|free"}${attendeeStr}`;
-    })
-    .join("\n");
-  const followingStr = ctx.followingUsers
-    .slice(0, 30)
-    .map((u) => `${u.id}|${u.displayName ?? u.username}`)
-    .join("\n");
-  const postsStr = ctx.feedPosts
-    .slice(0, 50)
-    .map(
-      (p) =>
-        `${p.userName ?? "someone"}|${
-          p.placeName ?? "unknown place"
-        }|${p.content.slice(0, 100)}`
-    )
-    .join("\n");
-  const userPostsStr = (ctx.userPosts ?? [])
-    .slice(0, 20)
-    .map((p) => `${p.placeName ?? "unknown place"}|${p.content.slice(0, 100)}`)
-    .join("\n");
-  const userNameStr = ctx.userName
-    ? `The user's name is ${ctx.userName}. Address them by name occasionally.`
-    : "";
-
-  return `You are Welly, a friendly AI assistant for the Welly app — a map-based social platform for discovering things to do in Wellington, New Zealand. You're a true local Wellingtonian with a warm Kiwi personality. Use natural New Zealand slang and expressions (e.g. "sweet as", "heaps good", "keen", "mate", "brekkie", "arvo", "choice", "chur") — but keep it natural, not over the top. You love Wellington and it comes through in how you talk about the city.
-
-${userNameStr}
-
-Current date/time: ${dateStr}, ${timeStr}
-${locationStr}
-${weather}
-
-PLACES (id|name|category):
-${placesStr || "No places loaded yet."}
-
-UPCOMING EVENTS (id|title|date|startTime|category|price|followed attending):
-${eventsStr || "No upcoming events."}
-
-FOLLOWED USERS (id|name):
-${followingStr || "Not following anyone yet."}
-
-USER'S OWN POSTS (place|content):
-${userPostsStr || "No posts yet."}
-
-RECENT POSTS FROM FOLLOWED USERS (user|place|content):
-${postsStr || "No recent posts."}
-
-GUIDES:
-${
-  ctx.guides?.length
-    ? ctx.guides
-        .map((g) => {
-          const guidePlacesStr = g.places?.length
-            ? `\n  Places: ${g.places
-                .map((p) => `${p.name} (${p.category})`)
-                .join(", ")}`
-            : "";
-          const descStr = g.description ? ` — "${g.description}"` : "";
-          return `${g.id}|"${g.title}" by ${g.creatorName ?? "unknown"} (${
-            g.placeCount
-          } places)${descStr}${guidePlacesStr}`;
-        })
-        .join("\n")
-    : "No guides yet."
-}
-
-TRENDING HASHTAGS:
-${
-  ctx.trendingHashtags?.length
-    ? ctx.trendingHashtags.map((t) => `#${t}`).join(", ")
-    : "None yet."
-}
-
-INSTRUCTIONS:
-- Use emojis naturally throughout your responses
-- Give friendly, concise recommendations based on the data above
-- When mentioning places, events, or users, use inline markdown links:
-  - Places: [Place Name](place:placeId)
-  - Events: [Event Title](event:eventId)
-  - Users: [Display Name](user:userId)
-  - Guides: [Guide Title](guide:guideId)
-- Consider the time of day, day of week, and current weather
-- IMPORTANT: When the user asks about a specific time period, ONLY recommend events whose dates fall within that period
-- Keep your message to 2-3 short paragraphs max
-- ONLY return valid JSON and nothing else. Use this exact format:
-{
-  "message": "Your friendly response text here",
-  "places": [{"placeId": "uuid", "placeName": "Name", "category": "cafe", "reason": "Short reason"}],
-  "events": [{"eventId": "uuid", "eventTitle": "Title", "date": "2026-02-20", "startTime": "18:00", "reason": "Short reason"}],
-  "guides": [{"guideId": "uuid", "guideTitle": "Title", "creatorName": "Name", "placeCount": 5, "reason": "Short reason"}],
-  "followUp": "A short follow-up question",
-  "followUpPrompts": [{"label": "Short chip text", "prompt": "Full question sent when tapped"}]
-}
-- Always include a "followUp" and 0-3 "followUpPrompts"
-- Only include places/events/guides that exist in the data above`;
-}
 
 // ---------------------------------------------------------------------------
 // Response parsing helpers
@@ -1213,14 +1023,6 @@ function sseEvent(event: string, data: unknown): string {
 }
 
 // ---------------------------------------------------------------------------
-// Check if request uses legacy format
-// ---------------------------------------------------------------------------
-
-function isLegacyContext(context: Record<string, unknown>): boolean {
-  return Array.isArray(context.places) || Array.isArray(context.events);
-}
-
-// ---------------------------------------------------------------------------
 // Main handler
 // ---------------------------------------------------------------------------
 
@@ -1275,13 +1077,10 @@ Deno.serve(async (req) => {
 
     // Start social context prefetch as early as possible (right after auth)
     // so it runs in parallel with validation + API key checks
-    const isLegacy = isLegacyContext(context);
     const userId =
       ((context as Record<string, unknown>).userId as string | undefined) ??
       user.id;
-    const socialPromise = !isLegacy
-      ? prefetchSocialContext(supabase, userId)
-      : null;
+    const socialPromise = prefetchSocialContext(supabase, userId);
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return new Response(JSON.stringify({ error: "Messages are required" }), {
@@ -1304,30 +1103,7 @@ Deno.serve(async (req) => {
 
     const client = new Anthropic({ apiKey });
 
-    // -----------------------------------------------------------------------
-    // Legacy path: old client sends full context with places/events arrays
-    // -----------------------------------------------------------------------
-    if (isLegacyContext(context)) {
-      const weather = await weatherPromise;
-      const systemPrompt = buildLegacySystemPrompt(
-        context as unknown as AIContextLegacy,
-        weather
-      );
-      return streamSingleCall(client, systemPrompt, messages);
-    }
-
-    // -----------------------------------------------------------------------
-    // New path: tool-use agentic loop
-    // -----------------------------------------------------------------------
     const ctx = context as unknown as AIContextNew;
-
-    // Await weather + social context (both started earlier, running in parallel)
-    const [weather, socialContext] = await Promise.all([
-      weatherPromise,
-      socialPromise!,
-    ]);
-
-    const systemPrompt = buildToolSystemPrompt(ctx, weather, socialContext);
 
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
@@ -1335,13 +1111,56 @@ Deno.serve(async (req) => {
         const t0 = Date.now();
         let firstTextSent = false;
 
+        // Send immediate feedback with date so the client sees activity right away
+        const now = new Date();
+        const dateStr = now.toLocaleDateString("en-NZ", {
+          weekday: "long",
+          day: "numeric",
+          month: "long",
+          timeZone: "Pacific/Auckland",
+        });
+        const timeStr = now.toLocaleTimeString("en-NZ", {
+          hour: "numeric",
+          minute: "2-digit",
+          timeZone: "Pacific/Auckland",
+        });
+        controller.enqueue(
+          encoder.encode(
+            sseEvent("status", { text: `${dateStr}, ${timeStr}` })
+          )
+        );
+
+        // Await weather + social context (both started before stream opened)
+        const [weather, socialContext] = await Promise.all([
+          weatherPromise,
+          socialPromise,
+        ]);
+
+        // Update status with weather once available
+        if (weather) {
+          const weatherShort = weather
+            .replace(/^Current weather in Wellington:\s*/i, "")
+            .split(".")[0];
+          if (weatherShort) {
+            controller.enqueue(
+              encoder.encode(
+                sseEvent("status", {
+                  text: `${dateStr} · ${weatherShort}`,
+                })
+              )
+            );
+          }
+        }
+
+        const systemPrompt = buildToolSystemPrompt(ctx, weather, socialContext);
+
         try {
           const apiMessages: Anthropic.MessageParam[] = messages.map((m) => ({
             role: m.role,
             content: m.content,
           }));
 
-          const MAX_ROUNDS = 3;
+          const MAX_ROUNDS = 2;
 
           for (let round = 0; round < MAX_ROUNDS; round++) {
             const isLastRound = round === MAX_ROUNDS - 1;
@@ -1352,13 +1171,28 @@ Deno.serve(async (req) => {
               }ms)`
             );
 
+            // Let the client know we're generating the response after tools ran
+            if (round > 0) {
+              controller.enqueue(
+                encoder.encode(
+                  sseEvent("status", { text: "Generating response..." })
+                )
+              );
+            }
+
             const response = await client.messages.create({
               model: "claude-sonnet-4-6",
               max_tokens: 4096,
-              system: systemPrompt,
+              system: [
+                {
+                  type: "text",
+                  text: systemPrompt,
+                  cache_control: { type: "ephemeral" },
+                },
+              ],
               messages: apiMessages,
               stream: true,
-              ...(isLastRound ? {} : { tools: TOOL_DEFINITIONS }),
+              tools: TOOL_DEFINITIONS,
             });
 
             let fullText = "";
@@ -1376,6 +1210,13 @@ Deno.serve(async (req) => {
             } | null = null;
 
             for await (const event of response) {
+              // Log cache usage from the message_start event
+              if (event.type === "message_start" && event.message?.usage) {
+                const u = event.message.usage as Record<string, unknown>;
+                console.log(
+                  `[ai-chat] Round ${round + 1} usage: input=${u.input_tokens} cache_read=${u.cache_read_input_tokens ?? 0} cache_create=${u.cache_creation_input_tokens ?? 0}`
+                );
+              }
               if (event.type === "content_block_start") {
                 const block = event.content_block;
                 if (block.type === "tool_use") {
@@ -1469,6 +1310,10 @@ Deno.serve(async (req) => {
             const toolResults = await Promise.all(
               toolBlocks.map(async (tool) => {
                 const input = JSON.parse(tool.input || "{}");
+                console.log(
+                  `[ai-chat] Tool ${tool.name} input:`,
+                  JSON.stringify(input)
+                );
                 const result = await executeTool(
                   tool.name,
                   input,
@@ -1544,82 +1389,3 @@ Deno.serve(async (req) => {
   }
 });
 
-// ---------------------------------------------------------------------------
-// Streaming helpers
-// ---------------------------------------------------------------------------
-
-/**
- * Legacy path: single streaming API call (backward compat with old clients).
- */
-function streamSingleCall(
-  client: Anthropic,
-  systemPrompt: string,
-  messages: ConversationMessage[]
-): Response {
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    async start(controller) {
-      let fullText = "";
-      let lastSentLength = 0;
-      let messageComplete = false;
-
-      try {
-        const response = await client.messages.create({
-          model: "claude-sonnet-4-6",
-          max_tokens: 8192,
-          system: systemPrompt,
-          messages: messages.map((m) => ({ role: m.role, content: m.content })),
-          stream: true,
-        });
-
-        for await (const event of response) {
-          if (
-            event.type === "content_block_delta" &&
-            event.delta.type === "text_delta"
-          ) {
-            fullText += event.delta.text;
-            const partialMessage = extractPartialMessageValue(fullText);
-            if (
-              partialMessage !== null &&
-              partialMessage.text.length > lastSentLength
-            ) {
-              const newText = partialMessage.text.slice(lastSentLength);
-              lastSentLength = partialMessage.text.length;
-              controller.enqueue(
-                encoder.encode(sseEvent("text", { text: newText }))
-              );
-            }
-            if (partialMessage?.complete && !messageComplete) {
-              messageComplete = true;
-              controller.enqueue(
-                encoder.encode(
-                  sseEvent("status", { text: "Finding recommendations..." })
-                )
-              );
-            }
-          }
-        }
-
-        const aiResponse = parseAIResponse(fullText);
-        controller.enqueue(encoder.encode(sseEvent("done", aiResponse)));
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Stream error";
-        console.error("[ai-chat] Stream error:", message);
-        controller.enqueue(
-          encoder.encode(sseEvent("error", { error: message }))
-        );
-      } finally {
-        controller.close();
-      }
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      ...corsHeaders,
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive",
-    },
-  });
-}

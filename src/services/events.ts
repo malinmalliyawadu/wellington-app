@@ -8,6 +8,7 @@ export async function getUpcomingEvents(): Promise<Event[]> {
     .from('events')
     .select('*')
     .gte('date', today)
+    .order('ai_score', { ascending: false, nullsFirst: false })
     .order('date', { ascending: true });
 
   if (error) throw error;
@@ -87,6 +88,7 @@ export async function getUpcomingEventsPaginated(params: {
   }
 
   query = query
+    .order('ai_score', { ascending: false, nullsFirst: false })
     .order('date', { ascending: true })
     .range(params.offset, params.offset + limit - 1);
 
@@ -364,6 +366,7 @@ function mapEvent(row: {
   eventfinda_url?: string | null;
   ticketmaster_url?: string | null;
   humanitix_url?: string | null;
+  ai_score?: number | null;
 }): Event {
   return {
     id: row.id,
@@ -381,5 +384,6 @@ function mapEvent(row: {
     eventfindaUrl: row.eventfinda_url ?? undefined,
     ticketmasterUrl: row.ticketmaster_url ?? undefined,
     humanitixUrl: row.humanitix_url ?? undefined,
+    aiScore: row.ai_score ?? null,
   };
 }

@@ -499,7 +499,7 @@ export function AIChatScreen() {
       setIsLoading(true);
       setIsStreaming(false);
       setStreamingText("");
-      setStatusText(undefined);
+      setStatusText("Connecting...");
       setInputText("");
       if (hadMessages) scrollToBottom();
 

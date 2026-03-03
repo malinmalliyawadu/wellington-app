@@ -495,25 +495,13 @@ Deno.serve(async (req) => {
       // Map category
       const category = mapCategory(ef.category, ef.name);
 
-      // Parse dates
-      const startDt = new Date(ef.datetime_start);
-      const dateStr = startDt.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
-      // Format time as HH:MM in NZ timezone
-      const startTime = startDt.toLocaleTimeString("en-NZ", {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-        timeZone: "Pacific/Auckland",
-      });
+      // Parse dates — Eventfinda returns NZ local time (e.g. "2026-03-08 09:00:00")
+      // so we extract date/time components directly to avoid timezone conversion issues
+      const dateStr = ef.datetime_start.substring(0, 10); // "YYYY-MM-DD"
+      const startTime = ef.datetime_start.substring(11, 16); // "HH:mm"
       let endTime: string | null = null;
       if (ef.datetime_end) {
-        const endDt = new Date(ef.datetime_end);
-        endTime = endDt.toLocaleTimeString("en-NZ", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-          timeZone: "Pacific/Auckland",
-        });
+        endTime = ef.datetime_end.substring(11, 16);
       }
 
       // Find or create place
