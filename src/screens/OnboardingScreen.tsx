@@ -70,7 +70,7 @@ export function OnboardingScreen() {
   const profileStyles = createProfileStyles(colors);
   const followStyles = createFollowStyles(colors);
   const locationStyles = createLocationStyles(colors);
-  const bottomStyles = createBottomStyles(colors);
+
   const insets = useSafeAreaInsets();
   const { profile, updateProfile, completeOnboarding } = useAuth();
   const [step, setStep] = useState(0);
@@ -215,16 +215,8 @@ export function OnboardingScreen() {
 
   // Location handler
   const handleEnableLocation = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === "granted") {
-      handleFinish();
-    } else {
-      Alert.alert(
-        "Location Denied",
-        "You can enable location later in Settings.",
-        [{ text: "OK", onPress: handleFinish }]
-      );
-    }
+    await Location.requestForegroundPermissionsAsync();
+    handleFinish();
   };
 
   const renderWelcomeSlide = ({
@@ -506,22 +498,14 @@ export function OnboardingScreen() {
         );
       case 3:
         return (
-          <View style={bottomStyles.locationButtons}>
-            <LiquidGlassButton
-              title="Enable Location"
-              icon="location"
-              onPress={handleEnableLocation}
-              loading={finishing}
-              size="large"
-              fullWidth
-            />
-            <HapticPressable
-              onPress={handleFinish}
-              style={bottomStyles.skipButton}
-            >
-              <Text style={bottomStyles.skipText}>Skip for now</Text>
-            </HapticPressable>
-          </View>
+          <LiquidGlassButton
+            title="Enable Location"
+            icon="location"
+            onPress={handleEnableLocation}
+            loading={finishing}
+            size="large"
+            fullWidth
+          />
         );
       default:
         return null;
@@ -774,21 +758,5 @@ const createLocationStyles = (colors: Colors) => StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 32,
-  },
-});
-
-// Bottom bar button styles
-const createBottomStyles = (colors: Colors) => StyleSheet.create({
-  locationButtons: {
-    gap: 12,
-    alignItems: "center",
-  },
-  skipButton: {
-    paddingVertical: 8,
-  },
-  skipText: {
-    fontSize: 15,
-    fontFamily: fonts.medium,
-    color: colors.textMuted,
   },
 });

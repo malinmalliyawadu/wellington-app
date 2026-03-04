@@ -386,10 +386,11 @@ async function executeSearchEvents(
   let query = supabase
     .from("events")
     .select(
-      "id, title, date, start_time, category, price, place_id, places(name)"
+      "id, title, date, start_time, category, price, ai_score, place_id, places(name)"
     )
     .gte("date", dateFrom)
     .lte("date", dateTo)
+    .order("ai_score", { ascending: false, nullsFirst: false })
     .order("date", { ascending: true })
     .order("start_time", { ascending: true })
     .limit(limit);
@@ -463,6 +464,7 @@ async function executeSearchEvents(
       startTime: e.start_time,
       category: e.category,
       price: e.price ?? null,
+      aiScore: e.ai_score ?? null,
       venue: place?.name ?? null,
       ...(attended?.length ? { followedAttendees: attended } : {}),
     };
@@ -892,6 +894,7 @@ TOOL USAGE:
   - "this weekend" = the upcoming Saturday and Sunday (check current day of week above)
   - "tonight" = today's date
   - "next week" = the Monday-to-Sunday after the current week
+  - IMPORTANT: Prefer category filters over keyword search. Synonyms like "gigs", "shows", "live music", "concerts" → categories: ["music"]. "laughs", "standup" → categories: ["comedy"]. Only use keyword for specific event names or very specific searches.
 - For questions about places (cafes, restaurants, bars, etc.): use search_places with category filters.
 - For questions about guides or curated lists: use search_guides.
 - For trending or popular content: use get_trending_content.
