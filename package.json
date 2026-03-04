@@ -30,7 +30,7 @@
     "db:stamp:production": "dotenv -e .env.production -- node supabase/run-sql.mjs supabase/stamp-migrations.sql",
     "db:seed:production": "dotenv -e .env.production -- node supabase/run-sql.mjs supabase/seed-achievements.sql",
     "db:link:production": "supabase link --project-ref cxipwnwxvkguxtbzvnlz",
-    "deploy:functions": "supabase functions deploy sync-humanitix-events --no-verify-jwt && supabase functions deploy sync-eventfinda-events --no-verify-jwt && supabase functions deploy sync-ticketmaster-events --no-verify-jwt && supabase functions deploy ai-chat --no-verify-jwt && supabase functions deploy instagram-token --no-verify-jwt",
+    "deploy:functions": "supabase functions deploy score-events --no-verify-jwt && supabase functions deploy sync-humanitix-events --no-verify-jwt && supabase functions deploy sync-eventfinda-events --no-verify-jwt && supabase functions deploy sync-ticketmaster-events --no-verify-jwt && supabase functions deploy ai-chat --no-verify-jwt && supabase functions deploy instagram-token --no-verify-jwt",
     "lint": "eslint . && deno lint --config supabase/functions/deno.json supabase/functions/",
     "typecheck": "tsc --noEmit && deno check --config supabase/functions/deno.json supabase/functions/*/index.ts",
     "test": "jest --passWithNoTests",

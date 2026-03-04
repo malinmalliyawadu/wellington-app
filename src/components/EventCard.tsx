@@ -74,6 +74,25 @@ function getDay(dateString: string): string {
   return date.toLocaleDateString("en-NZ", { day: "numeric", timeZone: "Pacific/Auckland" });
 }
 
+function isEventHappeningNow(event: Event): boolean {
+  const now = new Date();
+  const todayStr = now.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
+  if (event.date !== todayStr) return false;
+  const nzTimeStr = now.toLocaleTimeString("en-GB", {
+    timeZone: "Pacific/Auckland",
+    hour12: false,
+  });
+  const [nowH, nowM] = nzTimeStr.split(":").map(Number);
+  const nowMinutes = nowH * 60 + nowM;
+  const toMinutes = (time: string) => {
+    const [h, m] = time.split(":").map(Number);
+    return h * 60 + m;
+  };
+  const startMinutes = toMinutes(event.startTime);
+  const endMinutes = event.endTime ? toMinutes(event.endTime) : startMinutes + 180;
+  return nowMinutes >= startMinutes && nowMinutes < endMinutes;
+}
+
 const AVATAR_SIZE = 22;
 const AVATAR_OVERLAP = 6;
 const glassEnabled = isLiquidGlassAvailable();
@@ -89,6 +108,7 @@ export function EventCard({
   const { colors } = useTheme();
   const styles = createStyles(colors);
   const categoryColor = CATEGORY_COLORS[event.category];
+  const happeningNow = useMemo(() => isEventHappeningNow(event), [event]);
   const { followingIds } = useFollow();
   const attendeeIds = event.attendeeIds ?? [];
 
@@ -275,17 +295,24 @@ export function EventCard({
               </Text>
             </View>
             <View style={styles.footerDot} />
-            <View style={styles.footerItem}>
-              <SFIcon
-                name="clock"
-                fallback="time"
-                size={14}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.footerText}>
-                {formatTime(event.startTime, event.endTime)}
-              </Text>
-            </View>
+            {happeningNow ? (
+              <View style={styles.footerItem}>
+                <View style={styles.nowDotLarge} />
+                <Text style={styles.nowFooterText}>Happening now</Text>
+              </View>
+            ) : (
+              <View style={styles.footerItem}>
+                <SFIcon
+                  name="clock"
+                  fallback="time"
+                  size={14}
+                  color={colors.textSecondary}
+                />
+                <Text style={styles.footerText}>
+                  {formatTime(event.startTime, event.endTime)}
+                </Text>
+              </View>
+            )}
           </View>
           {totalCount > 0 && (
             <View style={styles.attendeeSection}>
@@ -407,17 +434,24 @@ export function EventCard({
                 {place.name}
               </Text>
             </View>
-            <View style={styles.footerItem}>
-              <SFIcon
-                name="clock"
-                fallback="time"
-                size={14}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.footerText}>
-                {formatTime(event.startTime, event.endTime)}
-              </Text>
-            </View>
+            {happeningNow ? (
+              <View style={styles.footerItem}>
+                <View style={styles.nowDotLarge} />
+                <Text style={styles.nowFooterText}>Happening now</Text>
+              </View>
+            ) : (
+              <View style={styles.footerItem}>
+                <SFIcon
+                  name="clock"
+                  fallback="time"
+                  size={14}
+                  color={colors.textSecondary}
+                />
+                <Text style={styles.footerText}>
+                  {formatTime(event.startTime, event.endTime)}
+                </Text>
+              </View>
+            )}
           </View>
           {totalCount > 0 && (
             <View style={styles.attendeeSectionCompact}>
@@ -457,17 +491,24 @@ export function EventCard({
               </Text>
             </View>
             <View style={styles.footerDot} />
-            <View style={styles.footerItem}>
-              <SFIcon
-                name="clock"
-                fallback="time"
-                size={14}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.footerText}>
-                {formatTime(event.startTime, event.endTime)}
-              </Text>
-            </View>
+            {happeningNow ? (
+              <View style={styles.footerItem}>
+                <View style={styles.nowDotLarge} />
+                <Text style={styles.nowFooterText}>Happening now</Text>
+              </View>
+            ) : (
+              <View style={styles.footerItem}>
+                <SFIcon
+                  name="clock"
+                  fallback="time"
+                  size={14}
+                  color={colors.textSecondary}
+                />
+                <Text style={styles.footerText}>
+                  {formatTime(event.startTime, event.endTime)}
+                </Text>
+              </View>
+            )}
           </View>
           {totalCount > 0 && (
             <View style={styles.attendeeSection}>
@@ -787,5 +828,17 @@ const createStyles = (colors: Colors) =>
       fontSize: 11,
       color: colors.textSecondary,
       fontFamily: fonts.medium,
+    },
+    nowDotLarge: {
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: "#34C759",
+    },
+    nowFooterText: {
+      fontSize: 13,
+      fontWeight: "600",
+      fontFamily: fonts.semiBold,
+      color: "#34C759",
     },
   });

@@ -35,6 +35,7 @@ import {
   toggleAttendance,
   deleteEvent,
   enrichEventDescription,
+  enrichEventfindaDescription,
 } from "../services/events";
 import { getPlaceById } from "../services/places";
 import { getProfilesByIds } from "../services/users";
@@ -42,7 +43,10 @@ import { useQuery } from "../hooks/useQuery";
 import { useAuth } from "../context/AuthContext";
 import { useFollow } from "../context/FollowContext";
 import { addToCalendar } from "../utils/addToCalendar";
-import { scheduleEventReminder, cancelEventReminder } from "../utils/eventReminders";
+import {
+  scheduleEventReminder,
+  cancelEventReminder,
+} from "../utils/eventReminders";
 import {
   createEventAttendanceNotification,
   deleteNotificationForEventAttendance,
@@ -167,7 +171,9 @@ export function EventDetailScreen() {
   );
 
   // Enrich Humanitix event descriptions on-demand
-  const [enrichedDescription, setEnrichedDescription] = useState<string | null>(null);
+  const [enrichedDescription, setEnrichedDescription] = useState<string | null>(
+    null
+  );
   useEffect(() => {
     if (!event?.humanitixUrl) return;
     // Check if description is a placeholder ("{title} at {venue}")
@@ -181,8 +187,26 @@ export function EventDetailScreen() {
     enrichEventDescription(event.id, event.humanitixUrl!).then((desc) => {
       if (!cancelled && desc) setEnrichedDescription(desc);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [event?.id, event?.humanitixUrl, event?.description, event?.title]);
+
+  // Enrich Eventfinda event descriptions on-demand
+  useEffect(() => {
+    if (!event?.eventfindaUrl) return;
+    // Eventfinda API truncates descriptions to ~220 chars ending with "..."
+    const isTruncated = event.description.trimEnd().endsWith("...");
+    if (!isTruncated) return;
+
+    let cancelled = false;
+    enrichEventfindaDescription(event.id, event.eventfindaUrl!).then((desc) => {
+      if (!cancelled && desc) setEnrichedDescription(desc);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [event?.id, event?.eventfindaUrl, event?.description]);
 
   // Refetch when screen comes into focus
   useFocusEffect(
@@ -387,9 +411,7 @@ export function EventDetailScreen() {
                   />
                 </HapticPressable>
                 <HapticPressable
-                  onPress={() =>
-                    shareEvent(event.id)
-                  }
+                  onPress={() => shareEvent(event.id)}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={styles.shareButton}
                 >
@@ -442,7 +464,9 @@ export function EventDetailScreen() {
             </View>
 
             <View style={styles.descriptionSection}>
-              <Text style={styles.descriptionText}>{enrichedDescription ?? event.description}</Text>
+              <Text style={styles.descriptionText}>
+                {enrichedDescription ?? event.description}
+              </Text>
             </View>
 
             {currentUserId && (
@@ -458,15 +482,24 @@ export function EventDetailScreen() {
                   onPress={async () => {
                     setTogglingAttendance(true);
                     try {
-                      const nowAttending = await toggleAttendance(event.id, currentUserId);
+                      const nowAttending = await toggleAttendance(
+                        event.id,
+                        currentUserId
+                      );
                       refetchAttendees();
 
                       if (nowAttending) {
-                        createEventAttendanceNotification(currentUserId, event.id).catch(() => {});
+                        createEventAttendanceNotification(
+                          currentUserId,
+                          event.id
+                        ).catch(() => {});
                         scheduleEventReminder(event).catch(() => {});
-                        awardPointsForAction('event_attend', event.id);
+                        awardPointsForAction("event_attend", event.id);
                       } else {
-                        deleteNotificationForEventAttendance(currentUserId, event.id).catch(() => {});
+                        deleteNotificationForEventAttendance(
+                          currentUserId,
+                          event.id
+                        ).catch(() => {});
                         cancelEventReminder(event.id).catch(() => {});
                       }
                     } catch {
@@ -557,157 +590,158 @@ export function EventDetailScreen() {
   );
 }
 
-const createStyles = (colors: Colors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  // Hero image area with overlays
-  heroContainer: {
-    height: 280,
-    position: "relative",
-  },
-  heroImage: {
-    width: "100%",
-    height: "100%",
-    backgroundColor: colors.gray200,
-  },
-  heroGradient: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: "65%",
-  },
-  heroTitle: {
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
-    fontSize: 26,
-    fontFamily: fonts.bold,
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0,0,0,0.5)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 4,
-  },
-  // Info section
-  infoSection: {
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray200,
-    gap: 12,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  infoText: {
-    fontSize: 15,
-    color: colors.text,
-    flex: 1,
-  },
-  infoLocationContent: {
-    flex: 1,
-  },
-  shareButton: {
-    padding: 4,
-  },
-  addressText: {
-    fontSize: 13,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  descriptionSection: {
-    padding: 20,
-  },
-  descriptionText: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    lineHeight: 22,
-  },
-  goingButtonContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 12,
-  },
-  actionButtons: {
-    flexDirection: "row",
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.gray200,
-  },
-  calendarButton: {
-    flex: 1,
-  },
-  ticketButton: {
-    flex: 1,
-  },
-  attendeesHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.gray200,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-  },
-  attendeeCount: {
-    fontSize: 15,
-    color: colors.textSecondary,
-    fontWeight: "500",
-    fontFamily: fonts.medium,
-  },
-  attendeeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.gray200,
-  },
-  attendeeRowPressed: {
-    backgroundColor: colors.gray100,
-  },
-  attendeeAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.gray200,
-    marginRight: 12,
-  },
-  attendeeName: {
-    fontSize: 15,
-    fontWeight: "500",
-    fontFamily: fonts.medium,
-    color: colors.text,
-    flex: 1,
-  },
-  followBadge: {
-    backgroundColor: colors.primary + "20",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  followBadgeText: {
-    fontSize: 11,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.primary,
-  },
-  emptyState: {
-    alignItems: "center",
-    paddingVertical: 40,
-  },
-  emptyText: {
-    fontSize: 15,
-    color: colors.textMuted,
-  },
-});
+const createStyles = (colors: Colors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    // Hero image area with overlays
+    heroContainer: {
+      height: 280,
+      position: "relative",
+    },
+    heroImage: {
+      width: "100%",
+      height: "100%",
+      backgroundColor: colors.gray200,
+    },
+    heroGradient: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: "65%",
+    },
+    heroTitle: {
+      position: "absolute",
+      bottom: 20,
+      left: 20,
+      right: 20,
+      fontSize: 26,
+      fontFamily: fonts.bold,
+      color: "#FFFFFF",
+      textShadowColor: "rgba(0,0,0,0.5)",
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 4,
+    },
+    // Info section
+    infoSection: {
+      padding: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.gray200,
+      gap: 12,
+    },
+    infoRow: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 10,
+    },
+    infoText: {
+      fontSize: 15,
+      color: colors.text,
+      flex: 1,
+    },
+    infoLocationContent: {
+      flex: 1,
+    },
+    shareButton: {
+      padding: 4,
+    },
+    addressText: {
+      fontSize: 13,
+      color: colors.textSecondary,
+      marginTop: 2,
+    },
+    descriptionSection: {
+      padding: 20,
+    },
+    descriptionText: {
+      fontSize: 15,
+      color: colors.textSecondary,
+      lineHeight: 22,
+    },
+    goingButtonContainer: {
+      paddingHorizontal: 20,
+      paddingBottom: 12,
+    },
+    actionButtons: {
+      flexDirection: "row",
+      gap: 12,
+      paddingHorizontal: 20,
+      paddingBottom: 20,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.gray200,
+    },
+    calendarButton: {
+      flex: 1,
+    },
+    ticketButton: {
+      flex: 1,
+    },
+    attendeesHeader: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.gray200,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+    },
+    attendeeCount: {
+      fontSize: 15,
+      color: colors.textSecondary,
+      fontWeight: "500",
+      fontFamily: fonts.medium,
+    },
+    attendeeRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: colors.gray200,
+    },
+    attendeeRowPressed: {
+      backgroundColor: colors.gray100,
+    },
+    attendeeAvatar: {
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      backgroundColor: colors.gray200,
+      marginRight: 12,
+    },
+    attendeeName: {
+      fontSize: 15,
+      fontWeight: "500",
+      fontFamily: fonts.medium,
+      color: colors.text,
+      flex: 1,
+    },
+    followBadge: {
+      backgroundColor: colors.primary + "20",
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 4,
+    },
+    followBadgeText: {
+      fontSize: 11,
+      fontWeight: "600",
+      fontFamily: fonts.semiBold,
+      color: colors.primary,
+    },
+    emptyState: {
+      alignItems: "center",
+      paddingVertical: 40,
+    },
+    emptyText: {
+      fontSize: 15,
+      color: colors.textMuted,
+    },
+  });

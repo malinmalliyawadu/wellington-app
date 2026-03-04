@@ -28,6 +28,9 @@ export const CATEGORY_ICONS: Record<
 
 export interface MarkerEvent {
   date: string;
+  startTime: string;
+  endTime?: string;
+  isHappeningNow: boolean;
   attendeeAvatars: string[];
 }
 
@@ -252,27 +255,37 @@ function PopularityMarkerInner({
     );
   };
 
+  const formatMarkerTime = (time: string) => {
+    const [h, m] = time.split(":").map(Number);
+    const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    const suffix = h >= 12 ? "pm" : "am";
+    return m === 0
+      ? `${hour12}${suffix}`
+      : `${hour12}:${String(m).padStart(2, "0")}${suffix}`;
+  };
+
   const renderLabelContent = () => (
     <>
       {hasEvents ? (
-        <View style={styles.eventRow}>
-          <View style={styles.eventDateBadge}>
-            <Text style={styles.eventDateMonth}>
-              {new Date(events[0].date)
-                .toLocaleDateString("en-NZ", { month: "short" })
-                .toUpperCase()}
+        <View style={styles.eventColumn}>
+          {placeName && (
+            <Text style={styles.labelName} numberOfLines={1}>
+              {placeName}
             </Text>
-            <Text style={styles.eventDateDay}>
-              {new Date(events[0].date).getDate()}
+          )}
+          <View style={styles.eventTimeBadge}>
+            {events[0].isHappeningNow && <View style={styles.nowDot} />}
+            <Text
+              style={[
+                styles.eventTime,
+                events[0].isHappeningNow && styles.eventTimeNow,
+              ]}
+            >
+              {formatMarkerTime(events[0].startTime)}
             </Text>
           </View>
-          <View style={styles.eventRight}>
-            {placeName && (
-              <Text style={styles.labelName} numberOfLines={1}>
-                {placeName}
-              </Text>
-            )}
-            {events[0].attendeeAvatars.length > 0 && (
+          {events[0].attendeeAvatars.length > 0 && (
+            <View style={styles.avatarRow}>
               <View style={styles.avatarStack}>
                 {events[0].attendeeAvatars.slice(0, 8).map((avatarUrl, i) => (
                   <Image
@@ -284,8 +297,8 @@ function PopularityMarkerInner({
                   />
                 ))}
               </View>
-            )}
-          </View>
+            </View>
+          )}
         </View>
       ) : (
         <>
@@ -359,6 +372,8 @@ export const PopularityMarker = React.memo(
     (prev.events ?? []).every(
       (e, i) =>
         e.date === next.events?.[i]?.date &&
+        e.startTime === next.events?.[i]?.startTime &&
+        e.isHappeningNow === next.events?.[i]?.isHappeningNow &&
         e.attendeeAvatars.length === next.events?.[i]?.attendeeAvatars.length
     ) &&
     arraysEqual(prev.posterAvatars ?? [], next.posterAvatars ?? [])
@@ -369,30 +384,30 @@ const createStyles = (colors: Colors) =>
     container: {
       alignItems: "center",
     },
-    eventRow: {
+    eventColumn: {
+      alignItems: "center",
+      gap: 1,
+    },
+    eventTimeBadge: {
       flexDirection: "row",
       alignItems: "center",
-      gap: 6,
+      justifyContent: "center",
+      gap: 3,
     },
-    eventRight: {
-      flexShrink: 1,
-    },
-    eventDateBadge: {
-      alignItems: "center",
-      minWidth: 22,
-    },
-    eventDateMonth: {
-      fontSize: 7,
+    eventTime: {
+      fontSize: 10,
       fontWeight: "700",
       fontFamily: fonts.bold,
       color: colors.category.venue,
-      letterSpacing: 0.3,
     },
-    eventDateDay: {
-      fontSize: 12,
-      fontFamily: fonts.extraBold,
-      color: colors.text,
-      lineHeight: 13,
+    eventTimeNow: {
+      color: "#34C759",
+    },
+    nowDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: "#34C759",
     },
     followedGlassMarker: {
       alignItems: "center",

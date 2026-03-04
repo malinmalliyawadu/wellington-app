@@ -951,6 +951,10 @@ export type Database = {
         Args: Record<string, never>;
         Returns: undefined;
       };
+      enrich_event_description: {
+        Args: { event_id: string; new_description: string };
+        Returns: undefined;
+      };
     };
     Enums: {
       place_category: PlaceCategory;

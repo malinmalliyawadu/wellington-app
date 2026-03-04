@@ -116,6 +116,19 @@ export function useMapData({
 
   const placeEventsMap = useMemo(() => {
     if (!showEvents) return new Map<string, MarkerEvent[]>();
+
+    const now = new Date();
+    const nzTimeStr = now.toLocaleTimeString("en-GB", {
+      timeZone: "Pacific/Auckland",
+      hour12: false,
+    });
+    const [nowH, nowM] = nzTimeStr.split(":").map(Number);
+    const nowMinutes = nowH * 60 + nowM;
+    const toMinutes = (time: string) => {
+      const [h, m] = time.split(":").map(Number);
+      return h * 60 + m;
+    };
+
     const map = new Map<string, MarkerEvent[]>();
     for (const event of happeningNowEvents) {
       const list = map.get(event.placeId) ?? [];
@@ -123,7 +136,15 @@ export function useMapData({
         .slice(0, 8)
         .map((uid) => userMap.get(uid)?.avatarUrl)
         .filter((url): url is string => !!url);
-      list.push({ date: event.date, attendeeAvatars });
+      const startMinutes = toMinutes(event.startTime);
+      const isHappeningNow = startMinutes <= nowMinutes;
+      list.push({
+        date: event.date,
+        startTime: event.startTime,
+        endTime: event.endTime ?? undefined,
+        isHappeningNow,
+        attendeeAvatars,
+      });
       map.set(event.placeId, list);
     }
     return map;

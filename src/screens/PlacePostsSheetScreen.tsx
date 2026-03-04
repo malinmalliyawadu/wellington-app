@@ -107,9 +107,11 @@ export function PlacePostsSheetScreen() {
     const endDate = new Date(now);
     endDate.setDate(endDate.getDate() + daysUntilSunday);
     const end = endDate.toISOString().split("T")[0];
-    return allUpcomingEvents.filter(
-      (e) => e.placeId === placeId && e.date >= today && e.date <= end
-    );
+    return allUpcomingEvents
+      .filter(
+        (e) => e.placeId === placeId && e.date >= today && e.date <= end
+      )
+      .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime));
   }, [allUpcomingEvents, placeId]);
 
   // Refetch data when screen comes into focus (e.g., after creating a new post)

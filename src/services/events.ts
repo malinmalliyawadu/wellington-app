@@ -337,13 +337,59 @@ export async function enrichEventDescription(eventId: string, humanitixUrl: stri
     const description = ld.description;
     if (!description) return null;
 
-    // Cache in DB
-    await supabase
-      .from('events')
-      .update({ description })
-      .eq('id', eventId);
+    // Cache in DB via RPC (bypasses RLS since synced events have no creator_id)
+    await supabase.rpc('enrich_event_description', {
+      event_id: eventId,
+      new_description: description,
+    });
 
     return description;
+  } catch {
+    return null;
+  }
+}
+
+export async function enrichEventfindaDescription(
+  eventId: string,
+  eventfindaUrl: string
+): Promise<string | null> {
+  try {
+    const res = await fetch(eventfindaUrl);
+    if (!res.ok) return null;
+
+    const html = await res.text();
+
+    // Extract content from div#eventDescription
+    const descMatch = html.match(
+      /<div[^>]*id="eventDescription"[^>]*>([\s\S]*?)<\/div>/
+    );
+    if (!descMatch) return null;
+
+    // Strip HTML tags and decode entities
+    const ENTITIES: Record<string, string> = {
+      amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ',
+      ndash: '\u2013', mdash: '\u2014', lsquo: '\u2018', rsquo: '\u2019',
+      ldquo: '\u201C', rdquo: '\u201D', bull: '\u2022', hellip: '\u2026',
+    };
+    const stripped = descMatch[1]
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)))
+      .replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(parseInt(dec, 10)))
+      .replace(/&([a-zA-Z]+);/g, (match, name) => ENTITIES[name] ?? ENTITIES[name.toLowerCase()] ?? match)
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+
+    if (!stripped) return null;
+
+    // Cache in DB via RPC (bypasses RLS since synced events have no creator_id)
+    await supabase.rpc('enrich_event_description', {
+      event_id: eventId,
+      new_description: stripped,
+    });
+
+    return stripped;
   } catch {
     return null;
   }
