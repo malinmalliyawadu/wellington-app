@@ -52,23 +52,35 @@ export async function scrapeEventfindaDescription(
   url: string
 ): Promise<string | null> {
   try {
+    console.log(`  [scrape] Fetching Eventfinda page: ${url}`);
     const res = await fetch(url, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (compatible; WellyApp/1.0; +https://wellyapp.nz)",
       },
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`  [scrape] Eventfinda returned ${res.status} for ${url}`);
+      return null;
+    }
     const html = await res.text();
+    console.log(`  [scrape] Got ${html.length} chars of HTML`);
 
     const descMatch = html.match(
       /<div[^>]*id="eventDescription"[^>]*>([\s\S]*?)<\/div>/
     );
-    if (!descMatch) return null;
+    if (!descMatch) {
+      console.warn(`  [scrape] No #eventDescription div found`);
+      return null;
+    }
 
-    return stripHtmlToText(descMatch[1]) || null;
+    const result = stripHtmlToText(descMatch[1]) || null;
+    console.log(
+      `  [scrape] Extracted ${result ? result.length : 0} chars of description`
+    );
+    return result;
   } catch (err) {
-    console.error(`Failed to scrape Eventfinda ${url}: ${err}`);
+    console.error(`  [scrape] Failed to scrape Eventfinda ${url}: ${err}`);
     return null;
   }
 }
@@ -77,24 +89,36 @@ export async function scrapeHumanitixDescription(
   url: string
 ): Promise<string | null> {
   try {
+    console.log(`  [scrape] Fetching Humanitix page: ${url}`);
     const res = await fetch(url, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (compatible; WellyApp/1.0; +https://wellyapp.nz)",
       },
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn(`  [scrape] Humanitix returned ${res.status} for ${url}`);
+      return null;
+    }
     const html = await res.text();
+    console.log(`  [scrape] Got ${html.length} chars of HTML`);
 
     const ldMatch = html.match(
       /<script type="application\/ld\+json">(\{.*?\})<\/script>/s
     );
-    if (!ldMatch) return null;
+    if (!ldMatch) {
+      console.warn(`  [scrape] No JSON-LD found on page`);
+      return null;
+    }
 
     const ld = JSON.parse(ldMatch[1]);
-    return ld.description || null;
+    const desc = ld.description || null;
+    console.log(
+      `  [scrape] Extracted ${desc ? desc.length : 0} chars from JSON-LD`
+    );
+    return desc;
   } catch (err) {
-    console.error(`Failed to scrape Humanitix ${url}: ${err}`);
+    console.error(`  [scrape] Failed to scrape Humanitix ${url}: ${err}`);
     return null;
   }
 }
@@ -120,6 +144,11 @@ async function generateAIDescription(
     event.price != null && event.price > 0
       ? `$${event.price.toFixed(2)}`
       : "Free";
+
+  console.log(
+    `  [ai] Calling Claude Haiku (input: ${event.description.length} chars)`
+  );
+  const startMs = Date.now();
 
   const response = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
@@ -155,10 +184,18 @@ Write ONLY the improved markdown description. No title, no preamble.`,
     ],
   });
 
+  const elapsedMs = Date.now() - startMs;
   const text =
     response.content[0].type === "text"
       ? response.content[0].text.trim()
       : "";
+
+  const inputTokens = response.usage?.input_tokens ?? 0;
+  const outputTokens = response.usage?.output_tokens ?? 0;
+  console.log(
+    `  [ai] Response: ${text.length} chars in ${elapsedMs}ms (${inputTokens} in / ${outputTokens} out tokens)`
+  );
+
   return text || null;
 }
 
@@ -187,12 +224,15 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /**
  * Enrich all upcoming events that are missing an ai_description.
  * For each event: scrape full description if needed, then generate AI description.
- * Call this from any sync function after upserting events.
+ * Called by the standalone enrich-events edge function.
  */
 export async function enrichEvents(
   supabase: SupabaseClient,
   options?: { limit?: number }
 ): Promise<{ enriched: number; errors: number }> {
+  const startTime = Date.now();
+  console.log("=== enrichEvents START ===");
+
   const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!anthropicApiKey) {
     console.log("Skipping AI enrichment: ANTHROPIC_API_KEY not set");
@@ -203,11 +243,12 @@ export async function enrichEvents(
     timeZone: "Pacific/Auckland",
   });
   const limit = options?.limit ?? 50;
+  console.log(`Config: limit=${limit}, today=${today}`);
 
-  const { data: events } = await supabase
+  const { data: events, error: queryError } = await supabase
     .from("events")
     .select(
-      "id, title, description, date, start_time, end_time, category, price, place_id, eventfinda_url, humanitix_url"
+      "id, title, description, date, start_time, end_time, category, price, place_id, eventfinda_url, humanitix_url, ai_score"
     )
     .is("ai_description", null)
     .is("creator_id", null)
@@ -215,42 +256,114 @@ export async function enrichEvents(
     .order("ai_score", { ascending: false, nullsFirst: false })
     .limit(limit);
 
-  if (!events || events.length === 0) {
-    console.log("No events to enrich");
+  if (queryError) {
+    console.error(`Query error: ${queryError.message}`);
     return { enriched: 0, errors: 0 };
   }
 
-  console.log(`Enriching ${events.length} events with AI descriptions...`);
+  if (!events || events.length === 0) {
+    console.log("No events to enrich — all caught up!");
+    console.log(`=== enrichEvents END (${Date.now() - startTime}ms) ===`);
+    return { enriched: 0, errors: 0 };
+  }
+
+  // Count total remaining (beyond this batch)
+  const { count: totalRemaining } = await supabase
+    .from("events")
+    .select("id", { count: "exact", head: true })
+    .is("ai_description", null)
+    .is("creator_id", null)
+    .gte("date", today);
+
+  console.log(
+    `Found ${events.length} events to enrich (${totalRemaining ?? "?"} total remaining)`
+  );
+  console.log(
+    `Score range: ${events[0].ai_score ?? "null"} → ${events[events.length - 1].ai_score ?? "null"}`
+  );
+
   const anthropic = new Anthropic({ apiKey: anthropicApiKey });
   let enriched = 0;
   let errors = 0;
+  let scraped = 0;
 
-  for (const ev of events) {
+  for (let i = 0; i < events.length; i++) {
+    const ev = events[i];
+    const eventStart = Date.now();
+    const source = ev.eventfinda_url
+      ? "eventfinda"
+      : ev.humanitix_url
+        ? "humanitix"
+        : "other";
+
+    console.log(
+      `\n[${i + 1}/${events.length}] "${ev.title}" (${ev.date}, score=${ev.ai_score ?? "null"}, source=${source})`
+    );
+
     try {
       let description = ev.description as string;
+      const originalDescLen = description.length;
 
       // Scrape full description if truncated/placeholder
       if (ev.eventfinda_url && needsEventfindaScrape(description)) {
-        const scraped = await scrapeEventfindaDescription(ev.eventfinda_url);
-        if (scraped) {
-          description = scraped;
-          await supabase
+        console.log(
+          `  [scrape] Description truncated (${originalDescLen} chars, ends with "...") — scraping full text`
+        );
+        const scrapeStart = Date.now();
+        const scrapeResult = await scrapeEventfindaDescription(
+          ev.eventfinda_url
+        );
+        console.log(`  [scrape] Took ${Date.now() - scrapeStart}ms`);
+        if (scrapeResult) {
+          description = scrapeResult;
+          scraped++;
+          console.log(
+            `  [scrape] Updated description: ${originalDescLen} → ${description.length} chars`
+          );
+          const { error: updateErr } = await supabase
             .from("events")
             .update({ description })
             .eq("id", ev.id);
+          if (updateErr)
+            console.warn(`  [scrape] DB update failed: ${updateErr.message}`);
+        } else {
+          console.warn(
+            `  [scrape] Scraping failed — using truncated description`
+          );
         }
       } else if (
         ev.humanitix_url &&
         needsHumanitixScrape(description, ev.title as string)
       ) {
-        const scraped = await scrapeHumanitixDescription(ev.humanitix_url);
-        if (scraped) {
-          description = scraped;
-          await supabase
+        console.log(
+          `  [scrape] Placeholder description detected — scraping from Humanitix`
+        );
+        const scrapeStart = Date.now();
+        const scrapeResult = await scrapeHumanitixDescription(
+          ev.humanitix_url
+        );
+        console.log(`  [scrape] Took ${Date.now() - scrapeStart}ms`);
+        if (scrapeResult) {
+          description = scrapeResult;
+          scraped++;
+          console.log(
+            `  [scrape] Updated description: ${originalDescLen} → ${description.length} chars`
+          );
+          const { error: updateErr } = await supabase
             .from("events")
             .update({ description })
             .eq("id", ev.id);
+          if (updateErr)
+            console.warn(`  [scrape] DB update failed: ${updateErr.message}`);
+        } else {
+          console.warn(
+            `  [scrape] Scraping failed — using placeholder description`
+          );
         }
+      } else {
+        console.log(
+          `  [scrape] Description OK (${originalDescLen} chars) — no scraping needed`
+        );
       }
 
       // Get place name for context
@@ -261,7 +374,12 @@ export async function enrichEvents(
           .select("name")
           .eq("id", ev.place_id)
           .single();
-        if (place) placeName = place.name;
+        if (place) {
+          placeName = place.name;
+          console.log(`  [place] Venue: ${placeName}`);
+        } else {
+          console.log(`  [place] No place found for id=${ev.place_id}`);
+        }
       }
 
       // Generate AI description
@@ -272,22 +390,48 @@ export async function enrichEvents(
       );
 
       if (aiDesc) {
-        await supabase
+        const { error: saveErr } = await supabase
           .from("events")
           .update({ ai_description: aiDesc })
           .eq("id", ev.id);
-        enriched++;
+        if (saveErr) {
+          console.error(`  [save] Failed to save ai_description: ${saveErr.message}`);
+          errors++;
+        } else {
+          enriched++;
+          console.log(`  [save] Saved ai_description (${aiDesc.length} chars)`);
+        }
+      } else {
+        console.warn(`  [ai] Empty response — skipping`);
+        errors++;
       }
+
+      const eventElapsed = Date.now() - eventStart;
+      console.log(`  [done] ${eventElapsed}ms total for this event`);
 
       // Brief pause between API calls
       await sleep(300);
     } catch (err) {
-      console.error(`Failed to enrich event ${ev.id}: ${err}`);
+      console.error(`  [error] Failed to enrich: ${err}`);
       errors++;
     }
   }
 
-  console.log(`Enrichment done: ${enriched} enriched, ${errors} errors`);
+  const totalElapsed = Date.now() - startTime;
+  console.log(`\n=== enrichEvents END ===`);
+  console.log(
+    `Results: ${enriched} enriched, ${scraped} scraped, ${errors} errors`
+  );
+  console.log(`Total time: ${totalElapsed}ms (${(totalElapsed / 1000).toFixed(1)}s)`);
+  if (enriched > 0) {
+    console.log(
+      `Avg per event: ${Math.round(totalElapsed / events.length)}ms`
+    );
+  }
+  console.log(
+    `Remaining after this batch: ${(totalRemaining ?? events.length) - enriched}`
+  );
+
   return { enriched, errors };
 }
 
@@ -300,6 +444,10 @@ export async function enrichSingleEvent(
   eventId: string,
   regenerate = false
 ): Promise<string | null> {
+  console.log(
+    `enrichSingleEvent: eventId=${eventId}, regenerate=${regenerate}`
+  );
+
   const anthropicApiKey = Deno.env.get("ANTHROPIC_API_KEY");
   if (!anthropicApiKey) throw new Error("ANTHROPIC_API_KEY not set");
 
@@ -311,10 +459,18 @@ export async function enrichSingleEvent(
     .eq("id", eventId)
     .single();
 
-  if (error || !event) return null;
+  if (error || !event) {
+    console.error(`Event not found: ${error?.message ?? "null"}`);
+    return null;
+  }
+
+  console.log(`Event: "${event.title}" (${event.date})`);
 
   // Return cached if exists and not regenerating
   if (event.ai_description && !regenerate) {
+    console.log(
+      `Returning cached ai_description (${event.ai_description.length} chars)`
+    );
     return event.ai_description;
   }
 
@@ -322,6 +478,7 @@ export async function enrichSingleEvent(
 
   // Scrape full description if needed
   if (event.eventfinda_url && needsEventfindaScrape(description)) {
+    console.log(`Scraping full description from Eventfinda`);
     const scraped = await scrapeEventfindaDescription(event.eventfinda_url);
     if (scraped) {
       description = scraped;
@@ -334,6 +491,7 @@ export async function enrichSingleEvent(
     event.humanitix_url &&
     needsHumanitixScrape(description, event.title)
   ) {
+    console.log(`Scraping full description from Humanitix`);
     const scraped = await scrapeHumanitixDescription(event.humanitix_url);
     if (scraped) {
       description = scraped;
@@ -355,6 +513,7 @@ export async function enrichSingleEvent(
     if (place) placeName = place.name;
   }
 
+  console.log(`Generating AI description (venue: ${placeName || "unknown"})`);
   const anthropic = new Anthropic({ apiKey: anthropicApiKey });
   const aiDescription = await generateAIDescription(
     anthropic,
@@ -367,6 +526,9 @@ export async function enrichSingleEvent(
       .from("events")
       .update({ ai_description: aiDescription })
       .eq("id", eventId);
+    console.log(`Saved ai_description (${aiDescription.length} chars)`);
+  } else {
+    console.warn(`AI returned empty response`);
   }
 
   return aiDescription;
