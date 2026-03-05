@@ -4,7 +4,6 @@ import React, {
   useMemo,
   useRef,
   useState,
-  useEffect,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -34,7 +33,6 @@ import {
   getEventAttendees,
   toggleAttendance,
   deleteEvent,
-  enrichEventDescriptionAI,
 } from "../services/events";
 import Markdown from "react-native-markdown-display";
 import { getPlaceById } from "../services/places";
@@ -170,31 +168,7 @@ export function EventDetailScreen() {
     [attendeeProfiles]
   );
 
-  // AI-enhanced description state
-  const [aiDescription, setAiDescription] = useState<string | null>(null);
-  const [aiEnriching, setAiEnriching] = useState(false);
-
-  // Sync aiDescription from event data when it loads
-  useEffect(() => {
-    if (event?.aiDescription) {
-      setAiDescription(event.aiDescription);
-    }
-  }, [event?.aiDescription]);
-
-  const handleEnrichAI = useCallback(async () => {
-    if (!event || aiEnriching) return;
-    setAiEnriching(true);
-    try {
-      const desc = await enrichEventDescriptionAI(event.id, !!aiDescription);
-      setAiDescription(desc);
-    } catch (err: any) {
-      showToast({ message: 'Failed to enhance description', type: 'error' });
-    } finally {
-      setAiEnriching(false);
-    }
-  }, [event, aiEnriching, showToast]);
-
-  // Description scraping + AI enrichment now happens server-side during event sync
+  // AI description is set server-side during event sync
 
   // Refetch when screen comes into focus
   useFocusEffect(
@@ -453,34 +427,14 @@ export function EventDetailScreen() {
             </View>
 
             <View style={styles.descriptionSection}>
-              {aiDescription ? (
+              {event.aiDescription ? (
                 <Markdown style={mdStyles}>
-                  {aiDescription}
+                  {event.aiDescription}
                 </Markdown>
               ) : (
                 <Text style={styles.descriptionText}>
                   {event.description}
                 </Text>
-              )}
-              {aiEnriching && (
-                <View style={styles.enhanceButton}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={styles.enhanceButtonText}>Enhancing...</Text>
-                </View>
-              )}
-              {aiDescription && !aiEnriching && (
-                <HapticPressable
-                  onPress={handleEnrichAI}
-                  style={styles.enhanceButton}
-                >
-                  <SFIcon
-                    name="sparkles"
-                    fallback="sparkles"
-                    size={16}
-                    color={colors.primary}
-                  />
-                  <Text style={styles.enhanceButtonText}>Re-enhance</Text>
-                </HapticPressable>
               )}
             </View>
 
@@ -691,22 +645,6 @@ const createStyles = (colors: Colors) =>
       fontSize: 15,
       color: colors.textSecondary,
       lineHeight: 22,
-    },
-    enhanceButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      marginTop: 12,
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 8,
-      backgroundColor: colors.primary + "12",
-      alignSelf: "flex-start",
-    },
-    enhanceButtonText: {
-      fontSize: 13,
-      fontFamily: fonts.semiBold,
-      color: colors.primary,
     },
     goingButtonContainer: {
       paddingHorizontal: 20,

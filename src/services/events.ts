@@ -324,17 +324,6 @@ export async function deleteEvent(eventId: string): Promise<void> {
   if (error) throw error;
 }
 
-export async function enrichEventDescriptionAI(eventId: string, regenerate = false): Promise<string> {
-  const { data, error } = await supabase.functions.invoke('enrich-event-description', {
-    body: { eventId, regenerate },
-  });
-
-  if (error) throw new Error(error.message ?? 'Failed to enrich description');
-  if (!data?.aiDescription) throw new Error('No description returned');
-
-  return data.aiDescription;
-}
-
 function mapEvent(row: {
   id: string;
   title: string;
