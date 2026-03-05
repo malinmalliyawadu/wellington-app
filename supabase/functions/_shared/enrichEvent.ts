@@ -210,7 +210,9 @@ export async function enrichEvents(
       "id, title, description, date, start_time, end_time, category, price, place_id, eventfinda_url, humanitix_url"
     )
     .is("ai_description", null)
+    .is("creator_id", null)
     .gte("date", today)
+    .order("ai_score", { ascending: false, nullsFirst: false })
     .limit(limit);
 
   if (!events || events.length === 0) {
