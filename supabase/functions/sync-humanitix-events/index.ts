@@ -1,4 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { enrichEvents } from "../_shared/enrichEvent.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -699,6 +700,10 @@ Deno.serve(async (req) => {
       `Done: ${upserted} upserted, ${upsertErrors} errors, ${deletedCount} old events cleaned up, ${placesCreated} places created, ${skippedDuplicate} linked to existing`
     );
 
+    // Enrich descriptions: scrape full text + AI rewrite for events missing ai_description
+    const { enriched: enrichedCount, errors: enrichErrors } =
+      await enrichEvents(supabase);
+
     return new Response(
       JSON.stringify({
         totalFetched: allEvents.length,
@@ -708,6 +713,8 @@ Deno.serve(async (req) => {
         skippedDuplicate,
         placesCreated,
         deletedOld: deletedCount,
+        enriched: enrichedCount,
+        enrichErrors,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

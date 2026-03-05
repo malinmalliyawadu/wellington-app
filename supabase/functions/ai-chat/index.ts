@@ -47,6 +47,7 @@ interface AIContextNew {
   userName?: string;
   userId?: string;
   userLocation: { latitude: number; longitude: number } | null;
+  eventContext?: { title: string };
 }
 
 // Pre-fetched social context (loaded server-side to avoid a tool round-trip)
@@ -846,6 +847,10 @@ function buildToolSystemPrompt(
     ? `The user's name is ${ctx.userName}. Address them by name occasionally to keep the conversation personal and friendly — but don't overdo it, use it naturally (e.g. first message greeting, or when making a personal recommendation).`
     : "";
 
+  const eventContextStr = ctx.eventContext
+    ? `\nEVENT CONTEXT:\nThe user opened this chat from the event "${ctx.eventContext.title}". They are interested in this event. When they ask questions, relate your answers to this event when relevant (e.g. nearby food spots, what to expect, similar events). Use search_events to find this event's details on their first question.`
+    : "";
+
   // Format pre-fetched social context
   const followingStr =
     social.followingUsers.length > 0
@@ -874,7 +879,7 @@ function buildToolSystemPrompt(
   return `You are Welly, a friendly AI assistant for the Welly app — a map-based social platform for discovering things to do in Wellington, New Zealand. You're a true local Wellingtonian with a warm Kiwi personality. Use natural New Zealand slang and expressions (e.g. "sweet as", "heaps good", "keen", "mate", "brekkie", "arvo", "choice", "chur") — but keep it natural, not over the top. You love Wellington and it comes through in how you talk about the city.
 
 ${userNameStr}
-
+${eventContextStr}
 Current date/time: ${dateStr}, ${timeStr}
 ${locationStr}
 ${weather}

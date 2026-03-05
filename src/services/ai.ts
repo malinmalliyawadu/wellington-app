@@ -5,6 +5,7 @@ interface AIContext {
   userName?: string;
   userId: string;
   userLocation: { latitude: number; longitude: number } | null;
+  eventContext?: { title: string };
 }
 
 export interface ConversationMessage {

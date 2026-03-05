@@ -34,9 +34,9 @@ import {
   getEventAttendees,
   toggleAttendance,
   deleteEvent,
-  enrichEventDescription,
-  enrichEventfindaDescription,
+  enrichEventDescriptionAI,
 } from "../services/events";
+import Markdown from "react-native-markdown-display";
 import { getPlaceById } from "../services/places";
 import { getProfilesByIds } from "../services/users";
 import { useQuery } from "../hooks/useQuery";
@@ -170,43 +170,31 @@ export function EventDetailScreen() {
     [attendeeProfiles]
   );
 
-  // Enrich Humanitix event descriptions on-demand
-  const [enrichedDescription, setEnrichedDescription] = useState<string | null>(
-    null
-  );
+  // AI-enhanced description state
+  const [aiDescription, setAiDescription] = useState<string | null>(null);
+  const [aiEnriching, setAiEnriching] = useState(false);
+
+  // Sync aiDescription from event data when it loads
   useEffect(() => {
-    if (!event?.humanitixUrl) return;
-    // Check if description is a placeholder ("{title} at {venue}")
-    const isPlaceholder =
-      event.description.startsWith(event.title + " at ") &&
-      !event.description.includes("\n") &&
-      event.description.length < 200;
-    if (!isPlaceholder) return;
+    if (event?.aiDescription) {
+      setAiDescription(event.aiDescription);
+    }
+  }, [event?.aiDescription]);
 
-    let cancelled = false;
-    enrichEventDescription(event.id, event.humanitixUrl!).then((desc) => {
-      if (!cancelled && desc) setEnrichedDescription(desc);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [event?.id, event?.humanitixUrl, event?.description, event?.title]);
+  const handleEnrichAI = useCallback(async () => {
+    if (!event || aiEnriching) return;
+    setAiEnriching(true);
+    try {
+      const desc = await enrichEventDescriptionAI(event.id, !!aiDescription);
+      setAiDescription(desc);
+    } catch (err: any) {
+      showToast({ message: 'Failed to enhance description', type: 'error' });
+    } finally {
+      setAiEnriching(false);
+    }
+  }, [event, aiEnriching, showToast]);
 
-  // Enrich Eventfinda event descriptions on-demand
-  useEffect(() => {
-    if (!event?.eventfindaUrl) return;
-    // Eventfinda API truncates descriptions to ~220 chars ending with "..."
-    const isTruncated = event.description.trimEnd().endsWith("...");
-    if (!isTruncated) return;
-
-    let cancelled = false;
-    enrichEventfindaDescription(event.id, event.eventfindaUrl!).then((desc) => {
-      if (!cancelled && desc) setEnrichedDescription(desc);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [event?.id, event?.eventfindaUrl, event?.description]);
+  // Description scraping + AI enrichment now happens server-side during event sync
 
   // Refetch when screen comes into focus
   useFocusEffect(
@@ -264,6 +252,7 @@ export function EventDetailScreen() {
   }, [navigation, isOwnEvent]);
 
   const styles = createStyles(colors);
+  const mdStyles = createMarkdownStyles(colors);
 
   if (loading) {
     return (
@@ -464,9 +453,35 @@ export function EventDetailScreen() {
             </View>
 
             <View style={styles.descriptionSection}>
-              <Text style={styles.descriptionText}>
-                {enrichedDescription ?? event.description}
-              </Text>
+              {aiDescription ? (
+                <Markdown style={mdStyles}>
+                  {aiDescription}
+                </Markdown>
+              ) : (
+                <Text style={styles.descriptionText}>
+                  {event.description}
+                </Text>
+              )}
+              {aiEnriching && (
+                <View style={styles.enhanceButton}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={styles.enhanceButtonText}>Enhancing...</Text>
+                </View>
+              )}
+              {aiDescription && !aiEnriching && (
+                <HapticPressable
+                  onPress={handleEnrichAI}
+                  style={styles.enhanceButton}
+                >
+                  <SFIcon
+                    name="sparkles"
+                    fallback="sparkles"
+                    size={16}
+                    color={colors.primary}
+                  />
+                  <Text style={styles.enhanceButtonText}>Re-enhance</Text>
+                </HapticPressable>
+              )}
             </View>
 
             {currentUserId && (
@@ -550,6 +565,22 @@ export function EventDetailScreen() {
                   }}
                 />
               )}
+              <LiquidGlassButton
+                title="Ask AI"
+                icon="chatbubble-outline"
+                variant="secondary"
+                size="medium"
+                style={styles.askAiButton}
+                onPress={() => {
+                  router.push({
+                    pathname: `${tabBase}/ai-chat` as any,
+                    params: {
+                      eventTitle: event.title,
+                      eventImageUrl: event.imageUrl ?? undefined,
+                    },
+                  });
+                }}
+              />
             </View>
 
             <View style={styles.attendeesHeader}>
@@ -661,6 +692,22 @@ const createStyles = (colors: Colors) =>
       color: colors.textSecondary,
       lineHeight: 22,
     },
+    enhanceButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginTop: 12,
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 8,
+      backgroundColor: colors.primary + "12",
+      alignSelf: "flex-start",
+    },
+    enhanceButtonText: {
+      fontSize: 13,
+      fontFamily: fonts.semiBold,
+      color: colors.primary,
+    },
     goingButtonContainer: {
       paddingHorizontal: 20,
       paddingBottom: 12,
@@ -677,6 +724,9 @@ const createStyles = (colors: Colors) =>
       flex: 1,
     },
     ticketButton: {
+      flex: 1,
+    },
+    askAiButton: {
       flex: 1,
     },
     attendeesHeader: {
@@ -743,5 +793,55 @@ const createStyles = (colors: Colors) =>
     emptyText: {
       fontSize: 15,
       color: colors.textMuted,
+    },
+  });
+
+const createMarkdownStyles = (colors: Colors) =>
+  StyleSheet.create({
+    body: {
+      fontSize: 15,
+      fontFamily: fonts.medium,
+      color: colors.textSecondary,
+      lineHeight: 22,
+    },
+    heading1: {
+      fontSize: 20,
+      fontFamily: fonts.bold,
+      color: colors.text,
+      marginTop: 20,
+      marginBottom: 8,
+    },
+    heading2: {
+      fontSize: 18,
+      fontFamily: fonts.bold,
+      color: colors.text,
+      marginTop: 18,
+      marginBottom: 6,
+    },
+    heading3: {
+      fontSize: 16,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+      marginTop: 16,
+      marginBottom: 4,
+    },
+    strong: {
+      fontFamily: fonts.bold,
+    },
+    em: {
+      fontStyle: "italic",
+    },
+    bullet_list: {
+      marginVertical: 4,
+    },
+    ordered_list: {
+      marginVertical: 4,
+    },
+    list_item: {
+      marginVertical: 2,
+    },
+    paragraph: {
+      marginTop: 0,
+      marginBottom: 14,
     },
   });
