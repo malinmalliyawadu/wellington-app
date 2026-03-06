@@ -19,7 +19,6 @@ interface EventCardProps {
   onPress?: () => void;
   onEventPress?: (eventId: string) => void;
   attendeeProfiles?: User[];
-  compact?: boolean;
   variant?: EventCardVariant;
 }
 
@@ -143,7 +142,6 @@ export const EventCard = React.memo(function EventCard({
   onPress,
   onEventPress,
   attendeeProfiles,
-  compact,
   variant = "default",
 }: EventCardProps) {
   const { colors } = useTheme();

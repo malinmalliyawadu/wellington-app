@@ -757,11 +757,10 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
         const place = eventPlaces.get(event.placeId);
         if (!place) return null;
         return (
-          <View style={{ paddingHorizontal: 16, paddingVertical: 6 }}>
+          <View style={{ paddingVertical: 6 }}>
             <EventCard
               event={event}
               place={place}
-              compact
               onPress={() => handleEventPress(event.id)}
             />
           </View>
@@ -1100,14 +1099,13 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
                 const place = eventPlaces.get(event.placeId);
                 if (!place) return null;
                 return (
-                  <View key={event.id} style={styles.eventCardWrapper}>
-                    <EventCard
-                      event={event}
-                      place={place}
-                      compact
-                      onPress={() => handleEventPress(event.id)}
-                    />
-                  </View>
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    place={place}
+                    variant="small"
+                    onPress={() => handleEventPress(event.id)}
+                  />
                 );
               })}
             </ScrollView>
@@ -1280,15 +1278,6 @@ const createStyles = (colors: Colors) =>
       fontSize: 12,
       fontFamily: fonts.medium,
       color: colors.textMuted,
-    },
-
-    // Event Cards
-    eventCardWrapper: {
-      width: 280,
-      borderRadius: 14,
-      overflow: "hidden",
-      borderWidth: 1,
-      borderColor: colors.border,
     },
 
     // Guide Cards
