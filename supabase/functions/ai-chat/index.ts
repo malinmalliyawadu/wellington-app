@@ -1031,6 +1031,94 @@ function sseEvent(event: string, data: unknown): string {
 }
 
 // ---------------------------------------------------------------------------
+// Instant preamble — shown to the user before weather/social/Claude load
+// ---------------------------------------------------------------------------
+
+const PREAMBLE_MAP: { patterns: RegExp; messages: string[] }[] = [
+  {
+    patterns:
+      /\b(event|events|what'?s on|what'?s happening|tonight|gig|gigs|show|shows|live music|concert|comedy|standup)\b/i,
+    messages: [
+      "Let me check what's on! 🎶",
+      "Ooh, let me see what's happening! 🎉",
+      "Let me find some events for you! 🗓️",
+    ],
+  },
+  {
+    patterns: /\b(cafe|coffee|brunch|brekkie|breakfast)\b/i,
+    messages: [
+      "Let me find some good spots! ☕",
+      "Ooh, keen — let me check! ☕",
+      "Great shout, let me look! ☕",
+    ],
+  },
+  {
+    patterns: /\b(restaurant|dinner|lunch|eat|food|hungry)\b/i,
+    messages: [
+      "Let me find some places to eat! 🍽️",
+      "Ooh, let me see what's good! 🍕",
+      "Keen — let me check some spots! 🍜",
+    ],
+  },
+  {
+    patterns: /\b(bar|drinks|beer|wine|cocktail|pub)\b/i,
+    messages: [
+      "Let me find some good spots! 🍻",
+      "Ooh, let me check what's around! 🍷",
+      "Sweet as, let me look! 🥂",
+    ],
+  },
+  {
+    patterns: /\b(walk|hike|trail|outdoor|park|nature|garden)\b/i,
+    messages: [
+      "Let me find some outdoor options! 🌿",
+      "Nice one, let me check! 🥾",
+      "Let me see what's out there! 🏞️",
+    ],
+  },
+  {
+    patterns: /\b(guide|guides|list|curated|collection)\b/i,
+    messages: [
+      "Let me find some guides! 📋",
+      "Ooh, let me check what's been curated! 📖",
+    ],
+  },
+  {
+    patterns: /\b(trending|popular|best|top|recommend)\b/i,
+    messages: [
+      "Let me see what's popular! 🔥",
+      "Great question — let me check! ✨",
+      "Ooh, let me find the best picks! 🌟",
+    ],
+  },
+  {
+    patterns: /\b(weekend|saturday|sunday)\b/i,
+    messages: [
+      "Let me check what's on this weekend! 🎉",
+      "Ooh, weekend plans — let me look! 🗓️",
+    ],
+  },
+];
+
+const GENERIC_PREAMBLES = [
+  "Let me look into that! 🔍",
+  "Great question — let me check! ✨",
+  "Ooh, let me find out! 🤔",
+  "On it — give me a sec! 💨",
+];
+
+function generatePreamble(userMessage: string): string {
+  for (const entry of PREAMBLE_MAP) {
+    if (entry.patterns.test(userMessage)) {
+      return entry.messages[Math.floor(Math.random() * entry.messages.length)];
+    }
+  }
+  return GENERIC_PREAMBLES[
+    Math.floor(Math.random() * GENERIC_PREAMBLES.length)
+  ];
+}
+
+// ---------------------------------------------------------------------------
 // Main handler
 // ---------------------------------------------------------------------------
 
@@ -1137,6 +1225,22 @@ Deno.serve(async (req) => {
             sseEvent("status", { text: `${dateStr}, ${timeStr}` })
           )
         );
+
+        // Send instant preamble based on user's message (before weather/social load)
+        // Skip for greetings/simple messages that won't trigger tool calls
+        const lastUserMessage =
+          messages[messages.length - 1]?.content ?? "";
+        const isGreeting =
+          /^\s*(hi|hey|hello|kia ora|sup|yo|g'?day|what'?s up|howdy|hola)\s*[!?.]*\s*$/i.test(
+            lastUserMessage
+          );
+        if (!isGreeting) {
+          const preamble = generatePreamble(lastUserMessage);
+          controller.enqueue(
+            encoder.encode(sseEvent("text", { text: preamble + "\n\n" }))
+          );
+          firstTextSent = true;
+        }
 
         // Await weather + social context (both started before stream opened)
         const [weather, socialContext] = await Promise.all([

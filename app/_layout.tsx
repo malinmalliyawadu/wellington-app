@@ -184,7 +184,15 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       profile?.onboardingCompleted &&
       (onLoginPage || onOnboardingPage)
     ) {
-      router.replace("/(tabs)/map");
+      const pendingDeepLink = (global as any).__pendingDeepLink;
+      if (pendingDeepLink) {
+        delete (global as any).__pendingDeepLink;
+        router.replace("/(tabs)/map");
+        // Push deep link target after the tabs are mounted
+        setTimeout(() => router.push(pendingDeepLink as any), 0);
+      } else {
+        router.replace("/(tabs)/map");
+      }
     } else if (session && onLoginPage) {
       // Session exists, on login page, but onboarding status not yet loaded — go to onboarding
       router.replace("/onboarding");
