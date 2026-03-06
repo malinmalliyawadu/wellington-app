@@ -409,9 +409,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
     if (!events) return [];
 
     const now = new Date();
-    const fiveDaysFromNow = new Date(
-      now.getTime() + 5 * 24 * 60 * 60 * 1000
-    );
+    const fiveDaysFromNow = new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000);
 
     return events
       .filter((event) => {
@@ -512,15 +510,12 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
 
     // Deduplicate: skip Google results that already exist locally
     const localGooglePlaceIds = new Set(
-      placeResults
-        .map((r) => (r.data as Place).googlePlaceId)
-        .filter(Boolean)
+      placeResults.map((r) => (r.data as Place).googlePlaceId).filter(Boolean)
     );
 
     const uniqueGoogleResults: SearchResult[] = googleResults
       .filter(
-        (gp) =>
-          gp.googlePlaceId && !localGooglePlaceIds.has(gp.googlePlaceId)
+        (gp) => gp.googlePlaceId && !localGooglePlaceIds.has(gp.googlePlaceId)
       )
       .map((gp) => ({
         id: `google-${gp.googlePlaceId}`,
@@ -552,13 +547,10 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
     return groupedResults.filter((s) => s.title === targetTitle);
   }, [groupedResults, activeFilter]);
 
-  const handleFilterChange = useCallback(
-    (filter: FilterType) => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-      setActiveFilter(filter);
-    },
-    []
-  );
+  const handleFilterChange = useCallback((filter: FilterType) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setActiveFilter(filter);
+  }, []);
 
   // ─── Render Helpers ──────────────────────────────────────────────────────
 
@@ -606,8 +598,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
       case "place": {
         const isGoogle = item.source === "google";
         const place = item.data as Place & Omit<Place, "id">;
-        const isCreating =
-          isGoogle && creatingPlaceId === place.googlePlaceId;
+        const isCreating = isGoogle && creatingPlaceId === place.googlePlaceId;
         return (
           <HapticPressable
             style={styles.resultItem}
@@ -738,10 +729,7 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
               </Text>
               <View style={styles.postMeta}>
                 {place && (
-                  <Text
-                    style={styles.resultSubtitle}
-                    numberOfLines={1}
-                  >
+                  <Text style={styles.resultSubtitle} numberOfLines={1}>
                     {place.name}
                   </Text>
                 )}
@@ -1059,16 +1047,10 @@ export function SearchScreen({ query = "", onQueryChange }: SearchScreenProps) {
                         {CATEGORY_LABELS[place.category]}
                       </Text>
                     </View>
-                    <Text
-                      style={styles.placeCardName}
-                      numberOfLines={2}
-                    >
+                    <Text style={styles.placeCardName} numberOfLines={2}>
                       {place.name}
                     </Text>
-                    <Text
-                      style={styles.placeCardAddress}
-                      numberOfLines={1}
-                    >
+                    <Text style={styles.placeCardAddress} numberOfLines={1}>
                       {place.address}
                     </Text>
                     <View style={styles.placeCardFooter}>
@@ -1445,7 +1427,6 @@ const createStyles = (colors: Colors) =>
       fontFamily: fonts.semiBold,
       letterSpacing: 0.3,
     },
-
 
     // Shimmer loading row
     shimmerRow: {

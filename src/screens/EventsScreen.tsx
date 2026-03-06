@@ -17,7 +17,10 @@ import { SFSymbol } from "expo-symbols";
 import { SFIcon } from "../components/SFIcon";
 import { EventCard } from "../components/EventCard";
 import { SectionHeader } from "../components/SectionHeader";
-import { getUpcomingEvents, getUpcomingEventsPaginated } from "../services/events";
+import {
+  getUpcomingEvents,
+  getUpcomingEventsPaginated,
+} from "../services/events";
 import { getPlaces } from "../services/places";
 import { getProfilesByIds } from "../services/users";
 import { useQuery } from "../hooks/useQuery";
@@ -44,7 +47,8 @@ const DATE_RANGE_LABELS: Record<DateRange, string> = {
 
 function getDateRange(range: DateRange): { start: string; end: string } {
   const now = new Date();
-  const fmt = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
 
   switch (range) {
     case "today":
@@ -78,19 +82,53 @@ interface QuickChip {
 }
 
 const QUICK_CHIPS: QuickChip[] = [
-  { key: "today", label: "Today", icon: { sf: "sun.max.fill", fallback: "sunny" } },
-  { key: "tomorrow", label: "Tomorrow", icon: { sf: "arrow.right.circle", fallback: "arrow-forward-circle" } },
-  { key: "weekend", label: "Weekend", icon: { sf: "cup.and.saucer.fill", fallback: "cafe" } },
-  { key: "free", label: "Free", icon: { sf: "tag.fill", fallback: "pricetag" } },
-  { key: "filters", label: "Filters", icon: { sf: "slider.horizontal.3", fallback: "options" } },
+  {
+    key: "today",
+    label: "Today",
+    icon: { sf: "sun.max.fill", fallback: "sunny" },
+  },
+  {
+    key: "tomorrow",
+    label: "Tomorrow",
+    icon: { sf: "arrow.right.circle", fallback: "arrow-forward-circle" },
+  },
+  {
+    key: "weekend",
+    label: "Weekend",
+    icon: { sf: "cup.and.saucer.fill", fallback: "cafe" },
+  },
+  {
+    key: "free",
+    label: "Free",
+    icon: { sf: "tag.fill", fallback: "pricetag" },
+  },
+  {
+    key: "filters",
+    label: "Filters",
+    icon: { sf: "slider.horizontal.3", fallback: "options" },
+  },
 ];
 
 type EventWithPlace = { event: Event; place: Place };
 
 type DiscoveryItem =
   | { type: "chips" }
-  | { type: "carousel"; key: string; title: string; icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }; items: EventWithPlace[]; count: number }
-  | { type: "featured"; item: EventWithPlace; restCarousel: EventWithPlace[]; title: string; icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }; count: number }
+  | {
+      type: "carousel";
+      key: string;
+      title: string;
+      icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap };
+      items: EventWithPlace[];
+      count: number;
+    }
+  | {
+      type: "featured";
+      item: EventWithPlace;
+      restCarousel: EventWithPlace[];
+      title: string;
+      icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap };
+      count: number;
+    }
   | { type: "comingUpHeader"; count: number }
   | { type: "comingUpItem"; item: EventWithPlace }
   | { type: "viewAll" }
@@ -101,7 +139,8 @@ type DiscoveryItem =
 
 function classifySections(eventsWithPlaces: EventWithPlace[]) {
   const now = new Date();
-  const fmt = (d: Date) => d.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
+  const fmt = (d: Date) =>
+    d.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
   const todayStr = fmt(now);
 
   // Compute tomorrow/weekend using NZ date to avoid device-timezone mismatch.
@@ -128,7 +167,10 @@ function classifySections(eventsWithPlaces: EventWithPlace[]) {
   const comingUp: EventWithPlace[] = [];
 
   // Current time in minutes since midnight (NZ timezone)
-  const nzTimeStr = now.toLocaleTimeString("en-GB", { timeZone: "Pacific/Auckland", hour12: false });
+  const nzTimeStr = now.toLocaleTimeString("en-GB", {
+    timeZone: "Pacific/Auckland",
+    hour12: false,
+  });
   const [nowH, nowM] = nzTimeStr.split(":").map(Number);
   const nowMinutes = nowH * 60 + nowM;
 
@@ -142,7 +184,9 @@ function classifySections(eventsWithPlaces: EventWithPlace[]) {
     const isToday = event.date === todayStr;
     const isTomorrow = event.date === tomorrowStr;
     const isWeekend =
-      event.date === satStr || event.date === sunStr || (isCurrentlyWeekend && isToday);
+      event.date === satStr ||
+      event.date === sunStr ||
+      (isCurrentlyWeekend && isToday);
     const isFree = event.price == null || event.price === 0;
 
     // For "Happening Now": skip today's events that have already finished.
@@ -171,7 +215,10 @@ function classifySections(eventsWithPlaces: EventWithPlace[]) {
 
   // Popular = top 10 by attendee count (social signal, not AI score)
   const popular = [...eventsWithPlaces]
-    .sort((a, b) => (b.event.attendeeIds?.length ?? 0) - (a.event.attendeeIds?.length ?? 0))
+    .sort(
+      (a, b) =>
+        (b.event.attendeeIds?.length ?? 0) - (a.event.attendeeIds?.length ?? 0)
+    )
     .slice(0, 10)
     .filter((item) => (item.event.attendeeIds?.length ?? 0) > 0);
 
@@ -223,7 +270,9 @@ export function EventsScreen() {
     loading: loadingDiscovery,
     error: discoveryError,
     refetch: refetchDiscovery,
-  } = useQuery(fetchAllEvents, "discovery-events", { enabled: !hasActiveFilters });
+  } = useQuery(fetchAllEvents, "discovery-events", {
+    enabled: !hasActiveFilters,
+  });
 
   // ─── Filtered mode data ───────────────────────────────────────────
 
@@ -338,7 +387,7 @@ export function EventsScreen() {
   // ─── Batch attendee profiles ────────────────────────────────────
 
   const allAttendeeIds = useMemo(() => {
-    const events = hasActiveFilters ? filteredEvents : (allEvents ?? []);
+    const events = hasActiveFilters ? filteredEvents : allEvents ?? [];
     const ids = new Set<string>();
     for (const event of events) {
       for (const id of event.attendeeIds ?? []) {
@@ -441,45 +490,56 @@ export function EventsScreen() {
 
   // ─── Quick Filter Chips row ───────────────────────────────────────
 
-  const renderChips = useCallback(() => (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.chipsContainer}
-      style={styles.chipsRow}
-    >
-      {QUICK_CHIPS.map((chip) => {
-        const active = isChipActive(chip.key);
-        return (
-          <HapticPressable
-            key={chip.key}
-            style={[styles.chip, active && styles.chipActive]}
-            onPress={() => handleChipPress(chip.key)}
-          >
-            <SFIcon
-              name={chip.icon.sf}
-              fallback={chip.icon.fallback}
-              size={14}
-              color={active ? "#FFFFFF" : colors.textSecondary}
-            />
-            <Text style={[styles.chipText, active && styles.chipTextActive]}>
-              {chip.label}
-            </Text>
-            {chip.key === "filters" && advancedFilterCount > 0 && (
-              <View style={styles.chipBadge}>
-                <Text style={styles.chipBadgeText}>{advancedFilterCount}</Text>
-              </View>
-            )}
-          </HapticPressable>
-        );
-      })}
-    </ScrollView>
-  ), [isChipActive, handleChipPress, advancedFilterCount, styles, colors]);
+  const renderChips = useCallback(
+    () => (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipsContainer}
+        style={styles.chipsRow}
+      >
+        {QUICK_CHIPS.map((chip) => {
+          const active = isChipActive(chip.key);
+          return (
+            <HapticPressable
+              key={chip.key}
+              style={[styles.chip, active && styles.chipActive]}
+              onPress={() => handleChipPress(chip.key)}
+            >
+              <SFIcon
+                name={chip.icon.sf}
+                fallback={chip.icon.fallback}
+                size={14}
+                color={active ? "#FFFFFF" : colors.textSecondary}
+              />
+              <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                {chip.label}
+              </Text>
+              {chip.key === "filters" && advancedFilterCount > 0 && (
+                <View style={styles.chipBadge}>
+                  <Text style={styles.chipBadgeText}>
+                    {advancedFilterCount}
+                  </Text>
+                </View>
+              )}
+            </HapticPressable>
+          );
+        })}
+      </ScrollView>
+    ),
+    [isChipActive, handleChipPress, advancedFilterCount, styles, colors]
+  );
 
   // ─── Horizontal carousel ──────────────────────────────────────────
 
   const renderCarouselItem = useCallback(
-    ({ item, variant }: { item: EventWithPlace; variant: "small" | "default" }) => (
+    ({
+      item,
+      variant,
+    }: {
+      item: EventWithPlace;
+      variant: "small" | "default";
+    }) => (
       <EventCard
         event={item.event}
         place={item.place}
@@ -514,23 +574,51 @@ export function EventsScreen() {
     const items: DiscoveryItem[] = [{ type: "chips" }];
 
     if (happeningNow.length > 0) {
-      items.push({ type: "carousel", key: "happeningNow", title: "Happening Now", icon: { sf: "sun.max.fill", fallback: "sunny" }, items: happeningNow, count: happeningNow.length });
+      items.push({
+        type: "carousel",
+        key: "happeningNow",
+        title: "Happening Now",
+        icon: { sf: "sun.max.fill", fallback: "sunny" },
+        items: happeningNow,
+        count: happeningNow.length,
+      });
     }
     if (weekend.length > 0) {
-      items.push({ type: "featured", item: weekend[0], restCarousel: weekendRest, title: "This Weekend", icon: { sf: "cup.and.saucer.fill", fallback: "cafe" }, count: weekend.length });
+      items.push({
+        type: "featured",
+        item: weekend[0],
+        restCarousel: weekendRest,
+        title: "This Weekend",
+        icon: { sf: "cup.and.saucer.fill", fallback: "cafe" },
+        count: weekend.length,
+      });
     }
     if (popular.length > 0) {
-      items.push({ type: "carousel", key: "popular", title: "Popular", icon: { sf: "flame.fill", fallback: "flame" }, items: popular, count: popular.length });
+      items.push({
+        type: "carousel",
+        key: "popular",
+        title: "Popular",
+        icon: { sf: "flame.fill", fallback: "flame" },
+        items: popular,
+        count: popular.length,
+      });
     }
     if (free.length > 0) {
-      items.push({ type: "carousel", key: "free", title: "Free Events", icon: { sf: "tag.fill", fallback: "pricetag" }, items: free, count: free.length });
+      items.push({
+        type: "carousel",
+        key: "free",
+        title: "Free Events",
+        icon: { sf: "tag.fill", fallback: "pricetag" },
+        items: free,
+        count: free.length,
+      });
     }
     if (comingUp.length > 0) {
       items.push({ type: "comingUpHeader", count: comingUp.length });
-      for (const item of comingUp.slice(0, 15)) {
+      for (const item of comingUp.slice(0, 8)) {
         items.push({ type: "comingUpItem", item });
       }
-      if (comingUp.length > 15) {
+      if (comingUp.length > 8) {
         items.push({ type: "viewAll" });
       }
     }
@@ -540,97 +628,158 @@ export function EventsScreen() {
       items.push({ type: "footer" });
     }
     return items;
-  }, [happeningNow, weekend, weekendRest, popular, free, comingUp, discoveryEventsWithPlaces.length]);
+  }, [
+    happeningNow,
+    weekend,
+    weekendRest,
+    popular,
+    free,
+    comingUp,
+    discoveryEventsWithPlaces.length,
+  ]);
 
-  const handleViewAll = useCallback(() => setSelectedDateRange("month"), [setSelectedDateRange]);
+  const handleViewAll = useCallback(
+    () => setSelectedDateRange("month"),
+    [setSelectedDateRange]
+  );
 
-  const renderDiscoveryItem = useCallback(({ item }: { item: DiscoveryItem }) => {
-    switch (item.type) {
-      case "chips":
-        return renderChips();
-      case "carousel":
-        return (
-          <View>
-            <SectionHeader title={item.title} icon={item.icon} count={item.count} />
-            {renderCarousel(item.items)}
-          </View>
-        );
-      case "featured":
-        return (
-          <View>
-            <SectionHeader title={item.title} icon={item.icon} count={item.count} />
-            <EventCard
-              event={item.item.event}
-              place={item.item.place}
-              variant="featured"
-              onEventPress={navigateToEvent}
-              attendeeProfiles={attendeeProfiles ?? undefined}
+  const renderDiscoveryItem = useCallback(
+    ({ item }: { item: DiscoveryItem }) => {
+      switch (item.type) {
+        case "chips":
+          return renderChips();
+        case "carousel":
+          return (
+            <View>
+              <SectionHeader
+                title={item.title}
+                icon={item.icon}
+                count={item.count}
+              />
+              {renderCarousel(item.items)}
+            </View>
+          );
+        case "featured":
+          return (
+            <View>
+              <SectionHeader
+                title={item.title}
+                icon={item.icon}
+                count={item.count}
+              />
+              <EventCard
+                event={item.item.event}
+                place={item.item.place}
+                variant="featured"
+                onEventPress={navigateToEvent}
+                attendeeProfiles={attendeeProfiles ?? undefined}
+              />
+              {item.restCarousel.length > 0 && (
+                <View style={styles.carouselSpacing}>
+                  {renderCarousel(item.restCarousel)}
+                </View>
+              )}
+            </View>
+          );
+        case "comingUpHeader":
+          return (
+            <SectionHeader
+              title="Coming Up"
+              icon={{ sf: "binoculars.fill", fallback: "telescope" }}
+              count={item.count}
             />
-            {item.restCarousel.length > 0 && (
-              <View style={styles.carouselSpacing}>
-                {renderCarousel(item.restCarousel)}
-              </View>
-            )}
-          </View>
-        );
-      case "comingUpHeader":
-        return (
-          <SectionHeader
-            title="Coming Up"
-            icon={{ sf: "binoculars.fill", fallback: "telescope" }}
-            count={item.count}
-          />
-        );
-      case "comingUpItem":
-        return (
-          <EventCard
-            event={item.item.event}
-            place={item.item.place}
-            onEventPress={navigateToEvent}
-            attendeeProfiles={attendeeProfiles ?? undefined}
-          />
-        );
-      case "viewAll":
-        return (
-          <HapticPressable
-            style={styles.viewAllButton}
-            onPress={handleViewAll}
-          >
-            <Text style={styles.viewAllText}>View all events</Text>
-            <SFIcon name="chevron.right" fallback="chevron-forward" size={14} color={colors.primary} />
-          </HapticPressable>
-        );
-      case "empty":
-        return (
-          <View style={styles.empty}>
-            <SFIcon name="calendar" fallback="calendar-outline" size={48} color={colors.gray300} />
-            <Text style={styles.emptyText}>No upcoming events yet</Text>
-          </View>
-        );
-      case "footer":
-        return (
-          <View style={styles.footerContainer}>
-            <SFIcon name="sparkles" fallback="sparkles" size={28} color={colors.gray300} />
-            <Text style={styles.footerText}>That&apos;s everything for now</Text>
-          </View>
-        );
-    }
-  }, [renderChips, renderCarousel, navigateToEvent, handleViewAll, attendeeProfiles, colors, styles]);
+          );
+        case "comingUpItem":
+          return (
+            <View style={styles.comingUpItemSpacing}>
+              <EventCard
+                event={item.item.event}
+                place={item.item.place}
+                onEventPress={navigateToEvent}
+                attendeeProfiles={attendeeProfiles ?? undefined}
+              />
+            </View>
+          );
+        case "viewAll":
+          return (
+            <HapticPressable
+              style={styles.viewAllButton}
+              onPress={handleViewAll}
+            >
+              <Text style={styles.viewAllText}>View all events</Text>
+              <SFIcon
+                name="chevron.right"
+                fallback="chevron-forward"
+                size={14}
+                color={colors.primary}
+              />
+            </HapticPressable>
+          );
+        case "empty":
+          return (
+            <View style={styles.empty}>
+              <SFIcon
+                name="calendar"
+                fallback="calendar-outline"
+                size={48}
+                color={colors.gray300}
+              />
+              <Text style={styles.emptyText}>No upcoming events yet</Text>
+            </View>
+          );
+        case "footer":
+          return (
+            <View style={styles.footerContainer}>
+              <SFIcon
+                name="sparkles"
+                fallback="sparkles"
+                size={28}
+                color={colors.gray300}
+              />
+              <Text style={styles.footerText}>
+                That&apos;s everything for now
+              </Text>
+            </View>
+          );
+      }
+    },
+    [
+      renderChips,
+      renderCarousel,
+      navigateToEvent,
+      handleViewAll,
+      attendeeProfiles,
+      colors,
+      styles,
+    ]
+  );
 
-  const getDiscoveryItemKey = useCallback((_item: DiscoveryItem, index: number) => {
-    const item = _item;
-    switch (item.type) {
-      case "chips": return "chips";
-      case "carousel": return `carousel-${item.key}`;
-      case "featured": return `featured-${item.item.event.id}`;
-      case "comingUpHeader": return "comingUpHeader";
-      case "comingUpItem": return `coming-${item.item.event.id}`;
-      case "viewAll": return "viewAll";
-      case "empty": return "empty";
-      case "footer": return "footer";
-      default: return String(index);
-    }
-  }, []);
+  const getDiscoveryItemKey = useCallback(
+    (_item: DiscoveryItem, index: number) => {
+      const item = _item;
+      switch (item.type) {
+        case "chips":
+          return "chips";
+        case "carousel":
+          return `carousel-${item.key}`;
+        case "featured":
+          return `featured-${item.item.event.id}`;
+        case "comingUpHeader":
+          return "comingUpHeader";
+        case "comingUpItem":
+          return `coming-${item.item.event.id}`;
+        case "viewAll":
+          return "viewAll";
+        case "empty":
+          return "empty";
+        case "footer":
+          return "footer";
+        default:
+          return String(index);
+      }
+    },
+    []
+  );
 
   // ─── Loading state ────────────────────────────────────────────────
 
@@ -641,7 +790,11 @@ export function EventsScreen() {
       <View
         style={[
           styles.container,
-          { paddingTop: insets.top, justifyContent: "center", alignItems: "center" },
+          {
+            paddingTop: insets.top,
+            justifyContent: "center",
+            alignItems: "center",
+          },
         ]}
       >
         <ActivityIndicator size="large" color={colors.primary} />
@@ -649,14 +802,20 @@ export function EventsScreen() {
     );
   }
 
-  const errorMessage = hasActiveFilters ? filteredError?.message : discoveryError;
-  const hasNoData = hasActiveFilters ? filteredEvents.length === 0 : (allEvents ?? []).length === 0;
+  const errorMessage = hasActiveFilters
+    ? filteredError?.message
+    : discoveryError;
+  const hasNoData = hasActiveFilters
+    ? filteredEvents.length === 0
+    : (allEvents ?? []).length === 0;
 
   if (errorMessage && hasNoData) {
     return (
       <QueryErrorState
         message={errorMessage}
-        onRetry={() => (hasActiveFilters ? refetchFiltered() : refetchDiscovery())}
+        onRetry={() =>
+          hasActiveFilters ? refetchFiltered() : refetchDiscovery()
+        }
       />
     );
   }
@@ -671,12 +830,14 @@ export function EventsScreen() {
           data={filteredEventsWithPlaces}
           keyExtractor={(item) => item.event.id}
           renderItem={({ item }) => (
-            <EventCard
-              event={item.event}
-              place={item.place}
-              onEventPress={navigateToEvent}
-              attendeeProfiles={attendeeProfiles ?? undefined}
-            />
+            <View style={styles.comingUpItemSpacing}>
+              <EventCard
+                event={item.event}
+                place={item.place}
+                onEventPress={navigateToEvent}
+                attendeeProfiles={attendeeProfiles ?? undefined}
+              />
+            </View>
           )}
           onEndReached={handleLoadMore}
           onEndReachedThreshold={0.5}
@@ -712,14 +873,26 @@ export function EventsScreen() {
               </View>
             ) : !hasNextPage && filteredEventsWithPlaces.length > 0 ? (
               <View style={styles.footerContainer}>
-                <SFIcon name="sparkles" fallback="sparkles" size={28} color={colors.gray300} />
-                <Text style={styles.footerText}>That&apos;s everything for now</Text>
+                <SFIcon
+                  name="sparkles"
+                  fallback="sparkles"
+                  size={28}
+                  color={colors.gray300}
+                />
+                <Text style={styles.footerText}>
+                  That&apos;s everything for now
+                </Text>
               </View>
             ) : null
           }
           ListEmptyComponent={
             <View style={styles.empty}>
-              <SFIcon name="calendar" fallback="calendar-outline" size={48} color={colors.gray300} />
+              <SFIcon
+                name="calendar"
+                fallback="calendar-outline"
+                size={48}
+                color={colors.gray300}
+              />
               <Text style={styles.emptyText}>No events match your filters</Text>
               <HapticPressable onPress={openFilters}>
                 <Text style={styles.emptyAction}>Adjust filters</Text>
@@ -835,6 +1008,9 @@ const createStyles = (colors: Colors) =>
       fontSize: 13,
       color: colors.primary,
       fontFamily: fonts.medium,
+    },
+    comingUpItemSpacing: {
+      marginBottom: 20,
     },
     // View all button
     viewAllButton: {

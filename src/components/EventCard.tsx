@@ -68,30 +68,45 @@ function formatTime(time: string, endTime?: string): string {
 
 function getMonth(dateString: string): string {
   const date = new Date(dateString + "T00:00:00");
-  return date.toLocaleDateString("en-NZ", { month: "short", timeZone: "Pacific/Auckland" }).toUpperCase();
+  return date
+    .toLocaleDateString("en-NZ", {
+      month: "short",
+      timeZone: "Pacific/Auckland",
+    })
+    .toUpperCase();
 }
 
 function getDay(dateString: string): string {
   const date = new Date(dateString + "T00:00:00");
-  return date.toLocaleDateString("en-NZ", { day: "numeric", timeZone: "Pacific/Auckland" });
+  return date.toLocaleDateString("en-NZ", {
+    day: "numeric",
+    timeZone: "Pacific/Auckland",
+  });
 }
 
 function getRelativeDay(dateString: string): string {
   const now = new Date();
-  const todayStr = now.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
+  const todayStr = now.toLocaleDateString("en-CA", {
+    timeZone: "Pacific/Auckland",
+  });
   const [y, m, d] = todayStr.split("-").map(Number);
   const today = new Date(y, m - 1, d);
   const [ey, em, ed] = dateString.split("-").map(Number);
   const eventDate = new Date(ey, em - 1, ed);
-  const diffDays = Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const diffDays = Math.round(
+    (eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+  );
 
   if (diffDays === 0) return "Today";
   if (diffDays === 1) return "Tomorrow";
   if (diffDays < 7) {
-    const dayName = new Date(dateString + "T00:00:00").toLocaleDateString("en-NZ", {
-      weekday: "long",
-      timeZone: "Pacific/Auckland",
-    });
+    const dayName = new Date(dateString + "T00:00:00").toLocaleDateString(
+      "en-NZ",
+      {
+        weekday: "long",
+        timeZone: "Pacific/Auckland",
+      }
+    );
     return dayName;
   }
   return `In ${diffDays} days`;
@@ -99,7 +114,9 @@ function getRelativeDay(dateString: string): string {
 
 function isEventHappeningNow(event: Event): boolean {
   const now = new Date();
-  const todayStr = now.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
+  const todayStr = now.toLocaleDateString("en-CA", {
+    timeZone: "Pacific/Auckland",
+  });
   if (event.date !== todayStr) return false;
   const nzTimeStr = now.toLocaleTimeString("en-GB", {
     timeZone: "Pacific/Auckland",
@@ -112,7 +129,9 @@ function isEventHappeningNow(event: Event): boolean {
     return h * 60 + m;
   };
   const startMinutes = toMinutes(event.startTime);
-  const endMinutes = event.endTime ? toMinutes(event.endTime) : startMinutes + 180;
+  const endMinutes = event.endTime
+    ? toMinutes(event.endTime)
+    : startMinutes + 180;
   return nowMinutes >= startMinutes && nowMinutes < endMinutes;
 }
 
@@ -136,7 +155,10 @@ export const EventCard = React.memo(function EventCard({
   const happeningNow = useMemo(() => isEventHappeningNow(event), [event]);
   const relativeDay = useMemo(() => getRelativeDay(event.date), [event.date]);
   const { followingIds } = useFollow();
-  const attendeeIds = useMemo(() => event.attendeeIds ?? [], [event.attendeeIds]);
+  const attendeeIds = useMemo(
+    () => event.attendeeIds ?? [],
+    [event.attendeeIds]
+  );
 
   const handlePress = useCallback(() => {
     if (onEventPress) {
@@ -200,50 +222,24 @@ export const EventCard = React.memo(function EventCard({
             />
           )}
           <LinearGradient
-            colors={["transparent", "rgba(0,0,0,0.7)"]}
-            start={{ x: 0, y: 0.4 }}
+            colors={["transparent", "rgba(0,0,0,0.75)"]}
+            start={{ x: 0, y: 0.3 }}
             end={{ x: 0, y: 1 }}
             style={styles.imageGradient}
           />
-          <View
-            style={[
-              styles.smallCategoryBadge,
-              { backgroundColor: categoryColor },
-            ]}
-          >
-            <Text style={styles.smallCategoryText}>
-              {CATEGORY_LABELS[event.category]}
-            </Text>
-          </View>
           {event.price == null || event.price === 0 ? (
             <View style={styles.smallFreeBadge}>
               <Text style={styles.smallFreeText}>Free</Text>
             </View>
           ) : null}
-          <Text style={styles.smallTitle} numberOfLines={2}>
-            {event.title}
-          </Text>
-        </View>
-        <View style={styles.smallFooter}>
-          <View style={styles.footerItem}>
-            <SFIcon
-              name="mappin"
-              fallback="location"
-              size={12}
-              color={colors.textSecondary}
-            />
-            <Text style={styles.smallFooterText} numberOfLines={1}>
+          <View style={styles.smallOverlayBottom}>
+            <Text style={styles.smallTitle} numberOfLines={2}>
+              {event.title}
+            </Text>
+            <Text style={styles.smallOverlayPlace} numberOfLines={1}>
               {place.name}
             </Text>
-          </View>
-          <View style={styles.footerItem}>
-            <SFIcon
-              name="clock"
-              fallback="time"
-              size={12}
-              color={colors.textSecondary}
-            />
-            <Text style={styles.smallFooterText}>
+            <Text style={styles.smallOverlayTime}>
               {relativeDay === "Today"
                 ? formatTime(event.startTime)
                 : `${relativeDay} · ${formatTime(event.startTime)}`}
@@ -280,22 +276,6 @@ export const EventCard = React.memo(function EventCard({
             end={{ x: 0, y: 1 }}
             style={styles.imageGradient}
           />
-          <View
-            style={[styles.categoryBadge, { backgroundColor: categoryColor }]}
-          >
-            <Text style={styles.categoryText}>
-              {CATEGORY_LABELS[event.category]}
-            </Text>
-          </View>
-          {event.price != null && event.price > 0 ? (
-            <View style={styles.priceBadge}>
-              <Text style={styles.priceText}>${event.price.toFixed(0)}</Text>
-            </View>
-          ) : (
-            <View style={[styles.priceBadge, styles.freeBadge]}>
-              <Text style={[styles.priceText, styles.freeText]}>Free</Text>
-            </View>
-          )}
           {glassEnabled ? (
             <GlassView glassEffectStyle="regular" style={styles.dateBadge}>
               <Text style={[styles.dateMonth, styles.dateMonthGlass]}>
@@ -311,78 +291,52 @@ export const EventCard = React.memo(function EventCard({
               <Text style={styles.dateDay}>{getDay(event.date)}</Text>
             </View>
           )}
-          {totalCount > 0 && (
-            <View style={styles.featuredAttendeeBadge}>
-              <SFIcon
-                name="person.2.fill"
-                fallback="people"
-                size={12}
-                color="#FFFFFF"
-              />
-              <Text style={styles.featuredAttendeeText}>
-                {totalCount} going
-              </Text>
-            </View>
-          )}
-          <Text style={styles.featuredTitle} numberOfLines={2}>
-            {event.title}
-          </Text>
-        </View>
-        <View style={styles.footer}>
-          <View style={styles.footerInfo}>
-            <View style={styles.footerItem}>
-              <SFIcon
-                name="mappin"
-                fallback="location"
-                size={14}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.footerText} numberOfLines={1}>
-                {place.name}
-              </Text>
-            </View>
-            <View style={styles.footerDot} />
-            {happeningNow ? (
-              <View style={styles.footerItem}>
-                <View style={styles.nowDotLarge} />
-                <Text style={styles.nowFooterText}>Happening now</Text>
-              </View>
-            ) : (
-              <View style={styles.footerItem}>
-                <SFIcon
-                  name="clock"
-                  fallback="time"
-                  size={14}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.footerText}>
-                  {formatTime(event.startTime, event.endTime)}
+          <View style={styles.featuredOverlayBottom}>
+            <Text style={styles.featuredTitle} numberOfLines={2}>
+              {event.title}
+            </Text>
+            <View style={styles.overlayFooter}>
+              <View style={styles.overlayInfo}>
+                <Text style={styles.overlayPlaceName} numberOfLines={1}>
+                  {place.name}
                 </Text>
+                {happeningNow ? (
+                  <View style={styles.overlayMetaItem}>
+                    <View style={styles.nowDotLarge} />
+                    <Text style={styles.overlayNowText}>Happening now</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.overlayMeta}>
+                    {formatTime(event.startTime, event.endTime)}
+                  </Text>
+                )}
               </View>
-            )}
-          </View>
-          {totalCount > 0 && (
-            <View style={styles.attendeeSection}>
-              <View style={styles.avatarStack}>
-                {displayAttendees.map((user, index) => (
-                  <Image
-                    key={user.id}
-                    source={{ uri: user.avatarUrl }}
-                    style={[
-                      styles.attendeeAvatar,
-                      { marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP },
-                      { zIndex: displayAttendees.length - index },
-                    ]}
-                    contentFit="cover"
-                    transition={200}
-                  />
-                ))}
-              </View>
-              {remainingCount > 0 && (
-                <Text style={styles.attendeeCount}>+{remainingCount}</Text>
+              {totalCount > 0 && (
+                <View style={styles.overlayAttendees}>
+                  <View style={styles.avatarStack}>
+                    {displayAttendees.map((user, index) => (
+                      <Image
+                        key={user.id}
+                        source={{ uri: user.avatarUrl }}
+                        style={[
+                          styles.overlayAvatar,
+                          { marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP },
+                          { zIndex: displayAttendees.length - index },
+                        ]}
+                        contentFit="cover"
+                        transition={200}
+                      />
+                    ))}
+                  </View>
+                  {remainingCount > 0 && (
+                    <Text style={styles.overlayAttendeeCount}>
+                      +{remainingCount}
+                    </Text>
+                  )}
+                </View>
               )}
             </View>
-          )}
+          </View>
         </View>
       </HapticPressable>
     );
@@ -397,7 +351,6 @@ export const EventCard = React.memo(function EventCard({
       ]}
       onPress={handlePress}
     >
-      {/* Image area with overlays */}
       <View style={styles.imageContainer}>
         {event.imageUrl ? (
           <Image
@@ -415,33 +368,12 @@ export const EventCard = React.memo(function EventCard({
           />
         )}
 
-        {/* Bottom gradient for title readability */}
         <LinearGradient
-          colors={["transparent", "rgba(0,0,0,0.7)"]}
-          start={{ x: 0, y: 0.4 }}
+          colors={["transparent", "rgba(0,0,0,0.75)"]}
+          start={{ x: 0, y: 0.3 }}
           end={{ x: 0, y: 1 }}
           style={styles.imageGradient}
         />
-
-        {/* Category badge (top-left) */}
-        <View
-          style={[styles.categoryBadge, { backgroundColor: categoryColor }]}
-        >
-          <Text style={styles.categoryText}>
-            {CATEGORY_LABELS[event.category]}
-          </Text>
-        </View>
-
-        {/* Price badge (below category) */}
-        {event.price != null && event.price > 0 ? (
-          <View style={styles.priceBadge}>
-            <Text style={styles.priceText}>${event.price.toFixed(0)}</Text>
-          </View>
-        ) : (
-          <View style={[styles.priceBadge, styles.freeBadge]}>
-            <Text style={[styles.priceText, styles.freeText]}>Free</Text>
-          </View>
-        )}
 
         {/* Date badge (top-right) */}
         {glassEnabled ? (
@@ -460,127 +392,54 @@ export const EventCard = React.memo(function EventCard({
           </View>
         )}
 
-        {/* Title overlaid on bottom */}
-        <Text style={styles.title} numberOfLines={2}>
-          {event.title}
-        </Text>
-      </View>
-
-      {/* Footer */}
-      {compact ? (
-        <View style={styles.footerCompact}>
-          <View style={styles.footerInfoStacked}>
-            <View style={styles.footerItem}>
-              <SFIcon
-                name="mappin"
-                fallback="location"
-                size={14}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.footerText} numberOfLines={1}>
+        {/* Bottom content overlaid on image */}
+        <View style={styles.overlayBottom}>
+          <Text style={styles.title} numberOfLines={2}>
+            {event.title}
+          </Text>
+          <View style={styles.overlayFooter}>
+            <View style={styles.overlayInfo}>
+              <Text style={styles.overlayPlaceName} numberOfLines={1}>
                 {place.name}
               </Text>
-            </View>
-            {happeningNow ? (
-              <View style={styles.footerItem}>
-                <View style={styles.nowDotLarge} />
-                <Text style={styles.nowFooterText}>Happening now</Text>
-              </View>
-            ) : (
-              <View style={styles.footerItem}>
-                <SFIcon
-                  name="clock"
-                  fallback="time"
-                  size={14}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.footerText}>
+              {happeningNow ? (
+                <View style={styles.overlayMetaItem}>
+                  <View style={styles.nowDotLarge} />
+                  <Text style={styles.overlayNowText}>Happening now</Text>
+                </View>
+              ) : (
+                <Text style={styles.overlayMeta}>
                   {formatTime(event.startTime, event.endTime)}
                 </Text>
-              </View>
-            )}
-          </View>
-          {totalCount > 0 && (
-            <View style={styles.attendeeSectionCompact}>
-              <View style={styles.avatarStack}>
-                {displayAttendees.map((user, index) => (
-                  <Image
-                    key={user.id}
-                    source={{ uri: user.avatarUrl }}
-                    style={[
-                      styles.attendeeAvatar,
-                      { marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP },
-                      { zIndex: displayAttendees.length - index },
-                    ]}
-                    contentFit="cover"
-                    transition={200}
-                  />
-                ))}
-              </View>
-              <Text style={styles.attendeeCountCompact}>
-                {totalCount} going
-              </Text>
-            </View>
-          )}
-        </View>
-      ) : (
-        <View style={styles.footer}>
-          <View style={styles.footerInfo}>
-            <View style={styles.footerItem}>
-              <SFIcon
-                name="mappin"
-                fallback="location"
-                size={14}
-                color={colors.textSecondary}
-              />
-              <Text style={styles.footerText} numberOfLines={1}>
-                {place.name}
-              </Text>
-            </View>
-            <View style={styles.footerDot} />
-            {happeningNow ? (
-              <View style={styles.footerItem}>
-                <View style={styles.nowDotLarge} />
-                <Text style={styles.nowFooterText}>Happening now</Text>
-              </View>
-            ) : (
-              <View style={styles.footerItem}>
-                <SFIcon
-                  name="clock"
-                  fallback="time"
-                  size={14}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.footerText}>
-                  {formatTime(event.startTime, event.endTime)}
-                </Text>
-              </View>
-            )}
-          </View>
-          {totalCount > 0 && (
-            <View style={styles.attendeeSection}>
-              <View style={styles.avatarStack}>
-                {displayAttendees.map((user, index) => (
-                  <Image
-                    key={user.id}
-                    source={{ uri: user.avatarUrl }}
-                    style={[
-                      styles.attendeeAvatar,
-                      { marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP },
-                      { zIndex: displayAttendees.length - index },
-                    ]}
-                    contentFit="cover"
-                    transition={200}
-                  />
-                ))}
-              </View>
-              {remainingCount > 0 && (
-                <Text style={styles.attendeeCount}>+{remainingCount}</Text>
               )}
             </View>
-          )}
+            {totalCount > 0 && (
+              <View style={styles.overlayAttendees}>
+                <View style={styles.avatarStack}>
+                  {displayAttendees.map((user, index) => (
+                    <Image
+                      key={user.id}
+                      source={{ uri: user.avatarUrl }}
+                      style={[
+                        styles.overlayAvatar,
+                        { marginLeft: index === 0 ? 0 : -AVATAR_OVERLAP },
+                        { zIndex: displayAttendees.length - index },
+                      ]}
+                      contentFit="cover"
+                      transition={200}
+                    />
+                  ))}
+                </View>
+                {remainingCount > 0 && (
+                  <Text style={styles.overlayAttendeeCount}>
+                    +{remainingCount}
+                  </Text>
+                )}
+              </View>
+            )}
+          </View>
         </View>
-      )}
+      </View>
     </HapticPressable>
   );
 });
@@ -588,10 +447,12 @@ export const EventCard = React.memo(function EventCard({
 const createStyles = (colors: Colors) =>
   StyleSheet.create({
     container: {
-      backgroundColor: colors.cardBackground,
+      borderRadius: 24,
+      marginHorizontal: 16,
+      overflow: "hidden",
     },
     imageContainer: {
-      height: 220,
+      height: 280,
       position: "relative",
     },
     image: {
@@ -604,60 +465,23 @@ const createStyles = (colors: Colors) =>
       bottom: 0,
       left: 0,
       right: 0,
-      height: "60%",
-    },
-    // Category badge (top-left)
-    categoryBadge: {
-      position: "absolute",
-      top: 12,
-      left: 12,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 100,
-    },
-    categoryText: {
-      color: "#FFFFFF",
-      fontSize: 11,
-      fontWeight: "700",
-      fontFamily: fonts.bold,
-      letterSpacing: 0.8,
-      textTransform: "uppercase",
-    },
-    priceBadge: {
-      position: "absolute",
-      top: 42,
-      left: 12,
-      backgroundColor: "rgba(0,0,0,0.6)",
-      paddingHorizontal: 8,
-      paddingVertical: 3,
-      borderRadius: 100,
-    },
-    freeBadge: {
-      backgroundColor: "#059669",
-    },
-    priceText: {
-      color: "#FFFFFF",
-      fontSize: 11,
-      fontWeight: "700",
-      fontFamily: fonts.bold,
-    },
-    freeText: {
-      color: "#FFFFFF",
+      height: "70%",
     },
     // Date badge (top-right)
     dateBadge: {
       position: "absolute",
-      top: 12,
-      right: 12,
+      top: 14,
+      right: 14,
       borderRadius: 18,
       paddingHorizontal: 10,
       paddingVertical: 6,
       alignItems: "center",
       minWidth: 48,
       overflow: "hidden",
+      backgroundColor: "rgba(0,0,0,0.5)",
     },
     dateBadgeFallback: {
-      backgroundColor: colors.cardBackground,
+      backgroundColor: "rgba(0,0,0,0.5)",
     },
     dateMonth: {
       fontSize: 10,
@@ -684,93 +508,74 @@ const createStyles = (colors: Colors) =>
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 2,
     },
-    // Title overlaid on image
-    title: {
+    // Overlay bottom content
+    overlayBottom: {
       position: "absolute",
-      bottom: 14,
-      left: 14,
-      right: 14,
-      fontSize: 20,
-      fontFamily: fonts.bold,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: 16,
+    },
+    title: {
+      fontSize: 22,
+      fontFamily: fonts.extraBold,
       color: "#FFFFFF",
       textShadowColor: "rgba(0,0,0,0.5)",
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 4,
+      marginBottom: 8,
     },
-    footer: {
+    overlayFooter: {
       flexDirection: "row",
       alignItems: "center",
       justifyContent: "space-between",
-      paddingHorizontal: 14,
-      paddingVertical: 12,
     },
-    footerCompact: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
-      paddingHorizontal: 14,
-      paddingVertical: 12,
-    },
-    footerInfo: {
-      flexDirection: "row",
-      alignItems: "center",
+    overlayInfo: {
       flex: 1,
       marginRight: 8,
     },
-    footerInfoStacked: {
-      flex: 1,
-      gap: 4,
-      marginRight: 8,
+    overlayPlaceName: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+      color: "rgba(255,255,255,0.9)",
     },
-    footerItem: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-    },
-    footerDot: {
-      width: 3,
-      height: 3,
-      borderRadius: 1.5,
-      backgroundColor: colors.gray400,
-      marginHorizontal: 8,
-    },
-    footerText: {
+    overlayMeta: {
       fontSize: 13,
-      color: colors.textSecondary,
-      fontWeight: "500",
       fontFamily: fonts.medium,
+      color: "rgba(255,255,255,0.7)",
+      marginTop: 2,
     },
-    attendeeSection: {
+    overlayMetaItem: {
       flexDirection: "row",
       alignItems: "center",
+      gap: 4,
+      marginTop: 2,
     },
-    attendeeSectionCompact: {
+    overlayNowText: {
+      fontSize: 13,
+      fontFamily: fonts.semiBold,
+      color: "#34C759",
+    },
+    overlayAttendees: {
+      flexDirection: "row",
       alignItems: "center",
     },
     avatarStack: {
       flexDirection: "row",
     },
-    attendeeAvatar: {
+    overlayAvatar: {
       width: AVATAR_SIZE,
       height: AVATAR_SIZE,
       borderRadius: AVATAR_SIZE / 2,
-      borderWidth: 2,
-      borderColor: colors.cardBackground,
+      borderWidth: 1.5,
+      borderColor: "rgba(255,255,255,0.5)",
       backgroundColor: colors.gray200,
     },
-    attendeeCount: {
+    overlayAttendeeCount: {
       fontSize: 12,
-      fontWeight: "600",
       fontFamily: fonts.semiBold,
-      color: colors.textSecondary,
+      color: "rgba(255,255,255,0.8)",
       marginLeft: 4,
-    },
-    attendeeCountCompact: {
-      fontSize: 11,
-      fontWeight: "600",
-      fontFamily: fonts.semiBold,
-      color: colors.textSecondary,
-      marginTop: 3,
     },
     // --- Featured variant styles ---
     featuredContainer: {
@@ -783,34 +588,21 @@ const createStyles = (colors: Colors) =>
       height: 280,
       position: "relative",
     },
-    featuredTitle: {
+    featuredOverlayBottom: {
       position: "absolute",
-      bottom: 16,
-      left: 18,
-      right: 18,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: 18,
+    },
+    featuredTitle: {
       fontSize: 24,
       fontFamily: fonts.extraBold,
       color: "#FFFFFF",
       textShadowColor: "rgba(0,0,0,0.5)",
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 4,
-    },
-    featuredAttendeeBadge: {
-      position: "absolute",
-      bottom: 56,
-      left: 18,
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 4,
-      backgroundColor: "rgba(0,0,0,0.5)",
-      paddingHorizontal: 8,
-      paddingVertical: 4,
-      borderRadius: 100,
-    },
-    featuredAttendeeText: {
-      color: "#FFFFFF",
-      fontSize: 12,
-      fontFamily: fonts.semiBold,
+      marginBottom: 8,
     },
     // --- Small variant styles ---
     smallContainer: {
@@ -822,22 +614,6 @@ const createStyles = (colors: Colors) =>
     smallImageContainer: {
       height: 180,
       position: "relative",
-    },
-    smallCategoryBadge: {
-      position: "absolute",
-      top: 12,
-      left: 12,
-      paddingHorizontal: 6,
-      paddingVertical: 3,
-      borderRadius: 100,
-    },
-    smallCategoryText: {
-      color: "#FFFFFF",
-      fontSize: 9,
-      fontWeight: "700",
-      fontFamily: fonts.bold,
-      letterSpacing: 0.5,
-      textTransform: "uppercase",
     },
     smallFreeBadge: {
       position: "absolute",
@@ -854,27 +630,32 @@ const createStyles = (colors: Colors) =>
       fontWeight: "700",
       fontFamily: fonts.bold,
     },
-    smallTitle: {
+    smallOverlayBottom: {
       position: "absolute",
-      bottom: 10,
-      left: 12,
-      right: 12,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: 12,
+    },
+    smallTitle: {
       fontSize: 14,
       fontFamily: fonts.semiBold,
       color: "#FFFFFF",
       textShadowColor: "rgba(0,0,0,0.5)",
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 3,
+      marginBottom: 4,
     },
-    smallFooter: {
-      paddingHorizontal: 12,
-      paddingVertical: 10,
-      gap: 3,
-    },
-    smallFooterText: {
+    smallOverlayPlace: {
       fontSize: 11,
-      color: colors.textSecondary,
       fontFamily: fonts.medium,
+      color: "rgba(255,255,255,0.85)",
+    },
+    smallOverlayTime: {
+      fontSize: 11,
+      fontFamily: fonts.medium,
+      color: "rgba(255,255,255,0.65)",
+      marginTop: 1,
     },
     nowDotLarge: {
       width: 8,
