@@ -20,7 +20,6 @@ interface EventCardProps {
   onPress?: () => void;
   onEventPress?: (eventId: string) => void;
   attendeeProfiles?: User[];
-  hasBorder?: boolean;
   compact?: boolean;
   variant?: EventCardVariant;
 }
@@ -145,7 +144,6 @@ export const EventCard = React.memo(function EventCard({
   onPress,
   onEventPress,
   attendeeProfiles,
-  hasBorder,
   compact,
   variant = "default",
 }: EventCardProps) {
@@ -345,10 +343,7 @@ export const EventCard = React.memo(function EventCard({
   // --- Default variant ---
   return (
     <HapticPressable
-      style={[
-        styles.container,
-        hasBorder ? { borderWidth: 1, borderColor: colors.border } : {},
-      ]}
+      style={styles.container}
       onPress={handlePress}
     >
       <View style={styles.imageContainer}>

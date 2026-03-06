@@ -36,6 +36,7 @@ import { askAIStreaming } from "../services/ai";
 import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
 import { AIThinkingAnimation } from "../components/AIThinkingAnimation";
+import { getEventChips } from "../utils/eventChatChips";
 import Markdown from "react-native-markdown-display";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
@@ -381,7 +382,7 @@ export function AIChatScreen() {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   const { location: userLocation } = useLocation();
-  const { eventTitle, eventImageUrl } = useLocalSearchParams<{ eventTitle?: string; eventImageUrl?: string }>();
+  const { eventId, eventTitle, eventCategory, eventImageUrl } = useLocalSearchParams<{ eventId?: string; eventTitle?: string; eventCategory?: string; eventImageUrl?: string }>();
   const styles = createStyles(colors);
   const mdStyles = createMarkdownStyles(colors);
 
@@ -574,7 +575,7 @@ export function AIChatScreen() {
             userName: profile?.displayName,
             userId: profile?.id ?? "",
             userLocation,
-            eventContext: eventTitle ? { title: eventTitle } : undefined,
+            eventContext: eventTitle ? { id: eventId, title: eventTitle } : undefined,
           },
           {
             onTextChunk: (text) => {
@@ -779,12 +780,7 @@ export function AIChatScreen() {
           <View style={styles.idleContainer}>
             <EventChatHero colors={colors} eventTitle={eventTitle} eventImageUrl={eventImageUrl} />
             <View style={styles.chipsContainer}>
-              {[
-                { label: "What to expect", emoji: "🎯", question: `What can I expect at ${eventTitle}?` },
-                { label: "Food nearby", emoji: "🍽️", question: `Where should I eat near ${eventTitle}?` },
-                { label: "Getting there", emoji: "🚶", question: `How do I get to ${eventTitle}?` },
-                { label: "Similar events", emoji: "🎉", question: `What other events are similar to ${eventTitle}?` },
-              ].map((chip) => (
+              {getEventChips(eventTitle!, eventCategory).map((chip) => (
                 <HapticPressable
                   key={chip.label}
                   style={styles.chip}

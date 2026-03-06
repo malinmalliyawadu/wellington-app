@@ -576,7 +576,9 @@ export function EventDetailScreen() {
                   router.push({
                     pathname: `${tabBase}/ai-chat` as any,
                     params: {
+                      eventId: event.id,
                       eventTitle: event.title,
+                      eventCategory: event.category,
                       eventImageUrl: event.imageUrl ?? undefined,
                     },
                   });

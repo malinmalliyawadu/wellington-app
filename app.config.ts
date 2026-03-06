@@ -8,7 +8,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: "Welly",
     slug: "wellington-app",
-    version: "1.1.1",
+    version: "1.1.2",
     runtimeVersion: {
       policy: "appVersion",
     },

@@ -310,13 +310,7 @@ export function TrailDetailSheetScreen() {
         {trailEvents.length > 0 && trailPlace && (
           <View style={styles.eventsSection}>
             <View style={styles.eventsSectionHeader}>
-              <SFIcon
-                name="calendar"
-                fallback="calendar"
-                size={16}
-                color={colors.category.venue}
-              />
-              <Text style={styles.eventsSectionTitle}>Events this week</Text>
+              <Text style={styles.eventsSectionTitle}>Events This Week</Text>
             </View>
             {trailEvents.map((event) => (
               <EventCard
@@ -324,7 +318,6 @@ export function TrailDetailSheetScreen() {
                 event={event}
                 place={trailPlace}
                 compact
-                hasBorder
                 onPress={() => {
                   router.push(`${tabBase}/event/${event.id}`);
                 }}
@@ -636,21 +629,19 @@ const createStyles = (colors: Colors) =>
     },
     // Events section
     eventsSection: {
-      paddingHorizontal: 16,
       paddingBottom: 8,
       gap: 8,
     },
     eventsSectionHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
+      paddingHorizontal: 16,
       marginBottom: 4,
     },
     eventsSectionTitle: {
-      fontSize: 15,
-      fontWeight: "600",
-      fontFamily: fonts.semiBold,
-      color: colors.text,
+      fontSize: 13,
+      fontFamily: fonts.bold,
+      color: colors.textSecondary,
+      textTransform: "uppercase",
+      letterSpacing: 0.8,
     },
     // Posts section
     postsSection: {

@@ -35,7 +35,6 @@ export function UpcomingEvents({ events }: UpcomingEventsProps) {
               event={event}
               place={event.place}
               onPress={() => router.push(`/events/${event.id}`)}
-              hasBorder
               compact
             />
           </View>

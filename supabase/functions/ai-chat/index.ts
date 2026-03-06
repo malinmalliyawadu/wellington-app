@@ -47,7 +47,7 @@ interface AIContextNew {
   userName?: string;
   userId?: string;
   userLocation: { latitude: number; longitude: number } | null;
-  eventContext?: { title: string };
+  eventContext?: { id?: string; title: string };
 }
 
 // Pre-fetched social context (loaded server-side to avoid a tool round-trip)
@@ -113,7 +113,7 @@ async function fetchWeather(): Promise<string> {
 }
 
 // ---------------------------------------------------------------------------
-// Eager social context prefetch (runs in parallel with weather + auth)
+// Eager social context prefetch (runs in parallel with auth)
 // ---------------------------------------------------------------------------
 
 async function prefetchSocialContext(
@@ -246,6 +246,21 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "get_event_details",
+    description:
+      "Get full details for a specific event by ID. Use this when the user asks about a specific music event and you want to provide artist info, genre, top songs, etc. The full description often contains performer/artist details.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        event_id: {
+          type: "string",
+          description: "The event ID to look up.",
+        },
+      },
+      required: ["event_id"],
+    },
+  },
+  {
     name: "search_places",
     description:
       "Search for places (cafes, restaurants, bars, parks, attractions, venues, trails) in Wellington. Use this when the user asks about food, drinks, activities, or specific types of places.",
@@ -342,6 +357,31 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "get_weather",
+    description:
+      "Get the current weather in Wellington. Use this when the user asks about weather, or when weather is relevant to your recommendation (e.g. outdoor activities, what to wear).",
+    input_schema: {
+      type: "object" as const,
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "get_place_details",
+    description:
+      "Get detailed info about a place from Google Places: opening hours, phone number, website, price level, and rating. Use this when the user asks about opening hours, whether a place is open, contact info, or practical visit details.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        place_id: {
+          type: "string",
+          description: "The Welly app place ID (UUID). The tool will look up the Google Place ID from the database.",
+        },
+      },
+      required: ["place_id"],
+    },
+  },
+  {
     name: "get_trending_content",
     description:
       "Get trending hashtags and popular recent posts. Use this when the user asks what's trending or popular.",
@@ -387,7 +427,7 @@ async function executeSearchEvents(
   let query = supabase
     .from("events")
     .select(
-      "id, title, date, start_time, category, price, ai_score, place_id, places(name)"
+      "id, title, description, date, start_time, category, price, ai_score, place_id, places(name)"
     )
     .gte("date", dateFrom)
     .lte("date", dateTo)
@@ -458,9 +498,11 @@ async function executeSearchEvents(
       timeZone: "Pacific/Auckland",
     });
     const attended = attendeeMap.get(eid);
+    const desc = (e.description as string) ?? "";
     return {
       id: eid,
       title: e.title,
+      description: desc.length > 200 ? desc.slice(0, 200) + "…" : desc,
       date: `${e.date} (${dayOfWeek})`,
       startTime: e.start_time,
       category: e.category,
@@ -470,6 +512,52 @@ async function executeSearchEvents(
       ...(attended?.length ? { followedAttendees: attended } : {}),
     };
   });
+}
+
+async function executeGetEventDetails(
+  supabase: SupabaseClient,
+  input: Record<string, unknown>
+): Promise<unknown> {
+  const eventId = input.event_id as string;
+  if (!eventId) return { error: "event_id is required" };
+
+  console.log("[ai-chat] get_event_details for:", eventId);
+
+  const { data: event, error } = await supabase
+    .from("events")
+    .select(
+      "id, title, description, date, start_time, end_time, category, price, image_url, ticket_url, eventfinda_url, ticketmaster_url, humanitix_url, ai_description, place_id, places(name, address)"
+    )
+    .eq("id", eventId)
+    .single();
+
+  if (error || !event) {
+    console.error("[ai-chat] get_event_details error:", error?.message);
+    return { error: error?.message ?? "Event not found" };
+  }
+
+  const e = event as Record<string, unknown>;
+  const place = e.places as Record<string, unknown> | null;
+  const desc = (e.description as string) ?? "";
+  const aiDesc = (e.ai_description as string) ?? "";
+  console.log(`[ai-chat] get_event_details found: "${e.title}" (${e.category}) at ${place?.name ?? "unknown venue"}`);
+  console.log(`[ai-chat] get_event_details description (${desc.length} chars): ${desc.slice(0, 500)}`);
+  if (aiDesc) console.log(`[ai-chat] get_event_details ai_description: ${aiDesc.slice(0, 300)}`);
+
+  return {
+    id: e.id,
+    title: e.title,
+    description: e.description,
+    aiDescription: e.ai_description ?? null,
+    date: e.date,
+    startTime: e.start_time,
+    endTime: e.end_time ?? null,
+    category: e.category,
+    price: e.price ?? null,
+    venue: place?.name ?? null,
+    venueAddress: place?.address ?? null,
+    ticketUrl: e.ticket_url ?? e.eventfinda_url ?? e.ticketmaster_url ?? e.humanitix_url ?? null,
+  };
 }
 
 async function executeSearchPlaces(
@@ -649,6 +737,115 @@ async function executeSearchGuides(
   }));
 }
 
+async function executeGetPlaceDetails(
+  supabase: SupabaseClient,
+  input: Record<string, unknown>
+): Promise<unknown> {
+  const placeId = input.place_id as string;
+  if (!placeId) return { error: "place_id is required" };
+
+  const googleApiKey = Deno.env.get("GOOGLE_PLACES_API_KEY");
+  if (!googleApiKey) {
+    console.error("[ai-chat] GOOGLE_PLACES_API_KEY not set");
+    return { error: "Google Places not configured" };
+  }
+
+  // Look up the Google Place ID from our database
+  const { data: place, error } = await supabase
+    .from("places")
+    .select("name, google_place_id, address, category, latitude, longitude")
+    .eq("id", placeId)
+    .single();
+
+  if (error || !place) {
+    console.error("[ai-chat] get_place_details lookup error:", error?.message);
+    return { error: "Place not found" };
+  }
+
+  const p = place as Record<string, unknown>;
+  let googlePlaceId = p.google_place_id as string | null;
+
+  // If no Google Place ID stored, try to find it via text search
+  if (!googlePlaceId) {
+    try {
+      const searchUrl = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${encodeURIComponent(
+        (p.name as string) + " Wellington NZ"
+      )}&inputtype=textquery&fields=place_id&key=${googleApiKey}`;
+      const searchRes = await fetch(searchUrl);
+      const searchData = await searchRes.json();
+      if (searchData.candidates?.length > 0) {
+        googlePlaceId = searchData.candidates[0].place_id;
+        console.log(`[ai-chat] Found Google Place ID via search: ${googlePlaceId}`);
+      }
+    } catch (e) {
+      console.error("[ai-chat] Google Place search failed:", e);
+    }
+  }
+
+  if (!googlePlaceId) {
+    return {
+      name: p.name,
+      category: p.category,
+      address: p.address,
+      note: "No Google Place ID available — could not fetch detailed info.",
+    };
+  }
+
+  console.log(`[ai-chat] get_place_details for "${p.name}" (google: ${googlePlaceId})`);
+
+  try {
+    const fields = "name,formatted_address,formatted_phone_number,website,opening_hours,price_level,rating,user_ratings_total,url";
+    const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${googlePlaceId}&fields=${fields}&key=${googleApiKey}`;
+    const detailsRes = await fetch(detailsUrl);
+    const detailsData = await detailsRes.json();
+
+    if (detailsData.status !== "OK") {
+      console.error("[ai-chat] Google Place Details error:", detailsData.status);
+      return {
+        name: p.name,
+        category: p.category,
+        address: p.address,
+        error: `Google Places API error: ${detailsData.status}`,
+      };
+    }
+
+    const result = detailsData.result;
+    const priceLevelMap: Record<number, string> = {
+      0: "Free",
+      1: "Inexpensive",
+      2: "Moderate",
+      3: "Expensive",
+      4: "Very Expensive",
+    };
+
+    console.log(
+      `[ai-chat] get_place_details result: open=${result.opening_hours?.open_now}, rating=${result.rating}, reviews=${result.user_ratings_total}`
+    );
+
+    return {
+      name: result.name ?? p.name,
+      category: p.category,
+      address: result.formatted_address ?? p.address,
+      phone: result.formatted_phone_number ?? null,
+      website: result.website ?? null,
+      googleMapsUrl: result.url ?? null,
+      rating: result.rating ?? null,
+      totalReviews: result.user_ratings_total ?? null,
+      priceLevel: result.price_level != null ? priceLevelMap[result.price_level] ?? null : null,
+      openNow: result.opening_hours?.open_now ?? null,
+      hours: result.opening_hours?.weekday_text ?? null,
+    };
+  } catch (e) {
+    console.error("[ai-chat] Google Place Details fetch failed:", e);
+    return {
+      name: p.name,
+      category: p.category,
+      address: p.address,
+      error: "Failed to fetch Google Places details",
+    };
+  }
+}
+
 async function executeGetUserSocialContext(
   supabase: SupabaseClient,
   input: Record<string, unknown>,
@@ -784,12 +981,18 @@ function executeTool(
   switch (name) {
     case "search_events":
       return executeSearchEvents(supabase, input, userId);
+    case "get_event_details":
+      return executeGetEventDetails(supabase, input);
     case "search_places":
       return executeSearchPlaces(supabase, input, userId);
     case "search_guides":
       return executeSearchGuides(supabase, input);
     case "get_user_social_context":
       return executeGetUserSocialContext(supabase, input, userId);
+    case "get_weather":
+      return fetchWeather();
+    case "get_place_details":
+      return executeGetPlaceDetails(supabase, input);
     case "get_trending_content":
       return executeGetTrendingContent(supabase, input);
     default:
@@ -801,12 +1004,18 @@ function getToolStatusText(name: string): string {
   switch (name) {
     case "search_events":
       return "Searching events...";
+    case "get_event_details":
+      return "Looking up event details...";
     case "search_places":
       return "Searching places...";
     case "search_guides":
       return "Searching guides...";
     case "get_user_social_context":
       return "Loading your social context...";
+    case "get_weather":
+      return "Checking the weather...";
+    case "get_place_details":
+      return "Looking up place details...";
     case "get_trending_content":
       return "Finding trending content...";
     default:
@@ -820,7 +1029,6 @@ function getToolStatusText(name: string): string {
 
 function buildToolSystemPrompt(
   ctx: AIContextNew,
-  weather: string,
   social: PrefetchedSocialContext
 ): string {
   const now = new Date();
@@ -848,7 +1056,7 @@ function buildToolSystemPrompt(
     : "";
 
   const eventContextStr = ctx.eventContext
-    ? `\nEVENT CONTEXT:\nThe user opened this chat from the event "${ctx.eventContext.title}". They are interested in this event. When they ask questions, relate your answers to this event when relevant (e.g. nearby food spots, what to expect, similar events). Use search_events to find this event's details on their first question.`
+    ? `\nEVENT CONTEXT:\nThe user opened this chat from the event "${ctx.eventContext.title}"${ctx.eventContext.id ? ` (ID: ${ctx.eventContext.id})` : ""}. They are interested in this event. When they ask questions, relate your answers to this event when relevant (e.g. nearby food spots, what to expect, similar events).${ctx.eventContext.id ? ` Use get_event_details with event_id "${ctx.eventContext.id}" on their first question to get full details — do NOT use search_events for this.` : " Use search_events to find this event's details on their first question."}`
     : "";
 
   // Format pre-fetched social context
@@ -882,7 +1090,6 @@ ${userNameStr}
 ${eventContextStr}
 Current date/time: ${dateStr}, ${timeStr}
 ${locationStr}
-${weather}
 
 FOLLOWED USERS (id|name):
 ${followingStr}
@@ -901,12 +1108,32 @@ TOOL USAGE:
   - "next week" = the Monday-to-Sunday after the current week
   - IMPORTANT: Prefer category filters over keyword search. Synonyms like "gigs", "shows", "live music", "concerts" → categories: ["music"]. "laughs", "standup" → categories: ["comedy"]. Only use keyword for specific event names or very specific searches.
 - For questions about places (cafes, restaurants, bars, etc.): use search_places with category filters.
+- After search_places, use get_place_details on your top 2-3 recommendations to enrich them with opening hours, ratings, price level, and whether they're currently open. This is especially important when:
+  - The user asks for food/drink/cafe recommendations (they need to know what's open and price range)
+  - The user asks about a specific place (opening hours, phone, website)
+  - The user mentions "open now", "tonight", or time-sensitive queries
+  Do NOT call get_place_details for every result — just the ones you plan to recommend. Call them in parallel to keep it fast.
 - For questions about guides or curated lists: use search_guides.
 - For trending or popular content: use get_trending_content.
 - For general greetings or questions unrelated to Wellington activities, respond directly WITHOUT calling tools.
 - You may call multiple tools in parallel if needed (e.g. search_events + search_places for "what should I do this weekend?").
 - When the user's location is available, pass it to search_places for proximity sorting.
 - Social context (followed users, user's posts, feed posts) is ALREADY provided above — do NOT call get_user_social_context unless you need to refresh this data.
+
+WEB SEARCH & FETCH (web_search + web_fetch tools):
+- You have web_search and web_fetch tools for looking up real-time info. Use them to enrich your answers with verified details — do NOT guess or rely on memory alone.
+- Use web_search when the user asks about specific events, artists, performers, venues, restaurants, exhibitions, or anything where current/accurate details matter. Examples:
+  - Music events: look up the artist's genre, top songs, what to expect at the show, similar artists
+  - Comedy shows: look up the comedian, their style, notable specials
+  - Restaurants/cafes: search for menus, reviews, opening hours, dietary options
+  - Art exhibitions: look up the artist, the collection, reviews
+  - General Wellington questions: transport, current affairs, weather forecasts
+- Use web_fetch to get full details from a specific URL found via web_search or from event ticket URLs. Good for:
+  - Restaurant/cafe websites: opening hours, menus, booking info
+  - Event ticket pages: pricing, availability, lineup details
+  - Venue websites: accessibility, parking, upcoming schedule
+- Use get_event_details first to get the event description (which often contains artist/performer names), then web_search to look up those names. Use web_fetch if you need full details from a ticket URL.
+- IMPORTANT: Do NOT use <cite> tags or source references in your response. Write naturally and incorporate the information directly into your message text.
 
 RESPONSE FORMAT:
 - Use emojis naturally throughout your responses to keep things fun and friendly (e.g. ☕ for cafes, 🍕 for restaurants, 🎶 for music events, 🌿 for parks, etc.)
@@ -916,7 +1143,7 @@ RESPONSE FORMAT:
   - Users: [Display Name](user:userId)
   - Guides: [Guide Title](guide:guideId)
   For example: "Check out [Cafe Polo](place:abc-123) — [Sarah](user:def-456) posted about it recently!"
-- Consider the time of day, day of week, and current weather when suggesting activities
+- Consider the time of day and day of week when suggesting activities. Use get_weather if outdoor activities are relevant.
 - IMPORTANT: ONLY include places/events/guides that were returned by your tool calls. Never fabricate IDs or names. If a tool returns no results, say so honestly.
 - Use the user's own posts (from get_user_social_context) to understand their taste and preferences, but do NOT recommend places they've already posted about unless they specifically ask
 - Prioritize places and events that the user's followed people have posted about or are attending
@@ -944,7 +1171,7 @@ RESPONSE FORMAT:
 
 function normalizeResponse(parsed: Record<string, unknown>): AIResponse {
   return {
-    message: String(parsed.message ?? ""),
+    message: stripCitations(String(parsed.message ?? "")),
     places: Array.isArray(parsed.places) ? parsed.places : [],
     events: Array.isArray(parsed.events) ? parsed.events : [],
     guides: Array.isArray(parsed.guides) ? parsed.guides : [],
@@ -983,7 +1210,7 @@ function parseAIResponse(text: string): AIResponse {
     }
   }
 
-  return { message: text, places: [], events: [], guides: [] };
+  return { message: stripCitations(text), places: [], events: [], guides: [] };
 }
 
 /**
@@ -1026,12 +1253,23 @@ function extractPartialMessageValue(
   return { text: result, complete: false };
 }
 
+/**
+ * Strip web search citation/search tags from text.
+ */
+function stripCitations(text: string): string {
+  return text
+    .replace(/<cite[^>]*>/g, "")
+    .replace(/<\/cite>/g, "")
+    .replace(/<search_result[^>]*>[\s\S]*?<\/search_result>/g, "")
+    .replace(/<search_quality>[^<]*<\/search_quality>/g, "");
+}
+
 function sseEvent(event: string, data: unknown): string {
   return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
 }
 
 // ---------------------------------------------------------------------------
-// Instant preamble — shown to the user before weather/social/Claude load
+// Instant preamble — shown to the user before social/Claude load
 // ---------------------------------------------------------------------------
 
 const PREAMBLE_MAP: { patterns: RegExp; messages: string[] }[] = [
@@ -1128,8 +1366,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const weatherPromise = fetchWeather();
-
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(
@@ -1226,7 +1462,7 @@ Deno.serve(async (req) => {
           )
         );
 
-        // Send instant preamble based on user's message (before weather/social load)
+        // Send instant preamble based on user's message (before social/Claude load)
         // Skip for greetings/simple messages that won't trigger tool calls
         const lastUserMessage =
           messages[messages.length - 1]?.content ?? "";
@@ -1242,29 +1478,10 @@ Deno.serve(async (req) => {
           firstTextSent = true;
         }
 
-        // Await weather + social context (both started before stream opened)
-        const [weather, socialContext] = await Promise.all([
-          weatherPromise,
-          socialPromise,
-        ]);
+        // Await social context (started before stream opened)
+        const socialContext = await socialPromise;
 
-        // Update status with weather once available
-        if (weather) {
-          const weatherShort = weather
-            .replace(/^Current weather in Wellington:\s*/i, "")
-            .split(".")[0];
-          if (weatherShort) {
-            controller.enqueue(
-              encoder.encode(
-                sseEvent("status", {
-                  text: `${dateStr} · ${weatherShort}`,
-                })
-              )
-            );
-          }
-        }
-
-        const systemPrompt = buildToolSystemPrompt(ctx, weather, socialContext);
+        const systemPrompt = buildToolSystemPrompt(ctx, socialContext);
 
         try {
           const apiMessages: Anthropic.MessageParam[] = messages.map((m) => ({
@@ -1272,7 +1489,7 @@ Deno.serve(async (req) => {
             content: m.content,
           }));
 
-          const MAX_ROUNDS = 2;
+          const MAX_ROUNDS = 4;
 
           for (let round = 0; round < MAX_ROUNDS; round++) {
             const _isLastRound = round === MAX_ROUNDS - 1;
@@ -1304,11 +1521,31 @@ Deno.serve(async (req) => {
               ],
               messages: apiMessages,
               stream: true,
-              tools: TOOL_DEFINITIONS,
+              tools: [
+                ...TOOL_DEFINITIONS,
+                {
+                  type: "web_search_20250305",
+                  name: "web_search",
+                  max_uses: 3,
+                  user_location: {
+                    type: "approximate",
+                    city: "Wellington",
+                    region: "Wellington",
+                    country: "NZ",
+                    timezone: "Pacific/Auckland",
+                  },
+                } as unknown as Anthropic.Tool,
+                {
+                  type: "web_fetch_20250910",
+                  name: "web_fetch",
+                  max_uses: 3,
+                } as unknown as Anthropic.Tool,
+              ],
             });
 
             let fullText = "";
-            let lastSentLength = 0;
+            let lastRawProcessed = 0;
+            let lastCleanedSent = 0;
             let stopReason = "";
             let messageComplete = false;
 
@@ -1321,6 +1558,10 @@ Deno.serve(async (req) => {
               input: string;
             } | null = null;
 
+            // Track server-side web search blocks for conversation history
+            let currentServerTool: { id: string; name: string; input: string } | null = null;
+            const serverBlocks: unknown[] = [];
+
             for await (const event of response) {
               // Log cache usage from the message_start event
               if (event.type === "message_start" && event.message?.usage) {
@@ -1330,35 +1571,97 @@ Deno.serve(async (req) => {
                 );
               }
               if (event.type === "content_block_start") {
-                const block = event.content_block;
+                const block = event.content_block as Record<string, unknown>;
                 if (block.type === "tool_use") {
-                  currentTool = { id: block.id, name: block.name, input: "" };
+                  currentTool = { id: block.id as string, name: block.name as string, input: "" };
                   console.log(
                     `[ai-chat] Tool call: ${block.name} (+${Date.now() - t0}ms)`
                   );
+                } else if (block.type === "server_tool_use") {
+                  currentServerTool = { id: block.id as string, name: block.name as string, input: "" };
+                  const statusText = (block.name as string) === "web_fetch"
+                    ? "Fetching page content..."
+                    : "Searching the web...";
+                  controller.enqueue(
+                    encoder.encode(sseEvent("status", { text: statusText }))
+                  );
+                  console.log(
+                    `[ai-chat] Server tool ${block.name} starting (+${Date.now() - t0}ms)`
+                  );
+                } else if (block.type === "web_search_tool_result") {
+                  serverBlocks.push(block);
+                  const content = block.content as unknown[];
+                  if (Array.isArray(content)) {
+                    const resultCount = content.filter(
+                      (c: unknown) => (c as Record<string, unknown>).type === "web_search_result"
+                    ).length;
+                    console.log(
+                      `[ai-chat] Web search returned ${resultCount} results (+${Date.now() - t0}ms)`
+                    );
+                  }
+                } else if (block.type === "web_fetch_tool_result") {
+                  serverBlocks.push(block);
+                  const fetchContent = block.content as Record<string, unknown> | undefined;
+                  if (fetchContent?.type === "web_fetch_result") {
+                    console.log(
+                      `[ai-chat] Web fetch completed: ${fetchContent.url} (+${Date.now() - t0}ms)`
+                    );
+                  } else if (fetchContent?.type === "web_fetch_tool_error") {
+                    console.error(
+                      `[ai-chat] Web fetch error: ${fetchContent.error_code} (+${Date.now() - t0}ms)`
+                    );
+                  }
                 }
               } else if (event.type === "content_block_delta") {
                 if (event.delta.type === "text_delta") {
                   // Forward text to client in real time
                   fullText += event.delta.text;
                   const partialMessage = extractPartialMessageValue(fullText);
-                  if (
-                    partialMessage !== null &&
-                    partialMessage.text.length > lastSentLength
-                  ) {
-                    const newText = partialMessage.text.slice(lastSentLength);
-                    lastSentLength = partialMessage.text.length;
-                    if (!firstTextSent) {
-                      firstTextSent = true;
-                      console.log(
-                        `[ai-chat] First text chunk sent to client (+${
-                          Date.now() - t0
-                        }ms)`
-                      );
+                  if (partialMessage !== null) {
+                    const raw = partialMessage.text;
+
+                    // Find safe boundary: don't send past an unclosed '<' (could be a partial <cite> tag)
+                    let safeEnd = raw.length;
+                    if (!partialMessage.complete) {
+                      const lastOpen = raw.lastIndexOf("<");
+                      if (lastOpen !== -1 && lastOpen > raw.lastIndexOf(">")) {
+                        // There's an unclosed tag — hold back from that point
+                        safeEnd = lastOpen;
+                      }
                     }
-                    controller.enqueue(
-                      encoder.encode(sseEvent("text", { text: newText }))
-                    );
+
+                    if (safeEnd > lastRawProcessed) {
+                      const safeRaw = raw.slice(0, safeEnd);
+                      const cleaned = stripCitations(safeRaw);
+                      if (cleaned.length > lastCleanedSent) {
+                        const newText = cleaned.slice(lastCleanedSent);
+                        lastCleanedSent = cleaned.length;
+                        lastRawProcessed = safeEnd;
+                        if (!firstTextSent) {
+                          firstTextSent = true;
+                          console.log(
+                            `[ai-chat] First text chunk sent to client (+${
+                              Date.now() - t0
+                            }ms)`
+                          );
+                        }
+                        controller.enqueue(
+                          encoder.encode(sseEvent("text", { text: newText }))
+                        );
+                      }
+                    }
+
+                    // When message is complete, flush any remaining buffered content
+                    if (partialMessage.complete && safeEnd < raw.length) {
+                      const remaining = stripCitations(raw);
+                      if (remaining.length > lastCleanedSent) {
+                        const newText = remaining.slice(lastCleanedSent);
+                        lastCleanedSent = remaining.length;
+                        controller.enqueue(
+                          encoder.encode(sseEvent("text", { text: newText }))
+                        );
+                      }
+                    }
                   }
                   // When message text is done, tell client we're building recs
                   if (partialMessage?.complete && !messageComplete) {
@@ -1372,30 +1675,73 @@ Deno.serve(async (req) => {
                     );
                   }
                 } else if (
-                  event.delta.type === "input_json_delta" &&
-                  currentTool
+                  event.delta.type === "input_json_delta"
                 ) {
-                  currentTool.input += event.delta.partial_json;
+                  if (currentTool) {
+                    currentTool.input += event.delta.partial_json;
+                  } else if (currentServerTool) {
+                    currentServerTool.input += event.delta.partial_json;
+                  }
                 }
               } else if (event.type === "content_block_stop") {
                 if (currentTool) {
                   toolBlocks.push(currentTool);
                   currentTool = null;
                 }
+                if (currentServerTool) {
+                  try {
+                    const serverInput = JSON.parse(currentServerTool.input || "{}");
+                    if (currentServerTool.name === "web_search") {
+                      console.log(
+                        `[ai-chat] Web search query: "${serverInput.query}" (+${Date.now() - t0}ms)`
+                      );
+                    } else if (currentServerTool.name === "web_fetch") {
+                      console.log(
+                        `[ai-chat] Web fetch URL: "${serverInput.url}" (+${Date.now() - t0}ms)`
+                      );
+                    }
+                  } catch {
+                    console.log(`[ai-chat] Server tool ${currentServerTool.name} input (raw): ${currentServerTool.input}`);
+                  }
+                  serverBlocks.push({
+                    type: "server_tool_use",
+                    id: currentServerTool.id,
+                    name: currentServerTool.name,
+                    input: JSON.parse(currentServerTool.input || "{}"),
+                  });
+                  currentServerTool = null;
+                }
               } else if (event.type === "message_delta") {
-                stopReason = event.delta.stop_reason ?? "";
+                stopReason = (event.delta as Record<string, unknown>).stop_reason as string ?? "";
               }
             }
 
             console.log(
               `[ai-chat] Round ${round + 1} stream finished (+${
                 Date.now() - t0
-              }ms) stop=${stopReason} tools=${toolBlocks.length} textLen=${
+              }ms) stop=${stopReason} tools=${toolBlocks.length} serverBlocks=${serverBlocks.length} textLen=${
                 fullText.length
               }`
             );
 
-            // If no tools were called, we're done — text already streamed
+            // If Claude paused a long-running turn (e.g. multi-step web search),
+            // feed the response back to continue
+            if (stopReason === "pause_turn") {
+              console.log(`[ai-chat] pause_turn — continuing (+${Date.now() - t0}ms)`);
+              // Build the assistant content with all blocks (text + server blocks)
+              const pauseContent: unknown[] = [];
+              if (fullText) {
+                pauseContent.push({ type: "text", text: fullText });
+              }
+              for (const block of serverBlocks) {
+                pauseContent.push(block);
+              }
+              apiMessages.push({ role: "assistant", content: pauseContent } as Anthropic.MessageParam);
+              serverBlocks.length = 0;
+              continue;
+            }
+
+            // If no custom tools were called, we're done — text already streamed
             if (stopReason === "end_turn" || toolBlocks.length === 0) {
               const aiResponse = parseAIResponse(fullText);
               controller.enqueue(encoder.encode(sseEvent("done", aiResponse)));
@@ -1456,6 +1802,10 @@ Deno.serve(async (req) => {
             if (fullText) {
               assistantContent.push({ type: "text" as const, text: fullText });
             }
+            // Include server-side blocks (web search) in history
+            for (const block of serverBlocks) {
+              assistantContent.push(block as Anthropic.ContentBlockParam);
+            }
             for (const tool of toolBlocks) {
               assistantContent.push({
                 type: "tool_use" as const,
@@ -1467,6 +1817,7 @@ Deno.serve(async (req) => {
 
             apiMessages.push({ role: "assistant", content: assistantContent });
             apiMessages.push({ role: "user", content: toolResults });
+            serverBlocks.length = 0;
           }
         } catch (error) {
           const message =
