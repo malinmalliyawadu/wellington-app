@@ -793,7 +793,7 @@ function executeTool(
     case "get_trending_content":
       return executeGetTrendingContent(supabase, input);
     default:
-      return { error: `Unknown tool: ${name}` };
+      return Promise.resolve({ error: `Unknown tool: ${name}` });
   }
 }
 
