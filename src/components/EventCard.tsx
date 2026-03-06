@@ -4,7 +4,7 @@ import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { SFIcon } from "./SFIcon";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
-import { Event, Place } from "../types";
+import { Event, Place, User } from "../types";
 import { useFollow } from "../context/FollowContext";
 import { getProfilesByIds } from "../services/users";
 import { useQuery } from "../hooks/useQuery";
@@ -18,6 +18,8 @@ interface EventCardProps {
   event: Event;
   place: Place;
   onPress?: () => void;
+  onEventPress?: (eventId: string) => void;
+  attendeeProfiles?: User[];
   hasBorder?: boolean;
   compact?: boolean;
   variant?: EventCardVariant;
@@ -118,21 +120,31 @@ const AVATAR_SIZE = 22;
 const AVATAR_OVERLAP = 6;
 const glassEnabled = isLiquidGlassAvailable();
 
-export function EventCard({
+export const EventCard = React.memo(function EventCard({
   event,
   place,
   onPress,
+  onEventPress,
+  attendeeProfiles,
   hasBorder,
   compact,
   variant = "default",
 }: EventCardProps) {
   const { colors } = useTheme();
-  const styles = createStyles(colors);
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const categoryColor = CATEGORY_COLORS[event.category];
   const happeningNow = useMemo(() => isEventHappeningNow(event), [event]);
   const relativeDay = useMemo(() => getRelativeDay(event.date), [event.date]);
   const { followingIds } = useFollow();
-  const attendeeIds = event.attendeeIds ?? [];
+  const attendeeIds = useMemo(() => event.attendeeIds ?? [], [event.attendeeIds]);
+
+  const handlePress = useCallback(() => {
+    if (onEventPress) {
+      onEventPress(event.id);
+    } else if (onPress) {
+      onPress();
+    }
+  }, [onEventPress, onPress, event.id]);
 
   const sortedAttendeeIds = useMemo(
     () =>
@@ -146,12 +158,23 @@ export function EventCard({
   );
 
   const displayIds = sortedAttendeeIds.slice(0, 3);
+
+  // Use pre-fetched profiles if provided, otherwise fetch per-card
   const fetchDisplayUsers = useCallback(
     () => getProfilesByIds(displayIds),
     [displayIds]
   );
-  const { data: displayUsers } = useQuery(fetchDisplayUsers, displayIds);
-  const displayAttendees = displayUsers ?? [];
+  const { data: fetchedUsers } = useQuery(fetchDisplayUsers, displayIds, {
+    enabled: !attendeeProfiles,
+  });
+
+  const displayAttendees = useMemo(() => {
+    if (attendeeProfiles) {
+      const idSet = new Set(displayIds);
+      return attendeeProfiles.filter((u) => idSet.has(u.id));
+    }
+    return fetchedUsers ?? [];
+  }, [attendeeProfiles, displayIds, fetchedUsers]);
 
   const totalCount = attendeeIds.length;
   const remainingCount = Math.max(0, totalCount - displayIds.length);
@@ -159,7 +182,7 @@ export function EventCard({
   // --- Small variant ---
   if (variant === "small") {
     return (
-      <HapticPressable style={styles.smallContainer} onPress={onPress}>
+      <HapticPressable style={styles.smallContainer} onPress={handlePress}>
         <View style={styles.smallImageContainer}>
           {event.imageUrl ? (
             <Image
@@ -234,7 +257,7 @@ export function EventCard({
   // --- Featured variant ---
   if (variant === "featured") {
     return (
-      <HapticPressable style={styles.featuredContainer} onPress={onPress}>
+      <HapticPressable style={styles.featuredContainer} onPress={handlePress}>
         <View style={styles.featuredImageContainer}>
           {event.imageUrl ? (
             <Image
@@ -372,7 +395,7 @@ export function EventCard({
         styles.container,
         hasBorder ? { borderWidth: 1, borderColor: colors.border } : {},
       ]}
-      onPress={onPress}
+      onPress={handlePress}
     >
       {/* Image area with overlays */}
       <View style={styles.imageContainer}>
@@ -560,7 +583,7 @@ export function EventCard({
       )}
     </HapticPressable>
   );
-}
+});
 
 const createStyles = (colors: Colors) =>
   StyleSheet.create({

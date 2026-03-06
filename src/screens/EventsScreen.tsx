@@ -19,6 +19,7 @@ import { EventCard } from "../components/EventCard";
 import { SectionHeader } from "../components/SectionHeader";
 import { getUpcomingEvents, getUpcomingEventsPaginated } from "../services/events";
 import { getPlaces } from "../services/places";
+import { getProfilesByIds } from "../services/users";
 import { useQuery } from "../hooks/useQuery";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useFollow } from "../context/FollowContext";
@@ -85,6 +86,16 @@ const QUICK_CHIPS: QuickChip[] = [
 ];
 
 type EventWithPlace = { event: Event; place: Place };
+
+type DiscoveryItem =
+  | { type: "chips" }
+  | { type: "carousel"; key: string; title: string; icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }; items: EventWithPlace[]; count: number }
+  | { type: "featured"; item: EventWithPlace; restCarousel: EventWithPlace[]; title: string; icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }; count: number }
+  | { type: "comingUpHeader"; count: number }
+  | { type: "comingUpItem"; item: EventWithPlace }
+  | { type: "viewAll" }
+  | { type: "empty" }
+  | { type: "footer" };
 
 // ─── Section classification for discovery mode ───────────────────────
 
@@ -191,7 +202,7 @@ export function EventsScreen() {
     registerOpenDrawer(() => navigation.dispatch(DrawerActions.openDrawer()));
   }, [navigation, registerOpenDrawer]);
 
-  const styles = createStyles(colors);
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   // Determine if any filter is active (switches to filtered mode)
   const hasActiveFilters =
@@ -275,12 +286,18 @@ export function EventsScreen() {
     [places]
   );
 
-  // ─── Invalidate on focus ──────────────────────────────────────────
+  // ─── Refetch stale data on focus ─────────────────────────────────
 
   useFocusEffect(
     useCallback(() => {
-      queryClient.invalidateQueries({ queryKey: ["events"] });
-      queryClient.invalidateQueries({ queryKey: ["discovery-events"] });
+      queryClient.invalidateQueries({
+        queryKey: ["events"],
+        refetchType: "none",
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["discovery-events"],
+        refetchType: "none",
+      });
     }, [queryClient])
   );
 
@@ -316,6 +333,30 @@ export function EventsScreen() {
   const sections = useMemo(
     () => classifySections(discoveryEventsWithPlaces),
     [discoveryEventsWithPlaces]
+  );
+
+  // ─── Batch attendee profiles ────────────────────────────────────
+
+  const allAttendeeIds = useMemo(() => {
+    const events = hasActiveFilters ? filteredEvents : (allEvents ?? []);
+    const ids = new Set<string>();
+    for (const event of events) {
+      for (const id of event.attendeeIds ?? []) {
+        ids.add(id);
+        if (ids.size >= 50) return Array.from(ids);
+      }
+    }
+    return Array.from(ids);
+  }, [hasActiveFilters, filteredEvents, allEvents]);
+
+  const fetchAttendeeProfiles = useCallback(
+    () => getProfilesByIds(allAttendeeIds),
+    [allAttendeeIds]
+  );
+  const { data: attendeeProfiles } = useQuery(
+    fetchAttendeeProfiles,
+    ["event-attendees", allAttendeeIds],
+    { enabled: allAttendeeIds.length > 0 }
   );
 
   // ─── Filtered mode helpers ────────────────────────────────────────
@@ -400,7 +441,7 @@ export function EventsScreen() {
 
   // ─── Quick Filter Chips row ───────────────────────────────────────
 
-  const renderChips = () => (
+  const renderChips = useCallback(() => (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
@@ -433,27 +474,163 @@ export function EventsScreen() {
         );
       })}
     </ScrollView>
-  );
+  ), [isChipActive, handleChipPress, advancedFilterCount, styles, colors]);
 
   // ─── Horizontal carousel ──────────────────────────────────────────
 
-  const renderCarousel = (items: EventWithPlace[], variant: "small" | "default" = "small") => (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.carouselContainer}
-    >
-      {items.map((item) => (
-        <EventCard
-          key={item.event.id}
-          event={item.event}
-          place={item.place}
-          variant={variant}
-          onPress={() => navigateToEvent(item.event.id)}
-        />
-      ))}
-    </ScrollView>
+  const renderCarouselItem = useCallback(
+    ({ item, variant }: { item: EventWithPlace; variant: "small" | "default" }) => (
+      <EventCard
+        event={item.event}
+        place={item.place}
+        variant={variant}
+        onEventPress={navigateToEvent}
+        attendeeProfiles={attendeeProfiles ?? undefined}
+      />
+    ),
+    [navigateToEvent, attendeeProfiles]
   );
+
+  const renderCarousel = useCallback(
+    (items: EventWithPlace[], variant: "small" | "default" = "small") => (
+      <FlatList
+        horizontal
+        data={items}
+        keyExtractor={(item) => item.event.id}
+        renderItem={({ item }) => renderCarouselItem({ item, variant })}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.carouselContainer}
+      />
+    ),
+    [renderCarouselItem, styles.carouselContainer]
+  );
+
+  // ─── Discovery mode data ─────────────────────────────────────────
+
+  const { happeningNow, weekend, popular, free, comingUp } = sections;
+  const weekendRest = useMemo(() => weekend.slice(1), [weekend]);
+
+  const discoveryData = useMemo(() => {
+    const items: DiscoveryItem[] = [{ type: "chips" }];
+
+    if (happeningNow.length > 0) {
+      items.push({ type: "carousel", key: "happeningNow", title: "Happening Now", icon: { sf: "sun.max.fill", fallback: "sunny" }, items: happeningNow, count: happeningNow.length });
+    }
+    if (weekend.length > 0) {
+      items.push({ type: "featured", item: weekend[0], restCarousel: weekendRest, title: "This Weekend", icon: { sf: "cup.and.saucer.fill", fallback: "cafe" }, count: weekend.length });
+    }
+    if (popular.length > 0) {
+      items.push({ type: "carousel", key: "popular", title: "Popular", icon: { sf: "flame.fill", fallback: "flame" }, items: popular, count: popular.length });
+    }
+    if (free.length > 0) {
+      items.push({ type: "carousel", key: "free", title: "Free Events", icon: { sf: "tag.fill", fallback: "pricetag" }, items: free, count: free.length });
+    }
+    if (comingUp.length > 0) {
+      items.push({ type: "comingUpHeader", count: comingUp.length });
+      for (const item of comingUp.slice(0, 15)) {
+        items.push({ type: "comingUpItem", item });
+      }
+      if (comingUp.length > 15) {
+        items.push({ type: "viewAll" });
+      }
+    }
+    if (discoveryEventsWithPlaces.length === 0) {
+      items.push({ type: "empty" });
+    } else {
+      items.push({ type: "footer" });
+    }
+    return items;
+  }, [happeningNow, weekend, weekendRest, popular, free, comingUp, discoveryEventsWithPlaces.length]);
+
+  const handleViewAll = useCallback(() => setSelectedDateRange("month"), [setSelectedDateRange]);
+
+  const renderDiscoveryItem = useCallback(({ item }: { item: DiscoveryItem }) => {
+    switch (item.type) {
+      case "chips":
+        return renderChips();
+      case "carousel":
+        return (
+          <View>
+            <SectionHeader title={item.title} icon={item.icon} count={item.count} />
+            {renderCarousel(item.items)}
+          </View>
+        );
+      case "featured":
+        return (
+          <View>
+            <SectionHeader title={item.title} icon={item.icon} count={item.count} />
+            <EventCard
+              event={item.item.event}
+              place={item.item.place}
+              variant="featured"
+              onEventPress={navigateToEvent}
+              attendeeProfiles={attendeeProfiles ?? undefined}
+            />
+            {item.restCarousel.length > 0 && (
+              <View style={styles.carouselSpacing}>
+                {renderCarousel(item.restCarousel)}
+              </View>
+            )}
+          </View>
+        );
+      case "comingUpHeader":
+        return (
+          <SectionHeader
+            title="Coming Up"
+            icon={{ sf: "binoculars.fill", fallback: "telescope" }}
+            count={item.count}
+          />
+        );
+      case "comingUpItem":
+        return (
+          <EventCard
+            event={item.item.event}
+            place={item.item.place}
+            onEventPress={navigateToEvent}
+            attendeeProfiles={attendeeProfiles ?? undefined}
+          />
+        );
+      case "viewAll":
+        return (
+          <HapticPressable
+            style={styles.viewAllButton}
+            onPress={handleViewAll}
+          >
+            <Text style={styles.viewAllText}>View all events</Text>
+            <SFIcon name="chevron.right" fallback="chevron-forward" size={14} color={colors.primary} />
+          </HapticPressable>
+        );
+      case "empty":
+        return (
+          <View style={styles.empty}>
+            <SFIcon name="calendar" fallback="calendar-outline" size={48} color={colors.gray300} />
+            <Text style={styles.emptyText}>No upcoming events yet</Text>
+          </View>
+        );
+      case "footer":
+        return (
+          <View style={styles.footerContainer}>
+            <SFIcon name="sparkles" fallback="sparkles" size={28} color={colors.gray300} />
+            <Text style={styles.footerText}>That&apos;s everything for now</Text>
+          </View>
+        );
+    }
+  }, [renderChips, renderCarousel, navigateToEvent, handleViewAll, attendeeProfiles, colors, styles]);
+
+  const getDiscoveryItemKey = useCallback((_item: DiscoveryItem, index: number) => {
+    const item = _item;
+    switch (item.type) {
+      case "chips": return "chips";
+      case "carousel": return `carousel-${item.key}`;
+      case "featured": return `featured-${item.item.event.id}`;
+      case "comingUpHeader": return "comingUpHeader";
+      case "comingUpItem": return `coming-${item.item.event.id}`;
+      case "viewAll": return "viewAll";
+      case "empty": return "empty";
+      case "footer": return "footer";
+      default: return String(index);
+    }
+  }, []);
 
   // ─── Loading state ────────────────────────────────────────────────
 
@@ -497,7 +674,8 @@ export function EventsScreen() {
             <EventCard
               event={item.event}
               place={item.place}
-              onPress={() => navigateToEvent(item.event.id)}
+              onEventPress={navigateToEvent}
+              attendeeProfiles={attendeeProfiles ?? undefined}
             />
           )}
           onEndReached={handleLoadMore}
@@ -556,15 +734,13 @@ export function EventsScreen() {
 
   // ─── Discovery mode ───────────────────────────────────────────────
 
-  const { happeningNow, weekend, popular, free, comingUp } = sections;
-  const weekendFeatured = weekend.length > 0 ? weekend[0] : null;
-  const weekendRest = weekend.slice(1);
-  const comingUpCapped = comingUp.slice(0, 15);
-
   return (
     <View style={styles.container}>
-      <ScrollView
+      <FlatList
         testID="events-list"
+        data={discoveryData}
+        renderItem={renderDiscoveryItem}
+        keyExtractor={getDiscoveryItemKey}
         showsVerticalScrollIndicator={false}
         contentInset={{ top: headerHeight }}
         contentOffset={{ x: 0, y: -headerHeight }}
@@ -580,114 +756,7 @@ export function EventsScreen() {
             tintColor={colors.primary}
           />
         }
-      >
-        {/* Quick filter chips */}
-        {renderChips()}
-
-        {/* Happening Now */}
-        {happeningNow.length > 0 && (
-          <View>
-            <SectionHeader
-              title="Happening Now"
-              icon={{ sf: "sun.max.fill", fallback: "sunny" }}
-              count={happeningNow.length}
-            />
-            {renderCarousel(happeningNow)}
-          </View>
-        )}
-
-        {/* This Weekend */}
-        {weekend.length > 0 && (
-          <View>
-            <SectionHeader
-              title="This Weekend"
-              icon={{ sf: "cup.and.saucer.fill", fallback: "cafe" }}
-              count={weekend.length}
-            />
-            {weekendFeatured && (
-              <EventCard
-                event={weekendFeatured.event}
-                place={weekendFeatured.place}
-                variant="featured"
-                onPress={() => navigateToEvent(weekendFeatured.event.id)}
-              />
-            )}
-            {weekendRest.length > 0 && (
-              <View style={styles.carouselSpacing}>
-                {renderCarousel(weekendRest)}
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* Popular */}
-        {popular.length > 0 && (
-          <View>
-            <SectionHeader
-              title="Popular"
-              icon={{ sf: "flame.fill", fallback: "flame" }}
-              count={popular.length}
-            />
-            {renderCarousel(popular)}
-          </View>
-        )}
-
-        {/* Free Events */}
-        {free.length > 0 && (
-          <View>
-            <SectionHeader
-              title="Free Events"
-              icon={{ sf: "tag.fill", fallback: "pricetag" }}
-              count={free.length}
-            />
-            {renderCarousel(free)}
-          </View>
-        )}
-
-        {/* Coming Up */}
-        {comingUpCapped.length > 0 && (
-          <View>
-            <SectionHeader
-              title="Coming Up"
-              icon={{ sf: "binoculars.fill", fallback: "telescope" }}
-              count={comingUp.length}
-            />
-            {comingUpCapped.map((item) => (
-              <EventCard
-                key={item.event.id}
-                event={item.event}
-                place={item.place}
-                onPress={() => navigateToEvent(item.event.id)}
-              />
-            ))}
-            {comingUp.length > 15 && (
-              <HapticPressable
-                style={styles.viewAllButton}
-                onPress={() => setSelectedDateRange("month")}
-              >
-                <Text style={styles.viewAllText}>View all events</Text>
-                <SFIcon name="chevron.right" fallback="chevron-forward" size={14} color={colors.primary} />
-              </HapticPressable>
-            )}
-          </View>
-        )}
-
-        {/* Empty state for discovery */}
-        {discoveryEventsWithPlaces.length === 0 && (
-          <View style={styles.empty}>
-            <SFIcon name="calendar" fallback="calendar-outline" size={48} color={colors.gray300} />
-            <Text style={styles.emptyText}>No upcoming events yet</Text>
-          </View>
-        )}
-
-        {/* End-of-list footer */}
-        {discoveryEventsWithPlaces.length > 0 && (
-          <View style={styles.footerContainer}>
-            <SFIcon name="sparkles" fallback="sparkles" size={28} color={colors.gray300} />
-            <Text style={styles.footerText}>That&apos;s everything for now</Text>
-          </View>
-        )}
-      </ScrollView>
+      />
 
       <FloatingCreateButton />
     </View>
