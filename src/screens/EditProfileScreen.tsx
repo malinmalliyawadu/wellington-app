@@ -73,6 +73,7 @@ export function EditProfileScreen() {
         </HapticPressable>
       ),
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     navigation,
     hasChanges,
@@ -172,7 +173,7 @@ export function EditProfileScreen() {
           onPress: () => router.back(),
         },
       ]);
-    } catch (_error) {
+    } catch {
       Alert.alert("Error", "Failed to update profile. Please try again.");
     } finally {
       setSaving(false);

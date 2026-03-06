@@ -27,7 +27,7 @@ export function DiscoverUsersScreen() {
 
   const fetchUsers = useCallback(() => getOtherProfiles(profile?.id ?? ''), [profile?.id]);
   const { data: otherUsers, error: usersError, refetch: refetchUsers } = useQuery(fetchUsers, profile?.id);
-  const allUsers = Array.isArray(otherUsers) ? otherUsers : [];
+  const allUsers = useMemo(() => (Array.isArray(otherUsers) ? otherUsers : []), [otherUsers]);
 
   // Refetch when screen comes into focus
   useFocusEffect(

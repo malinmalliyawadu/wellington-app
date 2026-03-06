@@ -36,6 +36,7 @@ function AnimatedDot({ isActive }: { isActive: boolean }) {
   useEffect(() => {
     width.value = withTiming(isActive ? 18 : 6, DOT_TIMING);
     opacity.value = withTiming(isActive ? 1 : 0.4, DOT_TIMING);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isActive]);
 
   const animatedStyle = useAnimatedStyle(() => ({

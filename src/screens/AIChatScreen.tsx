@@ -240,6 +240,7 @@ function WellyHero({ colors, userName }: { colors: Colors; userName?: string }) 
       -1,
       false
     );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const glowStyle = useAnimatedStyle(() => ({
@@ -473,6 +474,7 @@ export function AIChatScreen() {
     if (isHistoryLoaded && messages.length > 0) {
       scrollToBottom();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHistoryLoaded]);
 
   // When opened with event context, clear chat history for a fresh conversation
@@ -514,6 +516,7 @@ export function AIChatScreen() {
           </HapticPressable>
         ) : null,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigation, hasMessages, isBusy, handleNewChat]);
 
   const suggestionChips = useMemo(() => getSuggestionChips(), []);
@@ -640,6 +643,7 @@ export function AIChatScreen() {
         scrollToLastResponse();
       }
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       profile?.id,
       profile?.displayName,

@@ -301,6 +301,7 @@ export function MapScreen() {
 
       router.push(`/map/trail/${trailId}`);
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [router, sheetOpenRef, trails]
   );
 

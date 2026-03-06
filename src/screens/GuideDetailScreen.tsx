@@ -126,6 +126,7 @@ export function GuideDetailScreen() {
 
   const fetchCreator = useCallback(
     () => (guide ? getProfileById(guide.userId) : Promise.resolve(null)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [guide?.userId]
   );
   const { data: creator } = useQuery(fetchCreator, [

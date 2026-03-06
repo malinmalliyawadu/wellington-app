@@ -152,8 +152,6 @@ function classifySections(eventsWithPlaces: EventWithPlace[]) {
     r.setDate(r.getDate() + n);
     return r.toLocaleDateString("en-CA");
   };
-  const tomorrowStr = addDays(nzDate, 1);
-
   // Weekend dates (based on NZ day of week)
   const nzDay = nzDate.getDay();
   const daysUntilSat = nzDay === 0 ? 6 : 6 - nzDay;

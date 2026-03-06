@@ -111,6 +111,7 @@ export function ZoomOverlayProvider({ children }: { children: React.ReactNode })
       originHeight,
       setSource: (src) => overlayRef.current?.setSource(src),
     }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 

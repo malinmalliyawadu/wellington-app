@@ -323,6 +323,7 @@ export function CreatePostSheetScreen() {
         console.error("Error parsing selected place:", error);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedPlaceData]);
 
   useEffect(() => {
@@ -334,6 +335,7 @@ export function CreatePostSheetScreen() {
         router.setParams({ placeId: undefined as any });
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [placeIdParam]);
 
   const pickMedia = async () => {

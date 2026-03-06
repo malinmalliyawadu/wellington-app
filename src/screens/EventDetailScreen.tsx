@@ -141,12 +141,14 @@ export function EventDetailScreen() {
 
   const fetchPlace = useCallback(
     () => (event ? getPlaceById(event.placeId) : Promise.resolve(null)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [event?.placeId]
   );
   const { data: place } = useQuery(fetchPlace, event?.placeId);
 
   const fetchAttendeeIds = useCallback(
     () => (event ? getEventAttendees(event.id) : Promise.resolve([])),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [event?.id]
   );
   const { data: attendeeIds, refetch: refetchAttendees } = useQuery(
@@ -154,7 +156,7 @@ export function EventDetailScreen() {
     event?.id
   );
 
-  const allAttendeeIds = attendeeIds ?? [];
+  const allAttendeeIds = useMemo(() => attendeeIds ?? [], [attendeeIds]);
 
   const fetchAttendeeProfiles = useCallback(
     () => getProfilesByIds(allAttendeeIds),

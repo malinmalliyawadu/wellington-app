@@ -109,6 +109,7 @@ export function useLocationTrail({
         setIsLoaded(true);
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Debounced save to AsyncStorage

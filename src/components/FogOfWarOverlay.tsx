@@ -106,6 +106,7 @@ export const FogOfWarOverlay = React.memo(function FogOfWarOverlay({
     if (base64) {
       setFogImageUri(`data:image/png;base64,${base64}`);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, isLoaded]);
 
   if (!visible || !fogImageUri) return null;

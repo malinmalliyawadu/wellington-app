@@ -178,6 +178,7 @@ export function PostDetailScreen() {
         </Host>
       ),
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigation, isOwnPost]);
 
   const {
@@ -192,18 +193,21 @@ export function PostDetailScreen() {
 
   const fetchUser = useCallback(
     () => (post ? getProfileById(post.userId) : Promise.resolve(null)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [post?.userId]
   );
   const { data: user } = useQuery(fetchUser, post?.userId);
 
   const fetchPlace = useCallback(
     () => (post ? getPlaceByIdAsync(post.placeId) : Promise.resolve(null)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [post?.placeId]
   );
   const { data: place } = useQuery(fetchPlace, post?.placeId);
 
   const fetchComments = useCallback(
     () => (post ? getCommentsAsync(post.id) : Promise.resolve([])),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [post?.id]
   );
   const { data: comments, refetch: refetchComments } = useQuery(

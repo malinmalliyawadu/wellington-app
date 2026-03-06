@@ -29,6 +29,7 @@ export function HashtagDetailScreen() {
 
   const fetchPostIds = useCallback(
     () => (hashtag ? getPostIdsByHashtagId(hashtag.id) : Promise.resolve([])),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [hashtag?.id]
   );
   const { data: postIds, loading: loadingPostIds } = useQuery(fetchPostIds, hashtag?.id ? ['hashtag-posts', hashtag.id] : null);

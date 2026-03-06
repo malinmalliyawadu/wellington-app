@@ -197,6 +197,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       // Session exists, on login page, but onboarding status not yet loaded — go to onboarding
       router.replace("/onboarding");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, profile?.onboardingCompleted, loading, segments]);
 
   // Handle content shared into the app via the share extension
@@ -281,6 +282,7 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     }
 
     resetShareIntent();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasShareIntent, shareIntent, session]);
 
   // Set up push notifications

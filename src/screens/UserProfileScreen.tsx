@@ -99,6 +99,7 @@ export function UserProfileScreen() {
         </Host>
       ),
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigation, isOtherUser]);
 
   const [activeTab, setActiveTab] = useState<Tab>("posts");

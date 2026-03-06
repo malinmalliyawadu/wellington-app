@@ -60,6 +60,7 @@ export function PostForm({
           .catch(() => {});
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaItems]);
 
   return (

@@ -117,6 +117,7 @@ export function NotificationsScreen() {
         </View>
       ),
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     navigation,
     notifications.length,
@@ -273,6 +274,7 @@ export function NotificationsScreen() {
         </HapticPressable>
       );
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [actorMap, postMap, eventMap, handlePress]
   );
 

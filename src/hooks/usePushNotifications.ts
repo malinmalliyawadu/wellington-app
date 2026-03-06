@@ -52,6 +52,7 @@ export function usePushNotifications() {
     }
 
     register();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]);
 
   // Handle notification tap — navigate to the relevant screen

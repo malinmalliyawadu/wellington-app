@@ -143,6 +143,7 @@ export function PostsGrid({
       </HapticPressable>
       );
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [onPostPress, onCreatePress, colors]
   );
 

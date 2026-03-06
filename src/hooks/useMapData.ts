@@ -39,7 +39,7 @@ export function useMapData({
     error: placesError,
     refetch: refetchPlaces,
   } = useQuery(getPlaces, "places");
-  const allPlaces = places ?? [];
+  const allPlaces = useMemo(() => places ?? [], [places]);
   const {
     data: allPosts,
     loading: postsLoading,

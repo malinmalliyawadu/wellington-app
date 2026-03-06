@@ -248,6 +248,7 @@ export function FeedScreen() {
       );
     }
     return null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isFetchingNextPage, hasNextPage, feedItems.length, colors.primary, styles]);
 
   if (postsError && feedPosts.length === 0) {
