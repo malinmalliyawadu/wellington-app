@@ -1220,7 +1220,7 @@ Deno.serve(async (req) => {
             for await (const event of response) {
               // Log cache usage from the message_start event
               if (event.type === "message_start" && event.message?.usage) {
-                const u = event.message.usage as Record<string, unknown>;
+                const u = event.message.usage as unknown as Record<string, unknown>;
                 console.log(
                   `[ai-chat] Round ${round + 1} usage: input=${u.input_tokens} cache_read=${u.cache_read_input_tokens ?? 0} cache_create=${u.cache_creation_input_tokens ?? 0}`
                 );
