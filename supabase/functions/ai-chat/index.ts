@@ -416,7 +416,7 @@ async function executeSearchEvents(
   const eventIds = (events ?? []).map(
     (e: Record<string, unknown>) => e.id as string
   );
-  let attendeeMap = new Map<string, string[]>();
+  const attendeeMap = new Map<string, string[]>();
 
   if (eventIds.length > 0) {
     // Get who the user follows
@@ -529,7 +529,7 @@ async function executeSearchPlaces(
     }
   }
 
-  let results = (places ?? []).map((p: Record<string, unknown>) => {
+  const results = (places ?? []).map((p: Record<string, unknown>) => {
     const pid = p.id as string;
     let distance: number | null = null;
     if (nearLat != null && nearLng != null) {
@@ -775,7 +775,7 @@ async function executeGetTrendingContent(
 // Tool dispatcher
 // ---------------------------------------------------------------------------
 
-async function executeTool(
+function executeTool(
   name: string,
   input: Record<string, unknown>,
   supabase: SupabaseClient,
@@ -1171,7 +1171,7 @@ Deno.serve(async (req) => {
           const MAX_ROUNDS = 2;
 
           for (let round = 0; round < MAX_ROUNDS; round++) {
-            const isLastRound = round === MAX_ROUNDS - 1;
+            const _isLastRound = round === MAX_ROUNDS - 1;
             const roundStart = Date.now();
             console.log(
               `[ai-chat] Round ${round + 1}/${MAX_ROUNDS} starting (+${

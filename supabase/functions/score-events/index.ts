@@ -168,10 +168,10 @@ Deno.serve(async (req) => {
 
     // Score a single batch — returns scores in same order as input batch.
     // We use a positional array (no IDs) so Claude can't mangle UUIDs.
-    async function scoreBatch(
+    const scoreBatch = async (
       batch: EventRow[],
       batchIndex: number
-    ): Promise<{ eventId: string; score: number; reason: string }[]> {
+    ): Promise<{ eventId: string; score: number; reason: string }[]> => {
       console.log(
         `Scoring batch ${batchIndex + 1}/${batches.length} (${batch.length} events)`
       );
