@@ -486,10 +486,10 @@ Deno.serve(async (req) => {
       if (!dryRun) {
         const { data: existingEvent } = await supabase
           .from("events")
-          .select("id, eventfinda_id, ticketmaster_id")
+          .select("id, eventfinda_id, ticketmaster_id, eventbrite_id")
           .eq("date", dateStr)
           .ilike("title", hx.name)
-          .or("eventfinda_id.not.is.null,ticketmaster_id.not.is.null")
+          .or("eventfinda_id.not.is.null,ticketmaster_id.not.is.null,eventbrite_id.not.is.null")
           .limit(1);
 
         if (existingEvent && existingEvent.length > 0) {
@@ -686,6 +686,7 @@ Deno.serve(async (req) => {
       .not("humanitix_id", "is", null)
       .is("eventfinda_id", null) // Only delete pure-Humanitix events
       .is("ticketmaster_id", null)
+      .is("eventbrite_id", null)
       .lt("date", cutoffStr)
       .select("id");
 

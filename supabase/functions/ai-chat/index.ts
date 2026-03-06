@@ -526,7 +526,7 @@ async function executeGetEventDetails(
   const { data: event, error } = await supabase
     .from("events")
     .select(
-      "id, title, description, date, start_time, end_time, category, price, image_url, ticket_url, eventfinda_url, ticketmaster_url, humanitix_url, ai_description, place_id, places(name, address)"
+      "id, title, description, date, start_time, end_time, category, price, image_url, ticket_url, eventfinda_url, ticketmaster_url, humanitix_url, eventbrite_url, ai_description, place_id, places(name, address)"
     )
     .eq("id", eventId)
     .single();
@@ -556,7 +556,7 @@ async function executeGetEventDetails(
     price: e.price ?? null,
     venue: place?.name ?? null,
     venueAddress: place?.address ?? null,
-    ticketUrl: e.ticket_url ?? e.eventfinda_url ?? e.ticketmaster_url ?? e.humanitix_url ?? null,
+    ticketUrl: e.ticket_url ?? e.eventfinda_url ?? e.ticketmaster_url ?? e.humanitix_url ?? e.eventbrite_url ?? null,
   };
 }
 

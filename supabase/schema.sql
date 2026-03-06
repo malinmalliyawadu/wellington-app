@@ -109,6 +109,8 @@ create table events (
   ticketmaster_url text,
   humanitix_id text unique,
   humanitix_url text,
+  eventbrite_id text unique,
+  eventbrite_url text,
   created_at timestamptz not null default now()
 );
 
@@ -116,6 +118,7 @@ create index events_date_idx on events(date);
 create index events_eventfinda_id_idx on events(eventfinda_id) where eventfinda_id is not null;
 create index events_ticketmaster_id_idx on events(ticketmaster_id) where ticketmaster_id is not null;
 create index events_humanitix_id_idx on events(humanitix_id) where humanitix_id is not null;
+create index events_eventbrite_id_idx on events(eventbrite_id) where eventbrite_id is not null;
 
 -- Event attendees (join table)
 create table event_attendees (

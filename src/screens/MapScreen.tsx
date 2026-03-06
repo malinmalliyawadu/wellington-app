@@ -68,7 +68,7 @@ const MapMarkerItem = React.memo(function MapMarkerItem({
   }, [onAppear, place.id]);
 
   return (
-    <Marker.Animated
+    <Marker
       coordinate={{
         latitude: place.latitude,
         longitude: place.longitude,
@@ -93,7 +93,7 @@ const MapMarkerItem = React.memo(function MapMarkerItem({
           events={events}
         />
       </Animated.View>
-    </Marker.Animated>
+    </Marker>
   );
 });
 

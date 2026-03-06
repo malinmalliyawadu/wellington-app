@@ -17,6 +17,7 @@ export interface Event {
   eventfindaUrl?: string;
   ticketmasterUrl?: string;
   humanitixUrl?: string;
+  eventbriteUrl?: string;
   aiScore?: number | null;
   aiDescription?: string | null;
 }

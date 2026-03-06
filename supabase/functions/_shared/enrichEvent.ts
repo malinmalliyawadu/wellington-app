@@ -248,7 +248,7 @@ export async function enrichEvents(
   const { data: events, error: queryError } = await supabase
     .from("events")
     .select(
-      "id, title, description, date, start_time, end_time, category, price, place_id, eventfinda_url, humanitix_url, ai_score"
+      "id, title, description, date, start_time, end_time, category, price, place_id, eventfinda_url, humanitix_url, eventbrite_url, ai_score"
     )
     .is("ai_description", null)
     .is("creator_id", null)
@@ -294,7 +294,9 @@ export async function enrichEvents(
       ? "eventfinda"
       : ev.humanitix_url
         ? "humanitix"
-        : "other";
+        : ev.eventbrite_url
+          ? "eventbrite"
+          : "other";
 
     console.log(
       `\n[${i + 1}/${events.length}] "${ev.title}" (${ev.date}, score=${ev.ai_score ?? "null"}, source=${source})`
@@ -454,7 +456,7 @@ export async function enrichSingleEvent(
   const { data: event, error } = await supabase
     .from("events")
     .select(
-      "id, title, description, date, start_time, end_time, category, price, place_id, eventfinda_url, humanitix_url, ai_description"
+      "id, title, description, date, start_time, end_time, category, price, place_id, eventfinda_url, humanitix_url, eventbrite_url, ai_description"
     )
     .eq("id", eventId)
     .single();
