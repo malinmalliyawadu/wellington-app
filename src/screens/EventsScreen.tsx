@@ -339,7 +339,7 @@ export function EventsScreen() {
 
   // ─── Discovery mode data ─────────────────────────────────────────
 
-  const { happeningNow, weekend, popular, free, comingUp } = sections;
+  const { happeningNow, weekend, free, comingUp } = sections;
   const weekendRest = useMemo(() => weekend.slice(1), [weekend]);
 
   const discoveryData = useMemo(() => {
@@ -363,16 +363,6 @@ export function EventsScreen() {
         title: "This Weekend",
         icon: { sf: "cup.and.saucer.fill", fallback: "cafe" },
         count: weekend.length,
-      });
-    }
-    if (popular.length > 0) {
-      items.push({
-        type: "carousel",
-        key: "popular",
-        title: "Popular",
-        icon: { sf: "flame.fill", fallback: "flame" },
-        items: popular,
-        count: popular.length,
       });
     }
     if (free.length > 0) {
@@ -404,7 +394,6 @@ export function EventsScreen() {
     happeningNow,
     weekend,
     weekendRest,
-    popular,
     free,
     comingUp,
     discoveryEventsWithPlaces.length,

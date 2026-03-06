@@ -93,7 +93,22 @@ export async function findOrCreatePlace(place: Omit<Place, 'id'>): Promise<Place
   }
 
   // No Google Place ID match found, create a new place
-  return createPlace(place);
+  try {
+    return await createPlace(place);
+  } catch (error: any) {
+    // Handle unique constraint violation (race condition) by re-fetching
+    if (error?.code === '23505' && place.googlePlaceId) {
+      const { data, error: refetchError } = await supabase
+        .from('places')
+        .select('*')
+        .eq('google_place_id', place.googlePlaceId)
+        .single();
+
+      if (refetchError) throw refetchError;
+      return mapPlace(data);
+    }
+    throw error;
+  }
 }
 
 function mapPlace(row: {

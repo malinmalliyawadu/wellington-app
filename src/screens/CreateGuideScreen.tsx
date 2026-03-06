@@ -1,4 +1,10 @@
-import React, { useState, useCallback, useEffect, useMemo } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import {
   View,
   Text,
@@ -6,8 +12,7 @@ import {
   ScrollView,
   StyleSheet,
   Alert,
-  KeyboardAvoidingView,
-  Platform,
+  ActivityIndicator,
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -45,6 +50,8 @@ const CATEGORY_ICONS: Record<PlaceCategory, { sf: string; fallback: string }> =
 interface SelectedPlace {
   place: Place;
   note: string;
+  /** When added from Google Places search, resolve to real DB place at save time */
+  pendingGooglePlace?: Omit<Place, "id">;
 }
 
 export function CreateGuideScreen() {
@@ -74,7 +81,7 @@ export function CreateGuideScreen() {
       longitude?: number;
     }[]
   >([]);
-  const [, setSearching] = useState(false);
+  const [searching, setSearching] = useState(false);
 
   // Load existing guide for editing
   const fetchGuide = useCallback(
@@ -134,17 +141,25 @@ export function CreateGuideScreen() {
     }
   }, [existingGuidePlaces, existingPlaceData, isEditing]);
 
-  // Search places
-  useEffect(() => {
-    if (searchQuery.length < 2) {
+  // Search places — use ref-based debounce to avoid effect cleanup killing the timer
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const handleSearchQueryChange = useCallback((query: string) => {
+    setSearchQuery(query);
+
+    if (searchTimerRef.current) {
+      clearTimeout(searchTimerRef.current);
+    }
+
+    if (query.length < 2) {
       setSearchResults([]);
+      setSearching(false);
       return;
     }
 
-    const timer = setTimeout(async () => {
-      setSearching(true);
+    setSearching(true);
+    searchTimerRef.current = setTimeout(async () => {
       try {
-        const results = await searchGooglePlaces(searchQuery);
+        const results = await searchGooglePlaces(query);
         setSearchResults(
           results.map((r) => ({
             name: r.name,
@@ -161,37 +176,46 @@ export function CreateGuideScreen() {
         setSearching(false);
       }
     }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  }, []);
 
   const handleAddPlace = useCallback(
-    async (result: (typeof searchResults)[0]) => {
-      try {
-        // Find or create the place
-        const place = await findOrCreatePlace({
-          name: result.name,
-          address: result.address,
-          googlePlaceId: result.placeId,
-          category: result.category ?? "attraction",
-          latitude: result.latitude ?? -41.2865,
-          longitude: result.longitude ?? 174.7762,
-        });
+    (result: (typeof searchResults)[0]) => {
+      const googlePlaceId = result.placeId;
 
-        // Check for duplicates
-        if (selectedPlaces.some((sp) => sp.place.id === place.id)) {
-          showToast({ message: "This place is already in the guide" });
-          return;
-        }
-
-        setSelectedPlaces((prev) => [...prev, { place, note: "" }]);
-        setSearchQuery("");
-        setSearchResults([]);
-      } catch {
-        Alert.alert("Error", "Failed to add place");
+      // Check for duplicates by googlePlaceId or name
+      if (
+        selectedPlaces.some(
+          (sp) =>
+            (googlePlaceId && sp.place.googlePlaceId === googlePlaceId) ||
+            (!googlePlaceId && sp.place.name === result.name)
+        )
+      ) {
+        showToast({ message: "This place is already in the guide" });
+        return;
       }
+
+      const pendingPlace: Omit<Place, "id"> = {
+        name: result.name,
+        address: result.address,
+        googlePlaceId,
+        category: result.category ?? "attraction",
+        latitude: result.latitude ?? -41.2865,
+        longitude: result.longitude ?? 174.7762,
+      };
+
+      // Add immediately with a temporary ID — resolved at save time
+      const tempPlace: Place = {
+        ...pendingPlace,
+        id: `temp_${googlePlaceId ?? Date.now()}`,
+      };
+
+      setSelectedPlaces((prev) => [
+        ...prev,
+        { place: tempPlace, note: "", pendingGooglePlace: pendingPlace },
+      ]);
+      handleSearchQueryChange("");
     },
-    [selectedPlaces, showToast]
+    [selectedPlaces, showToast, handleSearchQueryChange]
   );
 
   const handleRemovePlace = useCallback((index: number) => {
@@ -217,6 +241,17 @@ export function CreateGuideScreen() {
 
     setSaving(true);
     try {
+      // Resolve any pending Google Places to real DB places
+      const resolvedPlaces = await Promise.all(
+        selectedPlaces.map(async (sp) => {
+          if (sp.pendingGooglePlace) {
+            const place = await findOrCreatePlace(sp.pendingGooglePlace);
+            return { place, note: sp.note };
+          }
+          return { place: sp.place, note: sp.note };
+        })
+      );
+
       if (isEditing && guideId) {
         // Update guide metadata
         await updateGuide(guideId, {
@@ -229,12 +264,12 @@ export function CreateGuideScreen() {
         for (const placeId of existingIds) {
           await removePlaceFromGuide(guideId, placeId);
         }
-        for (let i = 0; i < selectedPlaces.length; i++) {
+        for (let i = 0; i < resolvedPlaces.length; i++) {
           await addPlaceToGuide(
             guideId,
-            selectedPlaces[i].place.id,
+            resolvedPlaces[i].place.id,
             i,
-            selectedPlaces[i].note || undefined
+            resolvedPlaces[i].note || undefined
           );
         }
       } else {
@@ -246,12 +281,12 @@ export function CreateGuideScreen() {
         });
 
         // Add places
-        for (let i = 0; i < selectedPlaces.length; i++) {
+        for (let i = 0; i < resolvedPlaces.length; i++) {
           await addPlaceToGuide(
             guide.id,
-            selectedPlaces[i].place.id,
+            resolvedPlaces[i].place.id,
             i,
-            selectedPlaces[i].note || undefined
+            resolvedPlaces[i].note || undefined
           );
         }
       }
@@ -279,155 +314,168 @@ export function CreateGuideScreen() {
   ]);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    <ScrollView
+      style={[styles.scrollView, styles.container]}
+      stickyHeaderIndices={[0]}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
+      automaticallyAdjustKeyboardInsets
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={{
+        paddingBottom: insets.bottom + 20,
+      }}
     >
-      <ScrollView
-        style={styles.scrollView}
-        stickyHeaderIndices={[0]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingBottom: insets.bottom + 20,
-        }}
-      >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerRow}>
-            <HapticPressable onPress={() => router.back()}>
-              <Text style={styles.cancelText}>Cancel</Text>
-            </HapticPressable>
-            <Text style={styles.headerTitle}>
-              {isEditing ? "Edit Guide" : "New Guide"}
+      {/* Header */}
+      <View style={styles.header}>
+        <View style={styles.headerRow}>
+          <HapticPressable onPress={() => router.back()}>
+            <Text style={styles.cancelText}>Cancel</Text>
+          </HapticPressable>
+          <Text style={styles.headerTitle}>
+            {isEditing ? "Edit Guide" : "New Guide"}
+          </Text>
+          <HapticPressable onPress={handleSave} disabled={saving}>
+            <Text style={[styles.saveText, saving && { opacity: 0.5 }]}>
+              {saving ? "Saving..." : "Save"}
             </Text>
-            <HapticPressable onPress={handleSave} disabled={saving}>
-              <Text style={[styles.saveText, saving && { opacity: 0.5 }]}>
-                {saving ? "Saving..." : "Save"}
-              </Text>
-            </HapticPressable>
-          </View>
+          </HapticPressable>
+        </View>
+      </View>
+
+      <View style={styles.content}>
+        <View style={styles.formSection}>
+          <TextInput
+            style={styles.titleInput}
+            placeholder="Guide title"
+            placeholderTextColor={colors.gray400}
+            value={title}
+            onChangeText={setTitle}
+            maxLength={100}
+          />
+          <TextInput
+            style={styles.descriptionInput}
+            placeholder="Description (optional)"
+            placeholderTextColor={colors.gray400}
+            value={description}
+            onChangeText={setDescription}
+            multiline
+            maxLength={500}
+          />
+
+          <Text style={styles.sectionTitle}>Places</Text>
         </View>
 
-        <View style={styles.content}>
-          <View style={styles.formSection}>
-            <TextInput
-              style={styles.titleInput}
-              placeholder="Guide title"
-              placeholderTextColor={colors.gray400}
-              value={title}
-              onChangeText={setTitle}
-              maxLength={100}
+        <View style={styles.searchSection}>
+          <View style={styles.searchInputContainer}>
+            <SFIcon
+              name="magnifyingglass"
+              fallback="search"
+              size={16}
+              color={colors.gray400}
             />
             <TextInput
-              style={styles.descriptionInput}
-              placeholder="Description (optional)"
+              style={styles.searchInput}
+              placeholder="Search for a place to add..."
               placeholderTextColor={colors.gray400}
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              maxLength={500}
+              value={searchQuery}
+              onChangeText={handleSearchQueryChange}
             />
-
-            <Text style={styles.sectionTitle}>Places</Text>
-          </View>
-
-          {selectedPlaces.map((item, index) => (
-            <View key={index} style={styles.selectedPlaceRow}>
-              <View style={styles.placeNumber}>
-                <Text style={styles.placeNumberText}>{index + 1}</Text>
-              </View>
-              <View
-                style={[
-                  styles.placeCategoryDot,
-                  {
-                    backgroundColor: colors.category[item.place.category],
-                  },
-                ]}
-              >
-                <SFIcon
-                  name={CATEGORY_ICONS[item.place.category].sf as any}
-                  fallback={CATEGORY_ICONS[item.place.category].fallback as any}
-                  size={12}
-                  color="#FFFFFF"
-                />
-              </View>
-              <View style={styles.selectedPlaceInfo}>
-                <Text style={styles.selectedPlaceName} numberOfLines={1}>
-                  {item.place.name}
-                </Text>
-                <TextInput
-                  style={styles.noteInput}
-                  placeholder="Add a note..."
-                  placeholderTextColor={colors.gray400}
-                  value={item.note}
-                  onChangeText={(text) => handleUpdateNote(index, text)}
-                  maxLength={200}
-                />
-              </View>
+            {searching && (
+              <ActivityIndicator size="small" color={colors.gray400} />
+            )}
+            {searchQuery.length > 0 && !searching && (
               <HapticPressable
-                onPress={() => handleRemovePlace(index)}
+                onPress={() => handleSearchQueryChange("")}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <SFIcon
                   name="xmark.circle.fill"
                   fallback="close-circle"
-                  size={20}
+                  size={18}
                   color={colors.gray400}
                 />
               </HapticPressable>
-            </View>
-          ))}
+            )}
+          </View>
 
-          <View style={styles.searchSection}>
-            <View style={styles.searchInputContainer}>
+          {searchResults.map((result, index) => (
+            <HapticPressable
+              key={`${result.placeId ?? result.name}-${index}`}
+              style={styles.searchResultRow}
+              onPress={() => handleAddPlace(result)}
+            >
               <SFIcon
-                name="magnifyingglass"
-                fallback="search"
+                name="mappin"
+                fallback="location"
                 size={16}
+                color={colors.textSecondary}
+              />
+              <View style={styles.searchResultInfo}>
+                <Text style={styles.searchResultName} numberOfLines={1}>
+                  {result.name}
+                </Text>
+                <Text style={styles.searchResultAddress} numberOfLines={1}>
+                  {result.address}
+                </Text>
+              </View>
+              <SFIcon
+                name="plus.circle"
+                fallback="add-circle-outline"
+                size={20}
+                color={colors.primary}
+              />
+            </HapticPressable>
+          ))}
+        </View>
+
+        {selectedPlaces.map((item, index) => (
+          <View key={index} style={styles.selectedPlaceRow}>
+            <View style={styles.placeNumber}>
+              <Text style={styles.placeNumberText}>{index + 1}</Text>
+            </View>
+            <View
+              style={[
+                styles.placeCategoryDot,
+                {
+                  backgroundColor: colors.category[item.place.category],
+                },
+              ]}
+            >
+              <SFIcon
+                name={CATEGORY_ICONS[item.place.category].sf as any}
+                fallback={CATEGORY_ICONS[item.place.category].fallback as any}
+                size={12}
+                color="#FFFFFF"
+              />
+            </View>
+            <View style={styles.selectedPlaceInfo}>
+              <Text style={styles.selectedPlaceName} numberOfLines={1}>
+                {item.place.name}
+              </Text>
+              <TextInput
+                style={styles.noteInput}
+                placeholder="Add a note..."
+                placeholderTextColor={colors.gray400}
+                value={item.note}
+                onChangeText={(text) => handleUpdateNote(index, text)}
+                maxLength={200}
+              />
+            </View>
+            <HapticPressable
+              onPress={() => handleRemovePlace(index)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <SFIcon
+                name="xmark.circle.fill"
+                fallback="close-circle"
+                size={20}
                 color={colors.gray400}
               />
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search for a place to add..."
-                placeholderTextColor={colors.gray400}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-            </View>
-
-            {searchResults.map((result, index) => (
-              <HapticPressable
-                key={`${result.placeId ?? result.name}-${index}`}
-                style={styles.searchResultRow}
-                onPress={() => handleAddPlace(result)}
-              >
-                <SFIcon
-                  name="mappin"
-                  fallback="location"
-                  size={16}
-                  color={colors.textSecondary}
-                />
-                <View style={styles.searchResultInfo}>
-                  <Text style={styles.searchResultName} numberOfLines={1}>
-                    {result.name}
-                  </Text>
-                  <Text style={styles.searchResultAddress} numberOfLines={1}>
-                    {result.address}
-                  </Text>
-                </View>
-                <SFIcon
-                  name="plus.circle"
-                  fallback="add-circle-outline"
-                  size={20}
-                  color={colors.primary}
-                />
-              </HapticPressable>
-            ))}
+            </HapticPressable>
           </View>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        ))}
+      </View>
+    </ScrollView>
   );
 }
 
@@ -469,7 +517,8 @@ const createStyles = (colors: Colors) =>
       paddingHorizontal: 0,
     },
     formSection: {
-      padding: 16,
+      paddingHorizontal: 16,
+      paddingBottom: 8,
     },
     titleInput: {
       fontSize: 20,
@@ -493,7 +542,6 @@ const createStyles = (colors: Colors) =>
       fontFamily: fonts.semiBold,
       color: colors.text,
       marginTop: 20,
-      marginBottom: 8,
     },
     selectedPlaceRow: {
       flexDirection: "row",
@@ -539,7 +587,8 @@ const createStyles = (colors: Colors) =>
       paddingVertical: 2,
     },
     searchSection: {
-      padding: 16,
+      paddingLeft: 16,
+      paddingRight: 16,
     },
     searchInputContainer: {
       flexDirection: "row",

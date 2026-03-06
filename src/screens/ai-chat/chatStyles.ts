@@ -8,7 +8,7 @@ const createMarkdownStyles = (colors: Colors) =>
       fontSize: 15,
       fontFamily: fonts.medium,
       color: colors.text,
-      lineHeight: 22,
+      lineHeight: 24,
     },
     strong: {
       fontFamily: fonts.bold,
@@ -27,7 +27,7 @@ const createMarkdownStyles = (colors: Colors) =>
     },
     paragraph: {
       marginTop: 0,
-      marginBottom: 8,
+      marginBottom: 14,
     },
     link: {
       color: colors.primary,
