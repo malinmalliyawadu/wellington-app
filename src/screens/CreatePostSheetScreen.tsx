@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { SFIcon } from "../components/SFIcon";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter, usePathname, useFocusEffect } from "expo-router";
+import { dismissAndPush } from "../utils/navigation";
 import { Place, PostType, EventCategory } from "../types";
 import type { MediaPickerItem } from "../components/create/PostForm";
 import { useTheme, type Colors } from "../theme/ThemeContext";
@@ -29,7 +30,7 @@ import { createPost } from "../services/posts";
 import { uploadMedia } from "../services/storage";
 import { createEvent, updateEvent, getEventById } from "../services/events";
 import { createAchievementToast } from "../utils/achievementHelpers";
-import { compressMedia, compressAvatar } from "../utils/compressMedia";
+import { compressMedia } from "../utils/compressMedia";
 import * as ExpoVideoThumbnails from "expo-video-thumbnails";
 import { fonts } from "../theme/fonts";
 import { HapticPressable } from "src/components/HapticPressable";
@@ -566,8 +567,7 @@ export function CreatePostSheetScreen() {
         setContent("");
         setSelectedPlace(null);
         setMediaItems([]);
-        router.dismiss();
-        router.push(`${tabBase}/post/${newPost.id}` as any);
+        dismissAndPush(router, `${tabBase}/post/${newPost.id}` as any);
       } else {
         let imageUrl: string | undefined;
 

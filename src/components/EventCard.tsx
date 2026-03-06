@@ -2,7 +2,6 @@ import React, { useCallback, useMemo } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { SFIcon } from "./SFIcon";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { Event, Place, User } from "../types";
 import { useFollow } from "../context/FollowContext";
@@ -37,7 +36,7 @@ export const CATEGORY_COLORS: Record<Event["category"], string> = {
   cultural: "#B91C1C",
 };
 
-const CATEGORY_LABELS: Record<Event["category"], string> = {
+export const CATEGORY_LABELS: Record<Event["category"], string> = {
   music: "Music",
   comedy: "Comedy",
   art: "Art",

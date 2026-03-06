@@ -8,6 +8,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { useRouter, useLocalSearchParams, usePathname, useFocusEffect } from "expo-router";
+import { dismissAndPush } from "../utils/navigation";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
 import { FollowButton } from "../components/FollowButton";
@@ -70,8 +71,7 @@ export function LikesListScreen() {
               style={styles.userRow}
               onPress={() => {
                 if (!isCurrentUser) {
-                  router.dismiss();
-                  router.push(`${tabBase}/user/${item.id}` as any);
+                  dismissAndPush(router, `${tabBase}/user/${item.id}` as any);
                 }
               }}
             >

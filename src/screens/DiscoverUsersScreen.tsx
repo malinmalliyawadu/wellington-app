@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator , Pressable } from 'react-native';
+import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter, usePathname, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,7 +26,7 @@ export function DiscoverUsersScreen() {
   const { profile } = useAuth();
 
   const fetchUsers = useCallback(() => getOtherProfiles(profile?.id ?? ''), [profile?.id]);
-  const { data: otherUsers, loading, error: usersError, refetch: refetchUsers } = useQuery(fetchUsers, profile?.id);
+  const { data: otherUsers, error: usersError, refetch: refetchUsers } = useQuery(fetchUsers, profile?.id);
   const allUsers = Array.isArray(otherUsers) ? otherUsers : [];
 
   // Refetch when screen comes into focus

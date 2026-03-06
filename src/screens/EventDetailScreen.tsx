@@ -26,7 +26,7 @@ import {
 } from "expo-router";
 import MapView, { Marker } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useHeaderHeight } from "@react-navigation/elements";
+
 import { SFIcon } from "../components/SFIcon";
 import { QueryErrorState } from "../components/QueryErrorState";
 import { LinearGradient } from "expo-linear-gradient";
@@ -123,7 +123,6 @@ export function EventDetailScreen() {
   const navigation = useNavigation();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const headerHeight = useHeaderHeight();
   const { session, profile } = useAuth();
   const { followingIds } = useFollow();
   const { awardPointsForAction } = usePoints();

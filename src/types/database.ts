@@ -945,6 +945,7 @@ export type Database = {
         Relationships: [];
       };
     };
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     Views: {};
     Functions: {
       delete_user_account: {
@@ -964,6 +965,7 @@ export type Database = {
       exploration_method: ExplorationMethod;
       notification_type: NotificationType;
     };
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     CompositeTypes: {};
   };
 };

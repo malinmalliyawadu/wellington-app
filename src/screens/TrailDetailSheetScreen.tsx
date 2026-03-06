@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { Image } from "expo-image";
 import { useLocalSearchParams, usePathname, useRouter, useFocusEffect } from "expo-router";
+import { dismissAndPush } from "../utils/navigation";
 import { SFIcon } from "../components/SFIcon";
 import { HapticPressable } from "../components/HapticPressable";
 import { VideoThumbnail } from "../components/VideoThumbnail";
@@ -341,10 +342,7 @@ export function TrailDetailSheetScreen() {
                 <HapticPressable
                   key={post.id}
                   style={styles.postCard}
-                  onPress={() => {
-                    router.dismiss();
-                    router.push(`${tabBase}/post/${post.id}`);
-                  }}
+                  onPress={() => dismissAndPush(router, `${tabBase}/post/${post.id}` as any)}
                 >
                   <PostCardContent
                     post={post}
@@ -359,13 +357,10 @@ export function TrailDetailSheetScreen() {
                 icon="add-circle"
                 size="large"
                 fullWidth
-                onPress={() => {
-                  router.dismiss();
-                  router.push({
+                onPress={() => dismissAndPush(router, {
                     pathname: `${tabBase}/create-post`,
                     params: { placeId: trail.placeId },
-                  });
-                }}
+                  } as any)}
               />
             </View>
           </View>
@@ -385,13 +380,10 @@ export function TrailDetailSheetScreen() {
               title="Create Post"
               icon="add-circle"
               size="large"
-              onPress={() => {
-                router.dismiss();
-                router.push({
-                  pathname: `${tabBase}/create-post`,
-                  params: { placeId: trail.placeId },
-                });
-              }}
+              onPress={() => dismissAndPush(router, {
+                    pathname: `${tabBase}/create-post`,
+                    params: { placeId: trail.placeId },
+                  } as any)}
             />
           </View>
         )}

@@ -217,16 +217,14 @@ export function ProfileScreen() {
             {userEvents.map((event) => {
               if (!event.place) return null;
               return (
-                <View key={event.id} style={styles.eventCardWrapper}>
-                  <EventCard
-                    event={event}
-                    place={event.place}
-                    onPress={() =>
-                      router.push(`/profile/event/${event.id}` as any)
-                    }
-                    compact
-                  />
-                </View>
+                <EventCard
+                  key={event.id}
+                  event={event}
+                  place={event.place}
+                  onPress={() =>
+                    router.push(`/profile/event/${event.id}` as any)
+                  }
+                />
               );
             })}
             <HapticPressable
@@ -614,14 +612,7 @@ const createStyles = (colors: Colors) =>
     },
     // Events list
     eventsList: {
-      paddingHorizontal: 16,
       gap: 12,
-    },
-    eventCardWrapper: {
-      borderRadius: 12,
-      overflow: "hidden",
-      borderWidth: 1,
-      borderColor: colors.border,
     },
     // Guides list
     guidesList: {

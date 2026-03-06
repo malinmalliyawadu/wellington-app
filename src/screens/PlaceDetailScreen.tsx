@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Pressable, ActivityIndicator, Linking, Platform } from 'react-native';
+import { View, Text, FlatList, StyleSheet, ActivityIndicator, Linking, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, usePathname, useRouter, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +11,7 @@ import { getPostsByPlaceId as getPostsByPlaceIdAsync } from '../services/posts';
 import { getProfilesByIds , getProfileByUsername } from '../services/users';
 import { getTrailByPlaceId } from '../services/trails';
 import { shareTrail } from '../utils/sharing';
-import { fetchPlaceDetails } from '../services/googlePlaceDetails';
+import { fetchPlaceDetails, type PlaceOpeningHours } from '../services/googlePlaceDetails';
 import { formatNumber } from '../utils/formatNumber';
 import { sortPosts } from '../utils/postSorting';
 import { useFollow } from '../context/FollowContext';
@@ -78,18 +78,18 @@ export function PlaceDetailScreen() {
 
   const loading = loadingPlace || loadingPosts || (isTrail && loadingTrail);
 
-  const [placeDetails, setPlaceDetails] = useState<{ rating?: number; userRatingsTotal?: number }>({});
+  const [placeDetails, setPlaceDetails] = useState<{ rating?: number; userRatingsTotal?: number; openingHours?: PlaceOpeningHours }>({});
 
   // Fetch place details from Google Places API (skip for trails)
   useEffect(() => {
-    if (place && place.category !== 'trail' && !place.rating) {
+    if (place && place.category !== 'trail') {
       fetchPlaceDetails(place.latitude, place.longitude, place.name, place.id).then(details => {
-        if (details.rating) {
+        if (details.rating || details.openingHours) {
           setPlaceDetails(details);
+        } else if (place.rating) {
+          setPlaceDetails({ rating: place.rating, userRatingsTotal: place.userRatingsTotal });
         }
       });
-    } else if (place?.rating) {
-      setPlaceDetails({ rating: place.rating, userRatingsTotal: place.userRatingsTotal });
     }
   }, [place]);
 
@@ -186,6 +186,9 @@ export function PlaceDetailScreen() {
                   </Text>
                 </View>
               </>
+            )}
+            {placeDetails.openingHours && (
+              <OpeningHoursSection openingHours={placeDetails.openingHours} />
             )}
             <View style={styles.statsRow}>
               <View style={styles.stat}>
@@ -366,6 +369,64 @@ function PlaceTrailHeader({
   );
 }
 
+function OpeningHoursSection({ openingHours }: { openingHours: PlaceOpeningHours }) {
+  const { colors } = useTheme();
+  const styles = createStyles(colors);
+  const [expanded, setExpanded] = useState(false);
+
+  const todayIndex = new Date().getDay();
+  // weekdayText is Mon-Sun (0-6), but JS getDay() is Sun=0, Mon=1...
+  // Convert JS day to weekdayText index: Mon=0, Tue=1, ..., Sun=6
+  const weekdayTextIndex = todayIndex === 0 ? 6 : todayIndex - 1;
+  const todayText = openingHours.weekdayText?.[weekdayTextIndex];
+
+  if (!todayText && openingHours.openNow === undefined) return null;
+
+  // Extract just the hours portion (e.g., "Monday: 8:00 AM – 5:00 PM" → "8:00 AM – 5:00 PM")
+  const todayHours = todayText?.replace(/^[^:]+:\s*/, '') ?? '';
+
+  return (
+    <View style={styles.openingHoursContainer}>
+      <HapticPressable
+        style={styles.openingHoursHeader}
+        onPress={() => openingHours.weekdayText && setExpanded(e => !e)}
+      >
+        <SFIcon name="clock" fallback="time-outline" size={15} color={colors.textSecondary} />
+        {openingHours.openNow !== undefined && (
+          <Text style={[styles.openNowText, { color: openingHours.openNow ? colors.success : colors.error }]}>
+            {openingHours.openNow ? 'Open' : 'Closed'}
+          </Text>
+        )}
+        {todayHours ? (
+          <Text style={styles.todayHoursText} numberOfLines={1}>{todayHours}</Text>
+        ) : null}
+        {openingHours.weekdayText && (
+          <SFIcon
+            name={expanded ? 'chevron.up' : 'chevron.down'}
+            fallback={expanded ? 'chevron-up' : 'chevron-down'}
+            size={12}
+            color={colors.textMuted}
+          />
+        )}
+      </HapticPressable>
+      {expanded && openingHours.weekdayText && (
+        <View style={styles.weekdayList}>
+          {openingHours.weekdayText.map((line, i) => {
+            const isToday = i === weekdayTextIndex;
+            return (
+              <View key={i} style={styles.weekdayRow}>
+                <Text style={[styles.weekdayText, isToday && styles.weekdayTextToday]} numberOfLines={1}>
+                  {line}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
 function PostLikeButton({ postId }: { postId: string }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -444,6 +505,39 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
     flex: 1,
+  },
+  openingHoursContainer: {
+    marginBottom: 12,
+  },
+  openingHoursHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  openNowText: {
+    fontSize: 14,
+    fontFamily: fonts.semiBold,
+  },
+  todayHoursText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    flex: 1,
+  },
+  weekdayList: {
+    marginTop: 8,
+    marginLeft: 21,
+    gap: 4,
+  },
+  weekdayRow: {
+    flexDirection: 'row',
+  },
+  weekdayText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+  },
+  weekdayTextToday: {
+    fontFamily: fonts.semiBold,
+    color: colors.text,
   },
   statsRow: {
     flexDirection: 'row',

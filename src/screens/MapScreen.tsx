@@ -192,7 +192,6 @@ export function MapScreen() {
   const handleClusterPress = useCallback(
     async (latitude: number, longitude: number, expansionZoom: number) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      const camera = await mapRef.current?.getCamera();
       const delta = 360 / Math.pow(2, expansionZoom);
       mapRef.current?.animateToRegion(
         {

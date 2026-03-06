@@ -172,7 +172,7 @@ export function EditProfileScreen() {
           onPress: () => router.back(),
         },
       ]);
-    } catch (error) {
+    } catch (_error) {
       Alert.alert("Error", "Failed to update profile. Please try again.");
     } finally {
       setSaving(false);

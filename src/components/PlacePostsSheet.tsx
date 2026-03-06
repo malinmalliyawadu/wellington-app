@@ -3,14 +3,12 @@ import {
   View,
   Text,
   StyleSheet,
-  Pressable,
   ScrollView,
   Dimensions,
   Linking,
   Platform,
 } from "react-native";
 import { Image } from "expo-image";
-import { Ionicons } from "@expo/vector-icons";
 import { SFIcon } from "./SFIcon";
 import { Place, Post, PlaceCategory } from "../types";
 import { PlacePopularity } from "../utils/placePopularity";

@@ -182,7 +182,6 @@ function classifySections(eventsWithPlaces: EventWithPlace[]) {
   for (const item of eventsWithPlaces) {
     const { event } = item;
     const isToday = event.date === todayStr;
-    const isTomorrow = event.date === tomorrowStr;
     const isWeekend =
       event.date === satStr ||
       event.date === sunStr ||

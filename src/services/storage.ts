@@ -35,7 +35,7 @@ export async function uploadMedia(
 
     const filePath = `${userId}/${Date.now()}-${fileName}`;
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from(POST_MEDIA_BUCKET)
       .upload(filePath, arrayBuffer, {
         contentType: mimeType,
@@ -86,7 +86,7 @@ export async function uploadAvatar(
     const filePath = `${userId}/${Date.now()}.jpg`;
     console.log('Uploading to path:', filePath);
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from(AVATARS_BUCKET)
       .upload(filePath, arrayBuffer, {
         contentType: 'image/jpeg',

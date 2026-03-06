@@ -14,9 +14,21 @@ function fetchWithTimeout(url: string, timeout = FETCH_TIMEOUT): Promise<Respons
   return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(id));
 }
 
-interface PlaceDetails {
+interface OpeningHoursPeriod {
+  open: { day: number; time: string };
+  close?: { day: number; time: string };
+}
+
+export interface PlaceOpeningHours {
+  openNow?: boolean;
+  periods?: OpeningHoursPeriod[];
+  weekdayText?: string[];
+}
+
+export interface PlaceDetails {
   rating?: number;
   userRatingsTotal?: number;
+  openingHours?: PlaceOpeningHours;
 }
 
 // In-memory cache (fast path), backed by AsyncStorage (persistent)
@@ -66,8 +78,9 @@ export async function fetchPlaceDetails(
   const cacheKey = `${latitude},${longitude},${name}`;
 
   // Check cache first (memory → AsyncStorage)
+  // Treat entries without openingHours as stale (added after initial cache schema)
   const cached = await getCached(cacheKey);
-  if (cached) {
+  if (cached && cached.openingHours !== undefined) {
     return cached;
   }
 
@@ -135,11 +148,30 @@ export async function fetchPlaceDetails(
       return {};
     }
 
-    // Use rating data already returned by Nearby Search (no extra API call needed)
+    // Use rating data from Nearby Search + fetch opening hours via Place Details
     const details: PlaceDetails = {
       rating: matchedPlace.rating,
       userRatingsTotal: matchedPlace.user_ratings_total,
     };
+
+    // Fetch opening hours from Place Details API
+    if (matchedPlace.place_id) {
+      try {
+        const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${matchedPlace.place_id}&fields=opening_hours&key=${GOOGLE_PLACES_API_KEY}`;
+        const detailsResponse = await fetchWithTimeout(detailsUrl);
+        const detailsData = await detailsResponse.json();
+        if (detailsData.status === "OK" && detailsData.result?.opening_hours) {
+          const oh = detailsData.result.opening_hours;
+          details.openingHours = {
+            openNow: oh.open_now,
+            periods: oh.periods,
+            weekdayText: oh.weekday_text,
+          };
+        }
+      } catch {
+        // Opening hours are non-critical, continue without them
+      }
+    }
 
     // Cache the result (memory + AsyncStorage)
     setCache(cacheKey, details);

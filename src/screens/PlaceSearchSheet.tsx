@@ -12,7 +12,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { SFSymbol } from "expo-symbols";
 import { SFIcon } from "../components/SFIcon";
-import { useRouter, useLocalSearchParams } from "expo-router";
+import { useRouter } from "expo-router";
 import { Place } from "../types";
 import { useLocation } from "../context/LocationContext";
 import { useTheme, type Colors } from "../theme/ThemeContext";
@@ -28,8 +28,6 @@ export function PlaceSearchSheet() {
   const styles = createStyles(colors);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const params = useLocalSearchParams<{ returnRoute?: string }>();
-
   const { location: userLocation } = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);

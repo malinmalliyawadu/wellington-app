@@ -5,7 +5,6 @@ import {
   FlatList,
   ScrollView,
   StyleSheet,
-  ActivityIndicator,
 } from "react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -24,7 +23,7 @@ import { HapticPressable } from "../components/HapticPressable";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { fonts } from "../theme/fonts";
 import { QueryErrorState } from "../components/QueryErrorState";
-import type { Place, PlaceCategory } from "../types";
+import type { PlaceCategory } from "../types";
 
 type Tab = "posts" | "places" | "events" | "guides";
 

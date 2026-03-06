@@ -11,6 +11,7 @@ import {
 import { Image } from "expo-image";
 import { SFIcon } from "../components/SFIcon";
 import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
+import { dismissAndPush } from "../utils/navigation";
 import { useFollow } from "../context/FollowContext";
 import { useLike } from "../context/LikeContext";
 import { useMapPlaceSelection } from "../context/MapPlaceSelectionContext";
@@ -29,7 +30,6 @@ import { EventCard } from "../components/EventCard";
 import { HapticPressable } from "../components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { fonts } from "../theme/fonts";
-import { BlurView } from "expo-blur";
 import { HashtagText } from "../components/HashtagText";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { QueryErrorState } from "../components/QueryErrorState";
@@ -244,10 +244,7 @@ export function PlacePostsSheetScreen() {
               ) : (
                 <>
                   <HapticPressable
-                    onPress={() => {
-                      router.dismiss();
-                      router.push(`/map/place/${place.id}`);
-                    }}
+                    onPress={() => dismissAndPush(router, `/map/place/${place.id}` as any)}
                     style={styles.nameButton}
                   >
                     <Text style={styles.name} numberOfLines={1}>
@@ -353,10 +350,7 @@ export function PlacePostsSheetScreen() {
               {sortedPosts.map((post) => (
                 <HapticPressable
                   key={post.id}
-                  onPress={() => {
-                    router.dismiss();
-                    router.push(`/map/post/${post.id}`);
-                  }}
+                  onPress={() => dismissAndPush(router, `/map/post/${post.id}` as any)}
                 >
                   <PostRow
                     post={post}
@@ -370,13 +364,10 @@ export function PlacePostsSheetScreen() {
                 icon="add-circle"
                 size="large"
                 fullWidth
-                onPress={() => {
-                  router.dismiss();
-                  router.push({
+                onPress={() => dismissAndPush(router, {
                     pathname: "/map/create-post",
                     params: { placeId: place.id },
-                  });
-                }}
+                  } as any)}
                 style={styles.listCreateButton}
               />
             </View>
@@ -396,13 +387,10 @@ export function PlacePostsSheetScreen() {
                 title="Create Post"
                 icon="add-circle"
                 size="large"
-                onPress={() => {
-                  router.dismiss();
-                  router.push({
+                onPress={() => dismissAndPush(router, {
                     pathname: "/map/create-post",
                     params: { placeId: place.id },
-                  });
-                }}
+                  } as any)}
               />
             </View>
           )}

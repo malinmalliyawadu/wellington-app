@@ -2,7 +2,6 @@ import React, {
   useState,
   useRef,
   useCallback,
-  useMemo,
   useEffect,
 } from "react";
 import {
@@ -25,14 +24,12 @@ import * as ImagePicker from "expo-image-picker";
 import * as Location from "expo-location";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "../context/AuthContext";
-import { useFollow } from "../context/FollowContext";
 import { getOtherProfiles } from "../services/users";
 import { uploadAvatar } from "../services/storage";
 import { compressAvatar } from "../utils/compressMedia";
 import { useQuery } from "../hooks/useQuery";
 import { FollowButton } from "../components/FollowButton";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
-import { HapticPressable } from "../components/HapticPressable";
 import { fonts } from "../theme/fonts";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import type { User } from "../types";
