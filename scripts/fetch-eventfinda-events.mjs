@@ -1,3 +1,4 @@
+/* global Buffer */
 /**
  * Fetch events from Eventfinda Wellington by scraping their website.
  *

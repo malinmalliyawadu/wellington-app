@@ -74,6 +74,27 @@ function getDay(dateString: string): string {
   return date.toLocaleDateString("en-NZ", { day: "numeric", timeZone: "Pacific/Auckland" });
 }
 
+function getRelativeDay(dateString: string): string {
+  const now = new Date();
+  const todayStr = now.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
+  const [y, m, d] = todayStr.split("-").map(Number);
+  const today = new Date(y, m - 1, d);
+  const [ey, em, ed] = dateString.split("-").map(Number);
+  const eventDate = new Date(ey, em - 1, ed);
+  const diffDays = Math.round((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "Today";
+  if (diffDays === 1) return "Tomorrow";
+  if (diffDays < 7) {
+    const dayName = new Date(dateString + "T00:00:00").toLocaleDateString("en-NZ", {
+      weekday: "long",
+      timeZone: "Pacific/Auckland",
+    });
+    return dayName;
+  }
+  return `In ${diffDays} days`;
+}
+
 function isEventHappeningNow(event: Event): boolean {
   const now = new Date();
   const todayStr = now.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
@@ -109,6 +130,7 @@ export function EventCard({
   const styles = createStyles(colors);
   const categoryColor = CATEGORY_COLORS[event.category];
   const happeningNow = useMemo(() => isEventHappeningNow(event), [event]);
+  const relativeDay = useMemo(() => getRelativeDay(event.date), [event.date]);
   const { followingIds } = useFollow();
   const attendeeIds = event.attendeeIds ?? [];
 
@@ -199,7 +221,9 @@ export function EventCard({
               color={colors.textSecondary}
             />
             <Text style={styles.smallFooterText}>
-              {formatTime(event.startTime)}
+              {relativeDay === "Today"
+                ? formatTime(event.startTime)
+                : `${relativeDay} · ${formatTime(event.startTime)}`}
             </Text>
           </View>
         </View>

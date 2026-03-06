@@ -38,7 +38,10 @@ export function useQuery<T>(
   });
 
   const refetch = useCallback(async (): Promise<T> => {
-    const result = await tanstackRefetch({ throwOnError: true });
+    const result = await tanstackRefetch({ throwOnError: true }).catch((err) => {
+      if (err?.name === 'CancelledError') return { data: undefined };
+      throw err;
+    });
     return result.data as T;
   }, [tanstackRefetch]);
 

@@ -47,6 +47,7 @@ interface AIContextNew {
   userName?: string;
   userId?: string;
   userLocation: { latitude: number; longitude: number } | null;
+  eventContext?: { title: string };
 }
 
 // Pre-fetched social context (loaded server-side to avoid a tool round-trip)
@@ -415,7 +416,7 @@ async function executeSearchEvents(
   const eventIds = (events ?? []).map(
     (e: Record<string, unknown>) => e.id as string
   );
-  let attendeeMap = new Map<string, string[]>();
+  const attendeeMap = new Map<string, string[]>();
 
   if (eventIds.length > 0) {
     // Get who the user follows
@@ -528,7 +529,7 @@ async function executeSearchPlaces(
     }
   }
 
-  let results = (places ?? []).map((p: Record<string, unknown>) => {
+  const results = (places ?? []).map((p: Record<string, unknown>) => {
     const pid = p.id as string;
     let distance: number | null = null;
     if (nearLat != null && nearLng != null) {
@@ -774,7 +775,7 @@ async function executeGetTrendingContent(
 // Tool dispatcher
 // ---------------------------------------------------------------------------
 
-async function executeTool(
+function executeTool(
   name: string,
   input: Record<string, unknown>,
   supabase: SupabaseClient,
@@ -792,7 +793,7 @@ async function executeTool(
     case "get_trending_content":
       return executeGetTrendingContent(supabase, input);
     default:
-      return { error: `Unknown tool: ${name}` };
+      return Promise.resolve({ error: `Unknown tool: ${name}` });
   }
 }
 
@@ -846,6 +847,10 @@ function buildToolSystemPrompt(
     ? `The user's name is ${ctx.userName}. Address them by name occasionally to keep the conversation personal and friendly — but don't overdo it, use it naturally (e.g. first message greeting, or when making a personal recommendation).`
     : "";
 
+  const eventContextStr = ctx.eventContext
+    ? `\nEVENT CONTEXT:\nThe user opened this chat from the event "${ctx.eventContext.title}". They are interested in this event. When they ask questions, relate your answers to this event when relevant (e.g. nearby food spots, what to expect, similar events). Use search_events to find this event's details on their first question.`
+    : "";
+
   // Format pre-fetched social context
   const followingStr =
     social.followingUsers.length > 0
@@ -874,7 +879,7 @@ function buildToolSystemPrompt(
   return `You are Welly, a friendly AI assistant for the Welly app — a map-based social platform for discovering things to do in Wellington, New Zealand. You're a true local Wellingtonian with a warm Kiwi personality. Use natural New Zealand slang and expressions (e.g. "sweet as", "heaps good", "keen", "mate", "brekkie", "arvo", "choice", "chur") — but keep it natural, not over the top. You love Wellington and it comes through in how you talk about the city.
 
 ${userNameStr}
-
+${eventContextStr}
 Current date/time: ${dateStr}, ${timeStr}
 ${locationStr}
 ${weather}
@@ -1166,7 +1171,7 @@ Deno.serve(async (req) => {
           const MAX_ROUNDS = 2;
 
           for (let round = 0; round < MAX_ROUNDS; round++) {
-            const isLastRound = round === MAX_ROUNDS - 1;
+            const _isLastRound = round === MAX_ROUNDS - 1;
             const roundStart = Date.now();
             console.log(
               `[ai-chat] Round ${round + 1}/${MAX_ROUNDS} starting (+${
@@ -1215,7 +1220,7 @@ Deno.serve(async (req) => {
             for await (const event of response) {
               // Log cache usage from the message_start event
               if (event.type === "message_start" && event.message?.usage) {
-                const u = event.message.usage as Record<string, unknown>;
+                const u = event.message.usage as unknown as Record<string, unknown>;
                 console.log(
                   `[ai-chat] Round ${round + 1} usage: input=${u.input_tokens} cache_read=${u.cache_read_input_tokens ?? 0} cache_create=${u.cache_creation_input_tokens ?? 0}`
                 );

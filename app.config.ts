@@ -8,9 +8,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: "Welly",
     slug: "wellington-app",
-    version: "1.1.0",
+    version: "1.1.1",
     runtimeVersion: {
       policy: "appVersion",
+    },
+    updates: {
+      url: "https://u.expo.dev/666bd8f1-eab1-419d-bb9c-34ad98a16904",
     },
     scheme: "wellington",
     orientation: "portrait",

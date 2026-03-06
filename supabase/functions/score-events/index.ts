@@ -21,6 +21,9 @@ interface EventRow {
   image_url: string | null;
   category: string;
   price: number | null;
+  place_id: string;
+  attendee_count?: number;
+  venue_name?: string;
 }
 
 interface ScoreEntry {
@@ -95,7 +98,7 @@ Deno.serve(async (req) => {
 
     let query = supabase
       .from("events")
-      .select("id, title, description, date, start_time, end_time, image_url, category, price")
+      .select("id, title, description, date, start_time, end_time, image_url, category, price, place_id")
       .gte("date", today)
       .order("date", { ascending: true });
 
@@ -120,6 +123,40 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${events.length} events to score`);
 
+    // Fetch attendee counts for all events
+    const eventIds = events.map((e) => e.id);
+    const { data: attendeeCounts } = await supabase
+      .from("event_attendees")
+      .select("event_id")
+      .in("event_id", eventIds);
+
+    const attendeeMap = new Map<string, number>();
+    if (attendeeCounts) {
+      for (const row of attendeeCounts) {
+        attendeeMap.set(row.event_id, (attendeeMap.get(row.event_id) || 0) + 1);
+      }
+    }
+
+    // Fetch venue names for all events
+    const placeIds = [...new Set(events.map((e) => e.place_id).filter(Boolean))];
+    const { data: places } = await supabase
+      .from("places")
+      .select("id, name")
+      .in("id", placeIds);
+
+    const placeMap = new Map<string, string>();
+    if (places) {
+      for (const p of places) {
+        placeMap.set(p.id, p.name);
+      }
+    }
+
+    // Enrich events with attendee counts and venue names
+    for (const event of events as EventRow[]) {
+      event.attendee_count = attendeeMap.get(event.id) || 0;
+      event.venue_name = placeMap.get(event.place_id) || undefined;
+    }
+
     // Batch events into groups of 50
     const BATCH_SIZE = 50;
     const batches: EventRow[][] = [];
@@ -131,10 +168,10 @@ Deno.serve(async (req) => {
 
     // Score a single batch — returns scores in same order as input batch.
     // We use a positional array (no IDs) so Claude can't mangle UUIDs.
-    async function scoreBatch(
+    const scoreBatch = async (
       batch: EventRow[],
       batchIndex: number
-    ): Promise<{ eventId: string; score: number; reason: string }[]> {
+    ): Promise<{ eventId: string; score: number; reason: string }[]> => {
       console.log(
         `Scoring batch ${batchIndex + 1}/${batches.length} (${batch.length} events)`
       );
@@ -143,13 +180,15 @@ Deno.serve(async (req) => {
       const eventsForPrompt = batch.map((e, idx) => ({
         index: idx,
         title: e.title,
-        description: e.description?.substring(0, 300) || "",
+        description: e.description?.substring(0, 200) || "",
         date: e.date,
         startTime: e.start_time,
         endTime: e.end_time,
         hasImage: !!e.image_url,
         category: e.category,
         price: e.price,
+        attendees: e.attendee_count || 0,
+        venue: e.venue_name || null,
       }));
 
       const response = await anthropic.messages.create({
@@ -158,19 +197,30 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: "user",
-            content: `You are scoring Wellington, New Zealand events for a local discovery app. Score each event from 0-100 based on how appealing and worth attending it would be for a typical Wellington resident.
+            content: `You are scoring Wellington, New Zealand events for a local discovery app. Score each event from 0-100 based on how popular and broadly appealing it would be. Focus on predicting which events will draw the most people.
 
-Scoring criteria:
-- Title clarity and appeal: Is it descriptive? Intriguing? (0-15 points)
-- Description quality: Is it well-written and informative? (0-15 points)
-- Has image: Events with images are more engaging (+10 points if true)
-- Category appeal: Some categories (music, food, cultural) tend to draw more interest (0-10 points)
-- Price value: Free events or reasonably priced events score higher (0-10 points)
-- Time appeal: Evening and weekend events tend to be more popular (0-10 points)
-- Uniqueness: One-off special events score higher than routine/recurring ones (0-15 points)
-- Overall "would someone want to attend this?": General gut feeling (0-15 points)
+USE THE FULL 0-100 RANGE. Most events should score between 20-60. Only truly exceptional events should score 80+. Boring or niche events should score below 30.
 
-Here are the events to score:
+Score calibration examples (do not output these, just use as reference):
+- 95-100: Major city-wide events (e.g. Wellington sevens, Matariki festival, major civic openings/reopenings, NZ International Arts Festival)
+- 80-94: Popular headline acts, big food/music festivals, major comedy shows, significant cultural events
+- 60-79: Good local gigs, popular markets, well-known venue events, interesting community events
+- 40-59: Average events — regular pub gigs, standard workshops, recurring meetups
+- 20-39: Niche interest — small group meetings, internal org events, specialized classes
+- 0-19: Very low appeal — admin meetings, private functions listed publicly
+
+Scoring factors (by importance):
+1. Event type & broad appeal (most important): City-wide events, major openings/launches, festivals, headline concerts, and large-scale community events score highest. Regular weekly events, niche workshops, or small org meetings score low.
+2. Attendee count: Real popularity signal. 10+ is good, 50+ is very popular, 100+ is a major event.
+3. Venue & scale: Well-known Wellington venues (San Fran, Meow, Te Papa, TSB Arena, Michael Fowler Centre, Valhalla, BATS) suggest bigger events.
+4. Uniqueness: One-off special events (festivals, launches, headline acts, openings) score much higher than routine recurring ones (weekly trivia, regular classes).
+5. Price: Free or low-cost events appeal to more people.
+6. Has image: +5 if true.
+7. Timing: Evening/weekend events slightly preferred.
+
+DO NOT score based on description quality or writing style.
+
+Events to score:
 
 ${JSON.stringify(eventsForPrompt, null, 2)}
 
