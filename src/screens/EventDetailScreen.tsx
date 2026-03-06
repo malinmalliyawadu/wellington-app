@@ -4,7 +4,6 @@ import React, {
   useMemo,
   useRef,
   useState,
-  useEffect,
 } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -15,6 +14,8 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  Linking,
+  Platform,
 } from "react-native";
 import {
   useLocalSearchParams,
@@ -34,9 +35,8 @@ import {
   getEventAttendees,
   toggleAttendance,
   deleteEvent,
-  enrichEventDescription,
-  enrichEventfindaDescription,
 } from "../services/events";
+import Markdown from "react-native-markdown-display";
 import { getPlaceById } from "../services/places";
 import { getProfilesByIds } from "../services/users";
 import { useQuery } from "../hooks/useQuery";
@@ -170,43 +170,7 @@ export function EventDetailScreen() {
     [attendeeProfiles]
   );
 
-  // Enrich Humanitix event descriptions on-demand
-  const [enrichedDescription, setEnrichedDescription] = useState<string | null>(
-    null
-  );
-  useEffect(() => {
-    if (!event?.humanitixUrl) return;
-    // Check if description is a placeholder ("{title} at {venue}")
-    const isPlaceholder =
-      event.description.startsWith(event.title + " at ") &&
-      !event.description.includes("\n") &&
-      event.description.length < 200;
-    if (!isPlaceholder) return;
-
-    let cancelled = false;
-    enrichEventDescription(event.id, event.humanitixUrl!).then((desc) => {
-      if (!cancelled && desc) setEnrichedDescription(desc);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [event?.id, event?.humanitixUrl, event?.description, event?.title]);
-
-  // Enrich Eventfinda event descriptions on-demand
-  useEffect(() => {
-    if (!event?.eventfindaUrl) return;
-    // Eventfinda API truncates descriptions to ~220 chars ending with "..."
-    const isTruncated = event.description.trimEnd().endsWith("...");
-    if (!isTruncated) return;
-
-    let cancelled = false;
-    enrichEventfindaDescription(event.id, event.eventfindaUrl!).then((desc) => {
-      if (!cancelled && desc) setEnrichedDescription(desc);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [event?.id, event?.eventfindaUrl, event?.description]);
+  // AI description is set server-side during event sync
 
   // Refetch when screen comes into focus
   useFocusEffect(
@@ -263,7 +227,26 @@ export function EventDetailScreen() {
     });
   }, [navigation, isOwnEvent]);
 
+  const handleOpenDirections = useCallback(() => {
+    if (!place) return;
+    const { latitude, longitude, name } = place;
+    const label = encodeURIComponent(name);
+    const url = Platform.select({
+      ios: `maps://app?daddr=${latitude},${longitude}&q=${label}`,
+      android: `google.navigation:q=${latitude},${longitude}`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`,
+    });
+    if (url) {
+      Linking.openURL(url).catch(() => {
+        Linking.openURL(
+          `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
+        );
+      });
+    }
+  }, [place]);
+
   const styles = createStyles(colors);
+  const mdStyles = createMarkdownStyles(colors);
 
   if (loading) {
     return (
@@ -324,6 +307,11 @@ export function EventDetailScreen() {
     ? allAttendeeIds.includes(currentUserId)
     : false;
   const categoryColor = CATEGORY_COLORS[event.category];
+  const categoryLabel = CATEGORY_LABELS[event.category];
+  const priceLabel =
+    event.price != null && event.price > 0
+      ? `$${event.price.toFixed(2)}`
+      : "Free";
 
   const sortedAttendees = [...allAttendeeIds]
     .sort((a, b) => {
@@ -350,7 +338,7 @@ export function EventDetailScreen() {
         }}
         ListHeaderComponent={
           <>
-            {/* Hero image area with overlays */}
+            {/* Hero image with category + price pills and title */}
             <View style={styles.heroContainer}>
               {event.imageUrl ? (
                 <Image
@@ -366,7 +354,6 @@ export function EventDetailScreen() {
                 />
               )}
 
-              {/* Bottom gradient for title readability */}
               <LinearGradient
                 colors={["transparent", "rgba(0,0,0,0.7)"]}
                 start={{ x: 0, y: 0.3 }}
@@ -374,103 +361,92 @@ export function EventDetailScreen() {
                 style={styles.heroGradient}
               />
 
-              {/* Title overlaid on bottom */}
-              <Text style={styles.heroTitle} numberOfLines={3}>
-                {event.title}
-              </Text>
+              {/* Pills row + title overlaid at bottom */}
+              <View style={styles.heroOverlay}>
+                <View style={styles.heroPills}>
+                  <View
+                    style={[
+                      styles.heroPill,
+                      { backgroundColor: categoryColor },
+                    ]}
+                  >
+                    <Text style={styles.heroPillText}>{categoryLabel}</Text>
+                  </View>
+                  <Text style={styles.heroPillDot}>·</Text>
+                  <View style={styles.heroPill}>
+                    <Text style={styles.heroPillText}>{priceLabel}</Text>
+                  </View>
+                </View>
+                <Text style={styles.heroTitle} numberOfLines={3}>
+                  {event.title}
+                </Text>
+              </View>
             </View>
 
-            {/* Info section */}
-            <View style={styles.infoSection}>
-              <View style={styles.infoRow}>
+            {/* Date & time block */}
+            <View style={styles.metaSection}>
+              <View style={styles.metaRow}>
                 <SFIcon
                   name="calendar"
                   fallback="calendar"
                   size={18}
                   color={colors.textSecondary}
                 />
-                <Text style={styles.infoText}>{formatDate(event.date)}</Text>
-                <HapticPressable
-                  onPress={() => toggleSave("event", event.id)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  style={styles.shareButton}
-                >
-                  <SFIcon
-                    name={
-                      isSaved("event", event.id) ? "bookmark.fill" : "bookmark"
-                    }
-                    fallback={
-                      isSaved("event", event.id)
-                        ? "bookmark"
-                        : "bookmark-outline"
-                    }
-                    size={20}
-                    color={
-                      isSaved("event", event.id) ? colors.saved : colors.text
-                    }
-                  />
-                </HapticPressable>
-                <HapticPressable
-                  onPress={() => shareEvent(event.id)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  style={styles.shareButton}
-                >
-                  <SFIcon
-                    name="paperplane"
-                    fallback="paper-plane-outline"
-                    size={20}
-                    color={colors.text}
-                  />
-                </HapticPressable>
+                <View>
+                  <Text style={styles.metaPrimary}>
+                    {formatDate(event.date)}
+                  </Text>
+                  <Text style={styles.metaSecondary}>
+                    {formatTime(event.startTime, event.endTime)}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.infoRow}>
-                <SFIcon
-                  name="clock"
-                  fallback="time"
-                  size={18}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.infoText}>
-                  {formatTime(event.startTime, event.endTime)}
-                </Text>
-              </View>
+
+              {/* Location block — tappable */}
               {place && (
-                <View style={styles.infoRow}>
+                <View style={styles.metaRow}>
                   <SFIcon
                     name="mappin"
                     fallback="location"
                     size={18}
                     color={colors.textSecondary}
                   />
-                  <View style={styles.infoLocationContent}>
-                    <Text style={styles.infoText}>{place.name}</Text>
-                    <Text style={styles.addressText}>{place.address}</Text>
+                  <View style={{ flex: 1 }}>
+                    <HapticPressable
+                      onPress={() =>
+                        router.push(`${tabBase}/place/${place.id}` as any)
+                      }
+                    >
+                      <Text style={styles.metaLink}>{place.name}</Text>
+                    </HapticPressable>
+                    <View style={styles.addressRow}>
+                      <Text style={styles.metaSecondary} numberOfLines={1}>
+                        {place.address}
+                      </Text>
+                      <HapticPressable
+                        onPress={handleOpenDirections}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        style={styles.directionsButton}
+                      >
+                        <Text style={styles.directionsText}>Directions</Text>
+                        <SFIcon
+                          name="arrow.right"
+                          fallback="chevron-forward"
+                          size={12}
+                          color={colors.primary}
+                        />
+                      </HapticPressable>
+                    </View>
                   </View>
                 </View>
               )}
-              <View style={styles.infoRow}>
-                <SFIcon
-                  name="dollarsign.circle"
-                  fallback="cash-outline"
-                  size={18}
-                  color={colors.textSecondary}
-                />
-                <Text style={styles.infoText}>
-                  {event.price != null && event.price > 0
-                    ? `$${event.price.toFixed(2)}`
-                    : "Free"}
-                </Text>
-              </View>
             </View>
 
-            <View style={styles.descriptionSection}>
-              <Text style={styles.descriptionText}>
-                {enrichedDescription ?? event.description}
-              </Text>
-            </View>
+            <View style={styles.divider} />
 
-            {currentUserId && (
-              <View style={styles.goingButtonContainer}>
+            {/* Primary CTAs */}
+            <View style={styles.ctaSection}>
+              {currentUserId && (
                 <LiquidGlassButton
                   title="I'm going"
                   icon={
@@ -512,16 +488,24 @@ export function EventDetailScreen() {
                     }
                   }}
                 />
-              </View>
-            )}
+              )}
+              {event.ticketUrl && (
+                <LiquidGlassButton
+                  title="Get Tickets"
+                  icon="ticket-outline"
+                  variant="secondary"
+                  fullWidth
+                  onPress={() => {
+                    WebBrowser.openBrowserAsync(event.ticketUrl!);
+                  }}
+                />
+              )}
+            </View>
 
-            <View style={styles.actionButtons}>
-              <LiquidGlassButton
-                title="Add to Calendar"
-                icon="calendar-outline"
-                variant="secondary"
-                size="medium"
-                style={styles.calendarButton}
+            {/* Utility icon row */}
+            <View style={styles.utilityRow}>
+              <HapticPressable
+                style={styles.utilityItem}
                 onPress={async () => {
                   const success = await addToCalendar({
                     title: event.title,
@@ -538,23 +522,98 @@ export function EventDetailScreen() {
                     );
                   }
                 }}
-              />
-              {event.ticketUrl && (
-                <LiquidGlassButton
-                  title="Get Tickets"
-                  icon="ticket-outline"
-                  size="medium"
-                  style={styles.ticketButton}
-                  onPress={() => {
-                    WebBrowser.openBrowserAsync(event.ticketUrl!);
-                  }}
+              >
+                <SFIcon
+                  name="calendar.badge.plus"
+                  fallback="calendar-outline"
+                  size={22}
+                  color={colors.text}
                 />
+                <Text style={styles.utilityLabel}>Cal</Text>
+              </HapticPressable>
+
+              <HapticPressable
+                style={styles.utilityItem}
+                onPress={() => toggleSave("event", event.id)}
+              >
+                <SFIcon
+                  name={
+                    isSaved("event", event.id) ? "bookmark.fill" : "bookmark"
+                  }
+                  fallback={
+                    isSaved("event", event.id)
+                      ? "bookmark"
+                      : "bookmark-outline"
+                  }
+                  size={22}
+                  color={
+                    isSaved("event", event.id) ? colors.saved : colors.text
+                  }
+                />
+                <Text style={styles.utilityLabel}>Save</Text>
+              </HapticPressable>
+
+              <HapticPressable
+                style={styles.utilityItem}
+                onPress={() => shareEvent(event.id)}
+              >
+                <SFIcon
+                  name="paperplane"
+                  fallback="paper-plane-outline"
+                  size={22}
+                  color={colors.text}
+                />
+                <Text style={styles.utilityLabel}>Share</Text>
+              </HapticPressable>
+
+              <HapticPressable
+                style={styles.utilityItem}
+                onPress={() => {
+                  // Dismiss any sheets/modals first so AI chat opens full-screen
+                  router.dismissAll();
+                  router.push({
+                    pathname: `${tabBase}/ai-chat` as any,
+                    params: {
+                      eventTitle: event.title,
+                      eventImageUrl: event.imageUrl ?? undefined,
+                    },
+                  });
+                }}
+              >
+                <SFIcon
+                  name="sparkles"
+                  fallback="sparkles-outline"
+                  size={22}
+                  color={colors.text}
+                />
+                <Text style={styles.utilityLabel}>Ask AI</Text>
+              </HapticPressable>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* About section */}
+            <View style={styles.aboutSection}>
+              <Text style={styles.sectionTitle}>About</Text>
+              {event.aiDescription ? (
+                <Markdown style={mdStyles}>{event.aiDescription}</Markdown>
+              ) : (
+                <Text style={styles.descriptionText}>
+                  {event.description}
+                </Text>
               )}
             </View>
 
+            <View style={styles.divider} />
+
+            {/* Attendees header */}
             <View style={styles.attendeesHeader}>
-              <Text style={styles.sectionTitle}>Who&apos;s going</Text>
-              <Text style={styles.attendeeCount}>{allAttendeeIds.length}</Text>
+              <Text style={styles.sectionTitle}>
+                Who&apos;s going{" "}
+                <Text style={styles.attendeeCount}>
+                  · {allAttendeeIds.length}
+                </Text>
+              </Text>
             </View>
           </>
         }
@@ -613,11 +672,35 @@ const createStyles = (colors: Colors) =>
       right: 0,
       height: "65%",
     },
-    heroTitle: {
+    heroOverlay: {
       position: "absolute",
-      bottom: 20,
-      left: 20,
-      right: 20,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: 20,
+    },
+    heroPills: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 6,
+      marginBottom: 8,
+    },
+    heroPill: {
+      backgroundColor: "rgba(0,0,0,0.5)",
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+    },
+    heroPillText: {
+      fontSize: 13,
+      fontFamily: fonts.semiBold,
+      color: "#FFFFFF",
+    },
+    heroPillDot: {
+      fontSize: 16,
+      color: "rgba(255,255,255,0.7)",
+    },
+    heroTitle: {
       fontSize: 26,
       fontFamily: fonts.bold,
       color: "#FFFFFF",
@@ -625,64 +708,85 @@ const createStyles = (colors: Colors) =>
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 4,
     },
-    // Info section
-    infoSection: {
+    // Meta info (date/time, location)
+    metaSection: {
       padding: 20,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.gray200,
-      gap: 12,
+      gap: 16,
     },
-    infoRow: {
+    metaRow: {
       flexDirection: "row",
       alignItems: "flex-start",
       gap: 10,
     },
-    infoText: {
+    metaPrimary: {
       fontSize: 15,
+      fontFamily: fonts.semiBold,
       color: colors.text,
-      flex: 1,
     },
-    infoLocationContent: {
-      flex: 1,
-    },
-    shareButton: {
-      padding: 4,
-    },
-    addressText: {
-      fontSize: 13,
+    metaSecondary: {
+      fontSize: 14,
       color: colors.textSecondary,
       marginTop: 2,
     },
-    descriptionSection: {
+    metaLink: {
+      fontSize: 15,
+      fontFamily: fonts.semiBold,
+      color: colors.primary,
+    },
+    addressRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      marginTop: 2,
+    },
+    directionsButton: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 3,
+    },
+    directionsText: {
+      fontSize: 14,
+      fontFamily: fonts.medium,
+      color: colors.primary,
+    },
+    divider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: colors.gray200,
+      marginHorizontal: 20,
+    },
+    // CTA buttons
+    ctaSection: {
+      paddingHorizontal: 20,
+      paddingTop: 16,
+      gap: 10,
+    },
+    // Utility icon row
+    utilityRow: {
+      flexDirection: "row",
+      justifyContent: "center",
+      gap: 32,
+      paddingVertical: 16,
+    },
+    utilityItem: {
+      alignItems: "center",
+      gap: 4,
+    },
+    utilityLabel: {
+      fontSize: 11,
+      fontFamily: fonts.medium,
+      color: colors.textSecondary,
+    },
+    // About section
+    aboutSection: {
       padding: 20,
+      gap: 12,
     },
     descriptionText: {
       fontSize: 15,
       color: colors.textSecondary,
       lineHeight: 22,
     },
-    goingButtonContainer: {
-      paddingHorizontal: 20,
-      paddingBottom: 12,
-    },
-    actionButtons: {
-      flexDirection: "row",
-      gap: 12,
-      paddingHorizontal: 20,
-      paddingBottom: 20,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.gray200,
-    },
-    calendarButton: {
-      flex: 1,
-    },
-    ticketButton: {
-      flex: 1,
-    },
     attendeesHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "space-between",
       paddingHorizontal: 20,
       paddingVertical: 16,
       borderBottomWidth: StyleSheet.hairlineWidth,
@@ -694,9 +798,8 @@ const createStyles = (colors: Colors) =>
       color: colors.text,
     },
     attendeeCount: {
-      fontSize: 15,
+      fontSize: 16,
       color: colors.textSecondary,
-      fontWeight: "500",
       fontFamily: fonts.medium,
     },
     attendeeRow: {
@@ -743,5 +846,55 @@ const createStyles = (colors: Colors) =>
     emptyText: {
       fontSize: 15,
       color: colors.textMuted,
+    },
+  });
+
+const createMarkdownStyles = (colors: Colors) =>
+  StyleSheet.create({
+    body: {
+      fontSize: 15,
+      fontFamily: fonts.medium,
+      color: colors.textSecondary,
+      lineHeight: 22,
+    },
+    heading1: {
+      fontSize: 20,
+      fontFamily: fonts.bold,
+      color: colors.text,
+      marginTop: 20,
+      marginBottom: 8,
+    },
+    heading2: {
+      fontSize: 18,
+      fontFamily: fonts.bold,
+      color: colors.text,
+      marginTop: 18,
+      marginBottom: 6,
+    },
+    heading3: {
+      fontSize: 16,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+      marginTop: 16,
+      marginBottom: 4,
+    },
+    strong: {
+      fontFamily: fonts.bold,
+    },
+    em: {
+      fontStyle: "italic",
+    },
+    bullet_list: {
+      marginVertical: 4,
+    },
+    ordered_list: {
+      marginVertical: 4,
+    },
+    list_item: {
+      marginVertical: 2,
+    },
+    paragraph: {
+      marginTop: 0,
+      marginBottom: 14,
     },
   });

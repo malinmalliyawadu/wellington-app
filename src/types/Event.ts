@@ -18,4 +18,5 @@ export interface Event {
   ticketmasterUrl?: string;
   humanitixUrl?: string;
   aiScore?: number | null;
+  aiDescription?: string | null;
 }

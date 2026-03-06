@@ -9,6 +9,7 @@ import {
   View,
   Text,
   TextInput,
+  Image,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
@@ -26,7 +27,7 @@ import Animated, {
   FadeOut,
 } from "react-native-reanimated";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useRouter, useNavigation, usePathname } from "expo-router";
+import { useRouter, useNavigation, usePathname, useLocalSearchParams } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../context/AuthContext";
@@ -286,6 +287,29 @@ function WellyHero({ colors, userName }: { colors: Colors; userName?: string }) 
   );
 }
 
+function EventChatHero({ colors, eventTitle, eventImageUrl }: { colors: Colors; eventTitle: string; eventImageUrl?: string }) {
+  return (
+    <View style={heroStyles.container}>
+      {eventImageUrl ? (
+        <Image
+          source={{ uri: eventImageUrl }}
+          style={heroStyles.eventImage}
+        />
+      ) : (
+        <View style={[heroStyles.eventImagePlaceholder, { backgroundColor: colors.primary + "15" }]}>
+          <SFIcon name="calendar" fallback="calendar" size={32} color={colors.primary} />
+        </View>
+      )}
+      <Text style={[heroStyles.eventTitle, { color: colors.text }]} numberOfLines={2}>
+        {eventTitle}
+      </Text>
+      <Text style={[heroStyles.subtitle, { color: colors.textSecondary }]}>
+        Ask anything about this event
+      </Text>
+    </View>
+  );
+}
+
 const heroStyles = StyleSheet.create({
   container: {
     alignItems: "center",
@@ -328,6 +352,25 @@ const heroStyles = StyleSheet.create({
     fontFamily: fonts.medium,
     marginTop: 2,
   },
+  eventTitle: {
+    fontSize: 20,
+    fontFamily: fonts.bold,
+    textAlign: "center",
+    marginTop: 12,
+    paddingHorizontal: 20,
+  },
+  eventImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 16,
+  },
+  eventImagePlaceholder: {
+    width: 120,
+    height: 120,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });
 
 
@@ -338,6 +381,7 @@ export function AIChatScreen() {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   const { location: userLocation } = useLocation();
+  const { eventTitle, eventImageUrl } = useLocalSearchParams<{ eventTitle?: string; eventImageUrl?: string }>();
   const styles = createStyles(colors);
   const mdStyles = createMarkdownStyles(colors);
 
@@ -429,6 +473,13 @@ export function AIChatScreen() {
       scrollToBottom();
     }
   }, [isHistoryLoaded]);
+
+  // When opened with event context, clear chat history for a fresh conversation
+  useEffect(() => {
+    if (!isHistoryLoaded || !eventTitle) return;
+    setMessages([]);
+    AsyncStorage.removeItem(CHAT_STORAGE_KEY).catch(() => {});
+  }, [isHistoryLoaded, eventTitle]);
 
   const navigation = useNavigation();
   const hasMessages = messages.length > 0;
@@ -523,6 +574,7 @@ export function AIChatScreen() {
             userName: profile?.displayName,
             userId: profile?.id ?? "",
             userLocation,
+            eventContext: eventTitle ? { title: eventTitle } : undefined,
           },
           {
             onTextChunk: (text) => {
@@ -703,7 +755,7 @@ export function AIChatScreen() {
           scrollViewHeight.current = e.nativeEvent.layout.height;
         }}
       >
-        {!hasMessages && (
+        {!hasMessages && !eventTitle && (
           <View style={styles.idleContainer}>
             <WellyHero colors={colors} userName={profile?.displayName} />
             <View style={styles.chipsContainer}>
@@ -717,6 +769,30 @@ export function AIChatScreen() {
                     {chip.emoji} {chip.label}
                   </Text>
                   <Text style={styles.chipDescription}>{chip.description}</Text>
+                </HapticPressable>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {!hasMessages && eventTitle && (
+          <View style={styles.idleContainer}>
+            <EventChatHero colors={colors} eventTitle={eventTitle} eventImageUrl={eventImageUrl} />
+            <View style={styles.chipsContainer}>
+              {[
+                { label: "What to expect", emoji: "🎯", question: `What can I expect at ${eventTitle}?` },
+                { label: "Food nearby", emoji: "🍽️", question: `Where should I eat near ${eventTitle}?` },
+                { label: "Getting there", emoji: "🚶", question: `How do I get to ${eventTitle}?` },
+                { label: "Similar events", emoji: "🎉", question: `What other events are similar to ${eventTitle}?` },
+              ].map((chip) => (
+                <HapticPressable
+                  key={chip.label}
+                  style={styles.chip}
+                  onPress={() => handleChipPress(chip.question)}
+                >
+                  <Text style={styles.chipLabel}>
+                    {chip.emoji} {chip.label}
+                  </Text>
                 </HapticPressable>
               ))}
             </View>
@@ -888,7 +964,11 @@ export function AIChatScreen() {
           ref={inputRef}
           style={styles.textInput}
           placeholder={
-            hasMessages ? "Reply..." : "Ask me anything about Wellington..."
+            hasMessages
+              ? "Reply..."
+              : eventTitle
+                ? `Ask about ${eventTitle}...`
+                : "Ask me anything about Wellington..."
           }
           placeholderTextColor={colors.textMuted}
           value={inputText}

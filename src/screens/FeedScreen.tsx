@@ -243,7 +243,7 @@ export function FeedScreen() {
       return (
         <View style={styles.footerContainer}>
           <SFIcon name="checkmark.circle.fill" fallback="checkmark-circle" size={28} color={colors.gray300} />
-          <Text style={styles.footerText}>You're all caught up</Text>
+          <Text style={styles.footerText}>You&apos;re all caught up</Text>
         </View>
       );
     }
