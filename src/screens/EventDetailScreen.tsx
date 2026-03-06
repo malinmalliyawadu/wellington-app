@@ -24,6 +24,7 @@ import {
   usePathname,
   useFocusEffect,
 } from "expo-router";
+import MapView, { Marker } from "react-native-maps";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { SFIcon } from "../components/SFIcon";
@@ -440,6 +441,7 @@ export function EventDetailScreen() {
                   </View>
                 </View>
               )}
+
             </View>
 
             <View style={styles.divider} />
@@ -644,6 +646,41 @@ export function EventDetailScreen() {
             <Text style={styles.emptyText}>No attendees yet</Text>
           </View>
         }
+        ListFooterComponent={
+          place ? (
+            <View style={styles.mapSection}>
+              <Text style={styles.sectionTitle}>Location</Text>
+              <HapticPressable
+                onPress={handleOpenDirections}
+                style={styles.mapContainer}
+              >
+                <MapView
+                  style={styles.miniMap}
+                  initialRegion={{
+                    latitude: place.latitude,
+                    longitude: place.longitude,
+                    latitudeDelta: 0.005,
+                    longitudeDelta: 0.005,
+                  }}
+                  scrollEnabled={false}
+                  zoomEnabled={false}
+                  rotateEnabled={false}
+                  pitchEnabled={false}
+                  pointerEvents="none"
+                >
+                  <Marker
+                    coordinate={{
+                      latitude: place.latitude,
+                      longitude: place.longitude,
+                    }}
+                  />
+                </MapView>
+              </HapticPressable>
+              <Text style={styles.mapPlaceName}>{place.name}</Text>
+              <Text style={styles.mapAddress}>{place.address}</Text>
+            </View>
+          ) : null
+        }
       />
     </View>
   );
@@ -748,6 +785,26 @@ const createStyles = (colors: Colors) =>
       fontSize: 14,
       fontFamily: fonts.medium,
       color: colors.primary,
+    },
+    mapSection: {
+      padding: 20,
+      gap: 8,
+    },
+    mapContainer: {
+      borderRadius: 12,
+      overflow: "hidden",
+    },
+    miniMap: {
+      height: 180,
+    },
+    mapPlaceName: {
+      fontSize: 15,
+      fontFamily: fonts.semiBold,
+      color: colors.text,
+    },
+    mapAddress: {
+      fontSize: 14,
+      color: colors.textSecondary,
     },
     divider: {
       height: StyleSheet.hairlineWidth,

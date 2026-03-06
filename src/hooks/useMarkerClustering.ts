@@ -58,6 +58,8 @@ interface UseMarkerClusteringParams {
   trails: Trail[] | null | undefined;
   showTrails: boolean;
   zoom: number;
+  /** When set, trail markers are never clustered (prevents zoom-to-fit triggering clusters). */
+  activeTrailId?: string | null;
 }
 
 export function useMarkerClustering({
@@ -65,6 +67,7 @@ export function useMarkerClustering({
   trails,
   showTrails,
   zoom,
+  activeTrailId,
 }: UseMarkerClusteringParams) {
   // Group places by category and build per-category supercluster indices
   const indices = useMemo(() => {
@@ -90,7 +93,9 @@ export function useMarkerClustering({
     }
 
     // Add trail trailheads as "trail" category points
-    if (showTrails && trails) {
+    // Skip clustering trails entirely when a trail is active (zoom-to-fit
+    // can lower the zoom level enough to trigger unwanted clustering).
+    if (showTrails && trails && !activeTrailId) {
       const trailFeatures = byCategory.get("trail") ?? [];
       for (const trail of trails) {
         trailFeatures.push({
@@ -124,7 +129,7 @@ export function useMarkerClustering({
       result.set(category, index);
     }
     return result;
-  }, [filteredPlaces, trails, showTrails]);
+  }, [filteredPlaces, trails, showTrails, activeTrailId]);
 
   // Build lookup maps for quick access
   const placeMap = useMemo(() => {
@@ -221,9 +226,17 @@ export function useMarkerClustering({
         ? placeItems
         : placeItems.slice(0, MAX_PLACE_MARKERS);
 
+    // When a trail is active, trails were excluded from supercluster indices,
+    // so emit them all as individual unclustered items.
+    if (activeTrailId && showTrails && trails) {
+      for (const trail of trails) {
+        clusterItems.push({ kind: "trail", trail });
+      }
+    }
+
     const items: MapItem[] = [...clusterItems, ...cappedPlaces];
     return { mapItems: items, clusteredTrailIds: clusteredTrails };
-  }, [indices, zoom, placeMap, trailMap]);
+  }, [indices, zoom, placeMap, trailMap, activeTrailId, showTrails, trails]);
 
   return result;
 }

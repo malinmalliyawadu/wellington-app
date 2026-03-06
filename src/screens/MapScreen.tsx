@@ -148,6 +148,7 @@ export function MapScreen() {
     trails: filteredTrails,
     showTrails,
     zoom: currentZoom,
+    activeTrailId,
   });
 
   const { getMarkerScale, animateMarkerAppear, animateMarkerPress, pruneMarkers } =
