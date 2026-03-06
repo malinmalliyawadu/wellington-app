@@ -11,14 +11,12 @@ import {
   View,
   Text,
   ScrollView,
-  StyleSheet,
   ActivityIndicator,
   TextInput,
   Keyboard,
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Modal,
 } from "react-native";
 import { Image } from "expo-image";
 import {
@@ -32,9 +30,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { SFIcon } from "../components/SFIcon";
 import { QueryErrorState } from "../components/QueryErrorState";
-import { LinearGradient } from "expo-linear-gradient";
-import Animated from "react-native-reanimated";
-import { TapGestureHandler, State } from "react-native-gesture-handler";
 import {
   getPostById as getPostByIdAsync,
   updatePost,
@@ -46,17 +41,12 @@ import {
   getCommentsByPostId as getCommentsAsync,
   createComment,
   updateComment,
-  deleteComment,
 } from "../services/comments";
 import { useQuery } from "../hooks/useQuery";
 import { useDoubleTapLike } from "../hooks/useDoubleTapLike";
 import { useAuth } from "../context/AuthContext";
 import { getPostMediaItems } from "../utils/postMedia";
-import { VideoPlayer } from "../components/VideoPlayer";
-import { MediaCarousel } from "../components/MediaCarousel";
-import { ZoomableImage } from "../components/ZoomableImage";
-import { useTheme, type Colors } from "../theme/ThemeContext";
-import { fonts } from "../theme/fonts";
+import { useTheme } from "../theme/ThemeContext";
 import { sharePost } from "../utils/sharing";
 import { useSave } from "../context/SaveContext";
 import { usePoints } from "../context/PointsContext";
@@ -68,19 +58,13 @@ import { HashtagText } from "../components/HashtagText";
 import { useReport } from "../hooks/useReport";
 import { detectMentionAtCursor, extractMentions } from "../utils/mentions";
 import { useMentionSuggestions } from "../hooks/useMentionSuggestions";
-import { MentionSuggestions } from "../components/create/MentionSuggestions";
-
-function formatTimeAgo(dateString: string): string {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffDays > 0) return `${diffDays}d ago`;
-  if (diffHours > 0) return `${diffHours}h ago`;
-  return "Just now";
-}
+import { formatTimeAgo } from "./post-detail/formatTimeAgo";
+import { createStyles } from "./post-detail/postDetailStyles";
+import { PostMediaSection } from "./post-detail/PostMediaSection";
+import { PostActions } from "./post-detail/PostActions";
+import { CommentSection } from "./post-detail/CommentSection";
+import { CommentInputBar } from "./post-detail/CommentInputBar";
+import { EditCaptionModal } from "./post-detail/EditCaptionModal";
 
 export function PostDetailScreen() {
   const { colors } = useTheme();
@@ -284,7 +268,6 @@ export function PostDetailScreen() {
     : colors.gray400;
   const mediaItems = getPostMediaItems(post);
   const hasMedia = mediaItems.length > 0;
-  const isMultiMedia = mediaItems.length > 1;
 
   const currentTab = pathname.startsWith("/feed")
     ? "/feed"
@@ -355,6 +338,12 @@ export function PostDetailScreen() {
     if (width && height) {
       setAspectRatio(width / height);
     }
+  };
+
+  const handleEditComment = (commentId: string, text: string) => {
+    setEditingCommentId(commentId);
+    setCommentText(text);
+    inputRef.current?.focus();
   };
 
   onEditRef.current = () => {
@@ -446,145 +435,43 @@ export function PostDetailScreen() {
 
         {/* Media with overlaid header + double-tap to like */}
         {hasMedia && (
-          <TapGestureHandler
-            ref={doubleTapRef}
-            numberOfTaps={2}
-            onHandlerStateChange={({ nativeEvent }) => {
-              if (nativeEvent.state === State.ACTIVE) {
-                handleDoubleTap();
-              }
-            }}
-          >
-            <View>
-              {isMultiMedia ? (
-                <MediaCarousel
-                  mediaItems={mediaItems}
-                  aspectRatio={aspectRatio}
-                  onAspectRatioChange={setAspectRatio}
-                  videoMuted={false}
-                  videoControls
-                />
-              ) : post.type === "video" ? (
-                <VideoPlayer
-                  uri={mediaItems[0].mediaUrl}
-                  style={[styles.media, { aspectRatio }]}
-                  shouldPlay
-                  useNativeControls
-                  onLoad={handleVideoLoad}
-                />
-              ) : (
-                <ZoomableImage
-                  source={{ uri: mediaItems[0].mediaUrl }}
-                  style={[styles.media, { aspectRatio }]}
-                  onLoad={handleImageLoad}
-                />
-              )}
-              <LinearGradient
-                colors={["rgba(0,0,0,0.55)", "rgba(0,0,0,0.05)", "transparent"]}
-                locations={[0, 0.6, 0.7]}
-                style={styles.headerOverlay}
-              >
-                <HapticPressable
-                  style={styles.overlaidHeaderUser}
-                  onPress={() => handlePressUser(post.userId)}
-                >
-                  <Image
-                    source={{ uri: user?.avatarUrl }}
-                    style={styles.overlaidAvatar}
-                    contentFit="cover"
-                    transition={200}
-                  />
-                  <View style={styles.headerText}>
-                    <Text style={styles.overlaidDisplayName}>
-                      {user?.displayName ?? "Unknown"}
-                    </Text>
-                    <Text style={styles.overlaidUsername}>
-                      @{user?.username ?? "unknown"}
-                    </Text>
-                  </View>
-                </HapticPressable>
-                <Text style={styles.overlaidTimeAgo}>
-                  {formatTimeAgo(post.createdAt)}
-                </Text>
-              </LinearGradient>
-              {/* Double-tap heart overlay */}
-              <Animated.View
-                style={[styles.heartOverlay, heartOverlayStyle]}
-                pointerEvents="none"
-              >
-                <SFIcon
-                  name="heart.fill"
-                  fallback="heart"
-                  size={80}
-                  color="#FFFFFF"
-                />
-              </Animated.View>
-            </View>
-          </TapGestureHandler>
+          <PostMediaSection
+            post={post}
+            user={user}
+            mediaItems={mediaItems}
+            aspectRatio={aspectRatio}
+            onAspectRatioChange={setAspectRatio}
+            onImageLoad={handleImageLoad}
+            onVideoLoad={handleVideoLoad}
+            onPressUser={handlePressUser}
+            doubleTapRef={doubleTapRef}
+            handleDoubleTap={handleDoubleTap}
+            heartOverlayStyle={heartOverlayStyle}
+            styles={styles}
+          />
         )}
 
-        {/* Actions row */}
-        <View style={styles.actions}>
-          <View style={styles.actionsLeft}>
-            <HapticPressable style={styles.actionButton} onPress={handleLike}>
-              <Animated.View style={likeAnimatedStyle}>
-                <SFIcon
-                  name={liked ? "heart.fill" : "heart"}
-                  fallback={liked ? "heart" : "heart-outline"}
-                  size={26}
-                  color={liked ? colors.liked : colors.text}
-                />
-              </Animated.View>
-            </HapticPressable>
-            <HapticPressable
-              style={styles.actionButton}
-              onPress={() => inputRef.current?.focus()}
-            >
-              <SFIcon
-                name="bubble.left"
-                fallback="chatbubble-outline"
-                size={24}
-                color={colors.text}
-              />
-            </HapticPressable>
-            <HapticPressable
-              style={styles.actionButton}
-              onPress={() => sharePost(post.id)}
-            >
-              <SFIcon
-                name="paperplane"
-                fallback="paper-plane-outline"
-                size={24}
-                color={colors.text}
-              />
-            </HapticPressable>
-          </View>
-          <HapticPressable
-            onPress={() => toggleSave("post", postId)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <SFIcon
-              name={saved ? "bookmark.fill" : "bookmark"}
-              fallback={saved ? "bookmark" : "bookmark-outline"}
-              size={24}
-              color={saved ? colors.saved : colors.text}
-            />
-          </HapticPressable>
-        </View>
-
-        {/* Like count */}
-        <HapticPressable
-          onPress={() =>
+        {/* Actions + Like count */}
+        <PostActions
+          liked={liked}
+          likeCount={likeCount}
+          saved={saved}
+          likeAnimatedStyle={likeAnimatedStyle}
+          postId={post.id}
+          currentTab={currentTab}
+          onLike={handleLike}
+          onFocusComment={() => inputRef.current?.focus()}
+          onShare={() => sharePost(post.id)}
+          onToggleSave={() => toggleSave("post", postId)}
+          onPressLikeCount={() =>
             router.push({
               pathname: `${currentTab}/likes` as any,
               params: { postId: post.id },
             })
           }
-        >
-          <Text style={styles.likeCount}>
-            {likeCount} {likeCount === 1 ? "like" : "likes"}
-          </Text>
-        </HapticPressable>
+          colors={colors}
+          styles={styles}
+        />
 
         {/* Caption */}
         <View style={styles.captionRow}>
@@ -622,474 +509,53 @@ export function PostDetailScreen() {
         )}
 
         {/* Comments */}
-        {allComments.length > 0 && (
-          <View style={styles.commentsSection}>
-            {allComments.map((comment) => {
-              const commentUser = commentUserMap.get(comment.userId);
-              const isOwn = comment.userId === profile?.id;
-              return (
-                <View key={comment.id} style={styles.commentRow}>
-                  <HapticPressable
-                    onPress={() => handlePressUser(comment.userId)}
-                  >
-                    <Image
-                      source={{ uri: commentUser?.avatarUrl }}
-                      style={styles.commentAvatar}
-                      contentFit="cover"
-                      transition={200}
-                    />
-                  </HapticPressable>
-                  <View style={styles.commentContent}>
-                    <Text style={styles.commentText}>
-                      <Text style={styles.commentAuthor}>
-                        {commentUser?.displayName ?? "Unknown"}
-                      </Text>
-                      <Text style={styles.commentTime}>
-                        {" "}
-                        {formatTimeAgo(comment.createdAt)}
-                      </Text>
-                    </Text>
-                    <HashtagText
-                      style={styles.commentBody}
-                      onPressHashtag={(tag) =>
-                        router.push(`${currentTab}/hashtag/${tag}` as any)
-                      }
-                      onPressMention={handlePressMention}
-                    >
-                      {comment.text}
-                    </HashtagText>
-                    {isOwn && (
-                      <View style={styles.commentActions}>
-                        <HapticPressable
-                          onPress={() => {
-                            setEditingCommentId(comment.id);
-                            setCommentText(comment.text);
-                            inputRef.current?.focus();
-                          }}
-                        >
-                          <Text style={styles.commentActionText}>Edit</Text>
-                        </HapticPressable>
-                        <HapticPressable
-                          onPress={() => {
-                            Alert.alert(
-                              "Delete comment?",
-                              "This cannot be undone.",
-                              [
-                                { text: "Cancel", style: "cancel" },
-                                {
-                                  text: "Delete",
-                                  style: "destructive",
-                                  onPress: async () => {
-                                    try {
-                                      await deleteComment(comment.id);
-                                      queryClient.invalidateQueries({
-                                        queryKey: ["q", ["comments", post.id]],
-                                      });
-                                    } catch {}
-                                  },
-                                },
-                              ]
-                            );
-                          }}
-                        >
-                          <Text
-                            style={[
-                              styles.commentActionText,
-                              { color: colors.liked },
-                            ]}
-                          >
-                            Delete
-                          </Text>
-                        </HapticPressable>
-                      </View>
-                    )}
-                  </View>
-                </View>
-              );
-            })}
-          </View>
-        )}
+        <CommentSection
+          comments={allComments}
+          commentUserMap={commentUserMap}
+          profileId={profile?.id}
+          currentTab={currentTab}
+          router={router}
+          queryClient={queryClient}
+          postId={post.id}
+          onPressUser={handlePressUser}
+          onPressMention={handlePressMention}
+          onEditComment={handleEditComment}
+          colors={colors}
+          styles={styles}
+        />
       </ScrollView>
 
-      {/* Mention suggestions above input bar */}
-      {commentMentionSuggestions.length > 0 && (
-        <View style={{ paddingHorizontal: 12 }}>
-          <MentionSuggestions
-            suggestions={commentMentionSuggestions}
-            onSelect={insertCommentMention}
-          />
-        </View>
-      )}
+      {/* Mention suggestions + Comment input bar */}
+      <CommentInputBar
+        inputRef={inputRef}
+        commentText={commentText}
+        editingCommentId={editingCommentId}
+        inputFocused={inputFocused}
+        bottomInset={insets.bottom}
+        mentionSuggestions={commentMentionSuggestions}
+        onChangeText={setCommentText}
+        onSelectionChange={(e) =>
+          setCommentCursorPosition(e.nativeEvent.selection.end)
+        }
+        onFocus={() => setInputFocused(true)}
+        onBlur={() => setInputFocused(false)}
+        onSubmit={handleSubmitComment}
+        onCancelEdit={handleCancelEdit}
+        onSelectMention={insertCommentMention}
+        colors={colors}
+        styles={styles}
+      />
 
-      {/* Comment input bar */}
-      <View
-        style={[
-          styles.inputBar,
-          { paddingBottom: inputFocused ? 8 : insets.bottom + 60 },
-        ]}
-      >
-        {editingCommentId && (
-          <HapticPressable
-            onPress={handleCancelEdit}
-            style={styles.cancelButton}
-          >
-            <SFIcon
-              name="xmark.circle.fill"
-              fallback="close-circle"
-              size={22}
-              color={colors.textMuted}
-            />
-          </HapticPressable>
-        )}
-        <TextInput
-          ref={inputRef}
-          style={styles.commentInput}
-          placeholder={
-            editingCommentId ? "Edit comment..." : "Add a comment..."
-          }
-          placeholderTextColor={colors.textMuted}
-          value={commentText}
-          onChangeText={setCommentText}
-          onSelectionChange={(e) =>
-            setCommentCursorPosition(e.nativeEvent.selection.end)
-          }
-          onFocus={() => setInputFocused(true)}
-          onBlur={() => setInputFocused(false)}
-          onSubmitEditing={handleSubmitComment}
-          returnKeyType="send"
-        />
-        <HapticPressable
-          onPress={handleSubmitComment}
-          disabled={!commentText.trim()}
-          style={styles.sendButton}
-        >
-          <SFIcon
-            name={
-              editingCommentId ? "checkmark.circle.fill" : "paperplane.fill"
-            }
-            fallback={editingCommentId ? "checkmark-circle" : "send"}
-            size={22}
-            color={commentText.trim() ? colors.primary : colors.gray300}
-          />
-        </HapticPressable>
-      </View>
       {/* Edit caption modal */}
-      <Modal
+      <EditCaptionModal
         visible={editModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setEditModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit caption</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={editContent}
-              onChangeText={setEditContent}
-              multiline
-              autoFocus
-              placeholderTextColor={colors.textMuted}
-            />
-            <View style={styles.modalButtons}>
-              <HapticPressable
-                style={styles.modalCancelButton}
-                onPress={() => setEditModalVisible(false)}
-              >
-                <Text style={styles.modalCancelText}>Cancel</Text>
-              </HapticPressable>
-              <HapticPressable
-                style={[
-                  styles.modalSaveButton,
-                  !editContent.trim() && { opacity: 0.5 },
-                ]}
-                onPress={handleSaveEdit}
-                disabled={!editContent.trim()}
-              >
-                <Text style={styles.modalSaveText}>Save</Text>
-              </HapticPressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        editContent={editContent}
+        onChangeContent={setEditContent}
+        onClose={() => setEditModalVisible(false)}
+        onSave={handleSaveEdit}
+        colors={colors}
+        styles={styles}
+      />
     </KeyboardAvoidingView>
   );
 }
-
-const createStyles = (colors: Colors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  // Standard header (text-only posts)
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.gray200,
-  },
-  headerText: {
-    flex: 1,
-    marginLeft: 10,
-  },
-  displayName: {
-    fontSize: 15,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-  },
-  username: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  timeAgo: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  // Overlaid header (on media)
-  headerOverlay: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    alignItems: "center",
-    paddingTop: 12,
-    paddingHorizontal: 12,
-    paddingBottom: 60,
-  },
-  overlaidHeaderUser: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-  },
-  overlaidAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: "#FFFFFF",
-    backgroundColor: colors.gray200,
-  },
-  overlaidDisplayName: {
-    fontSize: 15,
-    fontFamily: fonts.bold,
-    color: "#FFFFFF",
-    textShadowColor: "rgba(0,0,0,0.4)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  overlaidUsername: {
-    fontSize: 13,
-    color: "rgba(255,255,255,0.85)",
-    textShadowColor: "rgba(0,0,0,0.4)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  overlaidTimeAgo: {
-    fontSize: 13,
-    color: "rgba(255,255,255,0.85)",
-    textShadowColor: "rgba(0,0,0,0.4)",
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  media: {
-    width: "100%",
-    backgroundColor: colors.gray200,
-  },
-  heartOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  // Action bar
-  actions: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-  },
-  actionsLeft: {
-    flexDirection: "row",
-    gap: 16,
-  },
-  actionButton: {
-    padding: 2,
-  },
-  likeCount: {
-    fontSize: 14,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-    paddingHorizontal: 14,
-    marginBottom: 6,
-  },
-  captionRow: {
-    paddingHorizontal: 14,
-    marginBottom: 10,
-  },
-  captionText: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 20,
-  },
-  captionAuthor: {
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-  },
-  // Location row
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: 14,
-    marginBottom: 16,
-    paddingVertical: 8,
-    gap: 4,
-  },
-  locationName: {
-    fontSize: 14,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-    flex: 1,
-  },
-  commentsSection: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.gray200,
-    paddingTop: 12,
-  },
-  commentRow: {
-    flexDirection: "row",
-    paddingHorizontal: 14,
-    marginBottom: 12,
-  },
-  commentAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.gray200,
-    marginRight: 10,
-  },
-  commentContent: {
-    flex: 1,
-  },
-  commentText: {
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  commentAuthor: {
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-  },
-  commentTime: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  commentBody: {
-    fontSize: 14,
-    color: colors.text,
-    lineHeight: 19,
-    marginTop: 2,
-  },
-  commentActions: {
-    flexDirection: "row",
-    gap: 16,
-    marginTop: 4,
-  },
-  commentActionText: {
-    fontSize: 12,
-    fontWeight: "600",
-    fontFamily: fonts.semiBold,
-    color: colors.textMuted,
-  },
-  inputBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.gray200,
-    backgroundColor: colors.background,
-  },
-  commentInput: {
-    flex: 1,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.gray100,
-    paddingHorizontal: 16,
-    fontSize: 14,
-    color: colors.text,
-  },
-  cancelButton: {
-    marginRight: 8,
-    padding: 4,
-  },
-  sendButton: {
-    marginLeft: 8,
-    padding: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  modalContent: {
-    backgroundColor: colors.background,
-    borderRadius: 16,
-    padding: 20,
-    width: "100%",
-  },
-  modalTitle: {
-    fontSize: 17,
-    fontFamily: fonts.semiBold,
-    color: colors.text,
-    marginBottom: 12,
-  },
-  modalInput: {
-    borderWidth: 1,
-    borderColor: colors.gray200,
-    borderRadius: 10,
-    padding: 12,
-    fontSize: 15,
-    color: colors.text,
-    minHeight: 100,
-    textAlignVertical: "top",
-  },
-  modalButtons: {
-    flexDirection: "row",
-    justifyContent: "flex-end",
-    gap: 12,
-    marginTop: 16,
-  },
-  modalCancelButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  modalCancelText: {
-    fontSize: 15,
-    fontFamily: fonts.semiBold,
-    color: colors.textMuted,
-  },
-  modalSaveButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  modalSaveText: {
-    fontSize: 15,
-    fontFamily: fonts.semiBold,
-    color: "#FFFFFF",
-  },
-});

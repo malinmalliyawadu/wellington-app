@@ -3,8 +3,6 @@ import {
   View,
   Text,
   FlatList,
-  ScrollView,
-  StyleSheet,
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
@@ -12,8 +10,6 @@ import { useRouter, useFocusEffect, useNavigation } from "expo-router";
 import { DrawerActions } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
-import { Ionicons } from "@expo/vector-icons";
-import { SFSymbol } from "expo-symbols";
 import { SFIcon } from "../components/SFIcon";
 import { EventCard } from "../components/EventCard";
 import { SectionHeader } from "../components/SectionHeader";
@@ -27,200 +23,21 @@ import { useQuery } from "../hooks/useQuery";
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useFollow } from "../context/FollowContext";
 import { useEventFilters } from "../context/EventFilterContext";
-import { useTheme, type Colors } from "../theme/ThemeContext";
+import { useTheme } from "../theme/ThemeContext";
 import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 import { QueryErrorState } from "../components/QueryErrorState";
-import { fonts } from "../theme/fonts";
-import type { Event, Place } from "../types";
-
-// ─── Types & Constants ───────────────────────────────────────────────
-
-type DateRange = "today" | "tomorrow" | "weekend" | "month";
-
-const DATE_RANGE_LABELS: Record<DateRange, string> = {
-  today: "Today",
-  tomorrow: "Tomorrow",
-  weekend: "This Weekend",
-  month: "This Month",
-};
-
-function getDateRange(range: DateRange): { start: string; end: string } {
-  const now = new Date();
-  const fmt = (d: Date) =>
-    d.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
-
-  switch (range) {
-    case "today":
-      return { start: fmt(now), end: fmt(now) };
-    case "tomorrow": {
-      const tomorrow = new Date(now);
-      tomorrow.setDate(now.getDate() + 1);
-      return { start: fmt(tomorrow), end: fmt(tomorrow) };
-    }
-    case "weekend": {
-      const day = now.getDay();
-      const daysUntilSat = day === 0 ? 6 : 6 - day;
-      const sat = new Date(now);
-      sat.setDate(now.getDate() + daysUntilSat);
-      const sun = new Date(sat);
-      sun.setDate(sat.getDate() + 1);
-      const start = day === 0 || day === 6 ? now : sat;
-      return { start: fmt(start), end: fmt(sun) };
-    }
-    case "month": {
-      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-      return { start: fmt(now), end: fmt(endOfMonth) };
-    }
-  }
-}
-
-interface QuickChip {
-  key: string;
-  label: string;
-  icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap };
-}
-
-const QUICK_CHIPS: QuickChip[] = [
-  {
-    key: "today",
-    label: "Today",
-    icon: { sf: "sun.max.fill", fallback: "sunny" },
-  },
-  {
-    key: "tomorrow",
-    label: "Tomorrow",
-    icon: { sf: "arrow.right.circle", fallback: "arrow-forward-circle" },
-  },
-  {
-    key: "weekend",
-    label: "Weekend",
-    icon: { sf: "cup.and.saucer.fill", fallback: "cafe" },
-  },
-  {
-    key: "free",
-    label: "Free",
-    icon: { sf: "tag.fill", fallback: "pricetag" },
-  },
-  {
-    key: "filters",
-    label: "Filters",
-    icon: { sf: "slider.horizontal.3", fallback: "options" },
-  },
-];
-
-type EventWithPlace = { event: Event; place: Place };
-
-type DiscoveryItem =
-  | { type: "chips" }
-  | {
-      type: "carousel";
-      key: string;
-      title: string;
-      icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap };
-      items: EventWithPlace[];
-      count: number;
-    }
-  | {
-      type: "featured";
-      item: EventWithPlace;
-      restCarousel: EventWithPlace[];
-      title: string;
-      icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap };
-      count: number;
-    }
-  | { type: "comingUpHeader"; count: number }
-  | { type: "comingUpItem"; item: EventWithPlace }
-  | { type: "viewAll" }
-  | { type: "empty" }
-  | { type: "footer" };
-
-// ─── Section classification for discovery mode ───────────────────────
-
-function classifySections(eventsWithPlaces: EventWithPlace[]) {
-  const now = new Date();
-  const fmt = (d: Date) =>
-    d.toLocaleDateString("en-CA", { timeZone: "Pacific/Auckland" });
-  const todayStr = fmt(now);
-
-  // Compute tomorrow/weekend using NZ date to avoid device-timezone mismatch.
-  // Parse the NZ-formatted date and do day arithmetic on that.
-  const [y, mo, d] = todayStr.split("-").map(Number);
-  const nzDate = new Date(y, mo - 1, d); // midnight local, but only used for day math
-  const addDays = (base: Date, n: number) => {
-    const r = new Date(base);
-    r.setDate(r.getDate() + n);
-    return r.toLocaleDateString("en-CA");
-  };
-  // Weekend dates (based on NZ day of week)
-  const nzDay = nzDate.getDay();
-  const daysUntilSat = nzDay === 0 ? 6 : 6 - nzDay;
-  const satStr = addDays(nzDate, daysUntilSat);
-  const sunStr = addDays(nzDate, daysUntilSat + 1);
-  const isCurrentlyWeekend = nzDay === 0 || nzDay === 6;
-
-  const happeningNow: EventWithPlace[] = [];
-  const weekend: EventWithPlace[] = [];
-  const free: EventWithPlace[] = [];
-  const comingUp: EventWithPlace[] = [];
-
-  // Current time in minutes since midnight (NZ timezone)
-  const nzTimeStr = now.toLocaleTimeString("en-GB", {
-    timeZone: "Pacific/Auckland",
-    hour12: false,
-  });
-  const [nowH, nowM] = nzTimeStr.split(":").map(Number);
-  const nowMinutes = nowH * 60 + nowM;
-
-  const toMinutes = (time: string) => {
-    const [h, m] = time.split(":").map(Number);
-    return h * 60 + m;
-  };
-
-  for (const item of eventsWithPlaces) {
-    const { event } = item;
-    const isToday = event.date === todayStr;
-    const isWeekend =
-      event.date === satStr ||
-      event.date === sunStr ||
-      (isCurrentlyWeekend && isToday);
-    const isFree = event.price == null || event.price === 0;
-
-    // For "Happening Now": skip today's events that have already finished.
-    // Use endTime if available, otherwise assume ~3 hours after start.
-    let hasEnded = false;
-    if (isToday) {
-      const endMinutes = event.endTime
-        ? toMinutes(event.endTime)
-        : toMinutes(event.startTime) + 180;
-      hasEnded = endMinutes <= nowMinutes;
-    }
-    if (isToday && !hasEnded) happeningNow.push(item);
-    if (isWeekend) weekend.push(item);
-    if (isFree) free.push(item);
-    comingUp.push(item);
-  }
-
-  // Sort sections by AI score (highest first), unscored events fall to end
-  const byScore = (a: EventWithPlace, b: EventWithPlace) =>
-    (b.event.aiScore ?? -1) - (a.event.aiScore ?? -1);
-
-  happeningNow.sort(byScore);
-  weekend.sort(byScore);
-  free.sort(byScore);
-  comingUp.sort(byScore);
-
-  // Popular = top 10 by attendee count (social signal, not AI score)
-  const popular = [...eventsWithPlaces]
-    .sort(
-      (a, b) =>
-        (b.event.attendeeIds?.length ?? 0) - (a.event.attendeeIds?.length ?? 0)
-    )
-    .slice(0, 10)
-    .filter((item) => (item.event.attendeeIds?.length ?? 0) > 0);
-
-  return { happeningNow, weekend, popular, free, comingUp };
-}
+import { QuickFilterChips } from "./events/QuickFilterChips";
+import { FilteredEventsView } from "./events/FilteredEventsView";
+import {
+  type DateRange,
+  DATE_RANGE_LABELS,
+  getDateRange,
+  type EventWithPlace,
+  type DiscoveryItem,
+  classifySections,
+} from "./events/eventsHelpers";
+import { createStyles } from "./events/eventsStyles";
 
 // ─── Component ───────────────────────────────────────────────────────
 
@@ -485,48 +302,6 @@ export function EventsScreen() {
     [router]
   );
 
-  // ─── Quick Filter Chips row ───────────────────────────────────────
-
-  const renderChips = useCallback(
-    () => (
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipsContainer}
-        style={styles.chipsRow}
-      >
-        {QUICK_CHIPS.map((chip) => {
-          const active = isChipActive(chip.key);
-          return (
-            <HapticPressable
-              key={chip.key}
-              style={[styles.chip, active && styles.chipActive]}
-              onPress={() => handleChipPress(chip.key)}
-            >
-              <SFIcon
-                name={chip.icon.sf}
-                fallback={chip.icon.fallback}
-                size={14}
-                color={active ? "#FFFFFF" : colors.textSecondary}
-              />
-              <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                {chip.label}
-              </Text>
-              {chip.key === "filters" && advancedFilterCount > 0 && (
-                <View style={styles.chipBadge}>
-                  <Text style={styles.chipBadgeText}>
-                    {advancedFilterCount}
-                  </Text>
-                </View>
-              )}
-            </HapticPressable>
-          );
-        })}
-      </ScrollView>
-    ),
-    [isChipActive, handleChipPress, advancedFilterCount, styles, colors]
-  );
-
   // ─── Horizontal carousel ──────────────────────────────────────────
 
   const renderCarouselItem = useCallback(
@@ -644,7 +419,15 @@ export function EventsScreen() {
     ({ item }: { item: DiscoveryItem }) => {
       switch (item.type) {
         case "chips":
-          return renderChips();
+          return (
+            <QuickFilterChips
+              isChipActive={isChipActive}
+              onChipPress={handleChipPress}
+              advancedFilterCount={advancedFilterCount}
+              styles={styles}
+              colors={colors}
+            />
+          );
         case "carousel":
           return (
             <View>
@@ -741,7 +524,9 @@ export function EventsScreen() {
       }
     },
     [
-      renderChips,
+      isChipActive,
+      handleChipPress,
+      advancedFilterCount,
       renderCarousel,
       navigateToEvent,
       handleViewAll,
@@ -821,84 +606,23 @@ export function EventsScreen() {
 
   if (hasActiveFilters) {
     return (
-      <View style={styles.container}>
-        <FlatList
-          testID="events-list"
-          data={filteredEventsWithPlaces}
-          keyExtractor={(item) => item.event.id}
-          renderItem={({ item }) => (
-            <View style={styles.comingUpItemSpacing}>
-              <EventCard
-                event={item.event}
-                place={item.place}
-                onEventPress={navigateToEvent}
-                attendeeProfiles={attendeeProfiles ?? undefined}
-              />
-            </View>
-          )}
-          onEndReached={handleLoadMore}
-          onEndReachedThreshold={0.5}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.primary}
-            />
-          }
-          showsVerticalScrollIndicator={false}
-          contentInset={{ top: headerHeight }}
-          contentOffset={{ x: 0, y: -headerHeight }}
-          scrollIndicatorInsets={{ top: headerHeight }}
-          contentContainerStyle={[
-            styles.list,
-            { paddingBottom: 40 + insets.bottom },
-          ]}
-          ListHeaderComponent={
-            <View>
-              {renderChips()}
-              {filterSummary ? (
-                <View style={styles.filterSummaryRow}>
-                  <Text style={styles.filterSummary}>{filterSummary}</Text>
-                </View>
-              ) : null}
-            </View>
-          }
-          ListFooterComponent={
-            isFetchingNextPage ? (
-              <View style={styles.footerContainer}>
-                <ActivityIndicator size="small" color={colors.primary} />
-              </View>
-            ) : !hasNextPage && filteredEventsWithPlaces.length > 0 ? (
-              <View style={styles.footerContainer}>
-                <SFIcon
-                  name="sparkles"
-                  fallback="sparkles"
-                  size={28}
-                  color={colors.gray300}
-                />
-                <Text style={styles.footerText}>
-                  That&apos;s everything for now
-                </Text>
-              </View>
-            ) : null
-          }
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <SFIcon
-                name="calendar"
-                fallback="calendar-outline"
-                size={48}
-                color={colors.gray300}
-              />
-              <Text style={styles.emptyText}>No events match your filters</Text>
-              <HapticPressable onPress={openFilters}>
-                <Text style={styles.emptyAction}>Adjust filters</Text>
-              </HapticPressable>
-            </View>
-          }
-        />
-        <FloatingCreateButton />
-      </View>
+      <FilteredEventsView
+        filteredEventsWithPlaces={filteredEventsWithPlaces}
+        navigateToEvent={navigateToEvent}
+        attendeeProfiles={attendeeProfiles ?? undefined}
+        handleLoadMore={handleLoadMore}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        isFetchingNextPage={isFetchingNextPage}
+        hasNextPage={hasNextPage ?? false}
+        filterSummary={filterSummary}
+        isChipActive={isChipActive}
+        onChipPress={handleChipPress}
+        advancedFilterCount={advancedFilterCount}
+        openFilters={openFilters}
+        styles={styles}
+        colors={colors}
+      />
     );
   }
 
@@ -932,125 +656,3 @@ export function EventsScreen() {
     </View>
   );
 }
-
-// ─── Styles ──────────────────────────────────────────────────────────
-
-const createStyles = (colors: Colors) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: colors.background,
-    },
-    list: {
-      paddingTop: 8,
-      paddingBottom: 20,
-    },
-    // Quick filter chips
-    chipsRow: {
-      flexGrow: 0,
-    },
-    chipsContainer: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-      gap: 8,
-    },
-    chip: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 6,
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-      borderRadius: 20,
-      backgroundColor: colors.gray100,
-    },
-    chipActive: {
-      backgroundColor: colors.primary,
-    },
-    chipText: {
-      fontSize: 13,
-      fontFamily: fonts.semiBold,
-      color: colors.textSecondary,
-    },
-    chipTextActive: {
-      color: "#FFFFFF",
-    },
-    chipBadge: {
-      backgroundColor: "#FFFFFF",
-      borderRadius: 8,
-      minWidth: 16,
-      height: 16,
-      alignItems: "center",
-      justifyContent: "center",
-      paddingHorizontal: 4,
-    },
-    chipBadgeText: {
-      fontSize: 10,
-      fontFamily: fonts.bold,
-      color: colors.primary,
-    },
-    // Carousel
-    carouselContainer: {
-      paddingHorizontal: 16,
-      gap: 12,
-    },
-    carouselSpacing: {
-      marginTop: 12,
-    },
-    // Filter summary
-    filterSummaryRow: {
-      paddingHorizontal: 16,
-      paddingVertical: 8,
-    },
-    filterSummary: {
-      fontSize: 13,
-      color: colors.primary,
-      fontFamily: fonts.medium,
-    },
-    comingUpItemSpacing: {
-      marginBottom: 20,
-    },
-    // View all button
-    viewAllButton: {
-      flexDirection: "row",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 4,
-      paddingVertical: 16,
-      marginHorizontal: 16,
-      marginTop: 8,
-      borderRadius: 12,
-      backgroundColor: colors.gray100,
-    },
-    viewAllText: {
-      fontSize: 15,
-      fontFamily: fonts.semiBold,
-      color: colors.primary,
-    },
-    // Empty state
-    empty: {
-      alignItems: "center",
-      justifyContent: "center",
-      paddingTop: 80,
-      gap: 12,
-    },
-    emptyText: {
-      fontSize: 15,
-      color: colors.textMuted,
-    },
-    emptyAction: {
-      fontSize: 15,
-      fontFamily: fonts.semiBold,
-      color: colors.primary,
-    },
-    // Footer
-    footerContainer: {
-      alignItems: "center",
-      paddingVertical: 28,
-      gap: 8,
-    },
-    footerText: {
-      fontSize: 14,
-      fontFamily: fonts.medium,
-      color: colors.textMuted,
-    },
-  });
