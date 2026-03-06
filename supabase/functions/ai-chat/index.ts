@@ -1100,8 +1100,12 @@ ${userPostsStr}
 RECENT POSTS FROM FOLLOWED USERS (user|place|content):
 ${feedPostsStr}
 
+PREAMBLE:
+- Before calling any tools, output a single short friendly line (max 10 words) acknowledging the user's question. This appears instantly while tools load. Match the tone to the question — e.g. "Ooh, let me find some cafes! ☕" or "Weekend plans — let me check! 🎉". Follow it with two newlines, then call your tools.
+- For greetings or simple messages that won't need tools, skip the preamble and respond directly.
+
 TOOL USAGE:
-- You have tools to search the Welly app database. Use them to find real data before answering. Call tools immediately without any preamble text.
+- You have tools to search the Welly app database. Use them to find real data before answering.
 - For questions about events, things to do, or what's happening: use search_events with appropriate date filters.
   - "this weekend" = the upcoming Saturday and Sunday (check current day of week above)
   - "tonight" = today's date
@@ -1269,94 +1273,6 @@ function sseEvent(event: string, data: unknown): string {
 }
 
 // ---------------------------------------------------------------------------
-// Instant preamble — shown to the user before social/Claude load
-// ---------------------------------------------------------------------------
-
-const PREAMBLE_MAP: { patterns: RegExp; messages: string[] }[] = [
-  {
-    patterns:
-      /\b(event|events|what'?s on|what'?s happening|tonight|gig|gigs|show|shows|live music|concert|comedy|standup)\b/i,
-    messages: [
-      "Let me check what's on! 🎶",
-      "Ooh, let me see what's happening! 🎉",
-      "Let me find some events for you! 🗓️",
-    ],
-  },
-  {
-    patterns: /\b(cafe|coffee|brunch|brekkie|breakfast)\b/i,
-    messages: [
-      "Let me find some good spots! ☕",
-      "Ooh, keen — let me check! ☕",
-      "Great shout, let me look! ☕",
-    ],
-  },
-  {
-    patterns: /\b(restaurant|dinner|lunch|eat|food|hungry)\b/i,
-    messages: [
-      "Let me find some places to eat! 🍽️",
-      "Ooh, let me see what's good! 🍕",
-      "Keen — let me check some spots! 🍜",
-    ],
-  },
-  {
-    patterns: /\b(bar|drinks|beer|wine|cocktail|pub)\b/i,
-    messages: [
-      "Let me find some good spots! 🍻",
-      "Ooh, let me check what's around! 🍷",
-      "Sweet as, let me look! 🥂",
-    ],
-  },
-  {
-    patterns: /\b(walk|hike|trail|outdoor|park|nature|garden)\b/i,
-    messages: [
-      "Let me find some outdoor options! 🌿",
-      "Nice one, let me check! 🥾",
-      "Let me see what's out there! 🏞️",
-    ],
-  },
-  {
-    patterns: /\b(guide|guides|list|curated|collection)\b/i,
-    messages: [
-      "Let me find some guides! 📋",
-      "Ooh, let me check what's been curated! 📖",
-    ],
-  },
-  {
-    patterns: /\b(trending|popular|best|top|recommend)\b/i,
-    messages: [
-      "Let me see what's popular! 🔥",
-      "Great question — let me check! ✨",
-      "Ooh, let me find the best picks! 🌟",
-    ],
-  },
-  {
-    patterns: /\b(weekend|saturday|sunday)\b/i,
-    messages: [
-      "Let me check what's on this weekend! 🎉",
-      "Ooh, weekend plans — let me look! 🗓️",
-    ],
-  },
-];
-
-const GENERIC_PREAMBLES = [
-  "Let me look into that! 🔍",
-  "Great question — let me check! ✨",
-  "Ooh, let me find out! 🤔",
-  "On it — give me a sec! 💨",
-];
-
-function generatePreamble(userMessage: string): string {
-  for (const entry of PREAMBLE_MAP) {
-    if (entry.patterns.test(userMessage)) {
-      return entry.messages[Math.floor(Math.random() * entry.messages.length)];
-    }
-  }
-  return GENERIC_PREAMBLES[
-    Math.floor(Math.random() * GENERIC_PREAMBLES.length)
-  ];
-}
-
-// ---------------------------------------------------------------------------
 // Main handler
 // ---------------------------------------------------------------------------
 
@@ -1462,8 +1378,7 @@ Deno.serve(async (req) => {
           )
         );
 
-        // Send instant preamble based on user's message (before social/Claude load)
-        // Skip for greetings/simple messages that won't trigger tool calls
+        // Send a status update while we wait for Claude
         const lastUserMessage =
           messages[messages.length - 1]?.content ?? "";
         const isGreeting =
@@ -1471,11 +1386,9 @@ Deno.serve(async (req) => {
             lastUserMessage
           );
         if (!isGreeting) {
-          const preamble = generatePreamble(lastUserMessage);
           controller.enqueue(
-            encoder.encode(sseEvent("text", { text: preamble + "\n\n" }))
+            encoder.encode(sseEvent("status", { text: "Searching..." }))
           );
-          firstTextSent = true;
         }
 
         // Await social context (started before stream opened)
