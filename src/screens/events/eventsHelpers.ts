@@ -164,9 +164,9 @@ export function classifySections(eventsWithPlaces: EventWithPlace[]) {
       hasEnded = endMinutes <= nowMinutes;
     }
     if (isToday && !hasEnded) happeningNow.push(item);
-    if (isWeekend) weekend.push(item);
-    if (isFree) free.push(item);
-    comingUp.push(item);
+    if (isWeekend && !(isToday && hasEnded)) weekend.push(item);
+    if (isFree && !(isToday && hasEnded)) free.push(item);
+    if (!(isToday && hasEnded)) comingUp.push(item);
   }
 
   // Sort sections by AI score (highest first), unscored events fall to end

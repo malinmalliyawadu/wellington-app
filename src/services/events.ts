@@ -1,8 +1,13 @@
 import { supabase } from '../lib/supabase';
 import type { Event, EventCategory } from '../types';
 
+/** Today's date in NZST (yyyy-mm-dd) */
+function getNZToday(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Pacific/Auckland' });
+}
+
 export async function getUpcomingEvents(): Promise<Event[]> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getNZToday();
 
   const { data, error } = await supabase
     .from('events')
@@ -59,8 +64,7 @@ export async function getUpcomingEventsPaginated(params: {
       .gte('date', params.dateRange.start)
       .lte('date', params.dateRange.end);
   } else {
-    const today = new Date().toISOString().split('T')[0];
-    query = query.gte('date', today);
+    query = query.gte('date', getNZToday());
   }
 
   // Category filter
@@ -147,7 +151,7 @@ export async function getEventAttendees(eventId: string): Promise<string[]> {
 }
 
 export async function getEventsByUserId(userId: string): Promise<Event[]> {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getNZToday();
 
   // Get event IDs the user is attending
   const { data: attendeeRows, error: attendeeError } = await supabase
