@@ -455,6 +455,17 @@ export function EventDetailScreen() {
                   }}
                 />
               )}
+              {event.everybodyEatsUrl && (
+                <LiquidGlassButton
+                  title="Sign Up to Volunteer"
+                  icon="heart-outline"
+                  variant="secondary"
+                  fullWidth
+                  onPress={() => {
+                    WebBrowser.openBrowserAsync(event.everybodyEatsUrl!);
+                  }}
+                />
+              )}
             </View>
 
             {/* Utility icon row */}

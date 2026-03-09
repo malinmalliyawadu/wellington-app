@@ -26,6 +26,7 @@ import { formatNumber } from "../utils/formatNumber";
 import { sortPosts } from "../utils/postSorting";
 import { VideoThumbnail } from "../components/VideoThumbnail";
 import { EventCard } from "../components/EventCard";
+import { VolunteerShiftCard } from "../components/VolunteerShiftCard";
 import { HapticPressable } from "../components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { HashtagText } from "../components/HashtagText";
@@ -315,24 +316,44 @@ export function PlacePostsSheetScreen() {
             </View>
           </View>
 
-          {placeEvents.length > 0 && (
-            <View style={styles.eventsSection}>
-              <View style={styles.eventsSectionHeader}>
-                <Text style={styles.eventsSectionTitle}>Events This Week</Text>
-              </View>
-              {placeEvents.map((event) => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  place={place}
-                  compact
-                  onPress={() => {
-                    router.push(`/map/event/${event.id}`);
-                  }}
-                />
-              ))}
-            </View>
-          )}
+          {placeEvents.length > 0 && (() => {
+            const volunteerEvents = placeEvents.filter((e) => e.category === "volunteering");
+            const regularEvents = placeEvents.filter((e) => e.category !== "volunteering");
+            return (
+              <>
+                {volunteerEvents.length > 0 && (
+                  <View style={styles.eventsSection}>
+                    <View style={styles.eventsSectionHeader}>
+                      <Text style={styles.eventsSectionTitle}>Volunteering</Text>
+                    </View>
+                    <VolunteerShiftCard
+                      events={volunteerEvents}
+                      onEventPress={(eventId) => {
+                        router.push(`/map/event/${eventId}`);
+                      }}
+                    />
+                  </View>
+                )}
+                {regularEvents.length > 0 && (
+                  <View style={styles.eventsSection}>
+                    <View style={styles.eventsSectionHeader}>
+                      <Text style={styles.eventsSectionTitle}>Events This Week</Text>
+                    </View>
+                    {regularEvents.map((event) => (
+                      <EventCard
+                        key={event.id}
+                        event={event}
+                        place={place}
+                        onPress={() => {
+                          router.push(`/map/event/${event.id}`);
+                        }}
+                      />
+                    ))}
+                  </View>
+                )}
+              </>
+            );
+          })()}
 
           {sortedPosts.length > 0 ? (
             <View style={styles.postList}>

@@ -1484,7 +1484,7 @@ Deno.serve(async (req) => {
                 );
               }
               if (event.type === "content_block_start") {
-                const block = event.content_block as Record<string, unknown>;
+                const block = event.content_block as unknown as Record<string, unknown>;
                 if (block.type === "tool_use") {
                   currentTool = { id: block.id as string, name: block.name as string, input: "" };
                   console.log(
@@ -1625,7 +1625,7 @@ Deno.serve(async (req) => {
                   currentServerTool = null;
                 }
               } else if (event.type === "message_delta") {
-                stopReason = (event.delta as Record<string, unknown>).stop_reason as string ?? "";
+                stopReason = (event.delta as unknown as Record<string, unknown>).stop_reason as string ?? "";
               }
             }
 

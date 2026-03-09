@@ -220,7 +220,7 @@ export function SavedScreen() {
                     event={event}
                     place={place}
                     onPress={() => router.push(`/events/${event.id}`)}
-                    compact
+                    variant="small"
                   />
                 </View>
               );

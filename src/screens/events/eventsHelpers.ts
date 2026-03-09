@@ -71,6 +71,11 @@ export const QUICK_CHIPS: QuickChip[] = [
     icon: { sf: "tag.fill", fallback: "pricetag" },
   },
   {
+    key: "volunteering",
+    label: "Volunteering",
+    icon: { sf: "hands.sparkles.fill", fallback: "heart" },
+  },
+  {
     key: "filters",
     label: "Filters",
     icon: { sf: "slider.horizontal.3", fallback: "options" },
@@ -130,6 +135,7 @@ export function classifySections(eventsWithPlaces: EventWithPlace[]) {
   const happeningNow: EventWithPlace[] = [];
   const weekend: EventWithPlace[] = [];
   const free: EventWithPlace[] = [];
+  const volunteering: EventWithPlace[] = [];
   const comingUp: EventWithPlace[] = [];
 
   // Current time in minutes since midnight (NZ timezone)
@@ -166,6 +172,7 @@ export function classifySections(eventsWithPlaces: EventWithPlace[]) {
     if (isToday && !hasEnded) happeningNow.push(item);
     if (isWeekend && !(isToday && hasEnded)) weekend.push(item);
     if (isFree && !(isToday && hasEnded)) free.push(item);
+    if (event.category === 'volunteering' && !(isToday && hasEnded)) volunteering.push(item);
     if (!(isToday && hasEnded)) comingUp.push(item);
   }
 
@@ -176,6 +183,7 @@ export function classifySections(eventsWithPlaces: EventWithPlace[]) {
   happeningNow.sort(byScore);
   weekend.sort(byScore);
   free.sort(byScore);
+  volunteering.sort(byScore);
   comingUp.sort(byScore);
 
   // Popular = top 10 by attendee count (social signal, not AI score)
@@ -187,5 +195,5 @@ export function classifySections(eventsWithPlaces: EventWithPlace[]) {
     .slice(0, 10)
     .filter((item) => (item.event.attendeeIds?.length ?? 0) > 0);
 
-  return { happeningNow, weekend, popular, free, comingUp };
+  return { happeningNow, weekend, popular, free, volunteering, comingUp };
 }
