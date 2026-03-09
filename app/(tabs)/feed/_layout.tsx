@@ -4,7 +4,13 @@ import { HapticPressable } from "../../../src/components/HapticPressable";
 import { ErrorScreen } from "../../../src/components/ErrorScreen";
 import { useTheme } from "../../../src/theme/ThemeContext";
 
-export function ErrorBoundary({ error, retry }: { error: Error; retry: () => void }) {
+export function ErrorBoundary({
+  error,
+  retry,
+}: {
+  error: Error;
+  retry: () => void;
+}) {
   return <ErrorScreen error={error} retry={retry} />;
 }
 
@@ -37,7 +43,12 @@ function DiscoverButton() {
       }}
       onPress={() => router.push("/feed/discover")}
     >
-      <SFIcon name="person.2" fallback="people-outline" size={22} color={colors.text} />
+      <SFIcon
+        name="person.2"
+        fallback="people-outline"
+        size={22}
+        color={colors.text}
+      />
     </HapticPressable>
   );
 }

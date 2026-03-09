@@ -20,11 +20,11 @@ function ToolbarContent({ chipTags, onChipPress, onHashPress, onAtPress }: Hasht
   return (
     <View style={styles.toolbar}>
       <HapticPressable style={styles.hashButton} onPress={onHashPress}>
-        <Text style={styles.hashButtonText}>#</Text>
+        <SFIcon name="number" fallback="pricetag" size={18} color={colors.primary} />
       </HapticPressable>
       {onAtPress && (
         <HapticPressable style={styles.hashButton} onPress={onAtPress}>
-          <Text style={styles.hashButtonText}>@</Text>
+          <SFIcon name="at" fallback="at" size={18} color={colors.primary} />
         </HapticPressable>
       )}
       {chipTags.length > 0 && (
@@ -71,32 +71,33 @@ const createStyles = (colors: Colors) => StyleSheet.create({
   toolbar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.gray100,
+    backgroundColor: colors.background,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.gray200,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    gap: 6,
   },
   hashButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.background,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: colors.gray100,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.gray300,
   },
   hashButtonText: {
     fontSize: 18,
+    lineHeight: 20,
     fontFamily: fonts.bold,
     color: colors.primary,
+    includeFontPadding: false,
   },
   divider: {
     width: StyleSheet.hairlineWidth,
-    height: 24,
-    backgroundColor: colors.gray300,
-    marginHorizontal: 8,
+    height: 22,
+    backgroundColor: colors.gray200,
+    marginHorizontal: 2,
   },
   chipsContainer: {
     gap: 6,
@@ -105,17 +106,15 @@ const createStyles = (colors: Colors) => StyleSheet.create({
   chip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: colors.primary + '10',
     paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 3,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.gray200,
+    paddingVertical: 7,
+    borderRadius: 10,
+    gap: 4,
   },
   chipText: {
     fontSize: 13,
     fontFamily: fonts.medium,
-    color: colors.text,
+    color: colors.primary,
   },
 });

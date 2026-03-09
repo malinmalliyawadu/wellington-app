@@ -104,6 +104,16 @@ export function PostForm({
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.mediaStripContent}
             >
+              {canAddMore && (
+                <View style={styles.addMediaStack}>
+                  <HapticPressable style={styles.addMediaStackButton} onPress={onTakeMedia}>
+                    <SFIcon name="camera.fill" fallback="camera" size={16} color={colors.gray400} />
+                  </HapticPressable>
+                  <HapticPressable style={styles.addMediaStackButton} onPress={onPickMedia}>
+                    <SFIcon name="plus" fallback="add" size={18} color={colors.gray400} />
+                  </HapticPressable>
+                </View>
+              )}
               {mediaItems.map((item, index) => (
                 <View key={`${item.uri}-${index}`} style={styles.mediaThumbnailWrapper}>
                   {item.type === "video" ? (
@@ -125,16 +135,6 @@ export function PostForm({
                   )}
                 </View>
               ))}
-              {canAddMore && (
-                <>
-                  <HapticPressable style={styles.addMediaButton} onPress={onTakeMedia}>
-                    <SFIcon name="camera.fill" fallback="camera" size={20} color={colors.gray400} />
-                  </HapticPressable>
-                  <HapticPressable style={styles.addMediaButton} onPress={onPickMedia}>
-                    <SFIcon name="plus" fallback="add" size={24} color={colors.gray400} />
-                  </HapticPressable>
-                </>
-              )}
             </ScrollView>
             <Text style={styles.mediaCounter}>
               {mediaItems.length}/{MAX_MEDIA_ITEMS}
@@ -143,23 +143,27 @@ export function PostForm({
         ) : (
           <View style={styles.mediaButtonRow}>
             <HapticPressable style={styles.mediaButton} onPress={onTakeMedia}>
-              <SFIcon
-                name="camera.fill"
-                fallback="camera"
-                size={28}
-                color={colors.gray400}
-              />
+              <View style={styles.mediaButtonIconWrap}>
+                <SFIcon
+                  name="camera.fill"
+                  fallback="camera"
+                  size={22}
+                  color={colors.primary}
+                />
+              </View>
               <Text style={styles.mediaButtonText}>
                 Camera
               </Text>
             </HapticPressable>
             <HapticPressable style={styles.mediaButton} onPress={onPickMedia}>
-              <SFIcon
-                name="photo.on.rectangle"
-                fallback="images"
-                size={28}
-                color={colors.gray400}
-              />
+              <View style={[styles.mediaButtonIconWrap, { backgroundColor: "#0077B6" + "14" }]}>
+                <SFIcon
+                  name="photo.on.rectangle"
+                  fallback="images"
+                  size={22}
+                  color="#0077B6"
+                />
+              </View>
               <Text style={styles.mediaButtonText}>
                 Library
               </Text>
@@ -175,10 +179,10 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     gap: 12,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    marginTop: 16,
-    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    marginTop: 12,
+    borderRadius: 16,
     backgroundColor: colors.gray100,
   },
   composerAvatar: {
@@ -207,7 +211,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     textAlign: "right",
-    marginTop: 2,
+    marginTop: 4,
   },
   mediaButtonRow: {
     flexDirection: "row",
@@ -218,16 +222,26 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    height: 110,
-    borderRadius: 12,
+    height: 100,
+    borderRadius: 14,
     backgroundColor: colors.gray100,
     overflow: "hidden",
+    borderWidth: 1,
+    borderColor: colors.gray200,
+  },
+  mediaButtonIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.primary + "14",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
   },
   mediaButtonText: {
-    marginTop: 8,
-    fontSize: 14,
+    fontSize: 13,
     color: colors.gray500,
-    fontFamily: "PlusJakartaSans_500Medium",
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
   mediaStripContainer: {
     marginTop: 16,
@@ -242,7 +256,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
   mediaThumbnail: {
     width: 100,
     height: 100,
-    borderRadius: 10,
+    borderRadius: 12,
     backgroundColor: colors.gray200,
   },
   mediaRemoveButton: {
@@ -261,9 +275,13 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     paddingHorizontal: 5,
     paddingVertical: 3,
   },
-  addMediaButton: {
-    width: 100,
+  addMediaStack: {
+    width: 72,
     height: 100,
+    gap: 6,
+  },
+  addMediaStackButton: {
+    flex: 1,
     borderRadius: 10,
     backgroundColor: colors.gray100,
     alignItems: "center",

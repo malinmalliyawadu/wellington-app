@@ -76,10 +76,13 @@ export function EventForm({
             </View>
           </>
         ) : (
-          <>
-            <SFIcon name="photo.fill" fallback="image" size={28} color={colors.gray400} />
-            <Text style={styles.coverImageText}>Add a cover photo</Text>
-          </>
+          <View style={styles.coverImageEmpty}>
+            <View style={styles.coverImageIconWrap}>
+              <SFIcon name="photo.fill" fallback="image" size={24} color={colors.primary} />
+            </View>
+            <Text style={styles.coverImageTitle}>Add a cover photo</Text>
+            <Text style={styles.coverImageSubtitle}>16:9 recommended</Text>
+          </View>
         )}
       </HapticPressable>
 
@@ -115,69 +118,76 @@ export function EventForm({
         ))}
       </View>
 
-      {/* Date */}
-      <Text style={styles.label}>Date</Text>
-      <DateTimePicker
-        value={date ?? new Date()}
-        mode="date"
-        display="inline"
-        minimumDate={new Date()}
-        onChange={(_event, d) => {
-          if (d) onDateChange(d);
-        }}
-        accentColor={colors.primary}
-        style={styles.datePicker}
-      />
+      {/* Date & Time */}
+      <Text style={[styles.label, styles.sectionLabel]}>Date & Time</Text>
+      <View style={styles.timeRow}>
+        <View style={styles.timeField}>
+          <Text style={styles.fieldLabel}>Date</Text>
+          <DateTimePicker
+            value={date ?? new Date()}
+            mode="date"
+            display="compact"
+            minimumDate={new Date()}
+            onChange={(_event, d) => {
+              if (d) onDateChange(d);
+            }}
+            accentColor={colors.primary}
+            style={styles.timePicker}
+          />
+        </View>
+        <View style={styles.timeField}>
+          <Text style={styles.fieldLabel}>Start</Text>
+          <DateTimePicker
+            value={startTime ?? new Date()}
+            mode="time"
+            display="compact"
+            minuteInterval={5}
+            onChange={(_event, d) => {
+              if (d) onStartTimeChange(d);
+            }}
+            accentColor={colors.primary}
+            style={styles.timePicker}
+          />
+        </View>
+        <View style={styles.timeField}>
+          <Text style={styles.fieldLabel}>End</Text>
+          <DateTimePicker
+            value={endTime ?? startTime ?? new Date()}
+            mode="time"
+            display="compact"
+            minuteInterval={5}
+            onChange={(_event, d) => {
+              if (d) onEndTimeChange(d);
+            }}
+            accentColor={colors.primary}
+            style={styles.timePicker}
+          />
+        </View>
+      </View>
 
-      {/* Start time */}
-      <Text style={styles.label}>Start time</Text>
-      <DateTimePicker
-        value={startTime ?? new Date()}
-        mode="time"
-        display="compact"
-        minuteInterval={5}
-        onChange={(_event, d) => {
-          if (d) onStartTimeChange(d);
-        }}
-        accentColor={colors.primary}
-        style={styles.timePicker}
-      />
+      {/* Details Section */}
+      <View style={styles.sectionCard}>
+        <Text style={styles.label}>Price (optional)</Text>
+        <TextInput
+          style={styles.priceInput}
+          placeholder="Leave empty for free"
+          placeholderTextColor={colors.gray400}
+          value={price}
+          onChangeText={onPriceChange}
+          keyboardType="decimal-pad"
+        />
 
-      {/* End time */}
-      <Text style={styles.label}>End time (optional)</Text>
-      <DateTimePicker
-        value={endTime ?? startTime ?? new Date()}
-        mode="time"
-        display="compact"
-        minuteInterval={5}
-        onChange={(_event, d) => {
-          if (d) onEndTimeChange(d);
-        }}
-        accentColor={colors.primary}
-        style={styles.timePicker}
-      />
-
-      {/* Price */}
-      <Text style={styles.label}>Price (optional)</Text>
-      <TextInput
-        style={styles.priceInput}
-        placeholder="Leave empty for free"
-        placeholderTextColor={colors.gray400}
-        value={price}
-        onChangeText={onPriceChange}
-        keyboardType="decimal-pad"
-      />
-
-      {/* Description */}
-      <TextInput
-        style={styles.eventDescriptionInput}
-        placeholder="Tell people about this event..."
-        placeholderTextColor={colors.gray400}
-        multiline
-        value={description}
-        onChangeText={onDescriptionChange}
-        textAlignVertical="top"
-      />
+        <Text style={[styles.label, { marginTop: 16 }]}>Description</Text>
+        <TextInput
+          style={styles.eventDescriptionInput}
+          placeholder="Tell people about this event..."
+          placeholderTextColor={colors.gray400}
+          multiline
+          value={description}
+          onChangeText={onDescriptionChange}
+          textAlignVertical="top"
+        />
+      </View>
     </>
   );
 }
@@ -186,14 +196,19 @@ const createStyles = (colors: Colors) => StyleSheet.create({
   coverImageButton: {
     alignItems: "center",
     justifyContent: "center",
-    height: 160,
+    height: 170,
     marginTop: 8,
-    borderRadius: 12,
+    borderRadius: 16,
     backgroundColor: colors.gray100,
     overflow: "hidden",
+    borderWidth: 1.5,
+    borderColor: colors.gray200,
+    borderStyle: "dashed",
   },
   coverImageButtonFilled: {
-    height: 180,
+    height: 190,
+    borderWidth: 0,
+    borderStyle: "solid",
   },
   coverImagePreview: {
     width: "100%",
@@ -211,24 +226,41 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     fontFamily: "PlusJakartaSans_500Medium",
     color: "#FFFFFF",
   },
-  coverImageText: {
-    marginTop: 8,
-    fontSize: 14,
-    color: colors.gray500,
-    fontFamily: "PlusJakartaSans_500Medium",
+  coverImageEmpty: {
+    alignItems: "center",
   },
-  eventTitleInput: {
-    fontSize: 20,
+  coverImageIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary + "14",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  coverImageTitle: {
+    fontSize: 15,
     color: colors.text,
     fontFamily: "PlusJakartaSans_600SemiBold",
-    paddingTop: 4,
-    paddingBottom: 12,
+  },
+  coverImageSubtitle: {
+    fontSize: 12,
+    color: colors.textMuted,
+    fontFamily: "PlusJakartaSans_500Medium",
+    marginTop: 2,
+  },
+  eventTitleInput: {
+    fontSize: 22,
+    color: colors.text,
+    fontFamily: "PlusJakartaSans_700Bold",
+    paddingTop: 16,
+    paddingBottom: 8,
   },
   typePillWrap: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginTop: 20,
+    marginTop: 8,
   },
   typePill: {
     flexDirection: "row",
@@ -237,9 +269,10 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
+    backgroundColor: colors.gray100,
   },
   typePillActive: {
-    backgroundColor: colors.primary + "12",
+    backgroundColor: colors.primary + "18",
   },
   typePillLabel: {
     fontSize: 14,
@@ -248,16 +281,39 @@ const createStyles = (colors: Colors) => StyleSheet.create({
   },
   typePillLabelActive: {
     color: colors.primary,
+    fontFamily: "PlusJakartaSans_600SemiBold",
+  },
+  sectionCard: {
+    marginTop: 20,
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: colors.gray100,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: "PlusJakartaSans_600SemiBold",
-    color: colors.text,
-    marginBottom: 10,
-    marginTop: 20,
+    color: colors.textSecondary,
+    marginBottom: 8,
+    marginTop: 0,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
-  datePicker: {
-    alignSelf: "center",
+  sectionLabel: {
+    marginTop: 24,
+  },
+  fieldLabel: {
+    fontSize: 13,
+    fontFamily: "PlusJakartaSans_500Medium",
+    color: colors.textMuted,
+    marginBottom: 4,
+  },
+  timeRow: {
+    flexDirection: "row",
+    gap: 16,
+    marginTop: 8,
+  },
+  timeField: {
+    flex: 1,
   },
   timePicker: {
     alignSelf: "flex-start",
@@ -270,17 +326,16 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 10,
-    backgroundColor: colors.gray100,
+    backgroundColor: colors.background,
   },
   eventDescriptionInput: {
     fontSize: 15,
     color: colors.text,
     fontFamily: "PlusJakartaSans_500Medium",
     minHeight: 100,
-    marginTop: 16,
     paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 12,
     borderRadius: 12,
-    backgroundColor: colors.gray100,
+    backgroundColor: colors.background,
   },
 });

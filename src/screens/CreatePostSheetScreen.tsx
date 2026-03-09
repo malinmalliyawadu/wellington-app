@@ -67,7 +67,6 @@ export function CreatePostSheetScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const tabBase = "/" + pathname.split("/")[1];
-  const scrollViewRef = React.useRef<ScrollView>(null);
 
   // Determine initial create type based on defaultType param (events tab -> event, otherwise -> post)
   const [createType, setCreateType] = useState<CreateType>(
@@ -101,13 +100,8 @@ export function CreatePostSheetScreen() {
 
   // Shared state
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
+  const scrollViewRef = React.useRef<ScrollView>(null);
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-
-  const handleScroll = useCallback((event: any) => {
-    const scrollY = event.nativeEvent.contentOffset.y;
-    setIsScrolled(scrollY > 0);
-  }, []);
 
   const {
     chipRecommendations,
@@ -235,22 +229,12 @@ export function CreatePostSheetScreen() {
 
   // Keyboard visibility listeners
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener(
-      "keyboardWillShow",
-      () => setKeyboardVisible(true)
-    );
-    const keyboardDidHideListener = Keyboard.addListener(
-      "keyboardWillHide",
-      () => setKeyboardVisible(false)
-    );
-
-    return () => {
-      keyboardDidShowListener.remove();
-      keyboardDidHideListener.remove();
-    };
+    const showSub = Keyboard.addListener("keyboardWillShow", () => setKeyboardVisible(true));
+    const hideSub = Keyboard.addListener("keyboardWillHide", () => setKeyboardVisible(false));
+    return () => { showSub.remove(); hideSub.remove(); };
   }, []);
 
-  // Scroll to bottom when keyboard appears and padding is applied
+  // Scroll to bottom when keyboard appears
   useEffect(() => {
     if (keyboardVisible) {
       scrollViewRef.current?.scrollToEnd({ animated: true });
@@ -454,17 +438,14 @@ export function CreatePostSheetScreen() {
         <ScrollView
           ref={scrollViewRef}
           style={styles.container}
-          stickyHeaderIndices={[0]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={handleScroll}
           contentContainerStyle={{
             paddingBottom: keyboardVisible ? 350 : insets.bottom + 20,
           }}
         >
           {/* Header */}
-          <View style={[styles.header, isScrolled && styles.headerScrolled]}>
+          <View style={styles.header}>
             <View style={styles.headerRow}>
               <View style={styles.headerLeft}>
                 <HapticPressable
@@ -580,7 +561,14 @@ export function CreatePostSheetScreen() {
                 date={eventDate}
                 onDateChange={setEventDate}
                 startTime={eventStartTime}
-                onStartTimeChange={setEventStartTime}
+                onStartTimeChange={(d: Date) => {
+                  setEventStartTime(d);
+                  if (!eventEndTime) {
+                    const end = new Date(d);
+                    end.setHours(end.getHours() + 1);
+                    setEventEndTime(end);
+                  }
+                }}
                 endTime={eventEndTime}
                 onEndTimeChange={setEventEndTime}
                 description={eventDescription}

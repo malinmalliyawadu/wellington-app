@@ -89,9 +89,11 @@ export function PlacePicker({
 
   return (
     <HapticPressable style={styles.placeAddRow} onPress={onPress}>
-      <SFIcon name="mappin" fallback="location" size={16} color={colors.gray400} />
-      <Text style={styles.placeAddText}>Add a place</Text>
-      <SFIcon name="chevron.right" fallback="chevron-forward" size={16} color={colors.gray300} />
+      <View style={styles.placeAddIconWrap}>
+        <SFIcon name="mappin" fallback="location" size={16} color={colors.primary} />
+      </View>
+      <Text style={styles.placeAddTitle}>Location</Text>
+      <SFIcon name="chevron.right" fallback="chevron-forward" size={14} color={colors.gray300} />
     </HapticPressable>
   );
 }
@@ -134,23 +136,34 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     alignItems: "center",
     gap: 10,
     marginBottom: 16,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
     backgroundColor: colors.gray100,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.gray200,
+    borderStyle: "dashed",
   },
-  placeAddText: {
+  placeAddIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary + "14",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  placeAddTitle: {
     flex: 1,
     fontSize: 15,
-    color: colors.gray400,
-    fontFamily: "PlusJakartaSans_500Medium",
+    color: colors.text,
+    fontFamily: "PlusJakartaSans_600SemiBold",
   },
   mapPreview: {
-    height: 100,
-    borderRadius: 12,
+    height: 120,
+    borderRadius: 14,
     overflow: "hidden",
+    marginTop: 8,
+    marginBottom: 8,
   },
   map: {
     flex: 1,

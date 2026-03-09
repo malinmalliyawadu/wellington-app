@@ -47,30 +47,29 @@ export function MentionSuggestions({ suggestions, onSelect }: MentionSuggestions
 
 const createStyles = (colors: Colors) => StyleSheet.create({
   container: {
-    backgroundColor: colors.background,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.gray200,
+    backgroundColor: colors.gray100,
+    borderRadius: 14,
     overflow: 'hidden',
-    marginTop: 4,
+    marginTop: 8,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     gap: 10,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.gray100,
   },
   avatar: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: colors.gray200,
   },
   textContainer: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   displayName: {
     fontSize: 14,
@@ -79,6 +78,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
   },
   username: {
     fontSize: 13,
+    fontFamily: fonts.medium,
     color: colors.textMuted,
   },
 });
