@@ -1,4 +1,4 @@
-export type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community' | 'quiz' | 'craft' | 'kids' | 'cultural';
+export type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community' | 'quiz' | 'craft' | 'kids' | 'cultural' | 'volunteering';
 
 export interface Event {
   id: string;
@@ -18,6 +18,8 @@ export interface Event {
   ticketmasterUrl?: string;
   humanitixUrl?: string;
   eventbriteUrl?: string;
+  undertheradarUrl?: string;
+  everybodyEatsUrl?: string;
   aiScore?: number | null;
   aiDescription?: string | null;
 }

@@ -18,6 +18,7 @@ const EVENT_CATEGORIES: { type: EventCategory; label: string }[] = [
   { type: "craft", label: "Craft" },
   { type: "kids", label: "Kids" },
   { type: "cultural", label: "Cultural" },
+  { type: "volunteering", label: "Volunteering" },
 ];
 
 interface EventFormProps {

@@ -223,7 +223,7 @@ async function fetchEventsPage(
   return { events: rawEvents, hasMore };
 }
 
-async function fetchEventDetails(
+async function _fetchEventDetails(
   token: string,
   eventId: string
 ): Promise<EventbriteEvent | null> {

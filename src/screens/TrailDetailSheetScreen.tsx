@@ -311,7 +311,7 @@ export function TrailDetailSheetScreen() {
                 key={event.id}
                 event={event}
                 place={trailPlace}
-                compact
+                variant="small"
                 onPress={() => {
                   router.push(`${tabBase}/event/${event.id}`);
                 }}

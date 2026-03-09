@@ -346,6 +346,8 @@ function mapEvent(row: {
   ticketmaster_url?: string | null;
   humanitix_url?: string | null;
   eventbrite_url?: string | null;
+  undertheradar_url?: string | null;
+  everybody_eats_url?: string | null;
   ai_score?: number | null;
   ai_description?: string | null;
 }): Event {
@@ -366,6 +368,8 @@ function mapEvent(row: {
     ticketmasterUrl: row.ticketmaster_url ?? undefined,
     humanitixUrl: row.humanitix_url ?? undefined,
     eventbriteUrl: row.eventbrite_url ?? undefined,
+    undertheradarUrl: row.undertheradar_url ?? undefined,
+    everybodyEatsUrl: row.everybody_eats_url ?? undefined,
     aiScore: row.ai_score ?? null,
     aiDescription: row.ai_description ?? null,
   };

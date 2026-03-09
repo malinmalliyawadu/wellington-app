@@ -142,7 +142,7 @@ export function CreateGuideScreen() {
   }, [existingGuidePlaces, existingPlaceData, isEditing]);
 
   // Search places — use ref-based debounce to avoid effect cleanup killing the timer
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const handleSearchQueryChange = useCallback((query: string) => {
     setSearchQuery(query);
 
