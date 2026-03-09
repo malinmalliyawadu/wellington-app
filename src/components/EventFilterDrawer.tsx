@@ -13,7 +13,7 @@ import { SFIcon } from './SFIcon';
 import { fonts } from "../theme/fonts";
 
 type DateRange = 'today' | 'tomorrow' | 'weekend' | 'month';
-type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community' | 'quiz' | 'craft' | 'kids' | 'cultural';
+type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community' | 'quiz' | 'craft' | 'kids' | 'cultural' | 'volunteering';
 
 const DATE_OPTIONS: { key: DateRange | null; label: string; icon: { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap } }[] = [
   { key: null, label: 'Any time', icon: { sf: 'infinity', fallback: 'infinite' } },
@@ -23,7 +23,7 @@ const DATE_OPTIONS: { key: DateRange | null; label: string; icon: { sf: SFSymbol
   { key: 'month', label: 'This Month', icon: { sf: 'calendar', fallback: 'calendar' } },
 ];
 
-const ALL_CATEGORIES: EventCategory[] = ['music', 'comedy', 'art', 'food', 'market', 'community', 'quiz', 'craft', 'kids', 'cultural'];
+const ALL_CATEGORIES: EventCategory[] = ['music', 'comedy', 'art', 'food', 'market', 'community', 'quiz', 'craft', 'kids', 'cultural', 'volunteering'];
 
 const CATEGORY_LABELS: Record<EventCategory, string> = {
   music: 'Music',
@@ -36,6 +36,7 @@ const CATEGORY_LABELS: Record<EventCategory, string> = {
   craft: 'Craft',
   kids: 'Kids',
   cultural: 'Cultural',
+  volunteering: 'Volunteering',
 };
 
 const CATEGORY_ICONS: Record<EventCategory, { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }> = {
@@ -49,6 +50,7 @@ const CATEGORY_ICONS: Record<EventCategory, { sf: SFSymbol; fallback: keyof type
   craft: { sf: 'scissors', fallback: 'cut' },
   kids: { sf: 'figure.and.child.holdinghands', fallback: 'happy' },
   cultural: { sf: 'building.columns', fallback: 'globe' },
+  volunteering: { sf: 'hands.sparkles.fill', fallback: 'heart' },
 };
 
 function ToggleSwitchRow({

@@ -15,6 +15,7 @@ export const CATEGORY_COLORS: Record<Event["category"], string> = {
   craft: "#D97706",
   kids: "#059669",
   cultural: "#B91C1C",
+  volunteering: "#16A34A",
 };
 
 export const CATEGORY_LABELS: Record<Event["category"], string> = {
@@ -28,6 +29,7 @@ export const CATEGORY_LABELS: Record<Event["category"], string> = {
   craft: "Craft",
   kids: "Kids",
   cultural: "Cultural",
+  volunteering: "Volunteering",
 };
 
 export function formatDate(dateString: string): string {

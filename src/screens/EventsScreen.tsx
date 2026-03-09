@@ -53,6 +53,7 @@ export function EventsScreen() {
     selectedDateRange,
     setSelectedDateRange,
     selectedCategories,
+    toggleCategory,
     showFollowingOnly,
     showFreeOnly,
     setShowFreeOnly,
@@ -271,6 +272,10 @@ export function EventsScreen() {
         setShowFreeOnly(!showFreeOnly);
         return;
       }
+      if (key === "volunteering") {
+        toggleCategory("volunteering");
+        return;
+      }
       // Date range chips
       const range = key as DateRange;
       setSelectedDateRange(selectedDateRange === range ? null : range);
@@ -279,6 +284,7 @@ export function EventsScreen() {
       openFilters,
       setShowFreeOnly,
       showFreeOnly,
+      toggleCategory,
       setSelectedDateRange,
       selectedDateRange,
     ]
@@ -287,10 +293,11 @@ export function EventsScreen() {
   const isChipActive = useCallback(
     (key: string) => {
       if (key === "free") return showFreeOnly;
+      if (key === "volunteering") return selectedCategories.includes("volunteering");
       if (key === "filters") return advancedFilterCount > 0;
       return selectedDateRange === key;
     },
-    [showFreeOnly, advancedFilterCount, selectedDateRange]
+    [showFreeOnly, selectedCategories, advancedFilterCount, selectedDateRange]
   );
 
   // ─── Navigate to event ────────────────────────────────────────────
@@ -339,7 +346,7 @@ export function EventsScreen() {
 
   // ─── Discovery mode data ─────────────────────────────────────────
 
-  const { happeningNow, weekend, free, comingUp } = sections;
+  const { happeningNow, weekend, free, volunteering, comingUp } = sections;
   const weekendRest = useMemo(() => weekend.slice(1), [weekend]);
 
   const discoveryData = useMemo(() => {
@@ -375,6 +382,16 @@ export function EventsScreen() {
         count: free.length,
       });
     }
+    if (volunteering.length > 0) {
+      items.push({
+        type: "carousel",
+        key: "volunteering",
+        title: "Volunteering",
+        icon: { sf: "hands.sparkles.fill", fallback: "heart" },
+        items: volunteering,
+        count: volunteering.length,
+      });
+    }
     if (comingUp.length > 0) {
       items.push({ type: "comingUpHeader", count: comingUp.length });
       for (const item of comingUp.slice(0, 8)) {
@@ -394,6 +411,7 @@ export function EventsScreen() {
     happeningNow,
     weekend,
     weekendRest,
+    volunteering,
     free,
     comingUp,
     discoveryEventsWithPlaces.length,
