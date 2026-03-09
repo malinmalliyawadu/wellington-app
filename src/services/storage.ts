@@ -98,7 +98,7 @@ export async function uploadAvatar(
       throw new Error(`Storage upload failed: ${error.message}`);
     }
 
-    console.log('Upload successful, data:', data);
+    console.log('Upload successful');
 
     const publicUrl = getPublicUrl(AVATARS_BUCKET, filePath);
     console.log('Public URL:', publicUrl);
