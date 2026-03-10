@@ -417,7 +417,7 @@ export function AIChatScreen() {
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 8 : 0}
+      keyboardVerticalOffset={0}
     >
       <ScrollView
         ref={scrollRef}
@@ -447,9 +447,8 @@ export function AIChatScreen() {
                   style={styles.chip}
                   onPress={() => handleChipPress(chip.question)}
                 >
-                  <Text style={styles.chipLabel}>
-                    {chip.emoji} {chip.label}
-                  </Text>
+                  <Text style={styles.chipEmoji}>{chip.emoji}</Text>
+                  <Text style={styles.chipLabel}>{chip.label}</Text>
                   <Text style={styles.chipDescription}>{chip.description}</Text>
                 </HapticPressable>
               ))}
@@ -467,9 +466,8 @@ export function AIChatScreen() {
                   style={styles.chip}
                   onPress={() => handleChipPress(chip.question)}
                 >
-                  <Text style={styles.chipLabel}>
-                    {chip.emoji} {chip.label}
-                  </Text>
+                  <Text style={styles.chipEmoji}>{chip.emoji}</Text>
+                  <Text style={styles.chipLabel}>{chip.label}</Text>
                 </HapticPressable>
               ))}
             </View>
@@ -634,7 +632,7 @@ export function AIChatScreen() {
       <View
         style={[
           styles.inputBar,
-          { paddingBottom: keyboardVisible ? 0 : insets.bottom + 49 + 8 },
+          { paddingBottom: keyboardVisible ? 4 : insets.bottom + 49 + 8 },
         ]}
       >
         <TextInput
@@ -666,7 +664,7 @@ export function AIChatScreen() {
           <SFIcon
             name="arrow.up.circle.fill"
             fallback="arrow-up-circle"
-            size={32}
+            size={40}
             color={
               inputText.trim() && !isBusy ? colors.primary : colors.gray300
             }

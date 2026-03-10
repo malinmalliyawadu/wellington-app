@@ -6,6 +6,7 @@ import Animated, {
   withRepeat,
   withTiming,
   withSequence,
+  withDelay,
   Easing,
 } from "react-native-reanimated";
 import { SFIcon } from "../../components/SFIcon";
@@ -14,13 +15,14 @@ import type { Colors } from "../../theme/ThemeContext";
 import { getGreeting } from "./chatHelpers";
 
 export function WellyHero({ colors, userName }: { colors: Colors; userName?: string }) {
-  const glowOpacity = useSharedValue(0.15);
+  const innerGlow = useSharedValue(0.15);
+  const outerGlow = useSharedValue(0.06);
   const scale = useSharedValue(1);
 
   useEffect(() => {
-    glowOpacity.value = withRepeat(
+    innerGlow.value = withRepeat(
       withSequence(
-        withTiming(0.45, {
+        withTiming(0.4, {
           duration: 2000,
           easing: Easing.inOut(Easing.ease),
         }),
@@ -32,14 +34,31 @@ export function WellyHero({ colors, userName }: { colors: Colors; userName?: str
       -1,
       false
     );
+    outerGlow.value = withDelay(
+      400,
+      withRepeat(
+        withSequence(
+          withTiming(0.18, {
+            duration: 2500,
+            easing: Easing.inOut(Easing.ease),
+          }),
+          withTiming(0.06, {
+            duration: 2500,
+            easing: Easing.inOut(Easing.ease),
+          })
+        ),
+        -1,
+        false
+      )
+    );
     scale.value = withRepeat(
       withSequence(
-        withTiming(1.05, {
-          duration: 2000,
+        withTiming(1.04, {
+          duration: 2500,
           easing: Easing.inOut(Easing.ease),
         }),
         withTiming(1.0, {
-          duration: 2000,
+          duration: 2500,
           easing: Easing.inOut(Easing.ease),
         })
       ),
@@ -49,8 +68,12 @@ export function WellyHero({ colors, userName }: { colors: Colors; userName?: str
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const glowStyle = useAnimatedStyle(() => ({
-    opacity: glowOpacity.value,
+  const innerGlowStyle = useAnimatedStyle(() => ({
+    opacity: innerGlow.value,
+  }));
+
+  const outerGlowStyle = useAnimatedStyle(() => ({
+    opacity: outerGlow.value,
   }));
 
   const avatarStyle = useAnimatedStyle(() => ({
@@ -64,9 +87,16 @@ export function WellyHero({ colors, userName }: { colors: Colors; userName?: str
       <View style={heroStyles.avatarWrapper}>
         <Animated.View
           style={[
-            heroStyles.glow,
+            heroStyles.outerGlow,
             { backgroundColor: colors.primary },
-            glowStyle,
+            outerGlowStyle,
+          ]}
+        />
+        <Animated.View
+          style={[
+            heroStyles.innerGlow,
+            { backgroundColor: colors.primary },
+            innerGlowStyle,
           ]}
         />
         <Animated.View
@@ -79,17 +109,17 @@ export function WellyHero({ colors, userName }: { colors: Colors; userName?: str
           <SFIcon
             name="sparkles"
             fallback="sparkles"
-            size={22}
+            size={26}
             color="#FFFFFF"
           />
         </Animated.View>
       </View>
       <Text style={[heroStyles.brandName, { color: colors.text }]}>Welly</Text>
-      <Text style={heroStyles.greeting}>
-        {greeting.text}{userName ? ` ${userName}` : ""} {greeting.emoji}
+      <Text style={[heroStyles.greeting, { color: colors.text }]}>
+        {greeting.text}{userName ? `, ${userName}` : ""}! {greeting.emoji}
       </Text>
-      <Text style={[heroStyles.subtitle, { color: colors.textSecondary }]}>
-        What are you keen to do in Wellington?
+      <Text style={[heroStyles.subtitle, { color: colors.textMuted }]}>
+        Your Wellington guide — ask me anything
       </Text>
     </View>
   );
@@ -102,38 +132,43 @@ export const heroStyles = StyleSheet.create({
     marginBottom: 8,
   },
   avatarWrapper: {
-    width: 80,
-    height: 80,
+    width: 100,
+    height: 100,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  glow: {
+  outerGlow: {
     position: "absolute",
-    width: 76,
-    height: 76,
-    borderRadius: 38,
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+  },
+  innerGlow: {
+    position: "absolute",
+    width: 72,
+    height: 72,
+    borderRadius: 36,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 1,
   },
   brandName: {
-    fontSize: 28,
+    fontSize: 32,
     fontFamily: fonts.pacifico,
   },
   greeting: {
-    fontSize: 20,
+    fontSize: 18,
     fontFamily: fonts.bold,
-    color: "#333",
-    marginTop: 8,
+    marginTop: 6,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: fonts.medium,
     marginTop: 2,
   },
@@ -147,12 +182,12 @@ export const heroStyles = StyleSheet.create({
   eventImage: {
     width: 120,
     height: 120,
-    borderRadius: 16,
+    borderRadius: 20,
   },
   eventImagePlaceholder: {
     width: 120,
     height: 120,
-    borderRadius: 16,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
   },

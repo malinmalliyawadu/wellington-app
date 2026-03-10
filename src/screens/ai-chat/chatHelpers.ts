@@ -10,9 +10,9 @@ const CATEGORY_ICONS: Record<string, { sf: any; fallback: any }> = {
 
 function getGreeting(): { text: string; emoji: string } {
   const hour = new Date().getHours();
-  if (hour < 12) return { text: "Good morning!", emoji: "☀️" };
-  if (hour < 17) return { text: "Good afternoon!", emoji: "🌤️" };
-  return { text: "Good evening!", emoji: "🌙" };
+  if (hour < 12) return { text: "Good morning", emoji: "☀️" };
+  if (hour < 17) return { text: "Good afternoon", emoji: "🌤️" };
+  return { text: "Good evening", emoji: "🌙" };
 }
 
 function getSuggestionChips(): {

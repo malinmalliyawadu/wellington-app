@@ -22,17 +22,32 @@ function TypingDot({
   color: string;
   size?: number;
 }) {
-  const opacity = useSharedValue(0.2);
+  const opacity = useSharedValue(0.3);
+  const translateY = useSharedValue(0);
 
   useEffect(() => {
     opacity.value = withDelay(
-      index * 200,
+      index * 160,
       withRepeat(
         withSequence(
-          withTiming(1, { duration: 400, easing: Easing.inOut(Easing.ease) }),
-          withTiming(0.2, {
-            duration: 400,
-            easing: Easing.inOut(Easing.ease),
+          withTiming(1, { duration: 350, easing: Easing.out(Easing.ease) }),
+          withTiming(0.3, {
+            duration: 350,
+            easing: Easing.in(Easing.ease),
+          }),
+        ),
+        -1,
+        false,
+      ),
+    );
+    translateY.value = withDelay(
+      index * 160,
+      withRepeat(
+        withSequence(
+          withTiming(-5, { duration: 350, easing: Easing.out(Easing.ease) }),
+          withTiming(0, {
+            duration: 350,
+            easing: Easing.in(Easing.ease),
           }),
         ),
         -1,
@@ -44,6 +59,7 @@ function TypingDot({
 
   const style = useAnimatedStyle(() => ({
     opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
   }));
 
   return (
@@ -86,7 +102,7 @@ export function AIThinkingAnimation({
             Welly
           </Text>
         </View>
-        <View style={[styles.bubble, { backgroundColor: colors.gray100 }]}>
+        <View style={[styles.bubble, { backgroundColor: colors.gray100, borderColor: colors.border }]}>
           <View style={styles.bubbleDotsRow}>
             {[0, 1, 2].map((i) => (
               <TypingDot key={i} index={i} color={colors.textMuted} size={8} />
@@ -141,13 +157,15 @@ const styles = StyleSheet.create({
   bubble: {
     alignSelf: "flex-start",
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 16,
+    paddingVertical: 14,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   bubbleDotsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 5,
+    gap: 6,
+    height: 16,
   },
   statusText: {
     fontSize: 12,
@@ -162,6 +180,7 @@ const styles = StyleSheet.create({
   dotsRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 4,
+    gap: 5,
+    height: 14,
   },
 });

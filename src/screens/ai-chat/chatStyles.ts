@@ -1,4 +1,4 @@
-import { StyleSheet } from "react-native";
+import { Platform, StyleSheet } from "react-native";
 import { fonts } from "../../theme/fonts";
 import type { Colors } from "../../theme/ThemeContext";
 
@@ -31,6 +31,7 @@ const createMarkdownStyles = (colors: Colors) =>
     },
     link: {
       color: colors.primary,
+      textDecorationLine: "underline" as const,
     },
   });
 
@@ -52,7 +53,7 @@ const createStyles = (colors: Colors) =>
     scrollContent: {
       padding: 20,
       paddingBottom: 16,
-      gap: 16,
+      gap: 20,
     },
     scrollContentIdle: {
       flexGrow: 1,
@@ -68,27 +69,32 @@ const createStyles = (colors: Colors) =>
       flexWrap: "wrap",
       justifyContent: "center",
       gap: 10,
-      marginTop: 24,
+      marginTop: 32,
+      paddingHorizontal: 4,
     },
     chip: {
-      backgroundColor: colors.primary + "12",
+      backgroundColor: colors.gray100,
       paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingVertical: 14,
       borderRadius: 16,
-      borderWidth: 1,
-      borderColor: colors.primary + "30",
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
       width: "47%",
+    },
+    chipEmoji: {
+      fontSize: 22,
+      marginBottom: 6,
     },
     chipLabel: {
       fontSize: 15,
       fontFamily: fonts.semiBold,
-      color: colors.primary,
+      color: colors.text,
     },
     chipDescription: {
       fontSize: 12,
       fontFamily: fonts.medium,
       color: colors.textMuted,
-      marginTop: 2,
+      marginTop: 3,
     },
     // Message bubbles
     questionBubble: {
@@ -96,9 +102,18 @@ const createStyles = (colors: Colors) =>
       backgroundColor: colors.primary,
       paddingHorizontal: 16,
       paddingVertical: 10,
-      borderRadius: 18,
-      borderBottomRightRadius: 4,
+      borderRadius: 20,
+      borderBottomRightRadius: 6,
       maxWidth: "80%",
+      ...Platform.select({
+        ios: {
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.2,
+          shadowRadius: 8,
+        },
+        android: { elevation: 3 },
+      }),
     },
     questionText: {
       fontSize: 15,
@@ -139,13 +154,15 @@ const createStyles = (colors: Colors) =>
     },
     followUpSection: {
       gap: 10,
-      marginTop: 4,
+      marginTop: 8,
+      paddingTop: 12,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: colors.border,
     },
     followUpQuestion: {
-      fontSize: 15,
+      fontSize: 14,
       fontFamily: fonts.medium,
       color: colors.textSecondary,
-      fontStyle: "italic",
     },
     followUpChips: {
       flexDirection: "row",
@@ -153,12 +170,12 @@ const createStyles = (colors: Colors) =>
       gap: 8,
     },
     followUpChip: {
-      backgroundColor: colors.primary + "12",
+      backgroundColor: colors.gray100,
       paddingHorizontal: 14,
-      paddingVertical: 8,
-      borderRadius: 18,
-      borderWidth: 1,
-      borderColor: colors.primary + "30",
+      paddingVertical: 9,
+      borderRadius: 20,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
     },
     followUpChipText: {
       fontSize: 14,
@@ -170,6 +187,11 @@ const createStyles = (colors: Colors) =>
       alignItems: "center",
       gap: 12,
       paddingVertical: 24,
+      paddingHorizontal: 20,
+      backgroundColor: colors.error + "08",
+      borderRadius: 16,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.error + "25",
     },
     errorText: {
       fontSize: 14,
@@ -193,11 +215,10 @@ const createStyles = (colors: Colors) =>
       flexDirection: "row",
       alignItems: "center",
       paddingHorizontal: 12,
-      paddingTop: 8,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
+      paddingTop: 10,
       backgroundColor: colors.background,
       gap: 8,
+      marginBottom: 8,
     },
     textInput: {
       flex: 1,
@@ -205,16 +226,21 @@ const createStyles = (colors: Colors) =>
       fontFamily: fonts.medium,
       color: colors.text,
       backgroundColor: colors.gray100,
-      borderRadius: 20,
-      paddingHorizontal: 16,
+      borderRadius: 22,
+      paddingHorizontal: 18,
       paddingVertical: 10,
-      maxHeight: 40,
+      maxHeight: 44,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
     },
     sendButton: {
-      padding: 2,
+      width: 44,
+      height: 44,
+      alignItems: "center",
+      justifyContent: "center",
     },
     sendButtonDisabled: {
-      opacity: 0.5,
+      opacity: 0.4,
     },
     // Recommendation cards
     recCard: {
@@ -224,11 +250,13 @@ const createStyles = (colors: Colors) =>
       borderRadius: 14,
       padding: 12,
       gap: 12,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border,
     },
     recIconCircle: {
       width: 40,
       height: 40,
-      borderRadius: 20,
+      borderRadius: 12,
       alignItems: "center",
       justifyContent: "center",
     },
@@ -243,7 +271,7 @@ const createStyles = (colors: Colors) =>
     },
     recCardDate: {
       fontSize: 12,
-      fontFamily: fonts.medium,
+      fontFamily: fonts.semiBold,
       color: colors.primary,
     },
     recCardReason: {
