@@ -1,4 +1,6 @@
 import { StyleSheet } from "react-native";
+import type { SFSymbol } from "expo-symbols";
+import type { Ionicons } from "@expo/vector-icons";
 
 import type { Colors } from "../../theme/ThemeContext";
 import type { Event } from "../../types";
@@ -30,6 +32,23 @@ export const CATEGORY_LABELS: Record<Event["category"], string> = {
   kids: "Kids",
   cultural: "Cultural",
   volunteering: "Volunteering",
+};
+
+export const EVENT_CATEGORY_ICONS: Record<
+  Event["category"],
+  { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }
+> = {
+  music: { sf: "music.note.list", fallback: "musical-notes" },
+  comedy: { sf: "face.smiling", fallback: "happy" },
+  art: { sf: "paintpalette.fill", fallback: "color-palette" },
+  food: { sf: "fork.knife", fallback: "restaurant" },
+  market: { sf: "cart.fill", fallback: "cart" },
+  community: { sf: "person.2", fallback: "people" },
+  quiz: { sf: "questionmark.circle", fallback: "help-circle" },
+  craft: { sf: "scissors", fallback: "cut" },
+  kids: { sf: "figure.and.child.holdinghands", fallback: "happy" },
+  cultural: { sf: "building.columns", fallback: "globe" },
+  volunteering: { sf: "hands.sparkles.fill", fallback: "heart" },
 };
 
 export function formatDate(dateString: string): string {

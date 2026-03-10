@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
@@ -10,6 +10,9 @@ import { useQuery } from "../hooks/useQuery";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { HapticPressable } from "./HapticPressable";
 import { fonts } from "../theme/fonts";
+import { SFIcon } from "./SFIcon";
+import { SFSymbol } from "expo-symbols";
+import { Ionicons } from "@expo/vector-icons";
 
 type EventCardVariant = "default" | "featured" | "small";
 
@@ -48,6 +51,23 @@ export const CATEGORY_LABELS: Record<Event["category"], string> = {
   kids: "Kids",
   cultural: "Cultural",
   volunteering: "Volunteering",
+};
+
+const EVENT_CATEGORY_ICONS: Record<
+  Event["category"],
+  { sf: SFSymbol; fallback: keyof typeof Ionicons.glyphMap }
+> = {
+  music: { sf: "music.note.list", fallback: "musical-notes" },
+  comedy: { sf: "face.smiling", fallback: "happy" },
+  art: { sf: "paintpalette.fill", fallback: "color-palette" },
+  food: { sf: "fork.knife", fallback: "restaurant" },
+  market: { sf: "cart.fill", fallback: "cart" },
+  community: { sf: "person.2", fallback: "people" },
+  quiz: { sf: "questionmark.circle", fallback: "help-circle" },
+  craft: { sf: "scissors", fallback: "cut" },
+  kids: { sf: "figure.and.child.holdinghands", fallback: "happy" },
+  cultural: { sf: "building.columns", fallback: "globe" },
+  volunteering: { sf: "hands.sparkles.fill", fallback: "heart" },
 };
 
 function formatTime(time: string, endTime?: string): string {
@@ -138,6 +158,108 @@ const AVATAR_SIZE = 22;
 const AVATAR_OVERLAP = 6;
 const glassEnabled = isLiquidGlassAvailable();
 
+function NoImagePlaceholder({
+  category,
+  categoryColor,
+  size = "default",
+}: {
+  category: Event["category"];
+  categoryColor: string;
+  size?: "default" | "small";
+}) {
+  const icon = EVENT_CATEGORY_ICONS[category];
+  const label = CATEGORY_LABELS[category];
+  const iconSize = size === "small" ? 36 : 56;
+
+  return (
+    <LinearGradient
+      colors={[categoryColor + "CC", categoryColor, categoryColor + "99"]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={placeholderStyles.container}
+    >
+      {/* Decorative large faded icon in background */}
+      <View style={placeholderStyles.bgIconContainer}>
+        <SFIcon
+          name={icon.sf}
+          fallback={icon.fallback}
+          size={size === "small" ? 80 : 120}
+          color="rgba(255,255,255,0.08)"
+        />
+      </View>
+      {/* Centered icon + label */}
+      <View style={placeholderStyles.content}>
+        <View
+          style={[
+            placeholderStyles.iconCircle,
+            size === "small" && placeholderStyles.iconCircleSmall,
+          ]}
+        >
+          <SFIcon
+            name={icon.sf}
+            fallback={icon.fallback}
+            size={iconSize}
+            color="#FFFFFF"
+          />
+        </View>
+        <Text
+          style={[
+            placeholderStyles.label,
+            size === "small" && placeholderStyles.labelSmall,
+          ]}
+        >
+          {label}
+        </Text>
+      </View>
+    </LinearGradient>
+  );
+}
+
+const placeholderStyles = StyleSheet.create({
+  container: {
+    width: "100%",
+    height: "100%",
+  },
+  bgIconContainer: {
+    position: "absolute",
+    top: -10,
+    right: -10,
+    opacity: 1,
+    transform: [{ rotate: "15deg" }],
+  },
+  content: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingBottom: 40,
+  },
+  iconCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+  iconCircleSmall: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    marginBottom: 8,
+  },
+  label: {
+    fontSize: 14,
+    fontFamily: fonts.semiBold,
+    color: "rgba(255,255,255,0.7)",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  labelSmall: {
+    fontSize: 10,
+  },
+});
+
 export const EventCard = React.memo(function EventCard({
   event,
   place,
@@ -151,6 +273,8 @@ export const EventCard = React.memo(function EventCard({
   const categoryColor = CATEGORY_COLORS[event.category];
   const happeningNow = useMemo(() => isEventHappeningNow(event), [event]);
   const relativeDay = useMemo(() => getRelativeDay(event.date), [event.date]);
+  const [imageError, setImageError] = useState(false);
+  const showImage = !!event.imageUrl && !imageError;
   const { followingIds } = useFollow();
   const attendeeIds = useMemo(
     () => event.attendeeIds ?? [],
@@ -203,19 +327,19 @@ export const EventCard = React.memo(function EventCard({
     return (
       <HapticPressable style={styles.smallContainer} onPress={handlePress}>
         <View style={styles.smallImageContainer}>
-          {event.imageUrl ? (
+          {showImage ? (
             <Image
               source={{ uri: event.imageUrl }}
               style={styles.image}
               contentFit="cover"
               transition={200}
+              onError={() => setImageError(true)}
             />
           ) : (
-            <LinearGradient
-              colors={[categoryColor, categoryColor + "88"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.image}
+            <NoImagePlaceholder
+              category={event.category}
+              categoryColor={categoryColor}
+              size="small"
             />
           )}
           <LinearGradient
@@ -252,19 +376,18 @@ export const EventCard = React.memo(function EventCard({
     return (
       <HapticPressable style={styles.featuredContainer} onPress={handlePress}>
         <View style={styles.featuredImageContainer}>
-          {event.imageUrl ? (
+          {showImage ? (
             <Image
               source={{ uri: event.imageUrl }}
               style={styles.image}
               contentFit="cover"
               transition={200}
+              onError={() => setImageError(true)}
             />
           ) : (
-            <LinearGradient
-              colors={[categoryColor, categoryColor + "88"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.image}
+            <NoImagePlaceholder
+              category={event.category}
+              categoryColor={categoryColor}
             />
           )}
           <LinearGradient
@@ -346,19 +469,18 @@ export const EventCard = React.memo(function EventCard({
       onPress={handlePress}
     >
       <View style={styles.imageContainer}>
-        {event.imageUrl ? (
+        {showImage ? (
           <Image
             source={{ uri: event.imageUrl }}
             style={styles.image}
             contentFit="cover"
             transition={200}
+            onError={() => setImageError(true)}
           />
         ) : (
-          <LinearGradient
-            colors={[categoryColor, categoryColor + "88"]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.image}
+          <NoImagePlaceholder
+            category={event.category}
+            categoryColor={categoryColor}
           />
         )}
 

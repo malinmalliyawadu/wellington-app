@@ -62,11 +62,13 @@ import { ContextMenu, Button as ExpoButton, Host } from "@expo/ui/swift-ui";
 import {
   CATEGORY_COLORS,
   CATEGORY_LABELS,
+  EVENT_CATEGORY_ICONS,
   formatDate,
   formatTime,
   createStyles,
   createMarkdownStyles,
 } from "./event-detail/eventDetailStyles";
+import { SFIcon as SFIconComponent } from "../components/SFIcon";
 
 export function EventDetailScreen() {
   const { colors } = useTheme();
@@ -82,6 +84,7 @@ export function EventDetailScreen() {
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [togglingAttendance, setTogglingAttendance] = useState(false);
+  const [heroImageError, setHeroImageError] = useState(false);
 
   const fetchEvent = useCallback(() => getEventById(eventId), [eventId]);
   const {
@@ -294,18 +297,67 @@ export function EventDetailScreen() {
           <>
             {/* Hero image with category + price pills and title */}
             <View style={styles.heroContainer}>
-              {event.imageUrl ? (
+              {event.imageUrl && !heroImageError ? (
                 <Image
                   source={{ uri: event.imageUrl }}
                   style={styles.heroImage}
+                  onError={() => setHeroImageError(true)}
                 />
               ) : (
                 <LinearGradient
-                  colors={[categoryColor, categoryColor + "88"]}
+                  colors={[
+                    categoryColor + "CC",
+                    categoryColor,
+                    categoryColor + "99",
+                  ]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.heroImage}
-                />
+                >
+                  <View
+                    style={{
+                      position: "absolute",
+                      top: -10,
+                      right: -10,
+                      transform: [{ rotate: "15deg" }],
+                    }}
+                  >
+                    <SFIconComponent
+                      name={EVENT_CATEGORY_ICONS[event.category].sf}
+                      fallback={EVENT_CATEGORY_ICONS[event.category].fallback}
+                      size={120}
+                      color="rgba(255,255,255,0.08)"
+                    />
+                  </View>
+                  <View
+                    style={{
+                      flex: 1,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      paddingBottom: 60,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 96,
+                        height: 96,
+                        borderRadius: 48,
+                        backgroundColor: "rgba(255,255,255,0.15)",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <SFIconComponent
+                        name={EVENT_CATEGORY_ICONS[event.category].sf}
+                        fallback={
+                          EVENT_CATEGORY_ICONS[event.category].fallback
+                        }
+                        size={56}
+                        color="#FFFFFF"
+                      />
+                    </View>
+                  </View>
+                </LinearGradient>
               )}
 
               <LinearGradient
