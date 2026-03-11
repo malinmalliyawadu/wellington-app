@@ -42,6 +42,7 @@ import { HapticPressable } from "src/components/HapticPressable";
 import { QueryErrorState } from "../components/QueryErrorState";
 import { useAuth } from "../context/AuthContext";
 import { useBlock } from "../context/BlockContext";
+import { useToast } from "../context/ToastContext";
 import { useReport } from "../hooks/useReport";
 import { SFIcon } from "../components/SFIcon";
 import { SocialLinks } from "../components/SocialLinks";
@@ -62,6 +63,7 @@ export function UserProfileScreen() {
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
   const { isBlocked, toggleBlock } = useBlock();
+  const { showToast } = useToast();
   const { showReportAlert } = useReport();
   const onReportRef = useRef<(() => void) | undefined>(undefined);
   const onBlockRef = useRef<(() => void) | undefined>(undefined);
@@ -262,6 +264,7 @@ export function UserProfileScreen() {
   onBlockRef.current = () => {
     if (userBlocked) {
       toggleBlock(userId);
+      showToast({ message: `@${user.username} unblocked` });
     } else {
       Alert.alert(
         "Block user",
@@ -273,7 +276,7 @@ export function UserProfileScreen() {
             style: "destructive",
             onPress: () => {
               toggleBlock(userId);
-              router.back();
+              showToast({ message: `@${user.username} blocked` });
             },
           },
         ]
@@ -448,61 +451,89 @@ export function UserProfileScreen() {
             </View>
           </View>
 
-          {user.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}
+          {userBlocked ? (
+            <View style={styles.blockedBanner}>
+              <SFIcon
+                name="hand.raised.fill"
+                fallback="hand-left"
+                size={20}
+                color={colors.textMuted}
+              />
+              <Text style={styles.blockedText}>
+                You have blocked @{user.username}
+              </Text>
+              <HapticPressable
+                onPress={() => {
+                  toggleBlock(userId);
+                  showToast({ message: `@${user.username} unblocked` });
+                }}
+              >
+                <Text style={styles.unblockLink}>Unblock</Text>
+              </HapticPressable>
+            </View>
+          ) : (
+            <>
+              {user.bio ? <Text style={styles.bio}>{user.bio}</Text> : null}
 
-          <SocialLinks
-            instagramUsername={user.instagramUsername}
-            tiktokUsername={user.tiktokUsername}
-            xUsername={user.xUsername}
-          />
+              <SocialLinks
+                instagramUsername={user.instagramUsername}
+                tiktokUsername={user.tiktokUsername}
+                xUsername={user.xUsername}
+              />
 
-          {/* Action row */}
-          <View style={styles.actionRow}>
-            <FollowButton userId={userId} />
-          </View>
+              {/* Action row */}
+              <View style={styles.actionRow}>
+                <FollowButton userId={userId} />
+              </View>
+            </>
+          )}
         </View>
 
-        {/* Tab bar */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabBar}
-        >
-          {tabs.map((tab) => (
-            <HapticPressable
-              key={tab.key}
-              style={[styles.tab, activeTab === tab.key && styles.tabActive]}
-              onPress={() => setActiveTab(tab.key)}
+        {!userBlocked && (
+          <>
+            {/* Tab bar */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.tabBar}
             >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === tab.key && styles.tabTextActive,
-                ]}
-              >
-                {tab.label}
-              </Text>
-              <View
-                style={[
-                  styles.tabCount,
-                  activeTab === tab.key && styles.tabCountActive,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.tabCountText,
-                    activeTab === tab.key && styles.tabCountTextActive,
-                  ]}
+              {tabs.map((tab) => (
+                <HapticPressable
+                  key={tab.key}
+                  style={[styles.tab, activeTab === tab.key && styles.tabActive]}
+                  onPress={() => setActiveTab(tab.key)}
                 >
-                  {tab.count}
-                </Text>
-              </View>
-            </HapticPressable>
-          ))}
-        </ScrollView>
+                  <Text
+                    style={[
+                      styles.tabText,
+                      activeTab === tab.key && styles.tabTextActive,
+                    ]}
+                  >
+                    {tab.label}
+                  </Text>
+                  <View
+                    style={[
+                      styles.tabCount,
+                      activeTab === tab.key && styles.tabCountActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.tabCountText,
+                        activeTab === tab.key && styles.tabCountTextActive,
+                      ]}
+                    >
+                      {tab.count}
+                    </Text>
+                  </View>
+                </HapticPressable>
+              ))}
+            </ScrollView>
 
-        {/* Tab content */}
-        {renderContent()}
+            {/* Tab content */}
+            {renderContent()}
+          </>
+        )}
       </ScrollView>
 
       {avatarVisible && (
@@ -607,6 +638,30 @@ const createStyles = (colors: Colors) =>
       color: colors.textSecondary,
       marginTop: 10,
       lineHeight: 20,
+    },
+    // Blocked state
+    blockedBanner: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+      marginTop: 16,
+      paddingVertical: 14,
+      paddingHorizontal: 16,
+      backgroundColor: colors.gray100,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    blockedText: {
+      flex: 1,
+      fontSize: 14,
+      fontFamily: fonts.medium,
+      color: colors.textMuted,
+    },
+    unblockLink: {
+      fontSize: 14,
+      fontFamily: fonts.semiBold,
+      color: colors.primary,
     },
     // Action row
     actionRow: {

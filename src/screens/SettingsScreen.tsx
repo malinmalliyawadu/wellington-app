@@ -14,6 +14,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as WebBrowser from "expo-web-browser";
 import { useAuth } from "../context/AuthContext";
 import { useBlock } from "../context/BlockContext";
+import { useToast } from "../context/ToastContext";
 import { deleteAccount } from "../services/auth";
 import { getProfilesByIds } from "../services/users";
 import { useInstagramConnection } from "../hooks/useInstagramConnection";
@@ -30,6 +31,7 @@ export function SettingsScreen() {
   const headerHeight = useHeaderHeight();
   const { profile, updateProfile } = useAuth();
   const { blockedIds, toggleBlock } = useBlock();
+  const { showToast } = useToast();
   const styles = createStyles(colors);
 
   const [savingPrivacy, setSavingPrivacy] = useState(false);
@@ -252,7 +254,10 @@ export function SettingsScreen() {
                           { text: "Cancel", style: "cancel" },
                           {
                             text: "Unblock",
-                            onPress: () => toggleBlock(user.id),
+                            onPress: () => {
+                              toggleBlock(user.id);
+                              showToast({ message: `@${user.username} unblocked` });
+                            },
                           },
                         ]
                       );
