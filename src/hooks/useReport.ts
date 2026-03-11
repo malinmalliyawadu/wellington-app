@@ -1,5 +1,6 @@
 import { Alert, Platform } from 'react-native';
 import { useAuth } from '../context/AuthContext';
+import { useBlock } from '../context/BlockContext';
 import { useToast } from '../context/ToastContext';
 import { createReport } from '../services/reports';
 import type { ReportContentType, ReportReason } from '../types';
@@ -12,6 +13,7 @@ interface ReportTarget {
 
 export function useReport() {
   const { profile } = useAuth();
+  const { toggleBlock, isBlocked } = useBlock();
   const { showToast } = useToast();
 
   const submitReport = async (target: ReportTarget, reason: ReportReason, details?: string) => {
@@ -25,7 +27,7 @@ export function useReport() {
         reason,
         details,
       });
-      showToast({ message: 'Report submitted' });
+      showToast({ message: 'Report submitted. We will review this within 24 hours.' });
     } catch (err: any) {
       if (err?.code === '23505') {
         showToast({ message: 'You already reported this', type: 'error' });
@@ -35,19 +37,45 @@ export function useReport() {
     }
   };
 
+  const offerBlock = (target: ReportTarget) => {
+    if (isBlocked(target.reportedUserId)) return;
+
+    Alert.alert(
+      'Block this user too?',
+      'Blocking will hide all their content from your feed and prevent them from seeing yours.',
+      [
+        { text: 'No thanks', style: 'cancel' },
+        {
+          text: 'Block',
+          style: 'destructive',
+          onPress: () => toggleBlock(target.reportedUserId),
+        },
+      ]
+    );
+  };
+
   const showReportAlert = (target: ReportTarget) => {
     Alert.alert('Report', 'Why are you reporting this?', [
       {
         text: 'Spam',
-        onPress: () => submitReport(target, 'spam'),
+        onPress: () => {
+          submitReport(target, 'spam');
+          offerBlock(target);
+        },
       },
       {
         text: 'Inappropriate',
-        onPress: () => submitReport(target, 'inappropriate'),
+        onPress: () => {
+          submitReport(target, 'inappropriate');
+          offerBlock(target);
+        },
       },
       {
         text: 'Harassment',
-        onPress: () => submitReport(target, 'harassment'),
+        onPress: () => {
+          submitReport(target, 'harassment');
+          offerBlock(target);
+        },
       },
       {
         text: 'Other',
@@ -60,13 +88,17 @@ export function useReport() {
                 { text: 'Cancel', style: 'cancel' },
                 {
                   text: 'Submit',
-                  onPress: (text?: string) => submitReport(target, 'other', text || undefined),
+                  onPress: (text?: string) => {
+                    submitReport(target, 'other', text || undefined);
+                    offerBlock(target);
+                  },
                 },
               ],
               'plain-text',
             );
           } else {
             submitReport(target, 'other');
+            offerBlock(target);
           }
         },
       },

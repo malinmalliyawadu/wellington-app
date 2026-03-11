@@ -149,7 +149,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { error } = await supabase
       .from('profiles')
-      .update({ onboarding_completed: true })
+      .update({
+        onboarding_completed: true,
+        eula_accepted_at: new Date().toISOString(),
+      })
       .eq('id', profile.id);
 
     if (error) throw error;

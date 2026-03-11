@@ -13,6 +13,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useNotifications } from "../context/NotificationContext";
+import { useBlock } from "../context/BlockContext";
 import { getProfilesByIds } from "../services/users";
 import { getPostsByIds } from "../services/posts";
 import { getEventsByIds } from "../services/events";
@@ -46,14 +47,21 @@ export function NotificationsScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const {
-    notifications,
+    notifications: allNotifications,
     unreadCount,
     markAsRead,
     markAllAsRead,
     deleteAll,
     refetch,
   } = useNotifications();
+  const { blockedIds } = useBlock();
   const [refreshing, setRefreshing] = useState(false);
+
+  const notifications = useMemo(() => {
+    if (blockedIds.length === 0) return allNotifications;
+    const blockedSet = new Set(blockedIds);
+    return allNotifications.filter((n) => !blockedSet.has(n.actorId));
+  }, [allNotifications, blockedIds]);
 
   useLayoutEffect(() => {
     navigation.setOptions({

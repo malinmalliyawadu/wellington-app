@@ -26,6 +26,7 @@ import { ThemeProvider } from "../src/theme/ThemeContext";
 
 import { NetworkProvider } from "../src/context/NetworkContext";
 import { FollowProvider } from "../src/context/FollowContext";
+import { BlockProvider, useBlock } from "../src/context/BlockContext";
 import { LikeProvider } from "../src/context/LikeContext";
 import { SaveProvider } from "../src/context/SaveContext";
 import { ToastProvider, useToast } from "../src/context/ToastContext";
@@ -130,6 +131,7 @@ function ScreenTracker() {
 
 function NotificationBannerBridge() {
   const { onNewNotificationRef } = useNotifications();
+  const { isBlocked } = useBlock();
   const { showToast } = useToast();
   const router = useRouter();
 
@@ -137,6 +139,9 @@ function NotificationBannerBridge() {
     onNewNotificationRef.current = (notification: Notification) => {
       // Only show when app is in foreground
       if (AppState.currentState !== 'active') return;
+
+      // Don't show notifications from blocked users
+      if (isBlocked(notification.actorId)) return;
 
       const message = NOTIFICATION_MESSAGES[notification.type] ?? "sent you a notification";
 
@@ -172,7 +177,7 @@ function NotificationBannerBridge() {
     return () => {
       onNewNotificationRef.current = null;
     };
-  }, [onNewNotificationRef, showToast, router]);
+  }, [onNewNotificationRef, showToast, router, isBlocked]);
 
   return null;
 }
@@ -347,6 +352,7 @@ export default function RootLayout() {
                   <AuthProvider>
                     <LocationProvider>
                       <FollowProvider>
+                        <BlockProvider>
                         <LikeProvider>
                           <SaveProvider>
                             <NotificationProvider>
@@ -363,6 +369,7 @@ export default function RootLayout() {
                             </NotificationProvider>
                           </SaveProvider>
                         </LikeProvider>
+                        </BlockProvider>
                       </FollowProvider>
                     </LocationProvider>
                   </AuthProvider>

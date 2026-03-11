@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -8,11 +8,16 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
+import { Image } from "expo-image";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Ionicons } from "@expo/vector-icons";
+import * as WebBrowser from "expo-web-browser";
 import { useAuth } from "../context/AuthContext";
+import { useBlock } from "../context/BlockContext";
 import { deleteAccount } from "../services/auth";
+import { getProfilesByIds } from "../services/users";
 import { useInstagramConnection } from "../hooks/useInstagramConnection";
+import { useQuery } from "../hooks/useQuery";
 import { HapticPressable } from "../components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { SFIcon } from "../components/SFIcon";
@@ -24,11 +29,18 @@ export function SettingsScreen() {
   const { colors } = useTheme();
   const headerHeight = useHeaderHeight();
   const { profile, updateProfile } = useAuth();
+  const { blockedIds, toggleBlock } = useBlock();
   const styles = createStyles(colors);
 
   const [savingPrivacy, setSavingPrivacy] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const isPrivate = profile?.profileVisibility === "private";
+
+  const fetchBlockedUsers = useCallback(
+    () => blockedIds.length > 0 ? getProfilesByIds(blockedIds) : Promise.resolve([]),
+    [blockedIds]
+  );
+  const { data: blockedUsers } = useQuery(fetchBlockedUsers, ['blocked-users', blockedIds]);
 
   const {
     connection: igConnection,
@@ -209,6 +221,85 @@ export function SettingsScreen() {
           </View>
         </View>
 
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Blocked Users</Text>
+          {blockedUsers && blockedUsers.length > 0 ? (
+            <View style={styles.card}>
+              {blockedUsers.map((user, index) => (
+                <View
+                  key={user.id}
+                  style={[
+                    styles.blockedUserRow,
+                    index < blockedUsers.length - 1 && styles.blockedUserBorder,
+                  ]}
+                >
+                  <Image
+                    source={{ uri: user.avatarUrl }}
+                    style={styles.blockedAvatar}
+                    contentFit="cover"
+                  />
+                  <View style={styles.blockedUserInfo}>
+                    <Text style={styles.label}>{user.displayName}</Text>
+                    <Text style={styles.description}>@{user.username}</Text>
+                  </View>
+                  <LiquidGlassButton
+                    title="Unblock"
+                    onPress={() => {
+                      Alert.alert(
+                        "Unblock user",
+                        `Unblock @${user.username}?`,
+                        [
+                          { text: "Cancel", style: "cancel" },
+                          {
+                            text: "Unblock",
+                            onPress: () => toggleBlock(user.id),
+                          },
+                        ]
+                      );
+                    }}
+                    size="small"
+                    variant="secondary"
+                  />
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={styles.hint}>No blocked users</Text>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Legal</Text>
+          <View style={styles.card}>
+            <HapticPressable
+              style={styles.legalRow}
+              onPress={() => WebBrowser.openBrowserAsync("https://wellyapp.nz/terms")}
+            >
+              <SFIcon name="doc.text" fallback="document-text-outline" size={20} color={colors.text} />
+              <Text style={styles.legalLabel}>Terms of Service</Text>
+              <SFIcon name="chevron.right" fallback="chevron-forward" size={16} color={colors.textMuted} />
+            </HapticPressable>
+            <View style={styles.legalDivider} />
+            <HapticPressable
+              style={styles.legalRow}
+              onPress={() => WebBrowser.openBrowserAsync("https://wellyapp.nz/community-guidelines")}
+            >
+              <SFIcon name="shield" fallback="shield-outline" size={20} color={colors.text} />
+              <Text style={styles.legalLabel}>Community Guidelines</Text>
+              <SFIcon name="chevron.right" fallback="chevron-forward" size={16} color={colors.textMuted} />
+            </HapticPressable>
+            <View style={styles.legalDivider} />
+            <HapticPressable
+              style={styles.legalRow}
+              onPress={() => WebBrowser.openBrowserAsync("https://wellyapp.nz/privacy")}
+            >
+              <SFIcon name="hand.raised" fallback="hand-left-outline" size={20} color={colors.text} />
+              <Text style={styles.legalLabel}>Privacy Policy</Text>
+              <SFIcon name="chevron.right" fallback="chevron-forward" size={16} color={colors.textMuted} />
+            </HapticPressable>
+          </View>
+        </View>
+
         <View style={styles.dangerSection}>
           <Text style={styles.dangerTitle}>Danger Zone</Text>
           <Text style={styles.dangerDescription}>
@@ -319,6 +410,41 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     marginTop: 12,
     lineHeight: 18,
     paddingHorizontal: 4,
+  },
+  blockedUserRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  blockedUserBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0, 0, 0, 0.06)",
+  },
+  blockedAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 12,
+  },
+  blockedUserInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  legalRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 14,
+    gap: 12,
+  },
+  legalLabel: {
+    flex: 1,
+    fontSize: 16,
+    fontFamily: fonts.medium,
+    color: colors.text,
+  },
+  legalDivider: {
+    height: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.06)",
   },
   dangerSection: {
     margin: 16,

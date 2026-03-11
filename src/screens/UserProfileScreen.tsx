@@ -14,6 +14,7 @@ import {
   RefreshControl,
   Pressable,
   Animated,
+  Alert,
 } from "react-native";
 import { Image } from "expo-image";
 import {
@@ -40,6 +41,7 @@ import { useTheme, type Colors } from "../theme/ThemeContext";
 import { HapticPressable } from "src/components/HapticPressable";
 import { QueryErrorState } from "../components/QueryErrorState";
 import { useAuth } from "../context/AuthContext";
+import { useBlock } from "../context/BlockContext";
 import { useReport } from "../hooks/useReport";
 import { SFIcon } from "../components/SFIcon";
 import { SocialLinks } from "../components/SocialLinks";
@@ -59,8 +61,11 @@ export function UserProfileScreen() {
   const tabBase = "/" + pathname.split("/")[1];
   const insets = useSafeAreaInsets();
   const { profile } = useAuth();
+  const { isBlocked, toggleBlock } = useBlock();
   const { showReportAlert } = useReport();
   const onReportRef = useRef<(() => void) | undefined>(undefined);
+  const onBlockRef = useRef<(() => void) | undefined>(undefined);
+  const userBlocked = isBlocked(userId);
 
   const isOtherUser = profile?.id !== userId;
 
@@ -88,6 +93,13 @@ export function UserProfileScreen() {
             </ContextMenu.Trigger>
             <ContextMenu.Items>
               <ExpoButton
+                systemImage={userBlocked ? "hand.raised.slash" : "hand.raised"}
+                role="destructive"
+                onPress={() => onBlockRef.current?.()}
+              >
+                {userBlocked ? "Unblock user" : "Block user"}
+              </ExpoButton>
+              <ExpoButton
                 systemImage="flag"
                 role="destructive"
                 onPress={() => onReportRef.current?.()}
@@ -100,7 +112,7 @@ export function UserProfileScreen() {
       ),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigation, isOtherUser]);
+  }, [navigation, isOtherUser, userBlocked]);
 
   const [activeTab, setActiveTab] = useState<Tab>("posts");
   const [refreshing, setRefreshing] = useState(false);
@@ -245,6 +257,28 @@ export function UserProfileScreen() {
       contentId: undefined,
       reportedUserId: userId,
     });
+  };
+
+  onBlockRef.current = () => {
+    if (userBlocked) {
+      toggleBlock(userId);
+    } else {
+      Alert.alert(
+        "Block user",
+        `Block @${user.username}? They won't be able to see your profile or content, and you won't see theirs.`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Block",
+            style: "destructive",
+            onPress: () => {
+              toggleBlock(userId);
+              router.back();
+            },
+          },
+        ]
+      );
+    }
   };
 
   const postCount = userPosts.length;

@@ -20,6 +20,7 @@ import { SFSymbol } from "expo-symbols";
 import { SFIcon } from "../components/SFIcon";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import * as WebBrowser from "expo-web-browser";
 import { fonts } from "../theme/fonts";
 import { signInWithGoogle, signInWithApple } from "../services/auth";
 import { HapticPressable } from "src/components/HapticPressable";
@@ -162,6 +163,30 @@ export function LoginScreen() {
               Welly
             </Text>
 
+            {/* Terms */}
+            <Text style={styles.termsText}>
+              By continuing, you agree to our{" "}
+              <Text
+                style={styles.termsLink}
+                onPress={() =>
+                  WebBrowser.openBrowserAsync("https://wellyapp.nz/terms")
+                }
+              >
+                Terms of Service
+              </Text>{" "}
+              and{" "}
+              <Text
+                style={styles.termsLink}
+                onPress={() =>
+                  WebBrowser.openBrowserAsync(
+                    "https://wellyapp.nz/community-guidelines"
+                  )
+                }
+              >
+                Community Guidelines
+              </Text>
+            </Text>
+
             {/* Buttons */}
             <View style={styles.buttons}>
               {glassEnabled ? (
@@ -236,6 +261,18 @@ const styles = StyleSheet.create({
     textShadowColor: "rgba(0, 0, 0, 0.4)",
     textShadowOffset: { width: 0, height: 3 },
     textShadowRadius: 12,
+  },
+  termsText: {
+    fontSize: 13,
+    color: "rgba(255, 255, 255, 0.65)",
+    textAlign: "center",
+    lineHeight: 20,
+    marginBottom: 16,
+    paddingHorizontal: 16,
+  },
+  termsLink: {
+    color: "rgba(255, 255, 255, 0.9)",
+    textDecorationLine: "underline" as const,
   },
   buttons: {
     marginBottom: 24,
