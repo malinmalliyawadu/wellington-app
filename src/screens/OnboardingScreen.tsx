@@ -40,6 +40,7 @@ import {
   WELCOME_SLIDES,
 } from "./onboarding/onboardingStyles";
 import type { User } from "../types";
+import { usePostHog } from "posthog-react-native";
 
 const { width: SCREEN_WIDTH } = Dimensions.get("window");
 
@@ -53,6 +54,7 @@ export function OnboardingScreen() {
 
   const insets = useSafeAreaInsets();
   const { profile, updateProfile, completeOnboarding } = useAuth();
+  const posthog = usePostHog();
   const [step, setStep] = useState(0);
   const [finishing, setFinishing] = useState(false);
   const [locationAlreadyGranted, setLocationAlreadyGranted] = useState(false);
@@ -104,6 +106,7 @@ export function OnboardingScreen() {
     setFinishing(true);
     try {
       await completeOnboarding();
+      posthog.capture("onboarding_completed");
     } catch {
       Alert.alert("Error", "Something went wrong. Please try again.");
       setFinishing(false);
@@ -184,6 +187,10 @@ export function OnboardingScreen() {
         username: username.trim(),
         bio: bio.trim() || undefined,
         avatarUrl,
+      });
+      posthog.capture("onboarding_profile_saved", {
+        has_bio: !!bio.trim(),
+        has_avatar: !!avatarUrl,
       });
       handleNext();
     } catch {

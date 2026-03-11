@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 import { getFollowingIds, followUser, unfollowUser } from '../services/follows';
 import { createFollowNotification, deleteNotificationForFollow } from '../services/notifications';
 import { awardPoints } from '../services/points';
+import { posthog } from '../config/posthog';
 
 interface FollowContextType {
   followingIds: string[];
@@ -57,6 +58,11 @@ export function FollowProvider({ children }: { children: React.ReactNode }) {
       const next = alreadyFollowing
         ? prev.filter((id) => id !== userId)
         : [...prev, userId];
+
+      posthog.capture("user_followed", {
+        following: !alreadyFollowing,
+        followed_user_id: userId,
+      });
 
       // Fire and forget the API call, revert on error
       const apiCall = alreadyFollowing

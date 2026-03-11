@@ -69,6 +69,7 @@ import {
   createMarkdownStyles,
 } from "./event-detail/eventDetailStyles";
 import { SFIcon as SFIconComponent } from "../components/SFIcon";
+import { usePostHog } from "posthog-react-native";
 
 export function EventDetailScreen() {
   const { colors } = useTheme();
@@ -85,6 +86,7 @@ export function EventDetailScreen() {
   const { showToast } = useToast();
   const [togglingAttendance, setTogglingAttendance] = useState(false);
   const [heroImageError, setHeroImageError] = useState(false);
+  const posthog = usePostHog();
 
   const fetchEvent = useCallback(() => getEventById(eventId), [eventId]);
   const {
@@ -471,6 +473,12 @@ export function EventDetailScreen() {
                       );
                       refetchAttendees();
 
+                      posthog.capture("event_attendance_toggled", {
+                        attending: nowAttending,
+                        event_id: event.id,
+                        event_title: event.title,
+                        event_category: event.category,
+                      });
                       if (nowAttending) {
                         createEventAttendanceNotification(
                           currentUserId,
@@ -503,6 +511,10 @@ export function EventDetailScreen() {
                   variant="secondary"
                   fullWidth
                   onPress={() => {
+                    posthog.capture("event_tickets_opened", {
+                      event_id: event.id,
+                      event_title: event.title,
+                    });
                     WebBrowser.openBrowserAsync(event.ticketUrl!);
                   }}
                 />
@@ -534,6 +546,11 @@ export function EventDetailScreen() {
                     notes: event.description,
                   });
                   if (success) {
+                    posthog.capture("event_added_to_calendar", {
+                      event_id: event.id,
+                      event_title: event.title,
+                      event_category: event.category,
+                    });
                     Alert.alert(
                       "Added to Calendar",
                       `"${event.title}" has been added to your calendar.`

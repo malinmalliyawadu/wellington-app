@@ -23,6 +23,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { fonts } from "../theme/fonts";
 import { signInWithGoogle, signInWithApple } from "../services/auth";
 import { HapticPressable } from "src/components/HapticPressable";
+import { usePostHog } from "posthog-react-native";
 
 const glassEnabled = isLiquidGlassAvailable();
 
@@ -31,12 +32,18 @@ const splashBg = require("../../assets/splash-bg.png");
 export function LoginScreen() {
   const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState<"google" | "apple" | null>(null);
+  const posthog = usePostHog();
 
   async function handleGoogleSignIn() {
     setLoading("google");
     try {
       await signInWithGoogle();
+      posthog.capture("user_signed_in", { method: "google" });
     } catch (error: any) {
+      posthog.capture("sign_in_error", {
+        method: "google",
+        error_message: error.message ?? "Could not sign in with Google",
+      });
       Alert.alert(
         "Sign In Error",
         error.message ?? "Could not sign in with Google"
@@ -50,8 +57,13 @@ export function LoginScreen() {
     setLoading("apple");
     try {
       await signInWithApple();
+      posthog.capture("user_signed_in", { method: "apple" });
     } catch (error: any) {
       if (error.code === "ERR_REQUEST_CANCELED") return;
+      posthog.capture("sign_in_error", {
+        method: "apple",
+        error_message: error.message ?? "Could not sign in with Apple",
+      });
       Alert.alert(
         "Sign In Error",
         error.message ?? "Could not sign in with Apple"

@@ -18,6 +18,7 @@ import { getProfileByUsername } from "../../services/users";
 import { createMentionNotification } from "../../services/notifications";
 import { dismissAndPush } from "../../utils/navigation";
 import * as ExpoVideoThumbnails from "expo-video-thumbnails";
+import { posthog } from "../../config/posthog";
 
 interface UsePostSubmitParams {
   profile: User | null;
@@ -218,6 +219,14 @@ export function usePostSubmit({
           mediaItems: uploadedMediaItems,
         });
 
+        posthog.capture("post_created", {
+          post_type: postType,
+          has_content: !!content.trim(),
+          media_count: mediaItems.length,
+          place_name: selectedPlace.name,
+          place_category: selectedPlace.category,
+        });
+
         const newAchievements = await markExplored(placeId, "posted");
         if (newAchievements.length > 0) {
           showToast(createAchievementToast(newAchievements[0]));
@@ -277,6 +286,11 @@ export function usePostSubmit({
             price: eventPrice.trim() ? parseFloat(eventPrice) || null : null,
           });
 
+          posthog.capture("event_updated", {
+            event_category: eventCategory,
+            place_name: selectedPlace.name,
+          });
+
           queryClient.invalidateQueries({ queryKey: ['q', 'events'] });
           queryClient.invalidateQueries({ queryKey: ['q', 'upcoming-events'] });
           queryClient.invalidateQueries({ queryKey: ['q', ['event', editEventId]] });
@@ -295,6 +309,14 @@ export function usePostSubmit({
             category: eventCategory,
             creatorId: profile.id,
             price: eventPrice.trim() ? parseFloat(eventPrice) || null : null,
+          });
+
+          posthog.capture("event_created", {
+            event_category: eventCategory,
+            has_image: !!eventImageUri,
+            has_end_time: !!eventEndTime,
+            has_price: !!eventPrice.trim(),
+            place_name: selectedPlace.name,
           });
 
           // Award points for event creation

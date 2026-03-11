@@ -50,6 +50,7 @@ import {
   CHAT_STORAGE_KEY,
 } from "./ai-chat/chatHelpers";
 import { createStyles, createMarkdownStyles } from "./ai-chat/chatStyles";
+import { usePostHog } from "posthog-react-native";
 
 let msgId = 0;
 
@@ -63,6 +64,7 @@ export function AIChatScreen() {
   const { eventId, eventTitle, eventCategory, eventImageUrl } = useLocalSearchParams<{ eventId?: string; eventTitle?: string; eventCategory?: string; eventImageUrl?: string }>();
   const styles = createStyles(colors);
   const mdStyles = createMarkdownStyles(colors);
+  const posthog = usePostHog();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -332,16 +334,26 @@ export function AIChatScreen() {
 
   const handleChipPress = useCallback(
     (question: string) => {
+      posthog.capture("ai_chat_suggestion_used", {
+        suggestion_text: question,
+        message_count: messages.length,
+        context: eventId ? "event" : "general",
+      });
       handleAsk(question);
     },
-    [handleAsk]
+    [handleAsk, posthog, messages.length, eventId]
   );
 
   const handleSend = useCallback(() => {
     const q = inputText.trim();
     if (!q || isBusy) return;
+    posthog.capture("ai_chat_message_sent", {
+      message_length: q.length,
+      message_count: messages.length,
+      context: eventId ? "event" : "general",
+    });
     handleAsk(q);
-  }, [inputText, isBusy, handleAsk]);
+  }, [inputText, isBusy, handleAsk, posthog, messages.length, eventId]);
 
   const pathname = usePathname();
   const tabPrefix = pathname.startsWith("/feed")

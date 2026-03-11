@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { queryClient } from '../lib/queryClient';
 import { updateProfile as updateProfileService } from '../services/users';
 import type { User } from '../types';
+import { posthog } from '../config/posthog';
 
 interface AuthContextType {
   session: Session | null;
@@ -45,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(true);
         fetchProfile(session.user.id);
       } else {
+        posthog.reset();
         setProfile(null);
         queryClient.clear();
         setLoading(false);
@@ -73,6 +75,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         instagramUsername: (data as any).instagram_username ?? undefined,
         tiktokUsername: (data as any).tiktok_username ?? undefined,
         xUsername: (data as any).x_username ?? undefined,
+      });
+      posthog.identify(data.id, {
+        $set: {
+          username: data.username,
+          display_name: data.display_name,
+          onboarding_completed: data.onboarding_completed ?? false,
+        },
+        $set_once: {
+          first_seen_at: new Date().toISOString(),
+        },
       });
     } else if (error?.code === 'PGRST116') {
       // No profile row found (e.g. trigger didn't fire or DB was reset)

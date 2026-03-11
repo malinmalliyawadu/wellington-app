@@ -1,12 +1,14 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { AppState } from "react-native";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../src/lib/queryClient";
 import { setupNetworkManager } from "../src/lib/networkManager";
-import { Slot, useRouter, useSegments } from "expo-router";
+import { Slot, useRouter, useSegments, usePathname } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useShareIntent } from "expo-share-intent";
+import { PostHogProvider, usePostHog } from "posthog-react-native";
+import { posthog } from "../src/config/posthog";
 import * as SplashScreen from "expo-splash-screen";
 import { ErrorScreen } from "../src/components/ErrorScreen";
 import { OfflineBanner } from "../src/components/OfflineBanner";
@@ -108,6 +110,23 @@ const NOTIFICATION_MESSAGES: Record<NotificationType, string> = {
   comment_reply: "replied to your comment",
   mention: "mentioned you",
 };
+
+// Tracks screen views with Expo Router
+// @see https://posthog.com/docs/libraries/react-native#with-expo-router
+function ScreenTracker() {
+  const ph = usePostHog();
+  const pathname = usePathname();
+  const previousPathname = useRef<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (previousPathname.current !== pathname) {
+      ph.screen(pathname, { previous_screen: previousPathname.current ?? null });
+      previousPathname.current = pathname;
+    }
+  }, [pathname, ph]);
+
+  return null;
+}
 
 function NotificationBannerBridge() {
   const { onNewNotificationRef } = useNotifications();
@@ -310,38 +329,49 @@ export default function RootLayout() {
   if (!fontsLoaded) return null;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <NetworkProvider>
-        <ThemeProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <ZoomOverlayProvider>
-              <SafeAreaProvider>
-                <AuthProvider>
-                  <LocationProvider>
-                    <FollowProvider>
-                      <LikeProvider>
-                        <SaveProvider>
-                          <NotificationProvider>
-                            <ToastProvider>
-                              <PointsProvider>
-                                <AuthGate>
-                                  <Slot />
-                                  <OfflineBanner />
-                                </AuthGate>
-                                <StatusBar style="auto" />
-                              </PointsProvider>
-                            </ToastProvider>
-                          </NotificationProvider>
-                        </SaveProvider>
-                      </LikeProvider>
-                    </FollowProvider>
-                  </LocationProvider>
-                </AuthProvider>
-              </SafeAreaProvider>
-            </ZoomOverlayProvider>
-          </GestureHandlerRootView>
-        </ThemeProvider>
-      </NetworkProvider>
-    </QueryClientProvider>
+    <PostHogProvider
+      client={posthog}
+      autocapture={{
+        captureScreens: false, // Manual screen tracking with Expo Router
+        captureTouches: true,
+        propsToCapture: ["testID"],
+        maxElementsCaptured: 20,
+      }}
+    >
+      <QueryClientProvider client={queryClient}>
+        <NetworkProvider>
+          <ThemeProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <ZoomOverlayProvider>
+                <SafeAreaProvider>
+                  <AuthProvider>
+                    <LocationProvider>
+                      <FollowProvider>
+                        <LikeProvider>
+                          <SaveProvider>
+                            <NotificationProvider>
+                              <ToastProvider>
+                                <PointsProvider>
+                                  <ScreenTracker />
+                                  <AuthGate>
+                                    <Slot />
+                                    <OfflineBanner />
+                                  </AuthGate>
+                                  <StatusBar style="auto" />
+                                </PointsProvider>
+                              </ToastProvider>
+                            </NotificationProvider>
+                          </SaveProvider>
+                        </LikeProvider>
+                      </FollowProvider>
+                    </LocationProvider>
+                  </AuthProvider>
+                </SafeAreaProvider>
+              </ZoomOverlayProvider>
+            </GestureHandlerRootView>
+          </ThemeProvider>
+        </NetworkProvider>
+      </QueryClientProvider>
+    </PostHogProvider>
   );
 }

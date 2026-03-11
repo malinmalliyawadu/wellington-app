@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 import { getLikedPostIds, likePost, unlikePost, getAllLikeCounts } from '../services/likes';
 import { getLikedGuideIds, likeGuide, unlikeGuide, getAllGuideLikeCounts } from '../services/guideLikes';
 import { createLikeNotification, deleteNotificationForLike, createGuideLikeNotification, deleteNotificationForGuideLike } from '../services/notifications';
+import { posthog } from '../config/posthog';
 
 interface LikeStateContextType {
   isLiked: (postId: string) => boolean;
@@ -94,6 +95,11 @@ export function LikeProvider({ children }: { children: React.ReactNode }) {
         ...counts,
         [postId]: (counts[postId] ?? 0) + (alreadyLiked ? -1 : 1),
       }));
+
+      posthog.capture("post_liked", {
+        liked: !alreadyLiked,
+        post_id: postId,
+      });
 
       const apiCall = alreadyLiked
         ? unlikePost(currentUserId, postId)
