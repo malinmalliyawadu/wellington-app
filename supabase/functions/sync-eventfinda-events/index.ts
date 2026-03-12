@@ -1,5 +1,5 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { deduplicateEvents } from "../_shared/deduplicateEvents.ts";
+import { deduplicateEvents, normalizeTitle } from "../_shared/deduplicateEvents.ts";
 import { createPlaceResolver, loadExistingEventPlaces } from "../_shared/resolvePlace.ts";
 
 const corsHeaders = {
@@ -543,10 +543,34 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Same-source dedup: if Eventfinda lists the same event with different IDs
+    // and slightly different titles (e.g. "~" vs "-"), keep only the first one
+    const seenKeys = new Set<string>();
+    const uniqueRows: Record<string, unknown>[] = [];
+    let sameSourceDupes = 0;
+    for (const row of upsertRows) {
+      const title = row.title as string;
+      const date = row.date as string;
+      if (title && date) {
+        const key = `${normalizeTitle(title)}|${date}`;
+        if (seenKeys.has(key)) {
+          sameSourceDupes++;
+          continue;
+        }
+        seenKeys.add(key);
+      }
+      uniqueRows.push(row);
+    }
+    if (sameSourceDupes > 0) {
+      console.log(
+        `[dedup] Removed ${sameSourceDupes} same-source duplicates from Eventfinda batch`,
+      );
+    }
+
     // Cross-source dedup: link to existing events from other sources
     const { rows: dedupedRows, linked: linkedCount } = await deduplicateEvents(
       supabase,
-      upsertRows,
+      uniqueRows,
       "eventfinda",
     );
 

@@ -128,26 +128,55 @@ function shouldExcludePlace(types: string[]): boolean {
 }
 
 function mapGoogleCategory(types: string[]): Place["category"] {
-  if (types.includes("cafe") || types.includes("bakery")) return "cafe";
+  if (types.includes("cafe") || types.includes("bakery") || types.includes("coffee_shop")) return "cafe";
+  // Check bar BEFORE restaurant — places with both should stay as bar
+  if (types.includes("bar") || types.includes("night_club")) return "bar";
   if (types.includes("restaurant") || types.includes("food"))
     return "restaurant";
-  if (types.includes("bar") || types.includes("night_club")) return "bar";
-  if (types.includes("park") || types.includes("natural_feature"))
+  if (types.includes("park") || types.includes("natural_feature") || types.includes("campground"))
     return "park";
   if (
     types.includes("museum") ||
     types.includes("tourist_attraction") ||
     types.includes("art_gallery") ||
     types.includes("zoo") ||
-    types.includes("aquarium")
+    types.includes("aquarium") ||
+    types.includes("library") ||
+    types.includes("church") ||
+    types.includes("place_of_worship") ||
+    types.includes("amusement_park")
   )
     return "attraction";
   if (
     types.includes("stadium") ||
     types.includes("movie_theater") ||
-    types.includes("bowling_alley")
+    types.includes("bowling_alley") ||
+    types.includes("performing_arts_theater") ||
+    types.includes("concert_hall") ||
+    types.includes("event_venue")
   )
     return "venue";
+  if (
+    types.includes("store") ||
+    types.includes("shop") ||
+    types.includes("shopping_mall") ||
+    types.includes("clothing_store") ||
+    types.includes("book_store") ||
+    types.includes("home_goods_store") ||
+    types.includes("jewelry_store") ||
+    types.includes("shoe_store") ||
+    types.includes("gift_shop") ||
+    types.includes("florist") ||
+    types.includes("pet_store") ||
+    types.includes("bicycle_store") ||
+    types.includes("electronics_store") ||
+    types.includes("furniture_store") ||
+    types.includes("hardware_store") ||
+    types.includes("supermarket") ||
+    types.includes("convenience_store") ||
+    types.includes("department_store")
+  )
+    return "shop";
   return "attraction";
 }
 

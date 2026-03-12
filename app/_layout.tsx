@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { AppState } from "react-native";
+import { AppState, InteractionManager, Linking } from "react-native";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "../src/lib/queryClient";
 import { setupNetworkManager } from "../src/lib/networkManager";
@@ -58,42 +58,38 @@ const WEBSITE_HOST = (
   .replace(/^https?:\/\//, "")
   .replace(/\/$/, "");
 
-// Map website paths to in-app routes
-const WEBSITE_PATH_MAP: Record<string, (id: string) => string> = {
+// Map website/deep-link path types to in-app routes
+const DEEP_LINK_PATH_MAP: Record<string, (id: string) => string> = {
   post: (id) => `/feed/post/${id}`,
   place: (id) => `/feed/place/${id}`,
   user: (id) => `/feed/user/${id}`,
   event: (id) => `/events/${id}`,
+  guide: (id) => `/feed/guide/${id}`,
+  trail: (id) => `/map/trail/${id}`,
 };
 
-function parseShareIntentRoute(url: string): string | null {
-  // Match wellington:// deep links
-  const deepLinkMatch = url.match(/wellington:\/\/\/?(.+)/);
+function parseDeepLinkRoute(url: string): string | null {
+  // Match wellington://<type>/<id> deep links
+  const deepLinkMatch = url.match(/wellington:\/\/\/?(\w+)\/([^/?#]+)/);
   if (deepLinkMatch) {
-    const path = "/" + deepLinkMatch[1];
-    if (
-      path.startsWith("/feed/post/") ||
-      path.startsWith("/feed/place/") ||
-      path.startsWith("/feed/user/") ||
-      path.startsWith("/events/")
-    ) {
-      return path;
-    }
+    const [, type, id] = deepLinkMatch;
+    const mapper = DEEP_LINK_PATH_MAP[type];
+    if (mapper) return mapper(id);
     return null;
   }
 
-  // Match https://wellyapp.nz/post/{id}, /event/{id}, /place/{id}, /user/{id}
+  // Match https://wellyapp.nz/<type>/<id> universal links
   const websiteMatch = url.match(
     new RegExp(
       `https?://${WEBSITE_HOST.replace(
         /\./g,
         "\\."
-      )}/(post|event|place|user)/([^/?#]+)`
+      )}/(post|event|place|user|guide|trail)/([^/?#]+)`
     )
   );
   if (websiteMatch) {
     const [, type, id] = websiteMatch;
-    const mapper = WEBSITE_PATH_MAP[type];
+    const mapper = DEEP_LINK_PATH_MAP[type];
     if (mapper) return mapper(id);
   }
 
@@ -188,11 +184,22 @@ function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntent();
 
+  // Hide splash screen once auth loading completes.
+  // This lives here (not in index.tsx) because <Redirect> can unmount index.tsx
+  // before its useEffect fires, leaving the splash screen stuck.
+  useEffect(() => {
+    if (!loading) {
+      SplashScreen.hideAsync();
+    }
+  }, [loading]);
+
+  // Auth routing
   useEffect(() => {
     if (loading) return;
 
     const onLoginPage = segments[0] === "login";
     const onOnboardingPage = segments[0] === "onboarding";
+    const inTabs = segments[0] === "(tabs)";
 
     if (!session && !onLoginPage) {
       router.replace("/login");
@@ -208,21 +215,42 @@ function AuthGate({ children }: { children: React.ReactNode }) {
       profile?.onboardingCompleted &&
       (onLoginPage || onOnboardingPage)
     ) {
-      const pendingDeepLink = (global as any).__pendingDeepLink;
-      if (pendingDeepLink) {
-        delete (global as any).__pendingDeepLink;
-        router.replace("/(tabs)/map");
-        // Push deep link target after the tabs are mounted
-        setTimeout(() => router.push(pendingDeepLink as any), 0);
-      } else {
-        router.replace("/(tabs)/map");
-      }
+      // Navigate to tabs — deep link will be consumed once tabs are mounted
+      router.replace("/(tabs)/map");
     } else if (session && onLoginPage) {
       // Session exists, on login page, but onboarding status not yet loaded — go to onboarding
       router.replace("/onboarding");
     }
+
+    // Consume pending deep link once the tab navigator is mounted
+    if (session && profile?.onboardingCompleted && inTabs) {
+      const pendingDeepLink = (global as any).__pendingDeepLink;
+      if (pendingDeepLink) {
+        delete (global as any).__pendingDeepLink;
+        InteractionManager.runAfterInteractions(() => {
+          router.push(pendingDeepLink as any);
+        });
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, profile?.onboardingCompleted, loading, segments]);
+
+  // Warm-start deep link handler.
+  // +native-intent.tsx handles URL interception at the Expo Router level, but
+  // navigation may not always work with NativeTabs. This listener acts as a
+  // fallback to ensure deep links are followed when the app is in the background.
+  useEffect(() => {
+    if (!session || !profile?.onboardingCompleted) return;
+
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      const route = parseDeepLinkRoute(url);
+      if (route) {
+        router.push(route as any);
+      }
+    });
+
+    return () => subscription.remove();
+  }, [session, profile?.onboardingCompleted, router]);
 
   // Handle content shared into the app via the share extension
   useEffect(() => {
@@ -232,14 +260,14 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     let route: string | null = null;
 
     if (shareIntent.type === "weburl" && shareIntent.webUrl) {
-      route = parseShareIntentRoute(shareIntent.webUrl);
+      route = parseDeepLinkRoute(shareIntent.webUrl);
     } else if (shareIntent.type === "text" && shareIntent.text) {
       // Match wellington:// deep links or https://wellyapp.nz/... URLs
       const urlMatch = shareIntent.text.match(
         /(wellington:\/\/\S+|https?:\/\/[^\s]+)/
       );
       if (urlMatch) {
-        route = parseShareIntentRoute(urlMatch[1]);
+        route = parseDeepLinkRoute(urlMatch[1]);
       }
     }
 

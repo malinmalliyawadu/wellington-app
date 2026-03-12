@@ -24,6 +24,7 @@ export const CATEGORY_ICONS: Record<
   park: { sf: "leaf.fill", fallback: "leaf" },
   venue: { sf: "music.note.list", fallback: "musical-notes" },
   trail: { sf: "figure.hiking", fallback: "walk" },
+  shop: { sf: "bag.fill", fallback: "bag" },
 };
 
 export interface MarkerEvent {

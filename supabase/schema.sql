@@ -2,7 +2,7 @@
 -- Run this in the Supabase SQL Editor
 
 -- Enums
-create type place_category as enum ('cafe', 'restaurant', 'bar', 'attraction', 'park', 'venue', 'trail');
+create type place_category as enum ('cafe', 'restaurant', 'bar', 'attraction', 'park', 'venue', 'trail', 'shop');
 create type post_type as enum ('photo', 'video', 'text');
 create type event_category as enum ('music', 'comedy', 'art', 'food', 'market', 'community', 'quiz', 'craft', 'kids', 'cultural', 'volunteering');
 create type trail_difficulty as enum ('easy', 'moderate', 'hard');

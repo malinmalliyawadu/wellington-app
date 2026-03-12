@@ -34,6 +34,7 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   park: 'Park',
   venue: 'Venue',
   trail: 'Trail',
+  shop: 'Shop',
 };
 
 export function PlaceDetailScreen() {

@@ -1,4 +1,4 @@
-export type PlaceCategory = 'cafe' | 'restaurant' | 'bar' | 'attraction' | 'park' | 'venue' | 'trail';
+export type PlaceCategory = 'cafe' | 'restaurant' | 'bar' | 'attraction' | 'park' | 'venue' | 'trail' | 'shop';
 
 export interface Place {
   id: string;

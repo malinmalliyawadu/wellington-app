@@ -24,6 +24,7 @@ const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof type
   park: { sf: 'leaf.fill', fallback: 'leaf' },
   venue: { sf: 'music.note.list', fallback: 'musical-notes' },
   trail: { sf: 'figure.hiking', fallback: 'walk' },
+  shop: { sf: 'bag.fill', fallback: 'bag' },
 };
 
 const CATEGORY_LABELS: Record<PlaceCategory, string> = {
@@ -34,6 +35,7 @@ const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   park: 'Park',
   venue: 'Venue',
   trail: 'Trail',
+  shop: 'Shop',
 };
 
 const ALL_CATEGORIES: PlaceCategory[] = [
@@ -44,6 +46,7 @@ const ALL_CATEGORIES: PlaceCategory[] = [
   'park',
   'venue',
   'trail',
+  'shop',
 ];
 
 interface MapSearchBarProps {

@@ -6,6 +6,7 @@ const CATEGORY_ICONS: Record<string, { sf: any; fallback: any }> = {
   park: { sf: "leaf.fill", fallback: "leaf" },
   venue: { sf: "music.note", fallback: "musical-notes" },
   trail: { sf: "figure.hiking", fallback: "walk" },
+  shop: { sf: "bag.fill", fallback: "bag" },
 };
 
 function getGreeting(): { text: string; emoji: string } {

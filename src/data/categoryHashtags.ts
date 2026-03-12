@@ -12,4 +12,5 @@ export const categoryHashtags: Record<PlaceCategory, string[]> = {
   park: ['outdoors', 'nature', 'greenspace', 'walks', 'picnic'],
   venue: ['livemusic', 'gig', 'nightlife', 'performance', 'entertainment'],
   trail: ['hiking', 'trailrunning', 'tramping', 'walksnz', 'getoutside'],
+  shop: ['shopping', 'shoplocal', 'wellingtonshops', 'retail', 'supportlocal'],
 };

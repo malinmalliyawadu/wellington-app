@@ -300,7 +300,6 @@ export function UserProfileScreen() {
         return (
           <PostsGrid
             posts={userPosts}
-            title="Posts"
             onPostPress={(postId) => router.push(`${tabBase}/post/${postId}`)}
             emptyText="No posts yet"
           />
@@ -372,8 +371,7 @@ export function UserProfileScreen() {
       <ScrollView
         style={styles.container}
         showsVerticalScrollIndicator={false}
-        automaticallyAdjustContentInsets={false}
-        contentInsetAdjustmentBehavior="never"
+        contentInsetAdjustmentBehavior="automatic"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

@@ -12,6 +12,7 @@ export const CATEGORY_ICONS: Record<PlaceCategory, { sf: string; fallback: strin
     park: { sf: "leaf.fill", fallback: "leaf" },
     venue: { sf: "music.note.list", fallback: "musical-notes" },
     trail: { sf: "figure.hiking", fallback: "walk" },
+    shop: { sf: "bag.fill", fallback: "bag" },
   };
 
 export function formatTimeAgo(dateString: string): string {

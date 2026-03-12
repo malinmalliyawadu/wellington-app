@@ -30,6 +30,7 @@ const CATEGORY_ICONS: Record<PlaceCategory, { sf: SFSymbol; fallback: keyof type
   park: { sf: "leaf.fill", fallback: "leaf" },
   venue: { sf: "music.note.list", fallback: "musical-notes" },
   trail: { sf: "figure.hiking", fallback: "walk" },
+  shop: { sf: "bag.fill", fallback: "bag" },
 };
 
 interface FeedPostProps {

@@ -970,7 +970,7 @@ export type Database = {
   };
 };
 
-export type PlaceCategory = 'cafe' | 'restaurant' | 'bar' | 'attraction' | 'park' | 'venue' | 'trail';
+export type PlaceCategory = 'cafe' | 'restaurant' | 'bar' | 'attraction' | 'park' | 'venue' | 'trail' | 'shop';
 export type PostType = 'photo' | 'video' | 'text';
 export type EventCategory = 'music' | 'comedy' | 'art' | 'food' | 'market' | 'community' | 'quiz' | 'craft' | 'kids' | 'cultural' | 'volunteering';
 export type TrailDifficulty = 'easy' | 'moderate' | 'hard';

@@ -15,6 +15,7 @@ export const CATEGORY_ICONS: Record<
   park: { sf: "leaf.fill", fallback: "leaf" },
   venue: { sf: "music.note.list", fallback: "musical-notes" },
   trail: { sf: "figure.hiking", fallback: "walk" },
+  shop: { sf: "bag.fill", fallback: "bag" },
 };
 
 export const CATEGORY_LABELS: Record<PlaceCategory, string> = {
@@ -25,6 +26,7 @@ export const CATEGORY_LABELS: Record<PlaceCategory, string> = {
   park: "Parks",
   venue: "Venues",
   trail: "Trails",
+  shop: "Shops",
 };
 
 export const ALL_CATEGORIES: PlaceCategory[] = [
@@ -35,6 +37,7 @@ export const ALL_CATEGORIES: PlaceCategory[] = [
   "park",
   "venue",
   "trail",
+  "shop",
 ];
 
 export type FilterType =

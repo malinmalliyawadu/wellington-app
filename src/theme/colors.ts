@@ -31,6 +31,7 @@ export const lightColors = {
     park: "#2D6A4F",
     venue: "#D62828",
     trail: "#0F766E",
+    shop: "#D946EF",
   },
 
   // Interactive
@@ -85,6 +86,7 @@ export const darkColors: Colors = {
     park: "#3A8B6A",
     venue: "#E84040",
     trail: "#14B8A6",
+    shop: "#E879F9",
   },
 
   // Interactive

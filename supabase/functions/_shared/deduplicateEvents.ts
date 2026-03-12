@@ -19,6 +19,19 @@ const ALL_SOURCES: SourceName[] = [
 ];
 
 /**
+ * Normalize a title for fuzzy matching: collapse separators (~ – — −) to -,
+ * strip extra whitespace, and lowercase.
+ */
+export function normalizeTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .replace(/[\u2013\u2014\u2015\u2212~]/g, "-") // en-dash, em-dash, horizontal bar, minus sign, tilde → hyphen
+    .replace(/\s*-\s*/g, " - ") // normalize whitespace around hyphens
+    .replace(/\s+/g, " ") // collapse whitespace
+    .trim();
+}
+
+/**
  * Cross-source event deduplication.
  *
  * For each row, checks whether an event with the same title + date already
@@ -65,7 +78,7 @@ export async function deduplicateEvents(
   const existingMap = new Map<string, string>();
   if (existingEvents) {
     for (const e of existingEvents) {
-      const key = `${(e.title as string).toLowerCase().trim()}|${e.date}`;
+      const key = `${normalizeTitle(e.title as string)}|${e.date}`;
       existingMap.set(key, e.id);
     }
   }
@@ -87,7 +100,7 @@ export async function deduplicateEvents(
       continue;
     }
 
-    const key = `${title.toLowerCase().trim()}|${date}`;
+    const key = `${normalizeTitle(title)}|${date}`;
     const existingId = existingMap.get(key);
 
     if (existingId) {

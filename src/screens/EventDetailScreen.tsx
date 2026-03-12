@@ -428,7 +428,7 @@ export function EventDetailScreen() {
                       <Text style={styles.metaLink}>{place.name}</Text>
                     </HapticPressable>
                     <View style={styles.addressRow}>
-                      <Text style={styles.metaSecondary} numberOfLines={1}>
+                      <Text style={[styles.metaSecondary, { flex: 1 }]} numberOfLines={1}>
                         {place.address}
                       </Text>
                       <HapticPressable

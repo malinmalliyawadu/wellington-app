@@ -60,6 +60,8 @@ interface UseMarkerClusteringParams {
   zoom: number;
   /** When set, trail markers are never clustered (prevents zoom-to-fit triggering clusters). */
   activeTrailId?: string | null;
+  /** Popularity score per place, used to prioritise which markers survive the cap. */
+  popularityScores?: Map<string, number>;
 }
 
 export function useMarkerClustering({
@@ -68,6 +70,7 @@ export function useMarkerClustering({
   showTrails,
   zoom,
   activeTrailId,
+  popularityScores,
 }: UseMarkerClusteringParams) {
   // Group places by category and build per-category supercluster indices
   const indices = useMemo(() => {
@@ -220,11 +223,21 @@ export function useMarkerClustering({
       }
     }
 
-    // Cap place markers to prevent too many heavy native views
-    const cappedPlaces =
-      placeItems.length <= MAX_PLACE_MARKERS
-        ? placeItems
-        : placeItems.slice(0, MAX_PLACE_MARKERS);
+    // Cap place markers to prevent too many heavy native views.
+    // Sort by popularity so the most important places survive the cap.
+    let cappedPlaces: MapItemPlace[];
+    if (placeItems.length <= MAX_PLACE_MARKERS) {
+      cappedPlaces = placeItems;
+    } else {
+      const sorted = popularityScores
+        ? [...placeItems].sort(
+            (a, b) =>
+              (popularityScores.get(b.place.id) ?? 0) -
+              (popularityScores.get(a.place.id) ?? 0)
+          )
+        : placeItems;
+      cappedPlaces = sorted.slice(0, MAX_PLACE_MARKERS);
+    }
 
     // When a trail is active, trails were excluded from supercluster indices,
     // so emit them all as individual unclustered items.
@@ -236,7 +249,7 @@ export function useMarkerClustering({
 
     const items: MapItem[] = [...clusterItems, ...cappedPlaces];
     return { mapItems: items, clusteredTrailIds: clusteredTrails };
-  }, [indices, zoom, placeMap, trailMap, activeTrailId, showTrails, trails]);
+  }, [indices, zoom, placeMap, trailMap, activeTrailId, showTrails, trails, popularityScores]);
 
   return result;
 }
