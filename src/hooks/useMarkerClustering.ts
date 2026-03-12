@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import SuperclusterImport, { ClusterProperties } from "supercluster";
+import { Region } from "react-native-maps";
 import { Place, PlaceCategory, Trail } from "../types";
-import { WELLINGTON_BOUNDS } from "../constants/wellington";
 
 // Handle CJS/ESM interop — Metro may or may not wrap the default export
 const Supercluster = (
@@ -38,18 +38,19 @@ export type MapItem = MapItemPlace | MapItemCluster | MapItemTrail;
 
 const CLUSTER_RADIUS = 40;
 const MAX_ZOOM = 20;
-const MAX_PLACE_MARKERS = 80;
 
-// Fixed bbox covering all of Wellington — all markers are always returned,
-// react-native-maps handles viewport culling natively (same as pre-clustering).
-const WELLINGTON_BBOX: [number, number, number, number] = [
-  WELLINGTON_BOUNDS.west,
-  WELLINGTON_BOUNDS.south,
-  WELLINGTON_BOUNDS.east,
-  WELLINGTON_BOUNDS.north,
-];
+/** Small padding (degrees) added to the viewport bbox so markers near the edge don't pop in/out. */
+const BBOX_PAD = 0.01;
 
 type PointProps = { placeId: string; category: PlaceCategory; trailId?: string };
+
+function regionToBBox(region: Region): [number, number, number, number] {
+  const west = region.longitude - region.longitudeDelta / 2 - BBOX_PAD;
+  const south = region.latitude - region.latitudeDelta / 2 - BBOX_PAD;
+  const east = region.longitude + region.longitudeDelta / 2 + BBOX_PAD;
+  const north = region.latitude + region.latitudeDelta / 2 + BBOX_PAD;
+  return [west, south, east, north];
+}
 
 // --- Hook ---
 
@@ -58,10 +59,9 @@ interface UseMarkerClusteringParams {
   trails: Trail[] | null | undefined;
   showTrails: boolean;
   zoom: number;
+  visibleRegion: Region;
   /** When set, trail markers are never clustered (prevents zoom-to-fit triggering clusters). */
   activeTrailId?: string | null;
-  /** Popularity score per place, used to prioritise which markers survive the cap. */
-  popularityScores?: Map<string, number>;
 }
 
 export function useMarkerClustering({
@@ -69,8 +69,8 @@ export function useMarkerClustering({
   trails,
   showTrails,
   zoom,
+  visibleRegion,
   activeTrailId,
-  popularityScores,
 }: UseMarkerClusteringParams) {
   // Group places by category and build per-category supercluster indices
   const indices = useMemo(() => {
@@ -154,17 +154,16 @@ export function useMarkerClustering({
   }, [trails]);
 
   // Produce the final mapItems and clusteredTrailIds.
-  // Uses fixed Wellington bbox so ALL markers are always in the React tree.
-  // Only zoom changes trigger re-clustering; panning is handled natively.
-  // Place markers are capped at MAX_PLACE_MARKERS to prevent crashes from
-  // too many heavy BlurView/GlassView components rendering simultaneously.
+  // Only markers within the padded viewport bbox are returned by supercluster,
+  // keeping the React tree small and avoiding heavy-view crashes.
+  const bbox = useMemo(() => regionToBBox(visibleRegion), [visibleRegion]);
+
   const result = useMemo(() => {
-    const clusterItems: MapItem[] = [];
-    const placeItems: MapItemPlace[] = [];
+    const items: MapItem[] = [];
     const clusteredTrails = new Set<string>();
 
     for (const [category, index] of indices) {
-      const clusters = index.getClusters(WELLINGTON_BBOX, zoom);
+      const clusters = index.getClusters(bbox, zoom);
 
       for (const feature of clusters) {
         const props = feature.properties as PointProps | (ClusterProperties & { cluster: true });
@@ -194,7 +193,7 @@ export function useMarkerClustering({
             }
           }
 
-          clusterItems.push({
+          items.push({
             kind: "cluster",
             id: clusterId,
             category,
@@ -210,46 +209,29 @@ export function useMarkerClustering({
           if (pointProps.trailId) {
             const trail = trailMap.get(pointProps.trailId);
             if (trail) {
-              clusterItems.push({ kind: "trail", trail });
+              items.push({ kind: "trail", trail });
             }
           } else {
             // Regular place
             const place = placeMap.get(pointProps.placeId);
             if (place) {
-              placeItems.push({ kind: "place", place });
+              items.push({ kind: "place", place });
             }
           }
         }
       }
     }
 
-    // Cap place markers to prevent too many heavy native views.
-    // Sort by popularity so the most important places survive the cap.
-    let cappedPlaces: MapItemPlace[];
-    if (placeItems.length <= MAX_PLACE_MARKERS) {
-      cappedPlaces = placeItems;
-    } else {
-      const sorted = popularityScores
-        ? [...placeItems].sort(
-            (a, b) =>
-              (popularityScores.get(b.place.id) ?? 0) -
-              (popularityScores.get(a.place.id) ?? 0)
-          )
-        : placeItems;
-      cappedPlaces = sorted.slice(0, MAX_PLACE_MARKERS);
-    }
-
     // When a trail is active, trails were excluded from supercluster indices,
     // so emit them all as individual unclustered items.
     if (activeTrailId && showTrails && trails) {
       for (const trail of trails) {
-        clusterItems.push({ kind: "trail", trail });
+        items.push({ kind: "trail", trail });
       }
     }
 
-    const items: MapItem[] = [...clusterItems, ...cappedPlaces];
     return { mapItems: items, clusteredTrailIds: clusteredTrails };
-  }, [indices, zoom, placeMap, trailMap, activeTrailId, showTrails, trails, popularityScores]);
+  }, [indices, bbox, zoom, placeMap, trailMap, activeTrailId, showTrails, trails]);
 
   return result;
 }

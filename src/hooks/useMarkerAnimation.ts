@@ -14,7 +14,7 @@ export function useMarkerAnimation() {
   const getMarkerScale = useCallback(
     (placeId: string) => {
       if (!markerScales.has(placeId)) {
-        markerScales.set(placeId, new Animated.Value(0));
+        markerScales.set(placeId, new Animated.Value(1));
       }
       return markerScales.get(placeId)!;
     },

@@ -128,7 +128,6 @@ export function MapScreen() {
     annotatedPlaceIds,
     baseMarkerDataMap,
     placeEventsMap,
-    popularityMap,
     refetchAll,
   } = useMapData({
     followingIds,
@@ -144,21 +143,13 @@ export function MapScreen() {
     return trails.filter((t) => selectedTrailDifficulties.includes(t.difficulty));
   }, [trails, selectedTrailDifficulties]);
 
-  const popularityScores = useMemo(() => {
-    const scores = new Map<string, number>();
-    for (const [id, p] of popularityMap) {
-      scores.set(id, p.score);
-    }
-    return scores;
-  }, [popularityMap]);
-
   const { mapItems, clusteredTrailIds } = useMarkerClustering({
     filteredPlaces,
     trails: filteredTrails,
     showTrails,
     zoom: currentZoom,
+    visibleRegion,
     activeTrailId,
-    popularityScores,
   });
 
   const { getMarkerScale, animateMarkerAppear, animateMarkerPress, pruneMarkers } =
@@ -265,10 +256,6 @@ export function MapScreen() {
       longitude: userCoords.longitude,
       latitudeDelta: 0.005,
       longitudeDelta: 0.005,
-    });
-    mapRef.current?.animateCamera({
-      pitch: 40,
-      heading: 90,
     });
   }, [userCoords]);
 
