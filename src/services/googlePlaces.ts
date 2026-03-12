@@ -282,7 +282,7 @@ export async function searchGooglePlaces(
     // Restrict to establishment type to exclude cities/regions
     const autocompleteUrl = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
       query
-    )}&location=${latitude},${longitude}&radius=15000&strictbounds=true&types=establishment&components=country:nz&key=${GOOGLE_PLACES_API_KEY}`;
+    )}&location=${latitude},${longitude}&radius=35000&types=establishment&components=country:nz&key=${GOOGLE_PLACES_API_KEY}`;
 
     console.log(
       "Autocomplete URL:",

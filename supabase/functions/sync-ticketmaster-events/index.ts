@@ -1,4 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { deduplicateEvents } from "../_shared/deduplicateEvents.ts";
+import { createPlaceResolver, loadExistingEventPlaces } from "../_shared/resolvePlace.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -137,44 +139,6 @@ function mapCategory(
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function inferPlaceCategory(venueName: string): string {
-  const name = venueName.toLowerCase();
-  if (/\bcaf[eé]\b/.test(name) || name.includes("coffee")) return "cafe";
-  if (
-    name.includes("restaurant") ||
-    name.includes("kitchen") ||
-    name.includes("bistro") ||
-    name.includes("eatery") ||
-    name.includes("diner")
-  )
-    return "restaurant";
-  if (
-    name.includes(" bar") ||
-    name.startsWith("bar ") ||
-    name.includes("pub") ||
-    name.includes("tavern") ||
-    name.includes("brewery") ||
-    name.includes("taproom")
-  )
-    return "bar";
-  if (
-    name.includes("park") ||
-    name.includes("reserve") ||
-    name.includes("garden") ||
-    name.includes("botanical")
-  )
-    return "park";
-  if (
-    name.includes("museum") ||
-    name.includes("gallery") ||
-    name.includes("library") ||
-    name.includes("zoo") ||
-    name.includes("stadium") ||
-    name.includes("cinema")
-  )
-    return "attraction";
-  return "venue";
-}
 
 function stripHtml(html: string): string {
   const NAMED_ENTITIES: Record<string, string> = {
@@ -449,8 +413,8 @@ Deno.serve(async (req) => {
     // Process events
     const upsertRows: Record<string, unknown>[] = [];
     let skippedCancelled = 0;
-    let skippedDuplicate = 0;
-    let placesCreated = 0;
+    const placeResolver = createPlaceResolver(supabase);
+    const existingPlaces = dryRun ? new Map() : await loadExistingEventPlaces(supabase, "ticketmaster_id");
 
     for (const tm of allEvents) {
       // Skip cancelled/postponed events
@@ -480,78 +444,21 @@ Deno.serve(async (req) => {
       const venue = tm._embedded?.venues?.[0];
       const venueName = venue?.name || "Wellington Venue";
 
-      // Cross-source dedup: check if Eventfinda already has this event
-      // Match on same title + date + venue name
-      if (!dryRun) {
-        const { data: existingEvent } = await supabase
-          .from("events")
-          .select("id, eventfinda_id, humanitix_id, eventbrite_id")
-          .eq("date", localDate)
-          .ilike("title", stripHtml(tm.name))
-          .or("eventfinda_id.not.is.null,humanitix_id.not.is.null,eventbrite_id.not.is.null")
-          .limit(1);
-
-        if (existingEvent && existingEvent.length > 0) {
-          // Event already exists from Eventfinda — link ticketmaster_id to it
-          await supabase
-            .from("events")
-            .update({
-              ticketmaster_id: tm.id,
-              ticketmaster_url: tm.url,
-            })
-            .eq("id", existingEvent[0].id);
-          skippedDuplicate++;
-          console.log(`  Linked to existing Eventfinda event: ${tm.name}`);
-          continue;
-        }
-      }
-
       // Find or create place
       let placeId: string | null = null;
 
       if (!dryRun) {
-        // Case-insensitive name match
-        const { data: match } = await supabase
-          .from("places")
-          .select("id")
-          .ilike("name", venueName)
-          .limit(1);
-
-        if (match && match.length > 0) {
-          placeId = match[0].id;
-        } else {
-          // Create new place
-          const lat = venue?.location?.latitude
+        placeId = existingPlaces.get(tm.id) ?? await placeResolver.resolve({
+          name: venueName,
+          address: venue?.address?.line1,
+          latitude: venue?.location?.latitude
             ? parseFloat(venue.location.latitude)
-            : -41.2924;
-          const lng = venue?.location?.longitude
+            : undefined,
+          longitude: venue?.location?.longitude
             ? parseFloat(venue.location.longitude)
-            : 174.7787;
-          const address =
-            venue?.address?.line1 || `${venueName}, Wellington`;
-
-          const { data: newPlace, error: placeErr } = await supabase
-            .from("places")
-            .insert({
-              name: venueName,
-              category: inferPlaceCategory(venueName),
-              address,
-              latitude: lat,
-              longitude: lng,
-            })
-            .select("id")
-            .single();
-
-          if (placeErr) {
-            console.error(
-              `Failed to create place "${venueName}": ${placeErr.message}`
-            );
-            continue;
-          }
-          placeId = newPlace.id;
-          placesCreated++;
-          console.log(`  Created place: ${venueName}`);
-        }
+            : undefined,
+        });
+        if (!placeId) continue;
       }
 
       // Extract image URL
@@ -591,7 +498,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `Processed: ${upsertRows.length} events to upsert, ${skippedCancelled} cancelled, ${skippedDuplicate} linked to Eventfinda`
+      `Processed: ${upsertRows.length} events to upsert, ${skippedCancelled} cancelled`
     );
 
     if (dryRun) {
@@ -601,7 +508,6 @@ Deno.serve(async (req) => {
           totalFetched: allEvents.length,
           toUpsert: upsertRows.length,
           skippedCancelled,
-          skippedDuplicate,
           events: upsertRows.map((r) => ({
             ticketmasterId: r.ticketmaster_id,
             title: r.title,
@@ -616,13 +522,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Cross-source dedup: link to existing events from other sources
+    const { rows: dedupedRows, linked: linkedCount } = await deduplicateEvents(
+      supabase,
+      upsertRows,
+      "ticketmaster",
+    );
+
     // Upsert in batches
     let upserted = 0;
     let upsertErrors = 0;
     const BATCH_SIZE = 50;
 
-    for (let i = 0; i < upsertRows.length; i += BATCH_SIZE) {
-      const batch = upsertRows.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < dedupedRows.length; i += BATCH_SIZE) {
+      const batch = dedupedRows.slice(i, i + BATCH_SIZE);
       const { error } = await supabase
         .from("events")
         .upsert(batch, { onConflict: "ticketmaster_id" });
@@ -658,17 +571,17 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `Done: ${upserted} upserted, ${upsertErrors} errors, ${deletedCount} old events cleaned up, ${placesCreated} places created, ${skippedDuplicate} linked to Eventfinda`
+      `Done: ${upserted} upserted, ${linkedCount} linked to existing, ${upsertErrors} errors, ${deletedCount} old events cleaned up, ${placeResolver.placesCreated} places created`
     );
 
     return new Response(
       JSON.stringify({
         totalFetched: allEvents.length,
         upserted,
+        linkedToExisting: linkedCount,
         upsertErrors,
         skippedCancelled,
-        skippedDuplicate,
-        placesCreated,
+        placesCreated: placeResolver.placesCreated,
         deletedOld: deletedCount,
       }),
       {

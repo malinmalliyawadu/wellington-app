@@ -71,7 +71,8 @@ export function FollowListScreen() {
   );
   const { data: followingList, loading: loadingFollowingProfiles } = useQuery(
     fetchFollowing,
-    followingUserIds && followingUserIds.length > 0
+    ['following-profiles', userId],
+    { enabled: !!followingUserIds && followingUserIds.length > 0 }
   );
 
   // Fetch follower profiles
@@ -81,7 +82,8 @@ export function FollowListScreen() {
   );
   const { data: followerList, loading: loadingFollowerProfiles } = useQuery(
     fetchFollowers,
-    followerUserIds && followerUserIds.length > 0
+    ['follower-profiles', userId],
+    { enabled: !!followerUserIds && followerUserIds.length > 0 }
   );
 
   // Refetch when screen comes into focus

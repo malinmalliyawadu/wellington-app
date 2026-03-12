@@ -123,7 +123,7 @@ export function useMarkerClustering({
     for (const [category, features] of byCategory) {
       const index = new Supercluster<PointProps>({
         radius: CLUSTER_RADIUS,
-        maxZoom: MAX_ZOOM,
+        maxZoom: MAX_ZOOM - 1,
       });
       index.load(features);
       result.set(category, index);

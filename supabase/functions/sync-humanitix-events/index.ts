@@ -1,4 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { deduplicateEvents } from "../_shared/deduplicateEvents.ts";
+import { createPlaceResolver, loadExistingEventPlaces } from "../_shared/resolvePlace.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -88,44 +90,6 @@ function mapCategory(eventName: string): string {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function inferPlaceCategory(venueName: string): string {
-  const name = venueName.toLowerCase();
-  if (/\bcaf[eé]\b/.test(name) || name.includes("coffee")) return "cafe";
-  if (
-    name.includes("restaurant") ||
-    name.includes("kitchen") ||
-    name.includes("bistro") ||
-    name.includes("eatery") ||
-    name.includes("diner")
-  )
-    return "restaurant";
-  if (
-    name.includes(" bar") ||
-    name.startsWith("bar ") ||
-    name.includes("pub") ||
-    name.includes("tavern") ||
-    name.includes("brewery") ||
-    name.includes("taproom")
-  )
-    return "bar";
-  if (
-    name.includes("park") ||
-    name.includes("reserve") ||
-    name.includes("garden") ||
-    name.includes("botanical")
-  )
-    return "park";
-  if (
-    name.includes("museum") ||
-    name.includes("gallery") ||
-    name.includes("library") ||
-    name.includes("zoo") ||
-    name.includes("stadium") ||
-    name.includes("cinema")
-  )
-    return "attraction";
-  return "venue";
-}
 
 // ---------------------------------------------------------------------------
 // Humanitix API types
@@ -289,87 +253,6 @@ function formatDateNZ(date: Date): string {
   return `${year}-${month}-${day}`;
 }
 
-function cleanVenueName(raw: string): string {
-  // Some Humanitix venues have very long names with full addresses
-  // e.g., "Talent Army, Cyber Team and Propagator Office - Level 4, Featherston House..."
-  // Truncate at first comma or dash if the name is very long
-  if (raw.length <= 60) return raw;
-
-  // Try splitting at " - " first (common separator)
-  const dashIdx = raw.indexOf(" - ");
-  if (dashIdx > 0 && dashIdx <= 60) return raw.substring(0, dashIdx).trim();
-
-  // Try splitting at comma
-  const commaIdx = raw.indexOf(",");
-  if (commaIdx > 0 && commaIdx <= 60) return raw.substring(0, commaIdx).trim();
-
-  // Just truncate
-  return raw.substring(0, 60).trim();
-}
-
-// ---------------------------------------------------------------------------
-// Geocoding via OpenStreetMap Nominatim (free, no API key needed)
-// ---------------------------------------------------------------------------
-
-const WELLINGTON_FALLBACK = { lat: -41.2924, lng: 174.7787 };
-
-// Nominatim usage policy: max 1 request/second
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function geocodeAddress(
-  address: string,
-  venueName: string
-): Promise<{ lat: number; lng: number }> {
-  // Try address first, then venue name as fallback query
-  const queries = [
-    address.includes("Wellington")
-      ? address
-      : `${address}, Wellington, New Zealand`,
-    `${venueName}, Wellington, New Zealand`,
-  ];
-
-  for (const query of queries) {
-    try {
-      const encoded = encodeURIComponent(query);
-      // Use viewbox to bias results toward Wellington region
-      const url =
-        `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1` +
-        `&viewbox=174.6131,-41.3624,174.8954,-41.1435&bounded=0`;
-
-      const res = await fetch(url, {
-        headers: {
-          "User-Agent": "WellyApp/1.0 (event-sync)",
-        },
-      });
-
-      if (!res.ok) continue;
-
-      const data = await res.json();
-      if (!Array.isArray(data) || data.length === 0) continue;
-
-      const lat = parseFloat(data[0].lat);
-      const lng = parseFloat(data[0].lon);
-
-      // Sanity check: must be roughly within Wellington region
-      if (lat < -41.5 || lat > -41.0 || lng < 174.5 || lng > 175.0) {
-        console.warn(
-          `  Geocoded outside Wellington: ${lat},${lng} for "${query}" — skipping`
-        );
-        continue;
-      }
-
-      console.log(`  Geocoded "${query}" → ${lat},${lng}`);
-      return { lat, lng };
-    } catch (err) {
-      console.error(`  Geocoding error for "${query}":`, err);
-    }
-  }
-
-  console.warn(`  Could not geocode "${venueName}" — using Wellington center`);
-  return WELLINGTON_FALLBACK;
-}
 
 // ---------------------------------------------------------------------------
 // Main handler
@@ -451,8 +334,8 @@ Deno.serve(async (req) => {
     // Process events
     const upsertRows: Record<string, unknown>[] = [];
     let skippedPast = 0;
-    let skippedDuplicate = 0;
-    let placesCreated = 0;
+    const placeResolver = createPlaceResolver(supabase);
+    const existingPlaces = dryRun ? new Map() : await loadExistingEventPlaces(supabase, "humanitix_id");
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -479,118 +362,19 @@ Deno.serve(async (req) => {
       const category = mapCategory(hx.name);
 
       // Venue info
-      const rawVenueName = hx.eventLocation?.venueName || "Wellington Venue";
-      const venueName = cleanVenueName(rawVenueName);
-
-      // Cross-source dedup: check if Eventfinda or Ticketmaster already has this event
-      if (!dryRun) {
-        const { data: existingEvent } = await supabase
-          .from("events")
-          .select("id, eventfinda_id, ticketmaster_id, eventbrite_id")
-          .eq("date", dateStr)
-          .ilike("title", hx.name)
-          .or("eventfinda_id.not.is.null,ticketmaster_id.not.is.null,eventbrite_id.not.is.null")
-          .limit(1);
-
-        if (existingEvent && existingEvent.length > 0) {
-          // Event already exists from another source — link humanitix_id to it
-          await supabase
-            .from("events")
-            .update({
-              humanitix_id: hx._id,
-              humanitix_url: eventUrl,
-            })
-            .eq("id", existingEvent[0].id);
-          skippedDuplicate++;
-          console.log(`  Linked to existing event: ${hx.name}`);
-          continue;
-        }
-      }
-
-      // Find or create place
-      let placeId: string | null = null;
+      const venueName = hx.eventLocation?.venueName || "Wellington Venue";
       const venueAddress =
         hx.eventLocation?.address || `${venueName}, Wellington`;
 
+      // Find or create place
+      let placeId: string | null = null;
+
       if (!dryRun) {
-        // 1. Exact name match
-        const { data: exactMatch } = await supabase
-          .from("places")
-          .select("id")
-          .ilike("name", venueName)
-          .limit(1);
-
-        if (exactMatch && exactMatch.length > 0) {
-          placeId = exactMatch[0].id;
-          console.log(`  Matched place by name: "${venueName}"`);
-        }
-
-        // 2. Partial/contains match (venue name appears in place name or vice versa)
-        if (!placeId && venueName.length > 4) {
-          const { data: partialMatch } = await supabase
-            .from("places")
-            .select("id, name")
-            .ilike("name", `%${venueName}%`)
-            .limit(1);
-
-          if (partialMatch && partialMatch.length > 0) {
-            placeId = partialMatch[0].id;
-            console.log(
-              `  Matched place by partial name: "${venueName}" → "${partialMatch[0].name}"`
-            );
-          }
-        }
-
-        // 3. Address match — compare street address portion
-        if (!placeId && venueAddress.length > 10) {
-          // Extract the first line / street number portion for matching
-          const addressStart = venueAddress.split(",")[0].trim();
-          if (addressStart.length > 5) {
-            const { data: addrMatch } = await supabase
-              .from("places")
-              .select("id, name")
-              .ilike("address", `%${addressStart}%`)
-              .limit(1);
-
-            if (addrMatch && addrMatch.length > 0) {
-              placeId = addrMatch[0].id;
-              console.log(
-                `  Matched place by address: "${addressStart}" → "${addrMatch[0].name}"`
-              );
-            }
-          }
-        }
-
-        // 4. No DB match — geocode and create new place
-        if (!placeId) {
-          // Respect Nominatim rate limit (1 req/sec)
-          await sleep(1100);
-          const coords = await geocodeAddress(venueAddress, venueName);
-
-          const { data: newPlace, error: placeErr } = await supabase
-            .from("places")
-            .insert({
-              name: venueName,
-              category: inferPlaceCategory(venueName),
-              address: venueAddress,
-              latitude: coords.lat,
-              longitude: coords.lng,
-            })
-            .select("id")
-            .single();
-
-          if (placeErr) {
-            console.error(
-              `Failed to create place "${venueName}": ${placeErr.message}`
-            );
-            continue;
-          }
-          placeId = newPlace.id;
-          placesCreated++;
-          console.log(
-            `  Created place: ${venueName} at ${coords.lat},${coords.lng}`
-          );
-        }
+        placeId = existingPlaces.get(hx._id) ?? await placeResolver.resolve({
+          name: venueName,
+          address: venueAddress,
+        });
+        if (!placeId) continue;
       }
 
       // Extract image URL
@@ -629,7 +413,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `Processed: ${upsertRows.length} events to upsert, ${skippedPast} past, ${skippedDuplicate} linked to existing`
+      `Processed: ${upsertRows.length} events to upsert, ${skippedPast} past`
     );
 
     if (dryRun) {
@@ -639,7 +423,6 @@ Deno.serve(async (req) => {
           totalFetched: allEvents.length,
           toUpsert: upsertRows.length,
           skippedPast,
-          skippedDuplicate,
           events: upsertRows.map((r) => ({
             humanitixId: r.humanitix_id,
             title: r.title,
@@ -655,13 +438,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Cross-source dedup: link to existing events from other sources
+    const { rows: dedupedRows, linked: linkedCount } = await deduplicateEvents(
+      supabase,
+      upsertRows,
+      "humanitix",
+    );
+
     // Upsert in batches
     let upserted = 0;
     let upsertErrors = 0;
     const BATCH_SIZE = 50;
 
-    for (let i = 0; i < upsertRows.length; i += BATCH_SIZE) {
-      const batch = upsertRows.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < dedupedRows.length; i += BATCH_SIZE) {
+      const batch = dedupedRows.slice(i, i + BATCH_SIZE);
       const { error } = await supabase
         .from("events")
         .upsert(batch, { onConflict: "humanitix_id" });
@@ -697,17 +487,17 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `Done: ${upserted} upserted, ${upsertErrors} errors, ${deletedCount} old events cleaned up, ${placesCreated} places created, ${skippedDuplicate} linked to existing`
+      `Done: ${upserted} upserted, ${linkedCount} linked to existing, ${upsertErrors} errors, ${deletedCount} old events cleaned up, ${placeResolver.placesCreated} places created`
     );
 
     return new Response(
       JSON.stringify({
         totalFetched: allEvents.length,
         upserted,
+        linkedToExisting: linkedCount,
         upsertErrors,
         skippedPast,
-        skippedDuplicate,
-        placesCreated,
+        placesCreated: placeResolver.placesCreated,
         deletedOld: deletedCount,
       }),
       {

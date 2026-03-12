@@ -1,4 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { deduplicateEvents } from "../_shared/deduplicateEvents.ts";
+import { createPlaceResolver } from "../_shared/resolvePlace.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -272,50 +274,24 @@ Deno.serve(async (req) => {
 
     // Process grouped shifts into event rows
     const upsertRows: Record<string, unknown>[] = [];
-    let placesCreated = 0;
+    const placeResolver = createPlaceResolver(supabase);
 
     // Resolve the Wellington venue once (find or create)
-    let wellingtonPlaceId: string | null = null;
-    {
-      const { data: existingPlace } = await supabase
-        .from("places")
-        .select("id")
-        .ilike("name", WELLINGTON_VENUE.name)
-        .limit(1)
-        .maybeSingle();
+    const wellingtonPlaceId = await placeResolver.resolve({
+      name: WELLINGTON_VENUE.name,
+      address: WELLINGTON_VENUE.address,
+      latitude: WELLINGTON_VENUE.latitude,
+      longitude: WELLINGTON_VENUE.longitude,
+    });
 
-      if (existingPlace) {
-        wellingtonPlaceId = existingPlace.id;
-      } else {
-        const { data: newPlace, error: placeError } = await supabase
-          .from("places")
-          .insert({
-            name: WELLINGTON_VENUE.name,
-            category: "restaurant",
-            address: WELLINGTON_VENUE.address,
-            latitude: WELLINGTON_VENUE.latitude,
-            longitude: WELLINGTON_VENUE.longitude,
-          })
-          .select("id")
-          .single();
-
-        if (placeError) {
-          console.error(
-            `[sync-everybody-eats] Failed to create place:`,
-            placeError.message,
-          );
-          return new Response(
-            JSON.stringify({ error: "Failed to create venue" }),
-            {
-              status: 500,
-              headers: { ...corsHeaders, "Content-Type": "application/json" },
-            },
-          );
-        }
-        wellingtonPlaceId = newPlace.id;
-        placesCreated++;
-        console.log(`[sync-everybody-eats] Created place: ${WELLINGTON_VENUE.name}`);
-      }
+    if (!wellingtonPlaceId) {
+      return new Response(
+        JSON.stringify({ error: "Failed to create venue" }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     for (const group of groups) {
@@ -338,13 +314,20 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Cross-source dedup: link to existing events from other sources
+    const { rows: dedupedRows, linked: linkedCount } = await deduplicateEvents(
+      supabase,
+      upsertRows,
+      "everybody_eats",
+    );
+
     // Upsert in batches of 50
     let upserted = 0;
     let upsertErrors = 0;
     const BATCH_SIZE = 50;
 
-    for (let i = 0; i < upsertRows.length; i += BATCH_SIZE) {
-      const batch = upsertRows.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < dedupedRows.length; i += BATCH_SIZE) {
+      const batch = dedupedRows.slice(i, i + BATCH_SIZE);
       const { error: upsertError } = await supabase
         .from("events")
         .upsert(batch, { onConflict: "everybody_eats_id" });
@@ -382,7 +365,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `[sync-everybody-eats] Done: ${upserted} upserted, ${upsertErrors} errors, ${deletedCount} cleaned up, ${placesCreated} places created`,
+      `[sync-everybody-eats] Done: ${upserted} upserted, ${linkedCount} linked to existing, ${upsertErrors} errors, ${deletedCount} cleaned up, ${placeResolver.placesCreated} places created`,
     );
 
     return new Response(
@@ -391,8 +374,9 @@ Deno.serve(async (req) => {
         wellingtonShifts: shifts.length,
         totalEvents: groups.length,
         upserted,
+        linkedToExisting: linkedCount,
         upsertErrors,
-        placesCreated,
+        placesCreated: placeResolver.placesCreated,
         deletedOld: deletedCount,
       }),
       {

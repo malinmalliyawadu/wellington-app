@@ -1,4 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { deduplicateEvents } from "../_shared/deduplicateEvents.ts";
+import { createPlaceResolver, loadExistingEventPlaces } from "../_shared/resolvePlace.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -91,45 +93,6 @@ function mapCategory(categoryId: string | null, eventName: string): string {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-function inferPlaceCategory(venueName: string): string {
-  const name = venueName.toLowerCase();
-  if (/\bcaf[eé]\b/.test(name) || name.includes("coffee")) return "cafe";
-  if (
-    name.includes("restaurant") ||
-    name.includes("kitchen") ||
-    name.includes("bistro") ||
-    name.includes("eatery") ||
-    name.includes("diner")
-  )
-    return "restaurant";
-  if (
-    name.includes(" bar") ||
-    name.startsWith("bar ") ||
-    name.includes("pub") ||
-    name.includes("tavern") ||
-    name.includes("brewery") ||
-    name.includes("taproom")
-  )
-    return "bar";
-  if (
-    name.includes("park") ||
-    name.includes("reserve") ||
-    name.includes("garden") ||
-    name.includes("botanical")
-  )
-    return "park";
-  if (
-    name.includes("museum") ||
-    name.includes("gallery") ||
-    name.includes("library") ||
-    name.includes("zoo") ||
-    name.includes("stadium") ||
-    name.includes("cinema")
-  )
-    return "attraction";
-  return "venue";
-}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -246,60 +209,6 @@ async function _fetchEventDetails(
   return await res.json();
 }
 
-
-// ---------------------------------------------------------------------------
-// Geocoding via OpenStreetMap Nominatim
-// ---------------------------------------------------------------------------
-
-const WELLINGTON_FALLBACK = { lat: -41.2924, lng: 174.7787 };
-
-async function geocodeAddress(
-  address: string,
-  venueName: string
-): Promise<{ lat: number; lng: number }> {
-  const queries = [
-    address.includes("Wellington")
-      ? address
-      : `${address}, Wellington, New Zealand`,
-    `${venueName}, Wellington, New Zealand`,
-  ];
-
-  for (const query of queries) {
-    try {
-      const encoded = encodeURIComponent(query);
-      const url =
-        `https://nominatim.openstreetmap.org/search?q=${encoded}&format=json&limit=1` +
-        `&viewbox=174.6131,-41.3624,174.8954,-41.1435&bounded=0`;
-
-      const res = await fetch(url, {
-        headers: { "User-Agent": "WellyApp/1.0 (event-sync)" },
-      });
-
-      if (!res.ok) continue;
-
-      const data = await res.json();
-      if (!Array.isArray(data) || data.length === 0) continue;
-
-      const lat = parseFloat(data[0].lat);
-      const lng = parseFloat(data[0].lon);
-
-      if (lat < -41.5 || lat > -41.0 || lng < 174.5 || lng > 175.0) {
-        console.warn(
-          `  Geocoded outside Wellington: ${lat},${lng} for "${query}" — skipping`
-        );
-        continue;
-      }
-
-      console.log(`  Geocoded "${query}" → ${lat},${lng}`);
-      return { lat, lng };
-    } catch (err) {
-      console.error(`  Geocoding error for "${query}":`, err);
-    }
-  }
-
-  console.warn(`  Could not geocode "${venueName}" — using Wellington center`);
-  return WELLINGTON_FALLBACK;
-}
 
 // ---------------------------------------------------------------------------
 // Main handler
@@ -462,8 +371,8 @@ Deno.serve(async (req) => {
     // Step 5: Process events
     const upsertRows: Record<string, unknown>[] = [];
     let skippedNonLive = 0;
-    let skippedDuplicate = 0;
-    let placesCreated = 0;
+    const placeResolver = createPlaceResolver(supabase);
+    const existingPlaces = dryRun ? new Map() : await loadExistingEventPlaces(supabase, "eventbrite_id");
 
     for (const eb of allEvents) {
       // Skip non-live events
@@ -512,35 +421,7 @@ Deno.serve(async (req) => {
       const rawVenueName: string = venue?.name || "";
       const hasRealVenueName = rawVenueName.length > 0 &&
         rawVenueName.toLowerCase() !== "online";
-      const venueName = hasRealVenueName
-        ? (rawVenueName.length > 60 ? rawVenueName.substring(0, 60).trim() : rawVenueName)
-        : "Wellington Venue";
-
-      // Cross-source dedup
-      if (!dryRun) {
-        const { data: existingEvent } = await supabase
-          .from("events")
-          .select("id, eventfinda_id, ticketmaster_id, humanitix_id")
-          .eq("date", dateStr)
-          .ilike("title", eventName)
-          .or(
-            "eventfinda_id.not.is.null,ticketmaster_id.not.is.null,humanitix_id.not.is.null"
-          )
-          .limit(1);
-
-        if (existingEvent && existingEvent.length > 0) {
-          await supabase
-            .from("events")
-            .update({
-              eventbrite_id: String(eb.id),
-              eventbrite_url: eventUrl,
-            })
-            .eq("id", existingEvent[0].id);
-          skippedDuplicate++;
-          console.log(`  Linked to existing event: ${eventName}`);
-          continue;
-        }
-      }
+      const venueName = hasRealVenueName ? rawVenueName : "Wellington Venue";
 
       // Find or create place
       let placeId: string | null = null;
@@ -551,103 +432,13 @@ Deno.serve(async (req) => {
         `${venueName}, Wellington`;
 
       if (!dryRun) {
-        // Only try name/address matching if we have a real venue name
-        if (hasRealVenueName) {
-          // 1. Exact name match
-          const { data: exactMatch } = await supabase
-            .from("places")
-            .select("id")
-            .ilike("name", venueName)
-            .limit(1);
-
-          if (exactMatch && exactMatch.length > 0) {
-            placeId = exactMatch[0].id;
-            console.log(`  Matched place by name: "${venueName}"`);
-          }
-
-          // 2. Partial match
-          if (!placeId && venueName.length > 4) {
-            const { data: partialMatch } = await supabase
-              .from("places")
-              .select("id, name")
-              .ilike("name", `%${venueName}%`)
-              .limit(1);
-
-            if (partialMatch && partialMatch.length > 0) {
-              placeId = partialMatch[0].id;
-              console.log(
-                `  Matched place by partial name: "${venueName}" → "${partialMatch[0].name}"`
-              );
-            }
-          }
-
-          // 3. Address match
-          if (!placeId && venueAddress.length > 10) {
-            const addressStart = venueAddress.split(",")[0].trim();
-            if (addressStart.length > 5) {
-              const { data: addrMatch } = await supabase
-                .from("places")
-                .select("id, name")
-                .ilike("address", `%${addressStart}%`)
-                .limit(1);
-
-              if (addrMatch && addrMatch.length > 0) {
-                placeId = addrMatch[0].id;
-                console.log(
-                  `  Matched place by address: "${addressStart}" → "${addrMatch[0].name}"`
-                );
-              }
-            }
-          }
-        }
-
-        // 4. Create new place
-        if (!placeId) {
-          let lat: number;
-          let lng: number;
-
-          if (addr?.latitude && addr?.longitude) {
-            lat = parseFloat(addr.latitude);
-            lng = parseFloat(addr.longitude);
-
-            if (lat < -41.5 || lat > -41.0 || lng < 174.5 || lng > 175.0) {
-              console.warn(
-                `  Venue coords outside Wellington: ${lat},${lng} — geocoding instead`
-              );
-              await sleep(1100);
-              const coords = await geocodeAddress(venueAddress, venueName);
-              lat = coords.lat;
-              lng = coords.lng;
-            }
-          } else {
-            await sleep(1100);
-            const coords = await geocodeAddress(venueAddress, venueName);
-            lat = coords.lat;
-            lng = coords.lng;
-          }
-
-          const { data: newPlace, error: placeErr } = await supabase
-            .from("places")
-            .insert({
-              name: venueName,
-              category: inferPlaceCategory(venueName),
-              address: venueAddress,
-              latitude: lat,
-              longitude: lng,
-            })
-            .select("id")
-            .single();
-
-          if (placeErr) {
-            console.error(
-              `Failed to create place "${venueName}": ${placeErr.message}`
-            );
-            continue;
-          }
-          placeId = newPlace.id;
-          placesCreated++;
-          console.log(`  Created place: ${venueName} at ${lat},${lng}`);
-        }
+        placeId = existingPlaces.get(String(eb.id)) ?? await placeResolver.resolve({
+          name: venueName,
+          address: venueAddress,
+          latitude: addr?.latitude ? parseFloat(addr.latitude) : undefined,
+          longitude: addr?.longitude ? parseFloat(addr.longitude) : undefined,
+        });
+        if (!placeId) continue;
       }
 
       // Image — use logo from API detail or image map from batch fetch
@@ -698,7 +489,7 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `Processed: ${upsertRows.length} events to upsert, ${skippedNonLive} non-live, ${skippedDuplicate} linked to existing`
+      `Processed: ${upsertRows.length} events to upsert, ${skippedNonLive} non-live`
     );
 
     if (dryRun) {
@@ -708,7 +499,6 @@ Deno.serve(async (req) => {
           totalFetched: allEvents.length,
           toUpsert: upsertRows.length,
           skippedNonLive,
-          skippedDuplicate,
           events: upsertRows.map((r) => ({
             eventbriteId: r.eventbrite_id,
             title: r.title,
@@ -729,8 +519,15 @@ Deno.serve(async (req) => {
     for (const row of upsertRows) {
       dedupMap.set(row.eventbrite_id as string, row);
     }
-    const dedupedRows = [...dedupMap.values()];
-    console.log(`Deduped: ${upsertRows.length} → ${dedupedRows.length} unique events`);
+    const localDedupedRows = [...dedupMap.values()];
+    console.log(`Deduped: ${upsertRows.length} → ${localDedupedRows.length} unique events`);
+
+    // Cross-source dedup: link to existing events from other sources
+    const { rows: dedupedRows, linked: linkedCount } = await deduplicateEvents(
+      supabase,
+      localDedupedRows,
+      "eventbrite",
+    );
 
     // Upsert in batches
     let upserted = 0;
@@ -774,17 +571,17 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `Done: ${upserted} upserted, ${upsertErrors} errors, ${deletedCount} old events cleaned up, ${placesCreated} places created, ${skippedDuplicate} linked to existing`
+      `Done: ${upserted} upserted, ${linkedCount} linked to existing, ${upsertErrors} errors, ${deletedCount} old events cleaned up, ${placeResolver.placesCreated} places created`
     );
 
     return new Response(
       JSON.stringify({
         totalFetched: allEvents.length,
         upserted,
+        linkedToExisting: linkedCount,
         upsertErrors,
         skippedNonLive,
-        skippedDuplicate,
-        placesCreated,
+        placesCreated: placeResolver.placesCreated,
         deletedOld: deletedCount,
       }),
       {

@@ -1,4 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { deduplicateEvents } from "../_shared/deduplicateEvents.ts";
+import { createPlaceResolver, loadExistingEventPlaces } from "../_shared/resolvePlace.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -111,35 +113,6 @@ function mapCategory(genres: string[], eventTitle: string): string {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function inferPlaceCategory(venueName: string): string {
-  const name = venueName.toLowerCase();
-  if (/\bcaf[eé]\b/.test(name) || name.includes("coffee")) return "cafe";
-  if (
-    name.includes("restaurant") ||
-    name.includes("kitchen") ||
-    name.includes("bistro")
-  )
-    return "restaurant";
-  if (
-    name.includes(" bar") ||
-    name.startsWith("bar ") ||
-    name.includes("pub") ||
-    name.includes("tavern") ||
-    name.includes("brewery") ||
-    name.includes("taproom")
-  )
-    return "bar";
-  if (name.includes("park") || name.includes("reserve") || name.includes("garden"))
-    return "park";
-  if (
-    name.includes("museum") ||
-    name.includes("gallery") ||
-    name.includes("library") ||
-    name.includes("stadium")
-  )
-    return "attraction";
-  return "venue";
-}
 
 function stripHtml(html: string): string {
   return html
@@ -367,77 +340,20 @@ Deno.serve(async (req) => {
     console.log(`Total UTR listings: ${allEntries.length}`);
 
     // -----------------------------------------------------------------------
-    // Step 2: Build place cache (batch lookup, then create missing)
+    // Step 2: Resolve places and process events into upsert rows
     // -----------------------------------------------------------------------
-    // Collect unique venue names
-    const venueNames = [
-      ...new Set(
-        allEntries.map((e) =>
-          e.venueName.replace(/,\s*Wellington$/i, "").trim()
-        )
-      ),
-    ];
-
-    // placeId cache: venueName (lowercase) → place UUID
-    const placeCache = new Map<string, string>();
-    let placesCreated = 0;
-
-    if (!dryRun) {
-      // Batch fetch all existing places
-      const { data: existingPlaces } = await supabase
-        .from("places")
-        .select("id, name");
-
-      if (existingPlaces) {
-        for (const p of existingPlaces) {
-          placeCache.set(p.name.toLowerCase(), p.id);
-        }
-      }
-
-      // Create missing places
-      const missingVenues = venueNames.filter(
-        (v) => !placeCache.has(v.toLowerCase())
-      );
-
-      if (missingVenues.length > 0) {
-        const newPlaces = missingVenues.map((name) => ({
-          name,
-          category: inferPlaceCategory(name),
-          address: `${name}, Wellington`,
-          latitude: -41.2924,
-          longitude: 174.7787,
-        }));
-
-        const { data: created, error: placeErr } = await supabase
-          .from("places")
-          .insert(newPlaces)
-          .select("id, name");
-
-        if (placeErr) {
-          console.error(`Batch place creation error: ${placeErr.message}`);
-        } else if (created) {
-          for (const p of created) {
-            placeCache.set(p.name.toLowerCase(), p.id);
-          }
-          placesCreated = created.length;
-          console.log(`  Created ${placesCreated} new places`);
-        }
-      }
-    }
-
-    // -----------------------------------------------------------------------
-    // Step 3: Process events into upsert rows
-    // -----------------------------------------------------------------------
+    const placeResolver = createPlaceResolver(supabase);
+    const existingPlaces = dryRun ? new Map() : await loadExistingEventPlaces(supabase, "undertheradar_id");
     const upsertRows: Record<string, unknown>[] = [];
 
     for (const entry of allEntries) {
       const category = mapCategory([], entry.title);
       const description = `${entry.title} at ${entry.venueName}`;
 
-      const venueName = entry.venueName
-        .replace(/,\s*Wellington$/i, "")
-        .trim();
-      const placeId = placeCache.get(venueName.toLowerCase());
+      let placeId: string | null = null;
+      if (!dryRun) {
+        placeId = existingPlaces.get(String(entry.id)) ?? await placeResolver.resolve({ name: entry.venueName });
+      }
 
       const row: Record<string, unknown> = {
         undertheradar_id: entry.id,
@@ -479,13 +395,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Cross-source dedup: link to existing events from other sources
+    const { rows: dedupedRows, linked: linkedCount } = await deduplicateEvents(
+      supabase,
+      upsertRows,
+      "undertheradar",
+    );
+
     // Upsert in batches
     let upserted = 0;
     let upsertErrors = 0;
     const BATCH_SIZE = 50;
 
-    for (let i = 0; i < upsertRows.length; i += BATCH_SIZE) {
-      const batch = upsertRows.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < dedupedRows.length; i += BATCH_SIZE) {
+      const batch = dedupedRows.slice(i, i + BATCH_SIZE);
       const { error } = await supabase
         .from("events")
         .upsert(batch, { onConflict: "undertheradar_id" });
@@ -520,15 +443,16 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `Done: ${upserted} upserted, ${upsertErrors} errors, ${deletedCount} old events cleaned up, ${placesCreated} places created`
+      `Done: ${upserted} upserted, ${linkedCount} linked to existing, ${upsertErrors} errors, ${deletedCount} old events cleaned up, ${placeResolver.placesCreated} places created`
     );
 
     return new Response(
       JSON.stringify({
         totalFetched: allEntries.length,
         upserted,
+        linkedToExisting: linkedCount,
         upsertErrors,
-        placesCreated,
+        placesCreated: placeResolver.placesCreated,
         deletedOld: deletedCount,
       }),
       {

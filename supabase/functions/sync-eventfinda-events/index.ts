@@ -1,4 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { deduplicateEvents } from "../_shared/deduplicateEvents.ts";
+import { createPlaceResolver, loadExistingEventPlaces } from "../_shared/resolvePlace.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -197,45 +199,6 @@ function mapCategory(
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// Map venue name to a place_category enum value
-function inferPlaceCategory(venueName: string): string {
-  const name = venueName.toLowerCase();
-  if (/\bcaf[eé]\b/.test(name) || name.includes("coffee")) return "cafe";
-  if (
-    name.includes("restaurant") ||
-    name.includes("kitchen") ||
-    name.includes("bistro") ||
-    name.includes("eatery") ||
-    name.includes("diner")
-  )
-    return "restaurant";
-  if (
-    name.includes(" bar") ||
-    name.startsWith("bar ") ||
-    name.includes("pub") ||
-    name.includes("tavern") ||
-    name.includes("brewery") ||
-    name.includes("taproom")
-  )
-    return "bar";
-  if (
-    name.includes("park") ||
-    name.includes("reserve") ||
-    name.includes("garden") ||
-    name.includes("botanical")
-  )
-    return "park";
-  if (
-    name.includes("museum") ||
-    name.includes("gallery") ||
-    name.includes("library") ||
-    name.includes("zoo") ||
-    name.includes("stadium") ||
-    name.includes("cinema")
-  )
-    return "attraction";
-  return "venue";
-}
 
 function stripHtml(html: string): string {
   const NAMED_ENTITIES: Record<string, string> = {
@@ -483,7 +446,8 @@ Deno.serve(async (req) => {
     // Process events
     const upsertRows: Record<string, unknown>[] = [];
     let skippedCancelled = 0;
-    let placesCreated = 0;
+    const placeResolver = createPlaceResolver(supabase);
+    const existingPlaces = dryRun ? new Map() : await loadExistingEventPlaces(supabase, "eventfinda_id");
 
     for (const ef of allEvents) {
       // Skip cancelled events
@@ -505,63 +469,17 @@ Deno.serve(async (req) => {
       }
 
       // Find or create place
-      // Strip ", Wellington" suffix that Eventfinda appends to venue names
-      const rawVenueName = ef.location_summary || "Wellington Venue";
-      const venueName = rawVenueName.replace(/,\s*Wellington$/i, "").trim();
+      const venueName = ef.location_summary || "Wellington Venue";
       let placeId: string | null = null;
 
       if (!dryRun) {
-        // Case-insensitive name match — try stripped name first, then raw
-        const { data: match1 } = await supabase
-          .from("places")
-          .select("id")
-          .ilike("name", venueName)
-          .limit(1);
-
-        if (match1 && match1.length > 0) {
-          placeId = match1[0].id;
-        } else if (rawVenueName !== venueName) {
-          // Try the original name with ", Wellington" suffix
-          const { data: match2 } = await supabase
-            .from("places")
-            .select("id")
-            .ilike("name", rawVenueName)
-            .limit(1);
-          if (match2 && match2.length > 0) {
-            placeId = match2[0].id;
-          }
-        }
-
-        if (placeId) {
-          // found existing place
-        } else {
-          // Create new place
-          const lat = ef.point?.lat ?? -41.2924;
-          const lng = ef.point?.lng ?? 174.7787;
-          const address = ef.address || `${venueName}, Wellington`;
-
-          const { data: newPlace, error: placeErr } = await supabase
-            .from("places")
-            .insert({
-              name: venueName,
-              category: inferPlaceCategory(venueName),
-              address,
-              latitude: lat,
-              longitude: lng,
-            })
-            .select("id")
-            .single();
-
-          if (placeErr) {
-            console.error(
-              `Failed to create place "${venueName}": ${placeErr.message}`
-            );
-            continue;
-          }
-          placeId = newPlace.id;
-          placesCreated++;
-          console.log(`  Created place: ${venueName}`);
-        }
+        placeId = existingPlaces.get(String(ef.id)) ?? await placeResolver.resolve({
+          name: venueName,
+          address: ef.address || undefined,
+          latitude: ef.point?.lat,
+          longitude: ef.point?.lng,
+        });
+        if (!placeId) continue;
       }
 
       // Extract image URL (largest transform from Eventfinda CDN)
@@ -574,9 +492,10 @@ Deno.serve(async (req) => {
       const ticketUrl = extractTicketUrl(ef.web_sites, ef.url);
 
       // Strip HTML from description
+      const strippedVenueName = venueName.replace(/,\s*Wellington$/i, "").trim();
       const description = ef.description
         ? stripHtml(ef.description)
-        : `${ef.name} at ${venueName}`;
+        : `${ef.name} at ${strippedVenueName}`;
 
       const row: Record<string, unknown> = {
         eventfinda_id: ef.id,
@@ -624,13 +543,20 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Cross-source dedup: link to existing events from other sources
+    const { rows: dedupedRows, linked: linkedCount } = await deduplicateEvents(
+      supabase,
+      upsertRows,
+      "eventfinda",
+    );
+
     // Upsert in batches
     let upserted = 0;
     let upsertErrors = 0;
     const BATCH_SIZE = 50;
 
-    for (let i = 0; i < upsertRows.length; i += BATCH_SIZE) {
-      const batch = upsertRows.slice(i, i + BATCH_SIZE);
+    for (let i = 0; i < dedupedRows.length; i += BATCH_SIZE) {
+      const batch = dedupedRows.slice(i, i + BATCH_SIZE);
       const { error } = await supabase
         .from("events")
         .upsert(batch, { onConflict: "eventfinda_id" });
@@ -663,16 +589,17 @@ Deno.serve(async (req) => {
     }
 
     console.log(
-      `Done: ${upserted} upserted, ${upsertErrors} errors, ${deletedCount} old events cleaned up, ${placesCreated} places created`
+      `Done: ${upserted} upserted, ${linkedCount} linked to existing, ${upsertErrors} errors, ${deletedCount} old events cleaned up, ${placeResolver.placesCreated} places created`
     );
 
     return new Response(
       JSON.stringify({
         totalFetched: allEvents.length,
         upserted,
+        linkedToExisting: linkedCount,
         upsertErrors,
         skippedCancelled,
-        placesCreated,
+        placesCreated: placeResolver.placesCreated,
         deletedOld: deletedCount,
       }),
       {
