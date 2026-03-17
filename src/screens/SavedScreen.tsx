@@ -10,6 +10,7 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useSave } from "../context/SaveContext";
+import { useExploration } from "../context/PointsContext";
 import { getPostsByIds } from "../services/posts";
 import { getPlacesByIds , getPlaces } from "../services/places";
 import { getEventsByIds } from "../services/events";
@@ -25,7 +26,7 @@ import { fonts } from "../theme/fonts";
 import { QueryErrorState } from "../components/QueryErrorState";
 import type { PlaceCategory } from "../types";
 
-type Tab = "posts" | "places" | "events" | "guides";
+type Tab = "posts" | "places" | "events" | "guides" | "visited";
 
 const CATEGORY_ICONS: Record<PlaceCategory, { sf: string; fallback: string }> = {
   cafe: { sf: "cup.and.saucer.fill", fallback: "cafe" },
@@ -45,6 +46,7 @@ export function SavedScreen() {
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { getSavedIds } = useSave();
+  const { exploredPlaceIds } = useExploration();
   const [activeTab, setActiveTab] = useState<Tab>("posts");
 
   const savedPostIds = getSavedIds("post");
@@ -88,6 +90,15 @@ export function SavedScreen() {
     ...savedGuideIds,
   ]);
 
+  const fetchVisitedPlaces = useCallback(
+    () => getPlacesByIds(exploredPlaceIds),
+    [exploredPlaceIds]
+  );
+  const { data: visitedPlaces, error: visitedError, refetch: refetchVisited } = useQuery(fetchVisitedPlaces, [
+    "visited-places",
+    ...exploredPlaceIds,
+  ]);
+
   const fetchAllPlaces = useCallback(() => getPlaces(), []);
   const { data: allPlaces } = useQuery(fetchAllPlaces, "all-places");
 
@@ -102,7 +113,8 @@ export function SavedScreen() {
       refetchPlaces();
       refetchEvents();
       refetchGuides();
-    }, [refetchPosts, refetchPlaces, refetchEvents, refetchGuides])
+      refetchVisited();
+    }, [refetchPosts, refetchPlaces, refetchEvents, refetchGuides, refetchVisited])
   );
 
   const postsWithPlaces = useMemo(() => {
@@ -118,6 +130,7 @@ export function SavedScreen() {
     { key: "places", label: "Places", count: savedPlaceIds.length },
     { key: "events", label: "Events", count: savedEventIds.length },
     { key: "guides", label: "Guides", count: savedGuideIds.length },
+    { key: "visited", label: "Visited", count: exploredPlaceIds.length },
   ];
 
   const renderContent = () => {
@@ -257,6 +270,65 @@ export function SavedScreen() {
               </View>
             ))}
           </View>
+        );
+
+      case "visited":
+        if (visitedError && !visitedPlaces) {
+          return <QueryErrorState message={visitedError} onRetry={refetchVisited} fullScreen={false} />;
+        }
+        if (!visitedPlaces || visitedPlaces.length === 0) {
+          return (
+            <View style={styles.emptyState}>
+              <SFIcon
+                name="checkmark.circle"
+                fallback="checkmark-circle-outline"
+                size={40}
+                color={colors.gray300}
+              />
+              <Text style={styles.emptyText}>No visited places yet</Text>
+            </View>
+          );
+        }
+        return (
+          <FlatList
+            data={visitedPlaces}
+            keyExtractor={(item) => item.id}
+            scrollEnabled={false}
+            renderItem={({ item }) => (
+              <HapticPressable
+                style={styles.placeRow}
+                onPress={() => router.push(`/profile/place/${item.id}`)}
+              >
+                <View
+                  style={[
+                    styles.placeCategoryDot,
+                    { backgroundColor: colors.category[item.category] },
+                  ]}
+                >
+                  <SFIcon
+                    name={CATEGORY_ICONS[item.category].sf as any}
+                    fallback={CATEGORY_ICONS[item.category].fallback as any}
+                    size={14}
+                    color="#FFFFFF"
+                  />
+                </View>
+                <View style={styles.placeInfo}>
+                  <Text style={styles.placeName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.placeAddress} numberOfLines={1}>
+                    {item.address}
+                  </Text>
+                </View>
+                <SFIcon
+                  name="checkmark.circle.fill"
+                  fallback="checkmark-circle"
+                  size={16}
+                  color={colors.explored}
+                />
+              </HapticPressable>
+            )}
+          />
         );
     }
   };

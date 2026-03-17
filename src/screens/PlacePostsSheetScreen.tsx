@@ -13,6 +13,7 @@ import { useLocalSearchParams, useRouter, useFocusEffect } from "expo-router";
 import { dismissAndPush } from "../utils/navigation";
 import { useFollow } from "../context/FollowContext";
 import { useLike } from "../context/LikeContext";
+import { useExploration } from "../context/PointsContext";
 import { useMapPlaceSelection } from "../context/MapPlaceSelectionContext";
 import { useQuery } from "../hooks/useQuery";
 import { getPlaceById } from "../services/places";
@@ -52,6 +53,7 @@ export function PlacePostsSheetScreen() {
   );
   const { followingIds } = useFollow();
   const { getLikeCount } = useLike();
+  const { isExplored, toggleExplored } = useExploration();
 
   useEffect(() => {
     sheetOpenRef.current = true;
@@ -299,6 +301,19 @@ export function PlacePostsSheetScreen() {
                       <Text style={styles.statText}>{totalLikes} likes</Text>
                     </View>
                     <HapticPressable
+                      style={styles.stat}
+                      onPress={() => toggleExplored(place.id)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <SFIcon
+                        name={isExplored(place.id) ? "checkmark.circle.fill" : "checkmark.circle"}
+                        fallback={isExplored(place.id) ? "checkmark-circle" : "checkmark-circle-outline"}
+                        size={14}
+                        color={isExplored(place.id) ? colors.explored : colors.textSecondary}
+                      />
+                      <Text style={[styles.statText, isExplored(place.id) && { color: colors.explored }]}>Visited</Text>
+                    </HapticPressable>
+                    <HapticPressable
                       style={styles.directionsButton}
                       onPress={handleOpenDirections}
                     >
@@ -423,6 +438,7 @@ function TrailHeader({
 }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
+  const { isExplored, toggleExplored } = useExploration();
   const trailColor = colors.category.trail;
   const DIFFICULTY_COLORS: Record<TrailDifficulty, string> = {
     easy: colors.success,
@@ -487,6 +503,19 @@ function TrailHeader({
         </View>
       </View>
       <View style={styles.trailActionsRow}>
+        <HapticPressable
+          style={styles.stat}
+          onPress={() => toggleExplored(place.id)}
+          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+        >
+          <SFIcon
+            name={isExplored(place.id) ? "checkmark.circle.fill" : "checkmark.circle"}
+            fallback={isExplored(place.id) ? "checkmark-circle" : "checkmark-circle-outline"}
+            size={14}
+            color={isExplored(place.id) ? colors.explored : colors.textSecondary}
+          />
+          <Text style={[styles.statText, isExplored(place.id) && { color: colors.explored }]}>Visited</Text>
+        </HapticPressable>
         <HapticPressable style={styles.directionsButton} onPress={handleOpenDirections}>
           <SFIcon name="location.fill" fallback="navigate" size={14} color={colors.primary} />
           <Text style={styles.directionsText}>Directions</Text>

@@ -43,6 +43,19 @@ export async function markPlaceExplored(
 }
 
 /**
+ * Remove a place exploration for a user (un-mark as visited)
+ */
+export async function unmarkPlaceExplored(userId: string, placeId: string): Promise<void> {
+  const { error } = await supabase
+    .from('user_explorations')
+    .delete()
+    .eq('user_id', userId)
+    .eq('place_id', placeId);
+
+  if (error) throw error;
+}
+
+/**
  * Get exploration statistics for a user
  */
 export async function getExplorationStats(userId: string): Promise<ExplorationStats> {

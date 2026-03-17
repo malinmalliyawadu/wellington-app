@@ -122,6 +122,8 @@ export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
     clearCategories,
     showFollowingOnly,
     setShowFollowingOnly,
+    hideVisited,
+    setHideVisited,
     showTrails,
     setShowTrails,
     showEvents,
@@ -134,6 +136,7 @@ export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
   const hasAnyFilter =
     selectedCategories.length > 0 ||
     showFollowingOnly ||
+    hideVisited ||
     !showTrails ||
     !showEvents ||
     (showTrails &&
@@ -143,6 +146,7 @@ export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
   const clearAll = () => {
     clearCategories();
     setShowFollowingOnly(false);
+    setHideVisited(false);
     setShowTrails(true);
     setShowEvents(true);
     clearTrailDifficulties();
@@ -219,6 +223,15 @@ export function MapFilterDrawer({ navigation }: DrawerContentComponentProps) {
             value={showFollowingOnly}
             onValueChange={setShowFollowingOnly}
             iconColor={showFollowingOnly ? colors.primary : colors.textMuted}
+            colors={colors}
+          />
+          <View style={styles.toggleDivider} />
+          <ToggleSwitchRow
+            icon={{ sf: "eye.slash", fallback: "eye-off" }}
+            label="Hide visited"
+            value={hideVisited}
+            onValueChange={setHideVisited}
+            iconColor={hideVisited ? colors.explored : colors.textMuted}
             colors={colors}
           />
           <View style={styles.toggleDivider} />

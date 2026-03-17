@@ -19,6 +19,7 @@ import { NeighborhoodOverlay } from "../components/NeighborhoodOverlay";
 import { TrailOverlay } from "../components/TrailOverlay";
 import { MapControls } from "../components/MapControls";
 import { useFollow } from "../context/FollowContext";
+import { useExploration } from "../context/PointsContext";
 import { useMapFilters } from "../context/MapFilterContext";
 import { useMapData } from "../hooks/useMapData";
 import {
@@ -26,7 +27,6 @@ import {
   regionToZoom,
 } from "../hooks/useMarkerClustering";
 import { useMarkerAnimation } from "../hooks/useMarkerAnimation";
-import { useExplorationTracking } from "../hooks/useExplorationTracking";
 import { WELLINGTON_REGION, isInWellington } from "../constants/wellington";
 import { Place } from "../types";
 import { useTheme, type Colors } from "../theme/ThemeContext";
@@ -108,7 +108,8 @@ export function MapScreen() {
   const insets = useSafeAreaInsets();
   const { selectPlace, sheetOpenRef } = useMapPlaceSelection();
   const { followingIds } = useFollow();
-  const { selectedCategories, showFollowingOnly, showTrails, showEvents, selectedTrailDifficulties } =
+  const { exploredPlaceIds } = useExploration();
+  const { selectedCategories, showFollowingOnly, hideVisited, showTrails, showEvents, selectedTrailDifficulties } =
     useMapFilters();
 
   const [visibleRegion, setVisibleRegion] = useState<Region>(WELLINGTON_REGION);
@@ -133,6 +134,8 @@ export function MapScreen() {
     followingIds,
     selectedCategories,
     showFollowingOnly,
+    hideVisited,
+    exploredPlaceIds,
     showEvents,
     visibleRegion,
     mapLayout,
@@ -165,8 +168,6 @@ export function MapScreen() {
     }
     pruneMarkers(activePlaceIds);
   }, [mapItems, pruneMarkers]);
-
-  useExplorationTracking(userCoords, places, true);
 
   const openPlaceSheet = useCallback(
     (placeId: string) => {
@@ -305,6 +306,7 @@ export function MapScreen() {
   const activeFilterCount =
     (selectedCategories.length > 0 ? 1 : 0) +
     (showFollowingOnly ? 1 : 0) +
+    (hideVisited ? 1 : 0) +
     (!showTrails ? 1 : 0) +
     (!showEvents ? 1 : 0) +
     (showTrails && selectedTrailDifficulties.length > 0 && selectedTrailDifficulties.length < 3 ? 1 : 0);

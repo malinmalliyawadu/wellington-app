@@ -3,7 +3,7 @@ import { AppState } from 'react-native';
 import { useAuth } from './AuthContext';
 import { useFollow } from './FollowContext';
 import { useToast } from './ToastContext';
-import { getExploredPlaceIds, markPlaceExplored, hasFollowedUserExploredPlace } from '../services/explorations';
+import { getExploredPlaceIds, markPlaceExplored, unmarkPlaceExplored, hasFollowedUserExploredPlace } from '../services/explorations';
 import { checkAndUnlockAchievements, computeEarnedBadgeIds } from '../services/achievements';
 import { awardPoints, getUserPointTotals } from '../services/points';
 import { ExplorationMethod } from '../types/database';
@@ -16,6 +16,8 @@ interface PointsContextType {
   exploredPlaceIds: string[];
   isExplored: (placeId: string) => boolean;
   markExplored: (placeId: string, method: ExplorationMethod) => Promise<string[]>;
+  unmarkExplored: (placeId: string) => Promise<void>;
+  toggleExplored: (placeId: string) => Promise<void>;
   refetchExplorations: () => void;
 
   // Points & leveling
@@ -155,6 +157,35 @@ export function PointsProvider({ children }: { children: React.ReactNode }) {
     [currentUserId, followingIds, showToast]
   );
 
+  const unmarkExplored = useCallback(
+    async (placeId: string): Promise<void> => {
+      if (!currentUserId) return;
+      if (!exploredPlaceIdsRef.current.includes(placeId)) return;
+
+      // Optimistic update
+      setExploredPlaceIds((prev) => prev.filter((id) => id !== placeId));
+
+      try {
+        await unmarkPlaceExplored(currentUserId, placeId);
+      } catch (error) {
+        console.error('Failed to unmark place as explored:', error);
+        setExploredPlaceIds((prev) => [...prev, placeId]);
+      }
+    },
+    [currentUserId]
+  );
+
+  const toggleExplored = useCallback(
+    async (placeId: string): Promise<void> => {
+      if (exploredPlaceIdsRef.current.includes(placeId)) {
+        await unmarkExplored(placeId);
+      } else {
+        await markExplored(placeId, 'manual');
+      }
+    },
+    [markExplored, unmarkExplored]
+  );
+
   const awardPointsForAction = useCallback(
     async (actionType: PointActionType, referenceId?: string) => {
       if (!currentUserId) return;
@@ -212,6 +243,8 @@ export function PointsProvider({ children }: { children: React.ReactNode }) {
       exploredPlaceIds,
       isExplored,
       markExplored,
+      unmarkExplored,
+      toggleExplored,
       refetchExplorations,
       totalPoints,
       level,
@@ -226,6 +259,8 @@ export function PointsProvider({ children }: { children: React.ReactNode }) {
       exploredPlaceIds,
       isExplored,
       markExplored,
+      unmarkExplored,
+      toggleExplored,
       refetchExplorations,
       totalPoints,
       level,
@@ -257,6 +292,6 @@ export function usePoints() {
  * Backward-compatible hook that matches the old useExploration() interface.
  */
 export function useExploration() {
-  const { exploredPlaceIds, isExplored, markExplored, refetchExplorations } = usePoints();
-  return { exploredPlaceIds, isExplored, markExplored, refetchExplorations };
+  const { exploredPlaceIds, isExplored, markExplored, unmarkExplored, toggleExplored, refetchExplorations } = usePoints();
+  return { exploredPlaceIds, isExplored, markExplored, unmarkExplored, toggleExplored, refetchExplorations };
 }
