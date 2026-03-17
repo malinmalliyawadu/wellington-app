@@ -18,6 +18,7 @@ import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { useQuery } from "../hooks/useQuery";
 import { useFollow } from "../context/FollowContext";
 import { useLike } from "../context/LikeContext";
+import { useExploration } from "../context/PointsContext";
 import { getTrailById } from "../services/trails";
 import { getPostsByPlaceId } from "../services/posts";
 import { getUpcomingEvents } from "../services/events";
@@ -44,6 +45,7 @@ export function TrailDetailSheetScreen() {
   const tabBase = '/' + pathname.split('/')[1];
   const { followingIds } = useFollow();
   const { getLikeCount } = useLike();
+  const { isExplored, toggleExplored } = useExploration();
 
   const fetchTrail = useCallback(() => getTrailById(trailId ?? ""), [trailId]);
   const {
@@ -248,6 +250,21 @@ export function TrailDetailSheetScreen() {
               </Text>
             </View>
             <View style={styles.trailActions}>
+              {trail.placeId && (
+                <HapticPressable
+                  style={styles.engagementStat}
+                  onPress={() => toggleExplored(trail.placeId)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <SFIcon
+                    name={isExplored(trail.placeId) ? "checkmark.circle.fill" : "checkmark.circle"}
+                    fallback={isExplored(trail.placeId) ? "checkmark-circle" : "checkmark-circle-outline"}
+                    size={14}
+                    color={isExplored(trail.placeId) ? colors.explored : colors.textSecondary}
+                  />
+                  <Text style={[styles.engagementText, isExplored(trail.placeId) && { color: colors.explored }]}>Visited</Text>
+                </HapticPressable>
+              )}
               <HapticPressable
                 style={styles.directionsButton}
                 onPress={handleOpenDirections}

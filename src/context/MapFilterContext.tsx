@@ -7,6 +7,8 @@ interface MapFilterContextType {
   clearCategories: () => void;
   showFollowingOnly: boolean;
   setShowFollowingOnly: (show: boolean) => void;
+  hideVisited: boolean;
+  setHideVisited: (hide: boolean) => void;
   showTrails: boolean;
   setShowTrails: (show: boolean) => void;
   showEvents: boolean;
@@ -21,6 +23,7 @@ const MapFilterContext = createContext<MapFilterContextType | null>(null);
 export function MapFilterProvider({ children }: { children: React.ReactNode }) {
   const [selectedCategories, setSelectedCategories] = useState<PlaceCategory[]>([]);
   const [showFollowingOnly, setShowFollowingOnly] = useState(false);
+  const [hideVisited, setHideVisited] = useState(false);
   const [showTrails, setShowTrails] = useState(true);
   const [showEvents, setShowEvents] = useState(true);
   const [selectedTrailDifficulties, setSelectedTrailDifficulties] = useState<TrailDifficulty[]>(['easy', 'moderate', 'hard']);
@@ -49,6 +52,8 @@ export function MapFilterProvider({ children }: { children: React.ReactNode }) {
         clearCategories,
         showFollowingOnly,
         setShowFollowingOnly,
+        hideVisited,
+        setHideVisited,
         showTrails,
         setShowTrails: useCallback((show: boolean) => {
           setShowTrails(show);

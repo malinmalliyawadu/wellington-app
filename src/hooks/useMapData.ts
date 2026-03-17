@@ -21,6 +21,8 @@ interface UseMapDataParams {
   followingIds: string[];
   selectedCategories: PlaceCategory[];
   showFollowingOnly: boolean;
+  hideVisited: boolean;
+  exploredPlaceIds: string[];
   showEvents: boolean;
   visibleRegion: Region;
   mapLayout: { width: number; height: number };
@@ -30,6 +32,8 @@ export function useMapData({
   followingIds,
   selectedCategories,
   showFollowingOnly,
+  hideVisited,
+  exploredPlaceIds,
   showEvents,
   visibleRegion,
   mapLayout,
@@ -163,6 +167,8 @@ export function useMapData({
 
   const followingSet = useMemo(() => new Set(followingIds), [followingIds]);
 
+  const exploredSet = useMemo(() => new Set(exploredPlaceIds), [exploredPlaceIds]);
+
   const filteredPlaces = useMemo(() => {
     return allPlaces.filter((place) => {
       // Exclude not-interested places
@@ -185,12 +191,17 @@ export function useMapData({
           return false;
         }
       }
+      if (hideVisited && exploredSet.has(place.id) && !placeEventsMap.has(place.id)) {
+        return false;
+      }
       return true;
     });
   }, [
     allPlaces,
     selectedCategories,
     showFollowingOnly,
+    hideVisited,
+    exploredSet,
     popularityMap,
     placeEventsMap,
     followingSet,

@@ -18,6 +18,7 @@ import { sortPosts } from '../utils/postSorting';
 import { useFollow } from '../context/FollowContext';
 import { useLike } from '../context/LikeContext';
 import { useSave } from '../context/SaveContext';
+import { useExploration } from '../context/PointsContext';
 import { useNotInterested } from '../context/NotInterestedContext';
 import { VideoThumbnail } from '../components/VideoThumbnail';
 import { useTheme, type Colors } from '../theme/ThemeContext';
@@ -51,6 +52,7 @@ export function PlaceDetailScreen() {
   const headerHeight = useHeaderHeight();
   const { followingIds } = useFollow();
   const { isSaved, toggleSave } = useSave();
+  const { isExplored, toggleExplored } = useExploration();
   const { toggleNotInterested } = useNotInterested();
 
   const onShareRef = useRef<(() => void) | undefined>(undefined);
@@ -197,10 +199,13 @@ export function PlaceDetailScreen() {
             {trail ? (
               <PlaceTrailHeader
                 trail={trail}
+                placeId={place.id}
                 postCount={allPosts.length}
                 totalLikes={totalLikes}
                 isSaved={isSaved('place', place.id)}
                 onToggleSave={() => toggleSave('place', place.id)}
+                isVisited={isExplored(place.id)}
+                onToggleVisited={() => toggleExplored(place.id)}
               />
             ) : (
               <>
@@ -242,10 +247,23 @@ export function PlaceDetailScreen() {
                 <SFIcon name="heart" fallback="heart-outline" size={16} color={colors.textSecondary} />
                 <Text style={styles.statText}>{totalLikes} likes</Text>
               </View>
+            </View>
+            <View style={styles.actionsRow}>
               <HapticPressable
-                style={styles.saveButton}
+                style={[styles.actionButton, isExplored(place.id) && { borderColor: colors.explored + '40', backgroundColor: colors.explored + '10' }]}
+                onPress={() => toggleExplored(place.id)}
+              >
+                <SFIcon
+                  name={isExplored(place.id) ? 'checkmark.circle.fill' : 'checkmark.circle'}
+                  fallback={isExplored(place.id) ? 'checkmark-circle' : 'checkmark-circle-outline'}
+                  size={16}
+                  color={isExplored(place.id) ? colors.explored : colors.textSecondary}
+                />
+                <Text style={[styles.actionButtonText, isExplored(place.id) && { color: colors.explored }]}>Visited</Text>
+              </HapticPressable>
+              <HapticPressable
+                style={[styles.actionButton, isSaved('place', place.id) && { borderColor: colors.saved + '40', backgroundColor: colors.saved + '10' }]}
                 onPress={() => toggleSave('place', place.id)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <SFIcon
                   name={isSaved('place', place.id) ? 'bookmark.fill' : 'bookmark'}
@@ -253,11 +271,14 @@ export function PlaceDetailScreen() {
                   size={16}
                   color={isSaved('place', place.id) ? colors.saved : colors.textSecondary}
                 />
-                <Text style={[styles.statText, isSaved('place', place.id) && { color: colors.saved }]}>Save</Text>
+                <Text style={[styles.actionButtonText, isSaved('place', place.id) && { color: colors.saved }]}>Save</Text>
               </HapticPressable>
-              <HapticPressable style={styles.directionsButton} onPress={handleOpenDirections}>
+              <HapticPressable
+                style={styles.actionButton}
+                onPress={handleOpenDirections}
+              >
                 <SFIcon name="location.fill" fallback="navigate" size={16} color={colors.primary} />
-                <Text style={styles.directionsText}>Directions</Text>
+                <Text style={[styles.actionButtonText, { color: colors.primary }]}>Directions</Text>
               </HapticPressable>
             </View>
             <LiquidGlassButton
@@ -338,16 +359,22 @@ const DIFFICULTY_LABELS: Record<TrailDifficulty, string> = {
 
 function PlaceTrailHeader({
   trail,
+  placeId,
   postCount,
   totalLikes,
   isSaved: saved,
   onToggleSave,
+  isVisited,
+  onToggleVisited,
 }: {
   trail: { name: string; id: string; elevation: string; distance: string; duration: string; difficulty: TrailDifficulty; trailhead: { latitude: number; longitude: number; label: string }; highlights: string[] };
+  placeId: string;
   postCount: number;
   totalLikes: number;
   isSaved: boolean;
   onToggleSave: () => void;
+  isVisited: boolean;
+  onToggleVisited: () => void;
 }) {
   const { colors } = useTheme();
   const styles = createStyles(colors);
@@ -408,6 +435,42 @@ function PlaceTrailHeader({
           ))}
         </View>
       )}
+      <View style={styles.statsRow}>
+        <View style={styles.stat}>
+          <SFIcon name="bubble.left" fallback="chatbubble-outline" size={16} color={colors.textSecondary} />
+          <Text style={styles.statText}>{postCount} posts</Text>
+        </View>
+        <View style={styles.stat}>
+          <SFIcon name="heart" fallback="heart-outline" size={16} color={colors.textSecondary} />
+          <Text style={styles.statText}>{totalLikes} likes</Text>
+        </View>
+      </View>
+      <View style={styles.actionsRow}>
+        <HapticPressable
+          style={[styles.actionButton, isVisited && { borderColor: colors.explored + '40', backgroundColor: colors.explored + '10' }]}
+          onPress={onToggleVisited}
+        >
+          <SFIcon
+            name={isVisited ? 'checkmark.circle.fill' : 'checkmark.circle'}
+            fallback={isVisited ? 'checkmark-circle' : 'checkmark-circle-outline'}
+            size={16}
+            color={isVisited ? colors.explored : colors.textSecondary}
+          />
+          <Text style={[styles.actionButtonText, isVisited && { color: colors.explored }]}>Visited</Text>
+        </HapticPressable>
+        <HapticPressable
+          style={[styles.actionButton, saved && { borderColor: colors.saved + '40', backgroundColor: colors.saved + '10' }]}
+          onPress={onToggleSave}
+        >
+          <SFIcon
+            name={saved ? 'bookmark.fill' : 'bookmark'}
+            fallback={saved ? 'bookmark' : 'bookmark-outline'}
+            size={16}
+            color={saved ? colors.saved : colors.textSecondary}
+          />
+          <Text style={[styles.actionButtonText, saved && { color: colors.saved }]}>Save</Text>
+        </HapticPressable>
+      </View>
     </>
   );
 }
@@ -586,9 +649,7 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 20,
-  },
-  writePostButton: {
-    marginTop: 14,
+    marginBottom: 12,
   },
   stat: {
     flexDirection: 'row',
@@ -599,21 +660,34 @@ const createStyles = (colors: Colors) => StyleSheet.create({
     fontSize: 14,
     color: colors.textSecondary,
   },
-  saveButton: {
+  actionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    gap: 10,
   },
-  directionsButton: {
+  actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    marginLeft: 'auto',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.gray200,
+  },
+  actionButtonText: {
+    fontSize: 13,
+    fontFamily: fonts.semiBold,
+    color: colors.textSecondary,
   },
   directionsText: {
     fontSize: 14,
     fontFamily: fonts.semiBold,
     color: colors.primary,
+  },
+  writePostButton: {
+    marginTop: 14,
   },
   postRow: {
     flexDirection: 'row',
