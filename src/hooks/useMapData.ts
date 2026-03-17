@@ -191,7 +191,7 @@ export function useMapData({
           return false;
         }
       }
-      if (hideVisited && exploredSet.has(place.id)) {
+      if (hideVisited && exploredSet.has(place.id) && !placeEventsMap.has(place.id)) {
         return false;
       }
       return true;
