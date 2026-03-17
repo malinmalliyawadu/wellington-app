@@ -24,6 +24,7 @@ import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useFollow } from "../context/FollowContext";
 import { useEventFilters } from "../context/EventFilterContext";
 import { useTheme } from "../theme/ThemeContext";
+import { useNotInterested } from "../context/NotInterestedContext";
 import { HapticPressable } from "src/components/HapticPressable";
 import { FloatingCreateButton } from "src/components/FloatingCreateButton";
 import { QueryErrorState } from "../components/QueryErrorState";
@@ -49,6 +50,8 @@ export function EventsScreen() {
   const { followingIds } = useFollow();
   const headerHeight = useHeaderHeight();
   const queryClient = useQueryClient();
+  const { getNotInterestedIds } = useNotInterested();
+  const notInterestedEventIds = useMemo(() => new Set(getNotInterestedIds('event')), [getNotInterestedIds]);
   const {
     selectedDateRange,
     setSelectedDateRange,
@@ -185,13 +188,14 @@ export function EventsScreen() {
   const discoveryEventsWithPlaces = useMemo(
     () =>
       (allEvents ?? [])
+        .filter((event) => !notInterestedEventIds.has(event.id))
         .map((event) => {
           const place = placeMap.get(event.placeId);
           if (!place) return null;
           return { event, place };
         })
         .filter((item): item is EventWithPlace => item !== null),
-    [allEvents, placeMap]
+    [allEvents, placeMap, notInterestedEventIds]
   );
 
   const sections = useMemo(
@@ -228,13 +232,14 @@ export function EventsScreen() {
   const filteredEventsWithPlaces = useMemo(
     () =>
       filteredEvents
+        .filter((event) => !notInterestedEventIds.has(event.id))
         .map((event) => {
           const place = placeMap.get(event.placeId);
           if (!place) return null;
           return { event, place };
         })
         .filter((item): item is EventWithPlace => item !== null),
-    [filteredEvents, placeMap]
+    [filteredEvents, placeMap, notInterestedEventIds]
   );
 
   const handleLoadMore = useCallback(() => {

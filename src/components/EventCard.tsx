@@ -1,10 +1,22 @@
 import React, { useCallback, useMemo, useState } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+  interpolate,
+  Extrapolation,
+} from "react-native-reanimated";
+import * as Haptics from "expo-haptics";
 import { Event, Place, User } from "../types";
 import { useFollow } from "../context/FollowContext";
+import { useNotInterested } from "../context/NotInterestedContext";
 import { getProfilesByIds } from "../services/users";
 import { useQuery } from "../hooks/useQuery";
 import { useTheme, type Colors } from "../theme/ThemeContext";
@@ -260,6 +272,153 @@ const placeholderStyles = StyleSheet.create({
   },
 });
 
+const SWIPE_THRESHOLD = -120;
+
+function SwipeToDismiss({
+  onDismiss,
+  onPress,
+  children,
+  height,
+}: {
+  onDismiss: () => void;
+  onPress: () => void;
+  children: React.ReactNode;
+  height: number;
+}) {
+  const { colors } = useTheme();
+  const { width: screenWidth } = useWindowDimensions();
+  const translateX = useSharedValue(0);
+  const dismissed = useSharedValue(false);
+  const pastThreshold = useSharedValue(false);
+  const pressed = useSharedValue(false);
+
+  const hapticFeedback = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  }, []);
+
+  const tapHaptic = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  }, []);
+
+  const tap = Gesture.Tap()
+    .onBegin(() => {
+      pressed.value = true;
+    })
+    .onFinalize(() => {
+      pressed.value = false;
+    })
+    .onEnd(() => {
+      runOnJS(tapHaptic)();
+      runOnJS(onPress)();
+    });
+
+  const pan = Gesture.Pan()
+    .activeOffsetX([-15, 15])
+    .failOffsetY([-10, 10])
+    .onUpdate((e) => {
+      // Only allow swiping left
+      translateX.value = Math.min(0, e.translationX);
+
+      // Haptic when crossing threshold
+      if (translateX.value < SWIPE_THRESHOLD && !pastThreshold.value) {
+        pastThreshold.value = true;
+        runOnJS(hapticFeedback)();
+      } else if (translateX.value >= SWIPE_THRESHOLD && pastThreshold.value) {
+        pastThreshold.value = false;
+      }
+    })
+    .onEnd(() => {
+      if (translateX.value < SWIPE_THRESHOLD) {
+        dismissed.value = true;
+        translateX.value = withTiming(-screenWidth, { duration: 200 }, () => {
+          runOnJS(onDismiss)();
+        });
+      } else {
+        translateX.value = withSpring(0, { damping: 20, stiffness: 200 });
+      }
+    });
+
+  // Pan takes priority — if a swipe is detected, the tap is cancelled
+  const composed = Gesture.Exclusive(pan, tap);
+
+  const cardStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      {
+        rotate: `${interpolate(
+          translateX.value,
+          [-screenWidth, 0],
+          [-8, 0],
+          Extrapolation.CLAMP
+        )}deg`,
+      },
+    ],
+    opacity: interpolate(
+      translateX.value,
+      [-screenWidth, -200, 0],
+      [0, 0.8, 1],
+      Extrapolation.CLAMP
+    ),
+  }));
+
+  const pressStyle = useAnimatedStyle(() => ({
+    opacity: pressed.value ? 0.7 : 1,
+  }));
+
+  const backdropStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(
+      translateX.value,
+      [SWIPE_THRESHOLD, -40, 0],
+      [1, 0.3, 0],
+      Extrapolation.CLAMP
+    ),
+  }));
+
+  return (
+    <View style={{ position: "relative" }}>
+      <Animated.View
+        style={[
+          {
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height,
+            borderRadius: 24,
+            marginHorizontal: 16,
+            backgroundColor: colors.error + "15",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            paddingRight: 32,
+          },
+          backdropStyle,
+        ]}
+      >
+        <View style={{ alignItems: "center", gap: 4 }}>
+          <SFIcon
+            name="eye.slash.fill"
+            fallback="eye-off"
+            size={24}
+            color={colors.error}
+          />
+          <Text
+            style={{
+              fontSize: 11,
+              fontFamily: fonts.semiBold,
+              color: colors.error,
+            }}
+          >
+            Not interested
+          </Text>
+        </View>
+      </Animated.View>
+      <GestureDetector gesture={composed}>
+        <Animated.View style={[cardStyle, pressStyle]}>{children}</Animated.View>
+      </GestureDetector>
+    </View>
+  );
+}
+
 export const EventCard = React.memo(function EventCard({
   event,
   place,
@@ -276,6 +435,7 @@ export const EventCard = React.memo(function EventCard({
   const [imageError, setImageError] = useState(false);
   const showImage = !!event.imageUrl && !imageError;
   const { followingIds } = useFollow();
+  const { toggleNotInterested } = useNotInterested();
   const attendeeIds = useMemo(
     () => event.attendeeIds ?? [],
     [event.attendeeIds]
@@ -288,6 +448,10 @@ export const EventCard = React.memo(function EventCard({
       onPress();
     }
   }, [onEventPress, onPress, event.id]);
+
+  const handleDismiss = useCallback(() => {
+    toggleNotInterested('event', event.id);
+  }, [toggleNotInterested, event.id]);
 
   const sortedAttendeeIds = useMemo(
     () =>
@@ -374,7 +538,8 @@ export const EventCard = React.memo(function EventCard({
   // --- Featured variant ---
   if (variant === "featured") {
     return (
-      <HapticPressable style={styles.featuredContainer} onPress={handlePress}>
+      <SwipeToDismiss onDismiss={handleDismiss} onPress={handlePress} height={280}>
+      <View style={styles.featuredContainer}>
         <View style={styles.featuredImageContainer}>
           {showImage ? (
             <Image
@@ -458,16 +623,15 @@ export const EventCard = React.memo(function EventCard({
             </View>
           </View>
         </View>
-      </HapticPressable>
+      </View>
+      </SwipeToDismiss>
     );
   }
 
   // --- Default variant ---
   return (
-    <HapticPressable
-      style={styles.container}
-      onPress={handlePress}
-    >
+    <SwipeToDismiss onDismiss={handleDismiss} onPress={handlePress} height={280}>
+    <View style={styles.container}>
       <View style={styles.imageContainer}>
         {showImage ? (
           <Image
@@ -556,7 +720,8 @@ export const EventCard = React.memo(function EventCard({
           </View>
         </View>
       </View>
-    </HapticPressable>
+    </View>
+    </SwipeToDismiss>
   );
 });
 

@@ -59,6 +59,8 @@ interface PrefetchedSocialContext {
     placeCategory: string | null;
     content: string;
   }[];
+  notInterestedEventIds: string[];
+  notInterestedPlaceIds: string[];
 }
 
 
@@ -143,8 +145,8 @@ async function prefetchSocialContext(
 
   const followingIds = followingUsers.map((u) => u.id);
 
-  // Fetch feed posts and user posts in parallel
-  const [feedResult, userPostsResult] = await Promise.all([
+  // Fetch feed posts, user posts, and not-interested items in parallel
+  const [feedResult, userPostsResult, notInterestedResult] = await Promise.all([
     followingIds.length > 0
       ? supabase
           .from("posts")
@@ -159,6 +161,10 @@ async function prefetchSocialContext(
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(20),
+    supabase
+      .from("not_interested")
+      .select("item_type, item_id")
+      .eq("user_id", userId),
   ]);
 
   const followMap = new Map(followingUsers.map((u) => [u.id, u.name]));
@@ -185,7 +191,14 @@ async function prefetchSocialContext(
     }
   );
 
-  return { followingUsers, feedPosts, userPosts };
+  const notInterestedEventIds: string[] = [];
+  const notInterestedPlaceIds: string[] = [];
+  for (const row of (notInterestedResult.data ?? []) as Record<string, unknown>[]) {
+    if (row.item_type === "event") notInterestedEventIds.push(row.item_id as string);
+    else if (row.item_type === "place") notInterestedPlaceIds.push(row.item_id as string);
+  }
+
+  return { followingUsers, feedPosts, userPosts, notInterestedEventIds, notInterestedPlaceIds };
 }
 
 // ---------------------------------------------------------------------------
@@ -409,7 +422,8 @@ const TOOL_DEFINITIONS: Anthropic.Tool[] = [
 async function executeSearchEvents(
   supabase: SupabaseClient,
   input: Record<string, unknown>,
-  userId: string
+  userId: string,
+  notInterestedEventIds: string[] = []
 ): Promise<unknown> {
   const now = new Date();
   const dateFrom =
@@ -436,6 +450,9 @@ async function executeSearchEvents(
     .order("start_time", { ascending: true })
     .limit(limit);
 
+  if (notInterestedEventIds.length > 0) {
+    query = query.not("id", "in", `(${notInterestedEventIds.join(",")})`);
+  }
   if (categories && categories.length > 0) {
     query = query.in("category", categories);
   }
@@ -563,7 +580,8 @@ async function executeGetEventDetails(
 async function executeSearchPlaces(
   supabase: SupabaseClient,
   input: Record<string, unknown>,
-  userId: string
+  userId: string,
+  notInterestedPlaceIds: string[] = []
 ): Promise<unknown> {
   const categories = input.categories as string[] | undefined;
   const keyword = input.keyword as string | undefined;
@@ -577,6 +595,9 @@ async function executeSearchPlaces(
     .select("id, name, category, address, latitude, longitude")
     .limit(limit);
 
+  if (notInterestedPlaceIds.length > 0) {
+    query = query.not("id", "in", `(${notInterestedPlaceIds.join(",")})`);
+  }
   if (categories && categories.length > 0) {
     query = query.in("category", categories);
   }
@@ -976,15 +997,16 @@ function executeTool(
   name: string,
   input: Record<string, unknown>,
   supabase: SupabaseClient,
-  userId: string
+  userId: string,
+  notInterested?: { eventIds: string[]; placeIds: string[] }
 ): Promise<unknown> {
   switch (name) {
     case "search_events":
-      return executeSearchEvents(supabase, input, userId);
+      return executeSearchEvents(supabase, input, userId, notInterested?.eventIds);
     case "get_event_details":
       return executeGetEventDetails(supabase, input);
     case "search_places":
-      return executeSearchPlaces(supabase, input, userId);
+      return executeSearchPlaces(supabase, input, userId, notInterested?.placeIds);
     case "search_guides":
       return executeSearchGuides(supabase, input);
     case "get_user_social_context":
@@ -1100,7 +1122,14 @@ ${userPostsStr}
 RECENT POSTS FROM FOLLOWED USERS (user|place|content):
 ${feedPostsStr}
 
-PREAMBLE:
+${social.notInterestedEventIds.length > 0 || social.notInterestedPlaceIds.length > 0
+    ? `NOT INTERESTED:
+The user has marked certain items as "not interested". Do NOT recommend these.
+${social.notInterestedEventIds.length > 0 ? `Hidden event IDs: ${social.notInterestedEventIds.join(", ")}` : ""}
+${social.notInterestedPlaceIds.length > 0 ? `Hidden place IDs: ${social.notInterestedPlaceIds.join(", ")}` : ""}
+These are already filtered from search results, but if you encounter them in other context, skip them.
+`
+    : ""}PREAMBLE:
 - Before calling any tools, output a single short friendly line (max 10 words) acknowledging the user's question. This appears instantly while tools load. Match the tone to the question — e.g. "Ooh, let me find some cafes! ☕" or "Weekend plans — let me check! 🎉". Follow it with two newlines, then call your tools.
 - For greetings or simple messages that won't need tools, skip the preamble and respond directly.
 
@@ -1689,7 +1718,11 @@ Deno.serve(async (req) => {
                   tool.name,
                   input,
                   supabase,
-                  userId
+                  userId,
+                  {
+                    eventIds: socialContext.notInterestedEventIds,
+                    placeIds: socialContext.notInterestedPlaceIds,
+                  }
                 );
                 const resultStr = JSON.stringify(result);
                 console.log(

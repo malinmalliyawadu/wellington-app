@@ -978,6 +978,7 @@ export type ExplorationMethod = 'viewed' | 'posted';
 export type AchievementType = 'category' | 'milestone' | 'neighborhood' | 'social' | 'level' | 'activity' | 'wellington';
 export type NotificationType = 'like' | 'comment' | 'follow' | 'guide_like' | 'guide_comment' | 'event_attendance' | 'event_reminder' | 'comment_reply';
 export type SavedItemType = 'post' | 'place' | 'event' | 'guide';
+export type NotInterestedItemType = 'event' | 'place';
 
 export type Tables<T extends keyof Database['public']['Tables']> =
   Database['public']['Tables'][T]['Row'];

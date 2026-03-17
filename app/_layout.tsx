@@ -29,6 +29,7 @@ import { FollowProvider } from "../src/context/FollowContext";
 import { BlockProvider, useBlock } from "../src/context/BlockContext";
 import { LikeProvider } from "../src/context/LikeContext";
 import { SaveProvider } from "../src/context/SaveContext";
+import { NotInterestedProvider } from "../src/context/NotInterestedContext";
 import { ToastProvider, useToast } from "../src/context/ToastContext";
 import { NotificationProvider, useNotifications } from "../src/context/NotificationContext";
 import { PointsProvider } from "../src/context/PointsContext";
@@ -385,6 +386,7 @@ export default function RootLayout() {
                           <SaveProvider>
                             <NotificationProvider>
                               <ToastProvider>
+                                <NotInterestedProvider>
                                 <PointsProvider>
                                   <ScreenTracker />
                                   <AuthGate>
@@ -393,6 +395,7 @@ export default function RootLayout() {
                                   </AuthGate>
                                   <StatusBar style="auto" />
                                 </PointsProvider>
+                                </NotInterestedProvider>
                               </ToastProvider>
                             </NotificationProvider>
                           </SaveProvider>

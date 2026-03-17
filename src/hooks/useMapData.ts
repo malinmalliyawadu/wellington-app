@@ -15,6 +15,7 @@ import {
   isFollowedPlaceSet,
 } from "../utils/placePopularity";
 import { Place, PlaceCategory, User } from "../types";
+import { useNotInterested } from "../context/NotInterestedContext";
 
 interface UseMapDataParams {
   followingIds: string[];
@@ -33,6 +34,10 @@ export function useMapData({
   visibleRegion,
   mapLayout,
 }: UseMapDataParams) {
+  const { getNotInterestedIds } = useNotInterested();
+  const notInterestedPlaceIds = useMemo(() => new Set(getNotInterestedIds('place')), [getNotInterestedIds]);
+  const notInterestedEventIds = useMemo(() => new Set(getNotInterestedIds('event')), [getNotInterestedIds]);
+
   const {
     data: places,
     loading: placesLoading,
@@ -80,13 +85,14 @@ export function useMapData({
     };
 
     return (upcomingEvents ?? []).filter((e) => {
+      if (notInterestedEventIds.has(e.id)) return false;
       if (e.date !== todayStr) return false;
       const endMinutes = e.endTime
         ? toMinutes(e.endTime)
         : toMinutes(e.startTime) + 180;
       return endMinutes > nowMinutes;
     });
-  }, [upcomingEvents]);
+  }, [upcomingEvents, notInterestedEventIds]);
 
   // Refetch data when screen comes into focus
   const refetchAll = useCallback(() => {
@@ -159,6 +165,8 @@ export function useMapData({
 
   const filteredPlaces = useMemo(() => {
     return allPlaces.filter((place) => {
+      // Exclude not-interested places
+      if (notInterestedPlaceIds.has(place.id)) return false;
       // Exclude trail shadow places — trails have their own polyline overlay
       if (place.category === 'trail') return false;
       // Only show places that have posts or upcoming events
@@ -186,6 +194,7 @@ export function useMapData({
     popularityMap,
     placeEventsMap,
     followingSet,
+    notInterestedPlaceIds,
   ]);
 
   const annotatedPlaceIds = useMemo(() => {

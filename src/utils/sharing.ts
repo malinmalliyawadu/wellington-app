@@ -39,6 +39,10 @@ export function sharePost(postId: string): void {
   shareUrl(getPostUrl(postId));
 }
 
+export function sharePlace(placeId: string): void {
+  shareUrl(getPlaceUrl(placeId));
+}
+
 export function shareEvent(eventId: string): void {
   shareUrl(getEventUrl(eventId));
 }

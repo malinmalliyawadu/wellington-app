@@ -56,6 +56,7 @@ import { usePoints } from "../context/PointsContext";
 import { useTheme } from "../theme/ThemeContext";
 import { shareEvent } from "../utils/sharing";
 import { useSave } from "../context/SaveContext";
+import { useNotInterested } from "../context/NotInterestedContext";
 import { HapticPressable } from "src/components/HapticPressable";
 import { LiquidGlassButton } from "../components/LiquidGlassButton";
 import { ContextMenu, Button as ExpoButton, Host } from "@expo/ui/swift-ui";
@@ -82,6 +83,7 @@ export function EventDetailScreen() {
   const { followingIds } = useFollow();
   const { awardPointsForAction } = usePoints();
   const { isSaved, toggleSave } = useSave();
+  const { toggleNotInterested } = useNotInterested();
   const queryClient = useQueryClient();
   const { showToast } = useToast();
   const [togglingAttendance, setTogglingAttendance] = useState(false);
@@ -144,8 +146,9 @@ export function EventDetailScreen() {
   const onEditRef = useRef<(() => void) | undefined>(undefined);
   const onDeleteRef = useRef<(() => void) | undefined>(undefined);
 
+  const onNotInterestedRef = useRef<(() => void) | undefined>(undefined);
+
   useLayoutEffect(() => {
-    if (!isOwnEvent) return;
     navigation.setOptions({
       headerRight: () => (
         <Host matchContents>
@@ -166,19 +169,31 @@ export function EventDetailScreen() {
               </View>
             </ContextMenu.Trigger>
             <ContextMenu.Items>
-              <ExpoButton
-                systemImage="pencil"
-                onPress={() => onEditRef.current?.()}
-              >
-                Edit event
-              </ExpoButton>
-              <ExpoButton
-                systemImage="trash"
-                role="destructive"
-                onPress={() => onDeleteRef.current?.()}
-              >
-                Delete event
-              </ExpoButton>
+              {isOwnEvent && (
+                <>
+                  <ExpoButton
+                    systemImage="pencil"
+                    onPress={() => onEditRef.current?.()}
+                  >
+                    Edit event
+                  </ExpoButton>
+                  <ExpoButton
+                    systemImage="trash"
+                    role="destructive"
+                    onPress={() => onDeleteRef.current?.()}
+                  >
+                    Delete event
+                  </ExpoButton>
+                </>
+              )}
+              {!isOwnEvent && (
+                <ExpoButton
+                  systemImage="eye.slash"
+                  onPress={() => onNotInterestedRef.current?.()}
+                >
+                  Not interested
+                </ExpoButton>
+              )}
             </ContextMenu.Items>
           </ContextMenu>
         </Host>
@@ -259,6 +274,11 @@ export function EventDetailScreen() {
         },
       },
     ]);
+  };
+
+  onNotInterestedRef.current = () => {
+    toggleNotInterested('event', event.id);
+    router.back();
   };
 
   const currentUserId = session?.user?.id;

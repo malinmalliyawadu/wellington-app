@@ -7,6 +7,7 @@ import { FeedPost } from "../components/FeedPost";
 import { FeedGuideCard } from "../components/FeedGuideCard";
 import { useFollow } from "../context/FollowContext";
 import { useBlock } from "../context/BlockContext";
+import { useNotInterested } from "../context/NotInterestedContext";
 import { useAuth } from "../context/AuthContext";
 import { useTheme, type Colors } from "../theme/ThemeContext";
 import { useQuery } from "../hooks/useQuery";
@@ -28,6 +29,8 @@ export function FeedScreen() {
   const router = useRouter();
   const { followingIds } = useFollow();
   const { blockedIds } = useBlock();
+  const { getNotInterestedIds } = useNotInterested();
+  const notInterestedPlaceIds = useMemo(() => new Set(getNotInterestedIds('place')), [getNotInterestedIds]);
   const { profile } = useAuth();
   const queryClient = useQueryClient();
   const headerHeight = useHeaderHeight();
@@ -134,6 +137,7 @@ export function FeedScreen() {
     // Add posts (already in chronological order from pagination)
     for (const post of feedPosts) {
       if (blockedSet.has(post.userId)) continue;
+      if (notInterestedPlaceIds.has(post.placeId)) continue;
       const user = userMap.get(post.userId);
       const place = placeMap.get(post.placeId);
       if (user && place) {
@@ -160,7 +164,7 @@ export function FeedScreen() {
     items.sort((a, b) => new Date(b.sortDate).getTime() - new Date(a.sortDate).getTime());
 
     return items;
-  }, [feedPosts, feedGuides, users, places, hasNextPage, blockedIds]);
+  }, [feedPosts, feedGuides, users, places, hasNextPage, blockedIds, notInterestedPlaceIds]);
 
   const handlePressUser = useCallback(
     (userId: string) => router.push(`/feed/user/${userId}`),

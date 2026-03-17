@@ -1,22 +1,24 @@
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState, useEffect } from 'react';
 import { View, Text, FlatList, StyleSheet, ActivityIndicator, Linking, Platform } from 'react-native';
 import { Image } from 'expo-image';
-import { useLocalSearchParams, usePathname, useRouter, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, usePathname, useRouter, useNavigation, useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useHeaderHeight } from '@react-navigation/elements';
+import { ContextMenu, Button as ExpoButton, Host } from '@expo/ui/swift-ui';
 import { SFIcon } from '../components/SFIcon';
 import { useQuery } from '../hooks/useQuery';
 import { getPlaceById } from '../services/places';
 import { getPostsByPlaceId as getPostsByPlaceIdAsync } from '../services/posts';
 import { getProfilesByIds , getProfileByUsername } from '../services/users';
 import { getTrailByPlaceId } from '../services/trails';
-import { shareTrail } from '../utils/sharing';
+import { sharePlace, shareTrail } from '../utils/sharing';
 import { fetchPlaceDetails, type PlaceOpeningHours } from '../services/googlePlaceDetails';
 import { formatNumber } from '../utils/formatNumber';
 import { sortPosts } from '../utils/postSorting';
 import { useFollow } from '../context/FollowContext';
 import { useLike } from '../context/LikeContext';
 import { useSave } from '../context/SaveContext';
+import { useNotInterested } from '../context/NotInterestedContext';
 import { VideoThumbnail } from '../components/VideoThumbnail';
 import { useTheme, type Colors } from '../theme/ThemeContext';
 import type { PlaceCategory, TrailDifficulty } from '../types';
@@ -42,12 +44,47 @@ export function PlaceDetailScreen() {
   const styles = createStyles(colors);
   const { placeId } = useLocalSearchParams<{ placeId: string }>();
   const router = useRouter();
+  const navigation = useNavigation();
   const pathname = usePathname();
   const tabBase = '/' + pathname.split('/')[1];
   const insets = useSafeAreaInsets();
   const headerHeight = useHeaderHeight();
   const { followingIds } = useFollow();
   const { isSaved, toggleSave } = useSave();
+  const { toggleNotInterested } = useNotInterested();
+
+  const onShareRef = useRef<(() => void) | undefined>(undefined);
+  const onToggleNotInterestedRef = useRef<(() => void) | undefined>(undefined);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <Host matchContents>
+          <ContextMenu activationMethod="singlePress">
+            <ContextMenu.Trigger>
+              <View style={{ alignItems: 'center', justifyContent: 'center', paddingHorizontal: 7 }}>
+                <SFIcon name="ellipsis" fallback="ellipsis-horizontal" size={22} />
+              </View>
+            </ContextMenu.Trigger>
+            <ContextMenu.Items>
+              <ExpoButton
+                systemImage="square.and.arrow.up"
+                onPress={() => onShareRef.current?.()}
+              >
+                Share
+              </ExpoButton>
+              <ExpoButton
+                systemImage="eye.slash"
+                onPress={() => onToggleNotInterestedRef.current?.()}
+              >
+                Not interested
+              </ExpoButton>
+            </ContextMenu.Items>
+          </ContextMenu>
+        </Host>
+      ),
+    });
+  }, [navigation]);
 
   const fetchPlace = useCallback(() => getPlaceById(placeId), [placeId]);
   const { data: place, loading: loadingPlace, error: placeError, refetch: refetchPlace } = useQuery(fetchPlace, ['place', placeId]);
@@ -128,6 +165,11 @@ export function PlaceDetailScreen() {
   }
 
   if (!place) return null;
+
+  onShareRef.current = () => sharePlace(place.id);
+  onToggleNotInterestedRef.current = () => {
+    toggleNotInterested('place', place.id);
+  };
 
   const allPosts = posts ?? [];
   const userMap = new Map((users ?? []).map((u) => [u.id, u]));

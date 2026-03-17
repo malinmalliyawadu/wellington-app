@@ -539,6 +539,32 @@ drop policy if exists "Users can unsave items" on saved_items;
 create policy "Users can unsave items"
   on saved_items for delete using (auth.uid() = user_id);
 
+-- Not interested items (events, places) — hides from feed, map, and events views
+create table if not exists not_interested (
+  user_id uuid not null references profiles(id) on delete cascade,
+  item_type text not null check (item_type in ('event', 'place')),
+  item_id uuid not null,
+  created_at timestamptz not null default now(),
+  primary key (user_id, item_type, item_id)
+);
+
+create index if not exists not_interested_user_idx on not_interested(user_id);
+create index if not exists not_interested_user_type_idx on not_interested(user_id, item_type);
+
+alter table not_interested enable row level security;
+
+drop policy if exists "Users can view own not interested items" on not_interested;
+create policy "Users can view own not interested items"
+  on not_interested for select using (auth.uid() = user_id);
+
+drop policy if exists "Users can mark items as not interested" on not_interested;
+create policy "Users can mark items as not interested"
+  on not_interested for insert with check (auth.uid() = user_id);
+
+drop policy if exists "Users can remove not interested items" on not_interested;
+create policy "Users can remove not interested items"
+  on not_interested for delete using (auth.uid() = user_id);
+
 -- Guides: curated lists of places created by users
 create table guides (
   id uuid primary key default gen_random_uuid(),
