@@ -37,6 +37,7 @@ export const lightColors = {
   // Interactive
   liked: "#E0245E",
   saved: "#E8962E",
+  explored: "#16A34A",
 
   // Semantic
   error: "#DC2626",
@@ -92,6 +93,7 @@ export const darkColors: Colors = {
   // Interactive
   liked: "#E0245E",
   saved: "#E8962E",
+  explored: "#22C55E",
 
   // Semantic
   error: "#EF4444",

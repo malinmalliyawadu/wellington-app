@@ -130,6 +130,27 @@ export const createStyles = (colors: Colors) =>
       fontSize: 13,
       color: colors.textSecondary,
     },
+    actionsRow: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 8,
+    },
+    actionButton: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 5,
+      paddingVertical: 7,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: colors.gray200,
+    },
+    actionButtonText: {
+      fontSize: 12,
+      fontFamily: fonts.semiBold,
+      color: colors.textSecondary,
+    },
     directionsButton: {
       flexDirection: "row",
       alignItems: "center",

@@ -59,6 +59,10 @@ interface PrefetchedSocialContext {
     placeCategory: string | null;
     content: string;
   }[];
+  visitedPlaces: {
+    placeName: string;
+    placeCategory: string | null;
+  }[];
   notInterestedEventIds: string[];
   notInterestedPlaceIds: string[];
 }
@@ -146,7 +150,7 @@ async function prefetchSocialContext(
   const followingIds = followingUsers.map((u) => u.id);
 
   // Fetch feed posts, user posts, and not-interested items in parallel
-  const [feedResult, userPostsResult, notInterestedResult] = await Promise.all([
+  const [feedResult, userPostsResult, notInterestedResult, visitedResult] = await Promise.all([
     followingIds.length > 0
       ? supabase
           .from("posts")
@@ -165,6 +169,12 @@ async function prefetchSocialContext(
       .from("not_interested")
       .select("item_type, item_id")
       .eq("user_id", userId),
+    supabase
+      .from("user_explorations")
+      .select("place_id, places(name, category)")
+      .eq("user_id", userId)
+      .order("explored_at", { ascending: false })
+      .limit(100),
   ]);
 
   const followMap = new Map(followingUsers.map((u) => [u.id, u.name]));
@@ -191,6 +201,16 @@ async function prefetchSocialContext(
     }
   );
 
+  const visitedPlaces = (visitedResult.data ?? []).map(
+    (r: Record<string, unknown>) => {
+      const place = r.places as Record<string, unknown> | null;
+      return {
+        placeName: (place?.name as string) ?? "Unknown",
+        placeCategory: (place?.category as string) ?? null,
+      };
+    }
+  );
+
   const notInterestedEventIds: string[] = [];
   const notInterestedPlaceIds: string[] = [];
   for (const row of (notInterestedResult.data ?? []) as Record<string, unknown>[]) {
@@ -198,7 +218,7 @@ async function prefetchSocialContext(
     else if (row.item_type === "place") notInterestedPlaceIds.push(row.item_id as string);
   }
 
-  return { followingUsers, feedPosts, userPosts, notInterestedEventIds, notInterestedPlaceIds };
+  return { followingUsers, feedPosts, userPosts, visitedPlaces, notInterestedEventIds, notInterestedPlaceIds };
 }
 
 // ---------------------------------------------------------------------------
@@ -1099,6 +1119,13 @@ function buildToolSystemPrompt(
           .join("\n")
       : "No posts yet.";
 
+  const visitedPlacesStr =
+    social.visitedPlaces.length > 0
+      ? social.visitedPlaces
+          .map((p) => `${p.placeName}|${p.placeCategory ?? ""}`)
+          .join("\n")
+      : "No places visited yet.";
+
   const feedPostsStr =
     social.feedPosts.length > 0
       ? social.feedPosts
@@ -1116,8 +1143,11 @@ ${locationStr}
 FOLLOWED USERS (id|name):
 ${followingStr}
 
-USER'S OWN POSTS (place|category|content) — places the user has already been to:
+USER'S OWN POSTS (place|category|content):
 ${userPostsStr}
+
+VISITED PLACES (place|category) — places the user has ticked off as visited:
+${visitedPlacesStr}
 
 RECENT POSTS FROM FOLLOWED USERS (user|place|content):
 ${feedPostsStr}
@@ -1178,7 +1208,7 @@ RESPONSE FORMAT:
   For example: "Check out [Cafe Polo](place:abc-123) — [Sarah](user:def-456) posted about it recently!"
 - Consider the time of day and day of week when suggesting activities. Use get_weather if outdoor activities are relevant.
 - IMPORTANT: ONLY include places/events/guides that were returned by your tool calls. Never fabricate IDs or names. If a tool returns no results, say so honestly.
-- Use the user's own posts (from get_user_social_context) to understand their taste and preferences, but do NOT recommend places they've already posted about unless they specifically ask
+- Use the user's own posts and visited places list to understand their taste and preferences. Prefer recommending places they haven't visited yet. If they've visited a place, you can mention it positively ("Since you liked X, you might enjoy Y") but focus recommendations on new places to explore
 - Prioritize places and events that the user's followed people have posted about or are attending
 - When followed users are attending an event, mention them by name
 - Keep your message to 2-3 short paragraphs max
