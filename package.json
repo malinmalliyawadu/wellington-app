@@ -29,7 +29,7 @@
     "db:schema:production": "dotenv -e .env.production -- node supabase/run-sql.mjs supabase/schema.sql",
     "db:stamp:production": "dotenv -e .env.production -- node supabase/run-sql.mjs supabase/stamp-migrations.sql",
     "db:seed:production": "dotenv -e .env.production -- node supabase/run-sql.mjs supabase/seed-achievements.sql",
-    "db:link:production": "supabase link --project-ref cxipwnwxvkguxtbzvnlz",
+    "db:link:production": "supabase link --project-ref kxxktfdzcjidewrzujoa",
     "deploy:functions": "supabase functions deploy --no-verify-jwt",
     "update:ios": "eas update --branch production --platform ios",
     "lint": "eslint . && deno lint --config supabase/functions/deno.json supabase/functions/",
