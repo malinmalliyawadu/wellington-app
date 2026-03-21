@@ -18,7 +18,7 @@
     "db:reset": "supabase db reset",
     "db:types": "supabase gen types typescript --local > src/types/database.ts",
     "db:login": "supabase login",
-    "db:link": "supabase link --project-ref octeacvgbszdwzluxaef",
+    "db:link": "supabase link --project-ref kxxktfdzcjidewrzujoa",
     "db:create-users": "dotenv -- node supabase/create-seed-users.mjs",
     "db:schema:remote": "dotenv -- node supabase/run-sql.mjs supabase/schema.sql",
     "db:seed:remote": "dotenv -- node supabase/run-sql.mjs supabase/seed.sql",
